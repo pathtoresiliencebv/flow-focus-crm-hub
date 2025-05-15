@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import {
   Table,
@@ -24,32 +23,8 @@ import { InvoiceForm } from './InvoiceForm';
 import { useToast } from '@/hooks/use-toast';
 import { InvoiceDetails } from './InvoiceDetails';
 
-// Mock invoice data
-export const mockInvoices = [
-  { id: 1, number: "INV-2025-1001", customer: "Jan de Vries", project: "Renovatie woonkamer", date: "05-05-2025", dueDate: "19-05-2025", status: "Betaald", amount: "5,445.00" },
-  { id: 2, number: "INV-2025-1002", customer: "Marie Jansen", project: "Nieuwe kozijnen achtergevel", date: "08-05-2025", dueDate: "22-05-2025", status: "Verzonden", amount: "3,388.00" },
-  { id: 3, number: "INV-2025-1003", customer: "Peter Bakker", project: "Vervangen voordeur", date: "10-05-2025", dueDate: "24-05-2025", status: "Concept", amount: "1,512.50" },
-  { id: 4, number: "INV-2025-1004", customer: "Sara Visser", project: "Isolatieglas installatie", date: "12-05-2025", dueDate: "26-05-2025", status: "Verzonden", amount: "4,356.00" },
-  { id: 5, number: "INV-2025-1005", customer: "Thomas Mulder", project: "Kunststof kozijnen", date: "15-05-2025", dueDate: "29-05-2025", status: "Concept", amount: "6,292.00" },
-];
-
-// Mock customer data for form
-export const mockCustomers = [
-  { id: 1, name: "Jan de Vries" },
-  { id: 2, name: "Marie Jansen" },
-  { id: 3, name: "Peter Bakker" },
-  { id: 4, name: "Sara Visser" },
-  { id: 5, name: "Thomas Mulder" },
-];
-
-// Mock project data for form
-export const mockProjects = [
-  { id: 1, title: "Renovatie woonkamer", customer: "Jan de Vries", value: "4,500" },
-  { id: 2, title: "Nieuwe kozijnen achtergevel", customer: "Marie Jansen", value: "2,800" },
-  { id: 3, title: "Vervangen voordeur", customer: "Peter Bakker", value: "1,250" },
-  { id: 4, title: "Isolatieglas installatie", customer: "Sara Visser", value: "3,600" },
-  { id: 5, title: "Kunststof kozijnen", customer: "Thomas Mulder", value: "5,200" },
-];
+// Import mock data from central location
+import { mockInvoices, mockCustomers, mockProjects } from '@/data/mockData';
 
 // Mock invoice items for detail view
 export const mockInvoiceItems = [

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,21 +17,25 @@ import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Users as UsersIcon, Calendar as CalendarIcon, Folder, Database, Inbox } from "lucide-react";
+import { UsersIcon, Calendar as CalendarIcon, Folder, Database, Inbox, Eye } from "lucide-react";
 
 import { CustomerForm } from '@/components/CustomerForm';
 import { Dashboard } from '@/components/Dashboard';
 import { CrmSidebar } from '@/components/CrmSidebar';
 import { ProjectsBoard } from '@/components/ProjectsBoard';
-import { Invoicing, mockInvoices } from '@/components/Invoicing';
+import { Invoicing } from '@/components/Invoicing';
 import { NotificationsMenu } from '@/components/NotificationsMenu';
 import TimeRegistration from '@/components/TimeRegistration';
 import Personnel from '@/components/Personnel';
 import Reports from '@/components/Reports';
 
+// Import mock data from the central location
+import { mockCustomers, mockProjects, mockAppointments, mockInventory } from '@/data/mockData';
+
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Convert mockProjects to the right format for ProjectsBoard
   const formattedProjects = mockProjects.map(project => ({
@@ -39,6 +43,11 @@ const Index = () => {
     id: project.id.toString(),
     status: getProjectStatus(project.status)
   }));
+
+  // Function to navigate to customer details
+  const handleCustomerClick = (customerId: number) => {
+    navigate(`/customers/${customerId}`);
+  };
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -101,7 +110,7 @@ const Index = () => {
                     </TableHeader>
                     <TableBody>
                       {mockCustomers.map((customer) => (
-                        <TableRow key={customer.id}>
+                        <TableRow key={customer.id} className="cursor-pointer hover:bg-gray-50" onClick={() => handleCustomerClick(customer.id)}>
                           <TableCell className="font-medium">{customer.name}</TableCell>
                           <TableCell>{customer.email}</TableCell>
                           <TableCell>{customer.phone}</TableCell>
@@ -115,16 +124,18 @@ const Index = () => {
                             </span>
                           </TableCell>
                           <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">Acties</Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="bg-white">
-                                <DropdownMenuItem>Bekijken</DropdownMenuItem>
-                                <DropdownMenuItem>Bewerken</DropdownMenuItem>
-                                <DropdownMenuItem className="text-red-600">Verwijderen</DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="flex items-center gap-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCustomerClick(customer.id);
+                              }}
+                            >
+                              <Eye className="h-4 w-4" />
+                              Details
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -282,40 +293,5 @@ function getProjectStatus(status: string): "te-plannen" | "gepland" | "herkeurin
     default: return "te-plannen";
   }
 }
-
-// Mock data
-const mockCustomers = [
-  { id: 1, name: "Jan de Vries", email: "jan@example.com", phone: "06-12345678", status: "Actief" },
-  { id: 2, name: "Marie Jansen", email: "marie@example.com", phone: "06-23456789", status: "In behandeling" },
-  { id: 3, name: "Peter Bakker", email: "peter@example.com", phone: "06-34567890", status: "Actief" },
-  { id: 4, name: "Sara Visser", email: "sara@example.com", phone: "06-45678901", status: "Inactief" },
-  { id: 5, name: "Thomas Mulder", email: "thomas@example.com", phone: "06-56789012", status: "Actief" },
-];
-
-const mockProjects = [
-  { id: 1, title: "Renovatie woonkamer", customer: "Jan de Vries", status: "In uitvoering", date: "15-05-2025", value: "4,500" },
-  { id: 2, title: "Nieuwe kozijnen achtergevel", customer: "Marie Jansen", status: "Gepland", date: "20-05-2025", value: "2,800" },
-  { id: 3, title: "Vervangen voordeur", customer: "Peter Bakker", status: "Afgerond", date: "10-05-2025", value: "1,250" },
-  { id: 4, title: "Isolatieglas installatie", customer: "Sara Visser", status: "In uitvoering", date: "17-05-2025", value: "3,600" },
-  { id: 5, title: "Kunststof kozijnen", customer: "Thomas Mulder", status: "Gepland", date: "25-05-2025", value: "5,200" },
-];
-
-const mockAppointments = [
-  { id: 1, date: "15-05-2025", time: "09:00", customer: "Jan de Vries", type: "Meting" },
-  { id: 2, date: "15-05-2025", time: "13:30", customer: "Marie Jansen", type: "Adviesgesprek" },
-  { id: 3, date: "17-05-2025", time: "10:00", customer: "Peter Bakker", type: "Installatie" },
-  { id: 4, date: "18-05-2025", time: "14:00", customer: "Sara Visser", type: "Meting" },
-  { id: 5, date: "20-05-2025", time: "11:30", customer: "Thomas Mulder", type: "Installatie" },
-];
-
-const mockInventory = [
-  { id: 1, name: "Kunststof kozijn", type: "Vast", material: "PVC", stock: 15, price: "350" },
-  { id: 2, name: "Aluminium kozijn", type: "Draai-kiep", material: "Aluminium", stock: 8, price: "480" },
-  { id: 3, name: "Houten kozijn", type: "Schuif", material: "Hardhout", stock: 12, price: "420" },
-  { id: 4, name: "Triple glas", type: "HR+++", material: "Glas", stock: 20, price: "180" },
-  { id: 5, name: "Dubbel glas", type: "HR++", material: "Glas", stock: 25, price: "120" },
-  { id: 6, name: "Vensterbank", type: "Standaard", material: "Composiet", stock: 30, price: "85" },
-  { id: 7, name: "Afstandhouders", type: "Warm-edge", material: "Kunststof", stock: 4, price: "35" },
-];
 
 export default Index;
