@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import {
   Table,
@@ -22,6 +21,7 @@ import {
 import { Eye, FileText, Receipt, Send } from "lucide-react";
 import { InvoiceForm } from './InvoiceForm';
 import { useToast } from '@/hooks/use-toast';
+import { InvoiceDetails } from './InvoiceDetails';
 
 // Mock invoice data
 export const mockInvoices = [
@@ -50,10 +50,29 @@ export const mockProjects = [
   { id: 5, title: "Kunststof kozijnen", customer: "Thomas Mulder", value: "5,200" },
 ];
 
+// Mock invoice items for detail view
+export const mockInvoiceItems = [
+  { id: 1, invoiceId: 1, description: "Renovatie materialen", quantity: 1, price: "3,250.00", total: "3,250.00" },
+  { id: 2, invoiceId: 1, description: "Installatie", quantity: 1, price: "1,250.00", total: "1,250.00" },
+  { id: 3, invoiceId: 1, description: "Afwerking", quantity: 1, price: "945.00", total: "945.00" },
+  { id: 4, invoiceId: 2, description: "Kunststof kozijnen 120x180", quantity: 2, price: "980.00", total: "1,960.00" },
+  { id: 5, invoiceId: 2, description: "Montage", quantity: 1, price: "840.00", total: "840.00" },
+  { id: 6, invoiceId: 2, description: "Afwerking", quantity: 1, price: "588.00", total: "588.00" },
+  { id: 7, invoiceId: 3, description: "Voordeur hoogwaardig", quantity: 1, price: "950.00", total: "950.00" },
+  { id: 8, invoiceId: 3, description: "Plaatsing", quantity: 1, price: "420.00", total: "420.00" },
+  { id: 9, invoiceId: 3, description: "Afwerking", quantity: 1, price: "142.50", total: "142.50" },
+  { id: 10, invoiceId: 4, description: "HR++ Glas 90x120", quantity: 6, price: "520.00", total: "3,120.00" },
+  { id: 11, invoiceId: 4, description: "Installatie", quantity: 1, price: "1,236.00", total: "1,236.00" },
+  { id: 12, invoiceId: 5, description: "Kunststof kozijnen complete set", quantity: 1, price: "4,800.00", total: "4,800.00" },
+  { id: 13, invoiceId: 5, description: "Montage", quantity: 1, price: "1,200.00", total: "1,200.00" },
+  { id: 14, invoiceId: 5, description: "Afwerking en details", quantity: 1, price: "292.00", total: "292.00" },
+];
+
 export function Invoicing() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<number | null>(null);
 
   // Filter invoices based on search term and status filter
   const filteredInvoices = mockInvoices.filter(invoice => {
@@ -89,6 +108,16 @@ export function Invoicing() {
       title: "Factuur verzonden",
       description: `Factuur ${mockInvoices.find(inv => inv.id === invoiceId)?.number} is verzonden naar de klant.`,
     });
+  };
+
+  // Get invoice details
+  const getInvoiceDetail = (id: number) => {
+    return mockInvoices.find(invoice => invoice.id === id);
+  };
+
+  // Get invoice items
+  const getInvoiceItems = (id: number) => {
+    return mockInvoiceItems.filter(item => item.invoiceId === id);
   };
 
   return (
@@ -202,9 +231,19 @@ export function Invoicing() {
                   <TableCell className="text-right">€{invoice.amount}</TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" title="Bekijken">
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="icon" title="Bekijken">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[800px]">
+                          <InvoiceDetails 
+                            invoice={getInvoiceDetail(invoice.id)!}
+                            items={getInvoiceItems(invoice.id)}
+                          />
+                        </DialogContent>
+                      </Dialog>
                       
                       {invoice.status === "Concept" && (
                         <Button 
