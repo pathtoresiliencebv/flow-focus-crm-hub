@@ -9,7 +9,8 @@ import {
   Receipt, 
   Clock,
   Briefcase,
-  BarChart2
+  BarChart2,
+  ShoppingCart
 } from "lucide-react";
 
 interface CrmSidebarProps {
@@ -24,7 +25,7 @@ export const CrmSidebar = ({ activeTab, setActiveTab }: CrmSidebarProps) => {
     { id: "projects", label: "Projecten", icon: Folder },
     { id: "calendar", label: "Planning", icon: Calendar },
     { id: "time", label: "Tijdsregistratie", icon: Clock },
-    { id: "inventory", label: "Voorraad", icon: Database },
+    { id: "inventory", label: "Inkoop", icon: ShoppingCart },
     { id: "invoicing", label: "Facturering", icon: Receipt },
     { id: "personnel", label: "Personeelszaken", icon: Briefcase, subItems: [
       { id: "users", label: "Gebruikers", icon: Users },
