@@ -7,9 +7,10 @@ import {
   TableHeader, 
   TableRow,
 } from "@/components/ui/table";
-import { Receipt } from "lucide-react";
+import { Receipt, Send } from "lucide-react";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useToast } from '@/hooks/use-toast';
 
 interface InvoiceItem {
   id: number;
@@ -34,9 +35,13 @@ interface Invoice {
 interface InvoiceDetailsProps {
   invoice: Invoice;
   items: InvoiceItem[];
+  onSend?: (invoiceId: number) => void;
+  onClose?: () => void;
 }
 
-export function InvoiceDetails({ invoice, items }: InvoiceDetailsProps) {
+export function InvoiceDetails({ invoice, items, onSend, onClose }: InvoiceDetailsProps) {
+  const { toast } = useToast();
+  
   // Calculate subtotal from items
   const calculateSubtotal = () => {
     return items.reduce((sum, item) => {
@@ -48,6 +53,23 @@ export function InvoiceDetails({ invoice, items }: InvoiceDetailsProps) {
   const subtotal = calculateSubtotal();
   const vat = subtotal * 0.21;
   const total = subtotal + vat;
+
+  const handleSendInvoice = () => {
+    if (onSend) {
+      onSend(invoice.id);
+    } else {
+      toast({
+        title: "Factuur verzonden",
+        description: `Factuur ${invoice.number} is verzonden naar ${invoice.customer}.`,
+      });
+    }
+    
+    if (onClose) {
+      onClose();
+    }
+  };
+
+  const canSendInvoice = invoice.status === "Concept";
 
   return (
     <>
@@ -145,6 +167,12 @@ export function InvoiceDetails({ invoice, items }: InvoiceDetailsProps) {
       </div>
 
       <div className="flex justify-end gap-2 mt-6">
+        {canSendInvoice && (
+          <Button onClick={handleSendInvoice} className="bg-blue-500 hover:bg-blue-600">
+            <Send className="mr-2 h-4 w-4" />
+            Verzenden
+          </Button>
+        )}
         <Button>
           <Receipt className="mr-2 h-4 w-4" />
           Downloaden

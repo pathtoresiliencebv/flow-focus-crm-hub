@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import {
   Table,
@@ -73,9 +74,11 @@ export function Invoicing() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<number | null>(null);
+  const [invoices, setInvoices] = useState([...mockInvoices]);
+  const [openDetailDialog, setOpenDetailDialog] = useState(false);
 
   // Filter invoices based on search term and status filter
-  const filteredInvoices = mockInvoices.filter(invoice => {
+  const filteredInvoices = invoices.filter(invoice => {
     const matchesSearch = 
       invoice.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       invoice.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -102,22 +105,56 @@ export function Invoicing() {
     }
   };
 
+  // Handler for creating a new invoice
+  const handleNewInvoice = (newInvoice: any) => {
+    setInvoices(prevInvoices => [...prevInvoices, newInvoice]);
+    toast({
+      title: "Factuur aangemaakt",
+      description: `Factuur ${newInvoice.number} is aangemaakt voor project ${newInvoice.project}.`,
+    });
+  };
+
   // Handler for sending invoice
   const handleSendInvoice = (invoiceId: number) => {
-    toast({
-      title: "Factuur verzonden",
-      description: `Factuur ${mockInvoices.find(inv => inv.id === invoiceId)?.number} is verzonden naar de klant.`,
-    });
+    const updatedInvoices = invoices.map(inv => 
+      inv.id === invoiceId 
+        ? { ...inv, status: "Verzonden" } 
+        : inv
+    );
+    
+    setInvoices(updatedInvoices);
+    
+    const invoice = invoices.find(inv => inv.id === invoiceId);
+    if (invoice) {
+      toast({
+        title: "Factuur verzonden",
+        description: `Factuur ${invoice.number} is verzonden naar de klant voor project "${invoice.project}".`,
+      });
+    }
+    
+    setOpenDetailDialog(false);
+  };
+
+  // Handler for viewing invoice details
+  const handleViewInvoice = (invoiceId: number) => {
+    setSelectedInvoice(invoiceId);
+    setOpenDetailDialog(true);
   };
 
   // Get invoice details
   const getInvoiceDetail = (id: number) => {
-    return mockInvoices.find(invoice => invoice.id === id);
+    return invoices.find(invoice => invoice.id === id);
   };
 
   // Get invoice items
   const getInvoiceItems = (id: number) => {
     return mockInvoiceItems.filter(item => item.invoiceId === id);
+  };
+
+  // Close invoice detail dialog
+  const closeDetailDialog = () => {
+    setOpenDetailDialog(false);
+    setSelectedInvoice(null);
   };
 
   return (
@@ -231,19 +268,14 @@ export function Invoicing() {
                   <TableCell className="text-right">€{invoice.amount}</TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-2">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="ghost" size="icon" title="Bekijken">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[800px]">
-                          <InvoiceDetails 
-                            invoice={getInvoiceDetail(invoice.id)!}
-                            items={getInvoiceItems(invoice.id)}
-                          />
-                        </DialogContent>
-                      </Dialog>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        title="Bekijken"
+                        onClick={() => handleViewInvoice(invoice.id)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       
                       {invoice.status === "Concept" && (
                         <Button 
@@ -283,6 +315,20 @@ export function Invoicing() {
           }
         </div>
       </div>
+
+      {/* Invoice Detail Dialog */}
+      <Dialog open={openDetailDialog} onOpenChange={setOpenDetailDialog}>
+        <DialogContent className="sm:max-w-[800px]">
+          {selectedInvoice !== null && getInvoiceDetail(selectedInvoice) && (
+            <InvoiceDetails 
+              invoice={getInvoiceDetail(selectedInvoice)!}
+              items={getInvoiceItems(selectedInvoice)}
+              onSend={handleSendInvoice}
+              onClose={closeDetailDialog}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
