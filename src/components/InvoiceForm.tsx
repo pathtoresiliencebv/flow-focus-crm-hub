@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { PlusCircle, Trash2, Receipt } from "lucide-react";
@@ -24,7 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 interface InvoiceFormProps {
   onClose?: () => void;
   customers: Array<{ id: number; name: string }>;
-  projects?: Array<{ id: number; title: string; value: string }>;
+  projects?: Array<{ id: number; title: string; value: string; customer: string }>;
 }
 
 interface InvoiceFormValues {

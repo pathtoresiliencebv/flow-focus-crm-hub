@@ -110,7 +110,12 @@ export function Invoicing() {
               </DialogDescription>
             </DialogHeader>
             <InvoiceForm 
-              onClose={() => document.querySelector('[data-state="open"] button[data-state="closed"]')?.click()} 
+              onClose={() => {
+                const dialogCloseButton = document.querySelector('[data-state="open"] button[data-state="closed"]');
+                if (dialogCloseButton instanceof HTMLElement) {
+                  dialogCloseButton.click();
+                }
+              }}
               customers={mockCustomers}
               projects={mockProjects}
             />
