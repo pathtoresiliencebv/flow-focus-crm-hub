@@ -28,18 +28,22 @@ const statusColumns = [
   {
     id: "te-plannen",
     title: "Te plannen installaties",
+    bgColor: "bg-red-50 border-red-200",
   },
   {
     id: "gepland",
     title: "Geplande installaties",
+    bgColor: "bg-orange-50 border-orange-200",
   },
   {
     id: "herkeuring",
     title: "Herkeuringen",
+    bgColor: "bg-gray-50 border-gray-200",
   },
   {
     id: "afgerond",
     title: "Afgeronde installaties",
+    bgColor: "bg-green-50 border-green-200",
   },
 ];
 
@@ -134,10 +138,18 @@ export const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ initialProjects })
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {statusColumns.map(column => (
-            <div key={column.id} className="bg-gray-50 rounded-lg p-4">
+            <div 
+              key={column.id} 
+              className={`rounded-lg p-4 border ${column.bgColor}`}
+            >
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-medium text-sm">{column.title}</h3>
-                <span className="bg-gray-200 text-gray-700 text-xs font-medium px-2 py-1 rounded-full">
+                <span className={`bg-white text-gray-700 text-xs font-medium px-2 py-1 rounded-full border ${
+                  column.id === "te-plannen" ? "border-red-200" :
+                  column.id === "gepland" ? "border-orange-200" :
+                  column.id === "herkeuring" ? "border-gray-200" :
+                  "border-green-200"
+                }`}>
                   {projectsByStatus[column.id]?.length || 0}
                 </span>
               </div>
@@ -147,8 +159,16 @@ export const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ initialProjects })
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`min-h-[200px] transition-colors ${
-                      snapshot.isDraggingOver ? 'bg-blue-50' : ''
+                    className={`min-h-[200px] transition-colors rounded-md ${
+                      snapshot.isDraggingOver ? 
+                      (column.id === "te-plannen" ? "bg-red-100" :
+                       column.id === "gepland" ? "bg-orange-100" :
+                       column.id === "herkeuring" ? "bg-gray-100" :
+                       "bg-green-100") : 
+                      (column.id === "te-plannen" ? "bg-white/50" :
+                       column.id === "gepland" ? "bg-white/50" :
+                       column.id === "herkeuring" ? "bg-white/50" :
+                       "bg-white/50")
                     }`}
                   >
                     {projectsByStatus[column.id]?.length ? (
@@ -165,7 +185,12 @@ export const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ initialProjects })
                 )}
               </Droppable>
               
-              <Button size="sm" variant="ghost" className="w-full mt-3 text-xs">
+              <Button size="sm" variant="ghost" className={`w-full mt-3 text-xs ${
+                column.id === "te-plannen" ? "hover:bg-red-100" :
+                column.id === "gepland" ? "hover:bg-orange-100" :
+                column.id === "herkeuring" ? "hover:bg-gray-100" :
+                "hover:bg-green-100"
+              }`}>
                 <Plus className="h-3 w-3 mr-1" />
                 Project toevoegen
               </Button>
