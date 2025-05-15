@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Users, Calendar, Folder, Database, LayoutDashboard } from "lucide-react";
+import { Users, Calendar, Folder, Database, LayoutDashboard, Receipt } from "lucide-react";
 
 interface CrmSidebarProps {
   activeTab: string;
@@ -14,6 +14,7 @@ export const CrmSidebar = ({ activeTab, setActiveTab }: CrmSidebarProps) => {
     { id: "projects", label: "Projecten", icon: Folder },
     { id: "calendar", label: "Planning", icon: Calendar },
     { id: "inventory", label: "Voorraad", icon: Database },
+    { id: "invoicing", label: "Facturering", icon: Receipt },
   ];
 
   return (

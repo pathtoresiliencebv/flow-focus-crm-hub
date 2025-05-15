@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
@@ -23,6 +24,7 @@ import { CustomerForm } from '@/components/CustomerForm';
 import { Dashboard } from '@/components/Dashboard';
 import { CrmSidebar } from '@/components/CrmSidebar';
 import { ProjectsBoard } from '@/components/ProjectsBoard';
+import { Invoicing, mockInvoices } from '@/components/Invoicing';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -242,6 +244,10 @@ const Index = () => {
                   </Table>
                 </CardContent>
               </Card>
+            </TabsContent>
+            
+            <TabsContent value="invoicing" className="mt-0">
+              <Invoicing />
             </TabsContent>
           </Tabs>
         </div>
