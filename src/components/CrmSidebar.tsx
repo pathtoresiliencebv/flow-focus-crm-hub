@@ -1,6 +1,16 @@
 
 import { Button } from "@/components/ui/button";
-import { Users, Calendar, Folder, Database, LayoutDashboard, Receipt } from "lucide-react";
+import { 
+  Users, 
+  Calendar, 
+  Folder, 
+  Database, 
+  LayoutDashboard, 
+  Receipt, 
+  Clock,
+  Briefcase,
+  BarChart2
+} from "lucide-react";
 
 interface CrmSidebarProps {
   activeTab: string;
@@ -13,8 +23,14 @@ export const CrmSidebar = ({ activeTab, setActiveTab }: CrmSidebarProps) => {
     { id: "customers", label: "Klanten", icon: Users },
     { id: "projects", label: "Projecten", icon: Folder },
     { id: "calendar", label: "Planning", icon: Calendar },
+    { id: "time", label: "Tijdsregistratie", icon: Clock },
     { id: "inventory", label: "Voorraad", icon: Database },
     { id: "invoicing", label: "Facturering", icon: Receipt },
+    { id: "personnel", label: "Personeelszaken", icon: Briefcase, subItems: [
+      { id: "users", label: "Gebruikers", icon: Users },
+      { id: "salary", label: "Salaris", icon: Receipt }
+    ]},
+    { id: "reports", label: "Rapportages", icon: BarChart2 }
   ];
 
   return (
@@ -27,17 +43,37 @@ export const CrmSidebar = ({ activeTab, setActiveTab }: CrmSidebarProps) => {
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1">
         {menuItems.map((item) => (
-          <Button
-            key={item.id}
-            variant={activeTab === item.id ? "default" : "ghost"}
-            className={`w-full justify-start ${
-              activeTab === item.id ? "bg-blue-600 hover:bg-blue-700" : ""
-            }`}
-            onClick={() => setActiveTab(item.id)}
-          >
-            <item.icon className="mr-2 h-5 w-5" />
-            {item.label}
-          </Button>
+          <div key={item.id} className="mb-1">
+            <Button
+              variant={activeTab === item.id ? "default" : "ghost"}
+              className={`w-full justify-start ${
+                activeTab === item.id ? "bg-blue-600 hover:bg-blue-700" : ""
+              }`}
+              onClick={() => setActiveTab(item.id)}
+            >
+              <item.icon className="mr-2 h-5 w-5" />
+              {item.label}
+            </Button>
+
+            {/* Render sub-items if they exist */}
+            {item.subItems && (
+              <div className="pl-8 mt-1 space-y-1">
+                {item.subItems.map((subItem) => (
+                  <Button
+                    key={subItem.id}
+                    variant={activeTab === subItem.id ? "default" : "ghost"}
+                    className={`w-full justify-start text-sm ${
+                      activeTab === subItem.id ? "bg-blue-600 hover:bg-blue-700" : ""
+                    }`}
+                    onClick={() => setActiveTab(subItem.id)}
+                  >
+                    <subItem.icon className="mr-2 h-4 w-4" />
+                    {subItem.label}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
         ))}
       </nav>
 
