@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
@@ -27,8 +26,7 @@ import { ProjectsBoard } from '@/components/ProjectsBoard';
 import { Invoicing, mockInvoices } from '@/components/Invoicing';
 import { NotificationsMenu } from '@/components/NotificationsMenu';
 import TimeRegistration from '@/components/TimeRegistration';
-import Users from '@/components/Users';
-import Salary from '@/components/Salary';
+import Personnel from '@/components/Personnel';
 import Reports from '@/components/Reports';
 
 const Index = () => {
@@ -253,12 +251,16 @@ const Index = () => {
               <Invoicing />
             </TabsContent>
 
+            <TabsContent value="personnel" className="mt-0">
+              <Personnel />
+            </TabsContent>
+
             <TabsContent value="users" className="mt-0">
-              <Users />
+              <Personnel />
             </TabsContent>
 
             <TabsContent value="salary" className="mt-0">
-              <Salary />
+              <Personnel />
             </TabsContent>
 
             <TabsContent value="reports" className="mt-0">

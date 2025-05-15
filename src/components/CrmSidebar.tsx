@@ -12,6 +12,8 @@ import {
   BarChart2,
   ShoppingCart
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useState } from "react";
 
 interface CrmSidebarProps {
   activeTab: string;
@@ -19,6 +21,11 @@ interface CrmSidebarProps {
 }
 
 export const CrmSidebar = ({ activeTab, setActiveTab }: CrmSidebarProps) => {
+  // Track submenu states
+  const [personnelOpen, setPersonnelOpen] = useState(
+    activeTab === "personnel" || activeTab === "users" || activeTab === "salary"
+  );
+  
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "customers", label: "Klanten", icon: Users },
@@ -45,34 +52,69 @@ export const CrmSidebar = ({ activeTab, setActiveTab }: CrmSidebarProps) => {
       <nav className="flex-1 p-4 space-y-1">
         {menuItems.map((item) => (
           <div key={item.id} className="mb-1">
-            <Button
-              variant={activeTab === item.id ? "default" : "ghost"}
-              className={`w-full justify-start ${
-                activeTab === item.id ? "bg-blue-600 hover:bg-blue-700" : ""
-              }`}
-              onClick={() => setActiveTab(item.id)}
-            >
-              <item.icon className="mr-2 h-5 w-5" />
-              {item.label}
-            </Button>
-
-            {/* Render sub-items if they exist */}
-            {item.subItems && (
-              <div className="pl-8 mt-1 space-y-1">
-                {item.subItems.map((subItem) => (
+            {item.subItems ? (
+              <Collapsible 
+                open={item.id === "personnel" ? personnelOpen : false}
+                onOpenChange={item.id === "personnel" ? setPersonnelOpen : undefined}
+              >
+                <CollapsibleTrigger asChild>
                   <Button
-                    key={subItem.id}
-                    variant={activeTab === subItem.id ? "default" : "ghost"}
-                    className={`w-full justify-start text-sm ${
-                      activeTab === subItem.id ? "bg-blue-600 hover:bg-blue-700" : ""
+                    variant={activeTab === item.id ? "default" : "ghost"}
+                    className={`w-full justify-between ${
+                      activeTab === item.id ? "bg-blue-600 hover:bg-blue-700" : ""
                     }`}
-                    onClick={() => setActiveTab(subItem.id)}
                   >
-                    <subItem.icon className="mr-2 h-4 w-4" />
-                    {subItem.label}
+                    <div className="flex items-center">
+                      <item.icon className="mr-2 h-5 w-5" />
+                      {item.label}
+                    </div>
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className={`transform transition-transform ${personnelOpen ? "rotate-180" : ""}`}
+                    >
+                      <path
+                        d="M2 5L8 11L14 5"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
                   </Button>
-                ))}
-              </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="pl-8 mt-1 space-y-1">
+                    {item.subItems.map((subItem) => (
+                      <Button
+                        key={subItem.id}
+                        variant={activeTab === subItem.id ? "default" : "ghost"}
+                        className={`w-full justify-start text-sm ${
+                          activeTab === subItem.id ? "bg-blue-600 hover:bg-blue-700" : ""
+                        }`}
+                        onClick={() => setActiveTab(subItem.id)}
+                      >
+                        <subItem.icon className="mr-2 h-4 w-4" />
+                        {subItem.label}
+                      </Button>
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            ) : (
+              <Button
+                variant={activeTab === item.id ? "default" : "ghost"}
+                className={`w-full justify-start ${
+                  activeTab === item.id ? "bg-blue-600 hover:bg-blue-700" : ""
+                }`}
+                onClick={() => setActiveTab(item.id)}
+              >
+                <item.icon className="mr-2 h-5 w-5" />
+                {item.label}
+              </Button>
             )}
           </div>
         ))}
