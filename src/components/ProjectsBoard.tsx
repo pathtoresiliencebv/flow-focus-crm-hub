@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 // Define project status types
 type ProjectStatus = "te-plannen" | "gepland" | "herkeuring" | "afgerond";
@@ -56,36 +57,53 @@ const statusDisplayMap: Record<ProjectStatus, string> = {
 };
 
 // Project card component
-const ProjectCard = ({ project, index }: { project: Project, index: number }) => (
-  <Draggable draggableId={project.id} index={index}>
-    {(provided) => (
-      <div
-        ref={provided.innerRef}
-        {...provided.draggableProps}
-        {...provided.dragHandleProps}
-        className="mb-3"
-      >
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-4">
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <h4 className="font-semibold text-sm">{project.title}</h4>
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                  <Eye className="h-4 w-4" />
-                </Button>
+const ProjectCard = ({ project, index }: { project: Project, index: number }) => {
+  const navigate = useNavigate();
+  
+  const handleViewDetails = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/projects/${project.id}`);
+  };
+
+  return (
+    <Draggable draggableId={project.id} index={index}>
+      {(provided) => (
+        <div
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          className="mb-3"
+        >
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={handleViewDetails}>
+            <CardContent className="p-4">
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <h4 className="font-semibold text-sm">{project.title}</h4>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-8 w-8 p-0" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/projects/${project.id}`);
+                    }}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Klant: {project.customer}</p>
+                <div className="flex justify-between text-xs">
+                  <span>€{project.value}</span>
+                  <span>{project.date}</span>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground">Klant: {project.customer}</p>
-              <div className="flex justify-between text-xs">
-                <span>€{project.value}</span>
-                <span>{project.date}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )}
-  </Draggable>
-);
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </Draggable>
+  );
+};
 
 export const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ initialProjects }) => {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
