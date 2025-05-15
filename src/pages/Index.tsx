@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
@@ -25,6 +26,10 @@ import { CrmSidebar } from '@/components/CrmSidebar';
 import { ProjectsBoard } from '@/components/ProjectsBoard';
 import { Invoicing, mockInvoices } from '@/components/Invoicing';
 import { NotificationsMenu } from '@/components/NotificationsMenu';
+import TimeRegistration from '@/components/TimeRegistration';
+import Users from '@/components/Users';
+import Salary from '@/components/Salary';
+import Reports from '@/components/Reports';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -194,6 +199,10 @@ const Index = () => {
               </div>
             </TabsContent>
 
+            <TabsContent value="time" className="mt-0">
+              <TimeRegistration />
+            </TabsContent>
+
             <TabsContent value="inventory" className="mt-0">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold">Voorraad</h2>
@@ -242,6 +251,18 @@ const Index = () => {
             
             <TabsContent value="invoicing" className="mt-0">
               <Invoicing />
+            </TabsContent>
+
+            <TabsContent value="users" className="mt-0">
+              <Users />
+            </TabsContent>
+
+            <TabsContent value="salary" className="mt-0">
+              <Salary />
+            </TabsContent>
+
+            <TabsContent value="reports" className="mt-0">
+              <Reports />
             </TabsContent>
           </Tabs>
         </div>

@@ -1,0 +1,194 @@
+
+import { useState } from 'react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Calendar } from "@/components/ui/calendar";
+import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+export const TimeRegistration = () => {
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [activeTab, setActiveTab] = useState("overview");
+  const { toast } = useToast();
+  
+  const handleSubmitTime = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast({
+      title: "Tijd geregistreerd",
+      description: "De tijdsregistratie is succesvol opgeslagen.",
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Tijdsregistratie</h2>
+        <Button onClick={() => setActiveTab("register")}>Nieuwe registratie</Button>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="overview">Overzicht</TabsTrigger>
+          <TabsTrigger value="register">Registreren</TabsTrigger>
+          <TabsTrigger value="reports">Rapporten</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tijdsregistraties deze week</CardTitle>
+              <CardDescription>Overzicht van geregistreerde uren per project</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Datum</TableHead>
+                    <TableHead>Project</TableHead>
+                    <TableHead>Activiteit</TableHead>
+                    <TableHead>Uren</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {mockTimeEntries.map((entry) => (
+                    <TableRow key={entry.id}>
+                      <TableCell>{entry.date}</TableCell>
+                      <TableCell>{entry.project}</TableCell>
+                      <TableCell>{entry.activity}</TableCell>
+                      <TableCell>{entry.hours}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          entry.status === "Gefiatteerd" ? "bg-green-100 text-green-800" :
+                          entry.status === "In behandeling" ? "bg-yellow-100 text-yellow-800" :
+                          "bg-blue-100 text-blue-800"
+                        }`}>
+                          {entry.status}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="register" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Nieuwe tijdsregistratie</CardTitle>
+              <CardDescription>Registreer je gewerkte uren</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmitTime} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Datum</label>
+                    <Calendar
+                      mode="single"
+                      selected={date}
+                      onSelect={setDate}
+                      className="border rounded-md p-3"
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium">Project</label>
+                      <Select>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Kies project" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="project1">Renovatie woonkamer</SelectItem>
+                          <SelectItem value="project2">Nieuwe kozijnen achtergevel</SelectItem>
+                          <SelectItem value="project3">Vervangen voordeur</SelectItem>
+                          <SelectItem value="project4">Isolatieglas installatie</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Activiteit</label>
+                      <Select>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Kies activiteit" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="activity1">Opmeten</SelectItem>
+                          <SelectItem value="activity2">Installatie</SelectItem>
+                          <SelectItem value="activity3">Adviesgesprek</SelectItem>
+                          <SelectItem value="activity4">Administratie</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Uren</label>
+                      <Input type="number" step="0.5" min="0" className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Opmerkingen</label>
+                      <Input className="mt-1" />
+                    </div>
+                    <Button type="submit" className="mt-4">Registreren</Button>
+                  </div>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="reports" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Tijdsrapportage</CardTitle>
+              <CardDescription>Analyseer gewerkte uren per project en medewerker</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">Totaal deze week</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-3xl font-bold">36.5 uren</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">Gemiddeld per dag</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-3xl font-bold">7.3 uren</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">Totaal factureerbaar</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-3xl font-bold">32.0 uren</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+};
+
+const mockTimeEntries = [
+  { id: 1, date: "15-05-2025", project: "Renovatie woonkamer", activity: "Opmeten", hours: 2.5, status: "Gefiatteerd" },
+  { id: 2, date: "15-05-2025", project: "Nieuwe kozijnen achtergevel", activity: "Installatie", hours: 6, status: "Gefiatteerd" },
+  { id: 3, date: "16-05-2025", project: "Vervangen voordeur", activity: "Adviesgesprek", hours: 1, status: "In behandeling" },
+  { id: 4, date: "16-05-2025", project: "Isolatieglas installatie", activity: "Installatie", hours: 4, status: "Concept" },
+  { id: 5, date: "17-05-2025", project: "Kunststof kozijnen", activity: "Administratie", hours: 1.5, status: "Gefiatteerd" },
+];
+
+export default TimeRegistration;
