@@ -18,7 +18,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Users, Calendar as CalendarIcon, Folder, Database, Inbox } from "lucide-react";
+import { Users as UsersIcon, Calendar as CalendarIcon, Folder, Database, Inbox } from "lucide-react";
 
 import { CustomerForm } from '@/components/CustomerForm';
 import { Dashboard } from '@/components/Dashboard';
