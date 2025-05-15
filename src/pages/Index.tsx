@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
@@ -20,6 +21,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { UsersIcon, Calendar as CalendarIcon, Folder, Database, Inbox, Eye } from "lucide-react";
 
 import { CustomerForm } from '@/components/CustomerForm';
+import { ProjectForm } from '@/components/ProjectForm';
 import { Dashboard } from '@/components/Dashboard';
 import { CrmSidebar } from '@/components/CrmSidebar';
 import { ProjectsBoard } from '@/components/ProjectsBoard';
@@ -36,6 +38,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [newProjectDialogOpen, setNewProjectDialogOpen] = useState(false);
 
   // Convert mockProjects to the right format for ProjectsBoard
   const formattedProjects = mockProjects.map(project => ({
@@ -148,7 +151,20 @@ const Index = () => {
             <TabsContent value="projects" className="mt-0">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold">Projecten</h2>
-                <Button>Nieuw Project</Button>
+                <Dialog open={newProjectDialogOpen} onOpenChange={setNewProjectDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button>Nieuw Project</Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Nieuw project aanmaken</DialogTitle>
+                      <DialogDescription>
+                        Vul de projectgegevens in om een nieuw project aan te maken.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <ProjectForm onClose={() => setNewProjectDialogOpen(false)} />
+                  </DialogContent>
+                </Dialog>
               </div>
               
               <ProjectsBoard initialProjects={formattedProjects} />

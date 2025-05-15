@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Plus, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ProjectForm } from './ProjectForm';
 
 // Define project status types
 type ProjectStatus = "te-plannen" | "gepland" | "herkeuring" | "afgerond";
@@ -108,6 +110,8 @@ const ProjectCard = ({ project, index }: { project: Project, index: number }) =>
 export const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ initialProjects }) => {
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const { toast } = useToast();
+  const [newProjectDialogOpen, setNewProjectDialogOpen] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<ProjectStatus>("te-plannen");
 
   // Handle drag end event
   const handleDragEnd = (result: DropResult) => {
@@ -145,6 +149,15 @@ export const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ initialProjects })
     });
   };
 
+  const handleAddProjectClick = (status: ProjectStatus) => {
+    setSelectedStatus(status);
+    setNewProjectDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setNewProjectDialogOpen(false);
+  };
+
   // Group projects by status
   const projectsByStatus = statusColumns.reduce<Record<string, Project[]>>((acc, column) => {
     acc[column.id] = projects.filter(project => project.status === column.id);
@@ -153,6 +166,18 @@ export const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ initialProjects })
 
   return (
     <div className="mt-6">
+      <Dialog open={newProjectDialogOpen} onOpenChange={setNewProjectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nieuw project aanmaken</DialogTitle>
+            <DialogDescription>
+              Vul de projectgegevens in om een nieuw project aan te maken in {statusDisplayMap[selectedStatus]}.
+            </DialogDescription>
+          </DialogHeader>
+          <ProjectForm onClose={handleCloseDialog} />
+        </DialogContent>
+      </Dialog>
+    
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {statusColumns.map(column => (
@@ -203,12 +228,17 @@ export const ProjectsBoard: React.FC<ProjectsBoardProps> = ({ initialProjects })
                 )}
               </Droppable>
               
-              <Button size="sm" variant="ghost" className={`w-full mt-3 text-xs ${
-                column.id === "te-plannen" ? "hover:bg-red-100" :
-                column.id === "gepland" ? "hover:bg-orange-100" :
-                column.id === "herkeuring" ? "hover:bg-gray-100" :
-                "hover:bg-green-100"
-              }`}>
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                className={`w-full mt-3 text-xs ${
+                  column.id === "te-plannen" ? "hover:bg-red-100" :
+                  column.id === "gepland" ? "hover:bg-orange-100" :
+                  column.id === "herkeuring" ? "hover:bg-gray-100" :
+                  "hover:bg-green-100"
+                }`}
+                onClick={() => handleAddProjectClick(column.id as ProjectStatus)}
+              >
                 <Plus className="h-3 w-3 mr-1" />
                 Project toevoegen
               </Button>
