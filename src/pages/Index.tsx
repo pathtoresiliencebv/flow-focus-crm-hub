@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
@@ -23,10 +22,18 @@ import { Users, Calendar as CalendarIcon, Folder, Database, Inbox } from "lucide
 import { CustomerForm } from '@/components/CustomerForm';
 import { Dashboard } from '@/components/Dashboard';
 import { CrmSidebar } from '@/components/CrmSidebar';
+import { ProjectsBoard } from '@/components/ProjectsBoard';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const { toast } = useToast();
+
+  // Convert mockProjects to the right format for ProjectsBoard
+  const formattedProjects = mockProjects.map(project => ({
+    ...project,
+    id: project.id.toString(),
+    status: getProjectStatus(project.status)
+  }));
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -134,42 +141,7 @@ const Index = () => {
                 <Button>Nieuw Project</Button>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {mockProjects.map((project) => (
-                  <Card key={project.id}>
-                    <CardHeader>
-                      <CardTitle>{project.title}</CardTitle>
-                      <CardDescription>Klant: {project.customer}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">Status:</span>
-                          <span className={`text-sm font-medium ${
-                            project.status === "In uitvoering" ? "text-blue-600" :
-                            project.status === "Afgerond" ? "text-green-600" :
-                            project.status === "Gepland" ? "text-yellow-600" :
-                            "text-gray-600"
-                          }`}>
-                            {project.status}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">Datum:</span>
-                          <span className="text-sm">{project.date}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-500">Waarde:</span>
-                          <span className="text-sm font-semibold">€{project.value}</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                    <CardFooter className="flex justify-end">
-                      <Button variant="outline" size="sm">Details</Button>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
+              <ProjectsBoard initialProjects={formattedProjects} />
             </TabsContent>
 
             <TabsContent value="calendar" className="mt-0">
@@ -277,6 +249,16 @@ const Index = () => {
     </div>
   );
 };
+
+// Helper function to map project status to board status
+function getProjectStatus(status: string): "te-plannen" | "gepland" | "herkeuring" | "afgerond" {
+  switch (status) {
+    case "Gepland": return "gepland";
+    case "In uitvoering": return "te-plannen";
+    case "Afgerond": return "afgerond";
+    default: return "te-plannen";
+  }
+}
 
 // Mock data
 const mockCustomers = [
