@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
@@ -25,6 +24,7 @@ import { Dashboard } from '@/components/Dashboard';
 import { CrmSidebar } from '@/components/CrmSidebar';
 import { ProjectsBoard } from '@/components/ProjectsBoard';
 import { Invoicing, mockInvoices } from '@/components/Invoicing';
+import { NotificationsMenu } from '@/components/NotificationsMenu';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -54,13 +54,7 @@ const Index = () => {
               placeholder="Zoeken..." 
             />
             
-            <Button variant="outline" onClick={() => toast({
-              title: "Notificaties",
-              description: "U heeft geen nieuwe notificaties."
-            })}>
-              <Inbox className="mr-2 h-4 w-4" />
-              Notificaties
-            </Button>
+            <NotificationsMenu />
           </div>
         </header>
 
