@@ -10,7 +10,8 @@ import {
   Clock,
   Briefcase,
   BarChart2,
-  ShoppingCart
+  ShoppingCart,
+  Settings
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState } from "react";
@@ -38,7 +39,8 @@ export const CrmSidebar = ({ activeTab, setActiveTab }: CrmSidebarProps) => {
       { id: "users", label: "Gebruikers", icon: Users },
       { id: "salary", label: "Salaris", icon: Receipt }
     ]},
-    { id: "reports", label: "Rapportages", icon: BarChart2 }
+    { id: "reports", label: "Rapportages", icon: BarChart2 },
+    { id: "settings", label: "Instellingen", icon: Settings }
   ];
 
   return (
