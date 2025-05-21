@@ -1,15 +1,24 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CrmSidebar } from "@/components/CrmSidebar";
 import { CompanySettingsForm } from "@/components/CompanySettingsForm";
 import { InvoiceSettingsForm } from "@/components/InvoiceSettingsForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NotificationsMenu } from "@/components/NotificationsMenu";
 import { SearchInput } from "@/components/SearchInput";
+import { toast } from "@/hooks/use-toast";
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState("settings");
   const [activeSettingsTab, setActiveSettingsTab] = useState("company");
+
+  // Show a welcome toast when the page loads
+  useEffect(() => {
+    toast({
+      title: "Instellingen geladen",
+      description: "Pas uw bedrijfs- en factuurgegevens aan naar wens.",
+    });
+  }, []);
 
   return (
     <div className="flex h-screen bg-gray-50">

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 
 interface CrmSidebarProps {
   activeTab: string;
@@ -22,25 +23,26 @@ interface CrmSidebarProps {
 }
 
 export const CrmSidebar = ({ activeTab, setActiveTab }: CrmSidebarProps) => {
+  const location = useLocation();
   // Track submenu states
   const [personnelOpen, setPersonnelOpen] = useState(
     activeTab === "personnel" || activeTab === "users" || activeTab === "salary"
   );
   
   const menuItems = [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { id: "customers", label: "Klanten", icon: Users },
-    { id: "projects", label: "Projecten", icon: Folder },
-    { id: "calendar", label: "Planning", icon: Calendar },
-    { id: "time", label: "Tijdsregistratie", icon: Clock },
-    { id: "inventory", label: "Inkoop", icon: ShoppingCart },
-    { id: "invoicing", label: "Facturering", icon: Receipt },
+    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/" },
+    { id: "customers", label: "Klanten", icon: Users, path: "/" },
+    { id: "projects", label: "Projecten", icon: Folder, path: "/" },
+    { id: "calendar", label: "Planning", icon: Calendar, path: "/" },
+    { id: "time", label: "Tijdsregistratie", icon: Clock, path: "/" },
+    { id: "inventory", label: "Inkoop", icon: ShoppingCart, path: "/" },
+    { id: "invoicing", label: "Facturering", icon: Receipt, path: "/" },
     { id: "personnel", label: "Personeelszaken", icon: Briefcase, subItems: [
-      { id: "users", label: "Gebruikers", icon: Users },
-      { id: "salary", label: "Salaris", icon: Receipt }
+      { id: "users", label: "Gebruikers", icon: Users, path: "/" },
+      { id: "salary", label: "Salaris", icon: Receipt, path: "/" }
     ]},
-    { id: "reports", label: "Rapportages", icon: BarChart2 },
-    { id: "settings", label: "Instellingen", icon: Settings }
+    { id: "reports", label: "Rapportages", icon: BarChart2, path: "/" },
+    { id: "settings", label: "Instellingen", icon: Settings, path: "/settings" }
   ];
 
   return (
@@ -112,10 +114,15 @@ export const CrmSidebar = ({ activeTab, setActiveTab }: CrmSidebarProps) => {
                 className={`w-full justify-start ${
                   activeTab === item.id ? "bg-blue-600 hover:bg-blue-700" : ""
                 }`}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => {
+                  setActiveTab(item.id);
+                }}
+                asChild
               >
-                <item.icon className="mr-2 h-5 w-5" />
-                {item.label}
+                <Link to={item.path}>
+                  <item.icon className="mr-2 h-5 w-5" />
+                  {item.label}
+                </Link>
               </Button>
             )}
           </div>
