@@ -16,9 +16,8 @@ import {
 } from "@/components/ui/table";
 import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { UsersIcon, Calendar as CalendarIcon, Folder, Database, Inbox, Eye } from "lucide-react";
+import { UsersIcon, Calendar as CalendarIcon, Folder, Database, Inbox, Eye, Edit, Trash2 } from "lucide-react";
 
 import { CustomerForm } from '@/components/CustomerForm';
 import { ProjectForm } from '@/components/ProjectForm';
@@ -30,26 +29,41 @@ import { NotificationsMenu } from '@/components/NotificationsMenu';
 import TimeRegistration from '@/components/TimeRegistration';
 import Personnel from '@/components/Personnel';
 import Reports from '@/components/Reports';
+import { useCrmStore } from '@/hooks/useCrmStore';
 
 // Import mock data from the central location
-import { mockCustomers, mockProjects, mockAppointments, mockInventory } from '@/data/mockData';
+import { mockAppointments, mockInventory } from '@/data/mockData';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
-  const { toast } = useToast();
+  const { customers, deleteCustomer } = useCrmStore();
   const navigate = useNavigate();
   const [newProjectDialogOpen, setNewProjectDialogOpen] = useState(false);
+  const [newCustomerDialogOpen, setNewCustomerDialogOpen] = useState(false);
+  const [editCustomerDialogOpen, setEditCustomerDialogOpen] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Convert mockProjects to the right format for ProjectsBoard
-  const formattedProjects = mockProjects.map(project => ({
-    ...project,
-    id: project.id.toString(),
-    status: getProjectStatus(project.status)
-  }));
+  // Filter customers based on search term
+  const filteredCustomers = customers.filter(customer =>
+    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    customer.phone.includes(searchTerm)
+  );
 
-  // Function to navigate to customer details
   const handleCustomerClick = (customerId: number) => {
     navigate(`/customers/${customerId}`);
+  };
+
+  const handleEditCustomer = (customer: any) => {
+    setEditingCustomer(customer);
+    setEditCustomerDialogOpen(true);
+  };
+
+  const handleDeleteCustomer = (customerId: number, customerName: string) => {
+    if (window.confirm(`Weet je zeker dat je klant "${customerName}" wilt verwijderen?`)) {
+      deleteCustomer(customerId);
+    }
   };
 
   return (
@@ -67,6 +81,8 @@ const Index = () => {
             <Input 
               className="max-w-xs" 
               placeholder="Zoeken..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
             
             <NotificationsMenu />
@@ -83,7 +99,7 @@ const Index = () => {
             <TabsContent value="customers" className="mt-0">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold">Klanten</h2>
-                <Dialog>
+                <Dialog open={newCustomerDialogOpen} onOpenChange={setNewCustomerDialogOpen}>
                   <DialogTrigger asChild>
                     <Button>Nieuwe Klant</Button>
                   </DialogTrigger>
@@ -94,7 +110,7 @@ const Index = () => {
                         Vul de klantgegevens in om een nieuwe klant toe te voegen aan het systeem.
                       </DialogDescription>
                     </DialogHeader>
-                    <CustomerForm onClose={() => {}} />
+                    <CustomerForm onClose={() => setNewCustomerDialogOpen(false)} />
                   </DialogContent>
                 </Dialog>
               </div>
@@ -107,16 +123,18 @@ const Index = () => {
                         <TableHead>Naam</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Telefoon</TableHead>
+                        <TableHead>Plaats</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Acties</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {mockCustomers.map((customer) => (
+                      {filteredCustomers.map((customer) => (
                         <TableRow key={customer.id} className="cursor-pointer hover:bg-gray-50" onClick={() => handleCustomerClick(customer.id)}>
                           <TableCell className="font-medium">{customer.name}</TableCell>
                           <TableCell>{customer.email}</TableCell>
                           <TableCell>{customer.phone}</TableCell>
+                          <TableCell>{customer.city}</TableCell>
                           <TableCell>
                             <span className={`px-2 py-1 rounded-full text-xs ${
                               customer.status === "Actief" ? "bg-green-100 text-green-800" :
@@ -127,18 +145,34 @@ const Index = () => {
                             </span>
                           </TableCell>
                           <TableCell>
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="flex items-center gap-1"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCustomerClick(customer.id);
-                              }}
-                            >
-                              <Eye className="h-4 w-4" />
-                              Details
-                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  Acties
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleCustomerClick(customer.id)}>
+                                  <Eye className="mr-2 h-4 w-4" />
+                                  Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEditCustomer(customer)}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Bewerken
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleDeleteCustomer(customer.id, customer.name)}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Verwijderen
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -167,7 +201,7 @@ const Index = () => {
                 </Dialog>
               </div>
               
-              <ProjectsBoard initialProjects={formattedProjects} />
+              <ProjectsBoard />
             </TabsContent>
 
             <TabsContent value="calendar" className="mt-0">
@@ -296,18 +330,27 @@ const Index = () => {
           </Tabs>
         </div>
       </div>
+
+      {/* Edit Customer Dialog */}
+      <Dialog open={editCustomerDialogOpen} onOpenChange={setEditCustomerDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Klant bewerken</DialogTitle>
+            <DialogDescription>
+              Pas de klantgegevens aan.
+            </DialogDescription>
+          </DialogHeader>
+          <CustomerForm 
+            onClose={() => {
+              setEditCustomerDialogOpen(false);
+              setEditingCustomer(null);
+            }} 
+            existingCustomer={editingCustomer}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
-
-// Helper function to map project status to board status
-function getProjectStatus(status: string): "te-plannen" | "gepland" | "herkeuring" | "afgerond" {
-  switch (status) {
-    case "Gepland": return "gepland";
-    case "In uitvoering": return "te-plannen";
-    case "Afgerond": return "afgerond";
-    default: return "te-plannen";
-  }
-}
 
 export default Index;

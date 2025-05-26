@@ -1,178 +1,173 @@
 
-import React from 'react';
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-import { mockCustomers } from '@/data/mockData';
-
-// Define the form schema
-const formSchema = z.object({
-  title: z.string().min(3, {
-    message: "Projectnaam moet minimaal 3 karakters bevatten.",
-  }),
-  customer: z.string().min(1, {
-    message: "Selecteer een klant.",
-  }),
-  date: z.string().min(1, {
-    message: "Datum is verplicht.",
-  }),
-  value: z.string().min(1, {
-    message: "Waarde is verplicht.",
-  }),
-  status: z.enum(["Te plannen", "Gepland", "In uitvoering", "Herkeuring", "Afgerond"]),
-});
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useCrmStore, Project } from "@/hooks/useCrmStore";
 
 interface ProjectFormProps {
   onClose: () => void;
+  initialStatus?: "te-plannen" | "gepland" | "herkeuring" | "afgerond";
+  existingProject?: Project;
 }
 
-export const ProjectForm: React.FC<ProjectFormProps> = ({ onClose }) => {
-  const { toast } = useToast();
-  
-  // Define the form
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: "",
-      customer: "",
-      date: new Date().toISOString().split('T')[0],
-      value: "",
-      status: "Te plannen",
-    },
+export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingProject }: ProjectFormProps) => {
+  const { addProject, updateProject, customers } = useCrmStore();
+  const [formData, setFormData] = useState({
+    title: existingProject?.title || "",
+    customerId: existingProject?.customerId?.toString() || "",
+    date: existingProject?.date || "",
+    value: existingProject?.value || "",
+    status: existingProject?.status || initialStatus,
+    description: existingProject?.description || "",
   });
 
-  // Handle form submission
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // In a real app, we would send this to the backend
-    // For now, we'll just show a success toast
-    toast({
-      title: "Project aangemaakt",
-      description: `Project "${values.title}" is succesvol aangemaakt.`,
-    });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleCustomerChange = (customerId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      customerId,
+    }));
+  };
+
+  const handleStatusChange = (status: "te-plannen" | "gepland" | "herkeuring" | "afgerond") => {
+    setFormData((prev) => ({
+      ...prev,
+      status,
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const selectedCustomer = customers.find(c => c.id.toString() === formData.customerId);
+    if (!selectedCustomer) return;
+
+    const projectData = {
+      title: formData.title,
+      customer: selectedCustomer.name,
+      customerId: selectedCustomer.id,
+      date: formData.date,
+      value: formData.value,
+      status: formData.status,
+      description: formData.description,
+    };
+
+    if (existingProject) {
+      updateProject(existingProject.id, projectData);
+    } else {
+      addProject(projectData);
+    }
     
     onClose();
-  }
+  };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Projectnaam</FormLabel>
-              <FormControl>
-                <Input placeholder="Voer projectnaam in" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="customer"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Klant</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecteer een klant" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {mockCustomers.map(customer => (
-                    <SelectItem key={customer.id} value={customer.name}>
-                      {customer.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="date"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Datum</FormLabel>
-              <FormControl>
-                <Input type="date" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="value"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Projectwaarde (€)</FormLabel>
-              <FormControl>
-                <Input type="number" placeholder="0.00" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="status"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Status</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecteer status" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="Te plannen">Te plannen</SelectItem>
-                  <SelectItem value="Gepland">Gepland</SelectItem>
-                  <SelectItem value="In uitvoering">In uitvoering</SelectItem>
-                  <SelectItem value="Herkeuring">Herkeuring</SelectItem>
-                  <SelectItem value="Afgerond">Afgerond</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <div className="flex justify-end space-x-2 pt-4">
-          <Button type="button" variant="outline" onClick={onClose}>
-            Annuleren
-          </Button>
-          <Button type="submit">Project aanmaken</Button>
+    <form onSubmit={handleSubmit}>
+      <div className="grid gap-4 py-4">
+        <div className="space-y-2">
+          <Label htmlFor="title">Projectnaam *</Label>
+          <Input
+            id="title"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            placeholder="Bijvoorbeeld: Kozijnen vervangen"
+            required
+          />
         </div>
-      </form>
-    </Form>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="customer">Klant *</Label>
+            <Select value={formData.customerId} onValueChange={handleCustomerChange} required>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecteer klant" />
+              </SelectTrigger>
+              <SelectContent>
+                {customers.map((customer) => (
+                  <SelectItem key={customer.id} value={customer.id.toString()}>
+                    {customer.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="status">Status</Label>
+            <Select value={formData.status} onValueChange={handleStatusChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecteer status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="te-plannen">Te plannen</SelectItem>
+                <SelectItem value="gepland">Gepland</SelectItem>
+                <SelectItem value="herkeuring">Herkeuring</SelectItem>
+                <SelectItem value="afgerond">Afgerond</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="date">Geplande datum</Label>
+            <Input
+              id="date"
+              name="date"
+              type="date"
+              value={formData.date}
+              onChange={handleChange}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="value">Projectwaarde (€)</Label>
+            <Input
+              id="value"
+              name="value"
+              type="number"
+              min="0"
+              step="0.01"
+              value={formData.value}
+              onChange={handleChange}
+              placeholder="0.00"
+            />
+          </div>
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="description">Beschrijving</Label>
+          <Textarea
+            id="description"
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            rows={3}
+            placeholder="Beschrijf het project..."
+          />
+        </div>
+      </div>
+      
+      <DialogFooter>
+        <Button variant="outline" type="button" onClick={onClose}>
+          Annuleren
+        </Button>
+        <Button type="submit">
+          {existingProject ? "Bijwerken" : "Aanmaken"}
+        </Button>
+      </DialogFooter>
+    </form>
   );
 };

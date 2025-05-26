@@ -4,24 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
 import { DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useCrmStore, Customer } from "@/hooks/useCrmStore";
 
 interface CustomerFormProps {
   onClose: () => void;
-  existingCustomer?: {
-    id: number;
-    name: string;
-    email: string;
-    phone: string;
-    address: string;
-    city: string;
-    notes: string;
-  };
+  existingCustomer?: Customer;
 }
 
 export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) => {
-  const { toast } = useToast();
+  const { addCustomer, updateCustomer } = useCrmStore();
   const [formData, setFormData] = useState({
     name: existingCustomer?.name || "",
     email: existingCustomer?.email || "",
@@ -29,6 +22,7 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
     address: existingCustomer?.address || "",
     city: existingCustomer?.city || "",
     notes: existingCustomer?.notes || "",
+    status: existingCustomer?.status || "Actief" as const,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -39,15 +33,21 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
     }));
   };
 
+  const handleStatusChange = (status: "Actief" | "In behandeling" | "Inactief") => {
+    setFormData((prev) => ({
+      ...prev,
+      status,
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Here you would typically save the customer data to your database
-    // For now, we'll just show a success toast
-    toast({
-      title: "Klant opgeslagen",
-      description: `${existingCustomer ? "Bijgewerkt" : "Toegevoegd"}: ${formData.name}`,
-    });
+    if (existingCustomer) {
+      updateCustomer(existingCustomer.id, formData);
+    } else {
+      addCustomer(formData);
+    }
     
     onClose();
   };
@@ -57,7 +57,7 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
       <div className="grid gap-4 py-4">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Naam</Label>
+            <Label htmlFor="name">Naam *</Label>
             <Input
               id="name"
               name="name"
@@ -67,7 +67,7 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">Email *</Label>
             <Input
               id="email"
               name="email"
@@ -81,7 +81,7 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
         
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="phone">Telefoonnummer</Label>
+            <Label htmlFor="phone">Telefoonnummer *</Label>
             <Input
               id="phone"
               name="phone"
@@ -109,6 +109,20 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
             value={formData.address}
             onChange={handleChange}
           />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="status">Status</Label>
+          <Select value={formData.status} onValueChange={handleStatusChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecteer status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Actief">Actief</SelectItem>
+              <SelectItem value="In behandeling">In behandeling</SelectItem>
+              <SelectItem value="Inactief">Inactief</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         
         <div className="space-y-2">

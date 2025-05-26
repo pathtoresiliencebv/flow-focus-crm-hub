@@ -2,15 +2,26 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { Area, AreaChart, Bar, BarChart, XAxis, YAxis, Legend, ResponsiveContainer, Tooltip } from "recharts";
+import { useCrmStore } from "@/hooks/useCrmStore";
 
 export const Dashboard = () => {
-  // Mock data for charts
+  const { customers, projects } = useCrmStore();
+
+  // Calculate real statistics
+  const totalCustomers = customers.length;
+  const activeProjects = projects.filter(p => p.status !== "afgerond").length;
+  const totalRevenue = projects
+    .filter(p => p.status === "afgerond")
+    .reduce((sum, p) => sum + parseFloat(p.value || "0"), 0);
+  const plannedProjects = projects.filter(p => p.status === "gepland").length;
+
+  // Mock data for charts (in a real app, this would come from your database)
   const revenueData = [
     { name: "Jan", totaal: 4200 },
     { name: "Feb", totaal: 4800 },
     { name: "Mrt", totaal: 5600 },
     { name: "Apr", totaal: 6200 },
-    { name: "Mei", totaal: 7500 },
+    { name: "Mei", totaal: Math.round(totalRevenue) },
   ];
 
   const projectData = [
@@ -18,15 +29,36 @@ export const Dashboard = () => {
     { name: "Feb", afgerond: 10, nieuw: 9 },
     { name: "Mrt", afgerond: 12, nieuw: 15 },
     { name: "Apr", afgerond: 15, nieuw: 11 },
-    { name: "Mei", afgerond: 8, nieuw: 14 },
+    { name: "Mei", afgerond: projects.filter(p => p.status === "afgerond").length, nieuw: projects.filter(p => p.status === "te-plannen").length },
   ];
 
+  const statusCounts = {
+    "te-plannen": projects.filter(p => p.status === "te-plannen").length,
+    "gepland": projects.filter(p => p.status === "gepland").length,
+    "herkeuring": projects.filter(p => p.status === "herkeuring").length,
+    "afgerond": projects.filter(p => p.status === "afgerond").length,
+  };
+
   const kozijnenData = [
-    { name: "Kunststof", waarde: 28 },
-    { name: "Aluminium", waarde: 22 },
-    { name: "Hout", waarde: 18 },
-    { name: "Composiet", waarde: 12 },
+    { name: "Te plannen", waarde: statusCounts["te-plannen"] },
+    { name: "Gepland", waarde: statusCounts["gepland"] },
+    { name: "Herkeuring", waarde: statusCounts["herkeuring"] },
+    { name: "Afgerond", waarde: statusCounts["afgerond"] },
   ];
+
+  // Recent activities based on real data
+  const recentActivities = [
+    ...customers.slice(-2).map(customer => ({
+      description: `Nieuwe klant geregistreerd: ${customer.name}`,
+      timestamp: new Date(customer.createdAt).toLocaleDateString('nl-NL'),
+      color: "bg-purple-500"
+    })),
+    ...projects.slice(-3).map(project => ({
+      description: `Project "${project.title}" aangemaakt voor ${project.customer}`,
+      timestamp: new Date(project.createdAt).toLocaleDateString('nl-NL'),
+      color: project.status === "afgerond" ? "bg-green-500" : "bg-blue-500"
+    }))
+  ].slice(0, 5);
 
   return (
     <div className="space-y-6">
@@ -37,40 +69,40 @@ export const Dashboard = () => {
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Totale Klanten</CardDescription>
-            <CardTitle className="text-3xl">142</CardTitle>
+            <CardTitle className="text-3xl">{totalCustomers}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-green-600 font-semibold">+12% t.o.v. vorige maand</p>
+            <p className="text-xs text-green-600 font-semibold">Actieve klanten</p>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Actieve Projecten</CardDescription>
-            <CardTitle className="text-3xl">27</CardTitle>
+            <CardTitle className="text-3xl">{activeProjects}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-yellow-600 font-semibold">+3% t.o.v. vorige maand</p>
+            <p className="text-xs text-yellow-600 font-semibold">In behandeling</p>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Maandomzet</CardDescription>
-            <CardTitle className="text-3xl">€8.745</CardTitle>
+            <CardDescription>Totale Omzet</CardDescription>
+            <CardTitle className="text-3xl">€{totalRevenue.toLocaleString('nl-NL')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-green-600 font-semibold">+18% t.o.v. vorige maand</p>
+            <p className="text-xs text-green-600 font-semibold">Afgeronde projecten</p>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Geplande Afspraken</CardDescription>
-            <CardTitle className="text-3xl">14</CardTitle>
+            <CardDescription>Geplande Projecten</CardDescription>
+            <CardTitle className="text-3xl">{plannedProjects}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-blue-600 font-semibold">Voor de komende week</p>
+            <p className="text-xs text-blue-600 font-semibold">Deze maand</p>
           </CardContent>
         </Card>
       </div>
@@ -143,49 +175,14 @@ export const Dashboard = () => {
         
         <Card>
           <CardHeader>
-            <CardTitle>Projecten</CardTitle>
-            <CardDescription>Nieuwe en afgeronde projecten per maand</CardDescription>
+            <CardTitle>Project Status</CardTitle>
+            <CardDescription>Huidige verdeling van projectstatussen</CardDescription>
           </CardHeader>
           <CardContent className="h-80">
             <ChartContainer
               config={{
-                nieuw: {
-                  label: "Nieuwe Projecten",
-                  color: "#4f46e5",
-                },
-                afgerond: {
-                  label: "Afgeronde Projecten",
-                  color: "#10b981",
-                },
-              }}
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={projectData}>
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="nieuw" fill="#4f46e5" />
-                  <Bar dataKey="afgerond" fill="#10b981" />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* More stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle>Kozijn Types</CardTitle>
-            <CardDescription>Meest verkochte kozijn types</CardDescription>
-          </CardHeader>
-          <CardContent className="h-60">
-            <ChartContainer
-              config={{
                 waarde: {
-                  label: "Aantal verkocht",
+                  label: "Aantal projecten",
                   color: "#4f46e5",
                 },
               }}
@@ -201,22 +198,29 @@ export const Dashboard = () => {
             </ChartContainer>
           </CardContent>
         </Card>
-        
-        <Card className="col-span-1 md:col-span-2">
+      </div>
+      
+      {/* Recent Activities */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="col-span-1 md:col-span-3">
           <CardHeader>
             <CardTitle>Recente Activiteiten</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {activities.map((activity, index) => (
-                <div key={index} className="flex items-start">
-                  <div className={`w-2 h-2 mt-2 rounded-full ${activity.color}`}></div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium">{activity.description}</p>
-                    <p className="text-xs text-gray-500">{activity.timestamp}</p>
+              {recentActivities.length > 0 ? (
+                recentActivities.map((activity, index) => (
+                  <div key={index} className="flex items-start">
+                    <div className={`w-2 h-2 mt-2 rounded-full ${activity.color}`}></div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium">{activity.description}</p>
+                      <p className="text-xs text-gray-500">{activity.timestamp}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-gray-500">Nog geen activiteiten</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -224,11 +228,3 @@ export const Dashboard = () => {
     </div>
   );
 };
-
-const activities = [
-  { description: "Nieuw project aangemaakt voor Jan de Vries", timestamp: "Vandaag, 09:45", color: "bg-blue-500" },
-  { description: "Offerte #2458 is goedgekeurd door Marie Jansen", timestamp: "Vandaag, 09:32", color: "bg-green-500" },
-  { description: "Nieuwe klant geregistreerd: Pieter Janssen", timestamp: "Gisteren, 14:20", color: "bg-purple-500" },
-  { description: "Afspraak ingepland met Sara Visser", timestamp: "Gisteren, 11:15", color: "bg-yellow-500" },
-  { description: "Project #156 is afgerond", timestamp: "2 dagen geleden", color: "bg-green-500" },
-];
