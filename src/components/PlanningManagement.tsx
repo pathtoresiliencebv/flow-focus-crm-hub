@@ -180,10 +180,10 @@ export const PlanningManagement = () => {
               Nieuwe Planning voor {selectedDate ? format(selectedDate, 'dd/MM', { locale: nl }) : 'Selecteer datum'}
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Nieuwe planning voor {formatSelectedDate()}</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-xl font-semibold">Nieuwe planning aanmaken</DialogTitle>
+              <DialogDescription className="text-base">
                 Plan werk in voor een monteur op {formatSelectedDate()}.
               </DialogDescription>
             </DialogHeader>
@@ -191,74 +191,128 @@ export const PlanningManagement = () => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
               handleCreatePlanning(formData);
-            }} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Datum</label>
-                  <Input 
-                    type="text" 
-                    value={formatSelectedDate()}
-                    disabled 
-                    className="mt-1 bg-gray-50" 
-                  />
+            }} className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Left Column - Form Fields */}
+                <div className="space-y-6">
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h3 className="font-medium text-blue-900 mb-3 flex items-center gap-2">
+                      <CalendarIcon className="h-4 w-4" />
+                      Planning Details
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Datum</label>
+                        <Input 
+                          type="text" 
+                          value={formatSelectedDate()}
+                          disabled 
+                          className="bg-white border-blue-200 focus:border-blue-400" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Tijd</label>
+                        <Input 
+                          type="time" 
+                          name="time" 
+                          required 
+                          className="bg-white border-blue-200 focus:border-blue-400" 
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                    <h3 className="font-medium text-green-900 mb-3 flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Personeel & Project
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Monteur</label>
+                        <Select name="employee" required>
+                          <SelectTrigger className="bg-white border-green-200 focus:border-green-400">
+                            <SelectValue placeholder="Kies monteur" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-white">
+                            {installers.map((installer) => (
+                              <SelectItem key={installer.id} value={installer.id.toString()}>
+                                {installer.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Project</label>
+                        <Select name="project" required>
+                          <SelectTrigger className="bg-white border-green-200 focus:border-green-400">
+                            <SelectValue placeholder="Kies project" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-white">
+                            {projects.map((project) => (
+                              <SelectItem key={project.id} value={project.id}>
+                                {project.title} - {project.customer}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                    <h3 className="font-medium text-orange-900 mb-3 flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Locatie & Beschrijving
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Beschrijving</label>
+                        <Input 
+                          name="description" 
+                          className="bg-white border-orange-200 focus:border-orange-400" 
+                          placeholder="Omschrijving van het werk" 
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium">Tijd</label>
-                  <Input type="time" name="time" required className="mt-1" />
+
+                {/* Right Column - Location Map */}
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <h3 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Werk Locatie
+                  </h3>
+                  <div className="bg-white rounded-lg p-4 border">
+                    <LocationMapInput
+                      value={locationValue}
+                      onChange={setLocationValue}
+                      placeholder="Zoek adres of locatie..."
+                    />
+                  </div>
                 </div>
               </div>
-              <div>
-                <label className="text-sm font-medium">Monteur</label>
-                <Select name="employee" required>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Kies monteur" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {installers.map((installer) => (
-                      <SelectItem key={installer.id} value={installer.id.toString()}>
-                        {installer.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Project</label>
-                <Select name="project" required>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Kies project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projects.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.title} - {project.customer}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Locatie</label>
-                <div className="mt-1">
-                  <LocationMapInput
-                    value={locationValue}
-                    onChange={setLocationValue}
-                    placeholder="Zoek adres of locatie..."
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Beschrijving</label>
-                <Input name="description" className="mt-1" placeholder="Omschrijving van het werk" />
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => {
-                  setNewPlanningDialogOpen(false);
-                  setLocationValue("");
-                }}>
+
+              <DialogFooter className="pt-6 border-t">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setNewPlanningDialogOpen(false);
+                    setLocationValue("");
+                  }}
+                  className="px-6"
+                >
                   Annuleren
                 </Button>
-                <Button type="submit">Planning Aanmaken</Button>
+                <Button 
+                  type="submit"
+                  className="px-6 bg-blue-600 hover:bg-blue-700"
+                >
+                  Planning Aanmaken
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
