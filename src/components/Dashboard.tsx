@@ -3,6 +3,49 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { Area, AreaChart, Bar, BarChart, XAxis, YAxis, Legend, ResponsiveContainer, Tooltip } from "recharts";
 import { useCrmStore } from "@/hooks/useCrmStore";
+import { Calendar, Clock, MapPin, User } from "lucide-react";
+import { format, isToday, isTomorrow, addDays } from "date-fns";
+import { nl } from "date-fns/locale";
+
+// Mock planning data (in a real app, this would come from your planning store)
+const mockPlanningItems = [
+  {
+    id: "1",
+    date: "2025-05-26",
+    time: "09:00",
+    employee: "Peter Bakker",
+    project: "Kozijnen vervangen",
+    location: "Hoofdstraat 123, Amsterdam",
+    status: "Gepland"
+  },
+  {
+    id: "2",
+    date: "2025-05-26",
+    time: "14:00",
+    employee: "Peter Bakker",
+    project: "Nieuwe ramen installeren",
+    location: "Kerkstraat 45, Utrecht",
+    status: "Bevestigd"
+  },
+  {
+    id: "3",
+    date: "2025-05-27",
+    time: "10:00",
+    employee: "Peter Bakker",
+    project: "Kozijnen vervangen",
+    location: "Marktplein 12, Rotterdam",
+    status: "Gepland"
+  },
+  {
+    id: "4",
+    date: "2025-05-27",
+    time: "15:30",
+    employee: "Peter Bakker",
+    project: "Onderhoud kozijnen",
+    location: "Dorpsstraat 89, Haarlem",
+    status: "Gepland"
+  }
+];
 
 export const Dashboard = () => {
   const { customers, projects } = useCrmStore();
@@ -45,6 +88,30 @@ export const Dashboard = () => {
     { name: "Herkeuring", waarde: statusCounts["herkeuring"] },
     { name: "Afgerond", waarde: statusCounts["afgerond"] },
   ];
+
+  // Get today's and tomorrow's planning
+  const today = new Date();
+  const tomorrow = addDays(today, 1);
+  
+  const todayPlannings = mockPlanningItems.filter(item => {
+    const itemDate = new Date(item.date);
+    return isToday(itemDate);
+  });
+
+  const tomorrowPlannings = mockPlanningItems.filter(item => {
+    const itemDate = new Date(item.date);
+    return isTomorrow(itemDate);
+  });
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Gepland": return "bg-blue-100 text-blue-800";
+      case "Bevestigd": return "bg-green-100 text-green-800";
+      case "Afgerond": return "bg-gray-100 text-gray-800";
+      case "Geannuleerd": return "bg-red-100 text-red-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
 
   // Recent activities based on real data
   const recentActivities = [
@@ -103,6 +170,105 @@ export const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <p className="text-xs text-red-600 font-semibold">Deze maand</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Planning Agenda Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-smans-primary" />
+              Vandaag - {format(today, 'EEEE dd MMMM', { locale: nl })}
+            </CardTitle>
+            <CardDescription>
+              {todayPlannings.length > 0 
+                ? `${todayPlannings.length} afspraak${todayPlannings.length > 1 ? 'en' : ''} gepland`
+                : "Geen afspraken vandaag"
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {todayPlannings.length === 0 ? (
+              <div className="text-center py-4 text-muted-foreground">
+                Geen planning voor vandaag
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {todayPlannings.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                    <div className="flex items-center gap-3">
+                      <div className="text-sm font-medium text-smans-primary min-w-[45px]">{item.time}</div>
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{item.project}</div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-3 mt-1">
+                          <div className="flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            {item.employee}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {item.location}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
+                      {item.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-smans-primary" />
+              Morgen - {format(tomorrow, 'EEEE dd MMMM', { locale: nl })}
+            </CardTitle>
+            <CardDescription>
+              {tomorrowPlannings.length > 0 
+                ? `${tomorrowPlannings.length} afspraak${tomorrowPlannings.length > 1 ? 'en' : ''} gepland`
+                : "Geen afspraken morgen"
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {tomorrowPlannings.length === 0 ? (
+              <div className="text-center py-4 text-muted-foreground">
+                Geen planning voor morgen
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {tomorrowPlannings.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                    <div className="flex items-center gap-3">
+                      <div className="text-sm font-medium text-smans-primary min-w-[45px]">{item.time}</div>
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{item.project}</div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-3 mt-1">
+                          <div className="flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            {item.employee}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {item.location}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
+                      {item.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
