@@ -51,12 +51,12 @@ export const Dashboard = () => {
     ...customers.slice(-2).map(customer => ({
       description: `Nieuwe klant geregistreerd: ${customer.name}`,
       timestamp: new Date(customer.createdAt).toLocaleDateString('nl-NL'),
-      color: "bg-purple-500"
+      color: "bg-red-600"
     })),
     ...projects.slice(-3).map(project => ({
       description: `Project "${project.title}" aangemaakt voor ${project.customer}`,
       timestamp: new Date(project.createdAt).toLocaleDateString('nl-NL'),
-      color: project.status === "afgerond" ? "bg-green-500" : "bg-blue-500"
+      color: project.status === "afgerond" ? "bg-green-500" : "bg-red-600"
     }))
   ].slice(0, 5);
 
@@ -102,7 +102,7 @@ export const Dashboard = () => {
             <CardTitle className="text-3xl">{plannedProjects}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-blue-600 font-semibold">Deze maand</p>
+            <p className="text-xs text-red-600 font-semibold">Deze maand</p>
           </CardContent>
         </Card>
       </div>
@@ -119,7 +119,7 @@ export const Dashboard = () => {
               config={{
                 totaal: {
                   label: "Omzet",
-                  color: "#4f46e5",
+                  color: "#aa1917",
                 },
               }}
             >
@@ -127,8 +127,8 @@ export const Dashboard = () => {
                 <AreaChart data={revenueData}>
                   <defs>
                     <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#4f46e5" stopOpacity={0.1}/>
+                      <stop offset="5%" stopColor="#aa1917" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#aa1917" stopOpacity={0.1}/>
                     </linearGradient>
                   </defs>
                   <XAxis dataKey="name" />
@@ -163,7 +163,7 @@ export const Dashboard = () => {
                   <Area
                     type="monotone"
                     dataKey="totaal"
-                    stroke="#4f46e5"
+                    stroke="#aa1917"
                     fillOpacity={1}
                     fill="url(#colorUv)"
                   />
@@ -183,7 +183,7 @@ export const Dashboard = () => {
               config={{
                 waarde: {
                   label: "Aantal projecten",
-                  color: "#4f46e5",
+                  color: "#aa1917",
                 },
               }}
             >
@@ -192,7 +192,7 @@ export const Dashboard = () => {
                   <XAxis type="number" />
                   <YAxis dataKey="name" type="category" />
                   <Tooltip />
-                  <Bar dataKey="waarde" fill="#4f46e5" />
+                  <Bar dataKey="waarde" fill="#aa1917" />
                 </BarChart>
               </ResponsiveContainer>
             </ChartContainer>
