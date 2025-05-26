@@ -45,6 +45,10 @@ export const CrmSidebar = ({ activeTab, setActiveTab }: CrmSidebarProps) => {
     { id: "settings", label: "Instellingen", icon: Settings, path: "/settings" }
   ];
 
+  const handleMenuClick = (itemId: string) => {
+    setActiveTab(itemId);
+  };
+
   return (
     <div className="bg-white border-r border-gray-200 w-64 flex flex-col">
       {/* Logo */}
@@ -67,6 +71,7 @@ export const CrmSidebar = ({ activeTab, setActiveTab }: CrmSidebarProps) => {
                     className={`w-full justify-between ${
                       activeTab === item.id ? "bg-blue-600 hover:bg-blue-700" : ""
                     }`}
+                    onClick={() => handleMenuClick(item.id)}
                   >
                     <div className="flex items-center">
                       <item.icon className="mr-2 h-5 w-5" />
@@ -99,7 +104,7 @@ export const CrmSidebar = ({ activeTab, setActiveTab }: CrmSidebarProps) => {
                         className={`w-full justify-start text-sm ${
                           activeTab === subItem.id ? "bg-blue-600 hover:bg-blue-700" : ""
                         }`}
-                        onClick={() => setActiveTab(subItem.id)}
+                        onClick={() => handleMenuClick(subItem.id)}
                       >
                         <subItem.icon className="mr-2 h-4 w-4" />
                         {subItem.label}
@@ -114,15 +119,10 @@ export const CrmSidebar = ({ activeTab, setActiveTab }: CrmSidebarProps) => {
                 className={`w-full justify-start ${
                   activeTab === item.id ? "bg-blue-600 hover:bg-blue-700" : ""
                 }`}
-                onClick={() => {
-                  setActiveTab(item.id);
-                }}
-                asChild
+                onClick={() => handleMenuClick(item.id)}
               >
-                <Link to={item.path}>
-                  <item.icon className="mr-2 h-5 w-5" />
-                  {item.label}
-                </Link>
+                <item.icon className="mr-2 h-5 w-5" />
+                {item.label}
               </Button>
             )}
           </div>
