@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
@@ -30,6 +29,7 @@ import TimeRegistration from '@/components/TimeRegistration';
 import Personnel from '@/components/Personnel';
 import Reports from '@/components/Reports';
 import { useCrmStore } from '@/hooks/useCrmStore';
+import PlanningManagement from '@/components/PlanningManagement';
 
 // Import mock data from the central location
 import { mockAppointments, mockInventory } from '@/data/mockData';
@@ -205,57 +205,7 @@ const Index = () => {
             </TabsContent>
 
             <TabsContent value="calendar" className="mt-0">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold">Planning</h2>
-                <Button>Nieuwe Afspraak</Button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="col-span-1">
-                  <CardHeader>
-                    <CardTitle>Kalender</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Calendar className="pointer-events-auto" />
-                  </CardContent>
-                </Card>
-                
-                <Card className="col-span-1 md:col-span-2">
-                  <CardHeader>
-                    <CardTitle>Komende Afspraken</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Datum</TableHead>
-                          <TableHead>Tijd</TableHead>
-                          <TableHead>Klant</TableHead>
-                          <TableHead>Type</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {mockAppointments.map((appointment) => (
-                          <TableRow key={appointment.id}>
-                            <TableCell>{appointment.date}</TableCell>
-                            <TableCell>{appointment.time}</TableCell>
-                            <TableCell>{appointment.customer}</TableCell>
-                            <TableCell>
-                              <span className={`px-2 py-1 rounded-full text-xs ${
-                                appointment.type === "Meting" ? "bg-blue-100 text-blue-800" :
-                                appointment.type === "Installatie" ? "bg-green-100 text-green-800" :
-                                "bg-purple-100 text-purple-800"
-                              }`}>
-                                {appointment.type}
-                              </span>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </CardContent>
-                </Card>
-              </div>
+              <PlanningManagement />
             </TabsContent>
 
             <TabsContent value="time" className="mt-0">
