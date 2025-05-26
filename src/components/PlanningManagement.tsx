@@ -9,8 +9,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from "@/hooks/use-toast";
 import { useUserStore } from "@/hooks/useUserStore";
 import { useCrmStore } from "@/hooks/useCrmStore";
-import { CalendarIcon, Clock, MapPin, User } from "lucide-react";
+import { CalendarIcon, Clock, MapPin, User, Plus } from "lucide-react";
 import LocationMapInput from "./LocationMapInput";
+import { format } from "date-fns";
+import { nl } from "date-fns/locale";
 
 interface PlanningItem {
   id: string;
@@ -39,7 +41,7 @@ export const PlanningManagement = () => {
       employeeId: 3,
       project: "Kozijnen vervangen",
       projectId: "1",
-      location: "Amsterdam",
+      location: "Hoofdstraat 123, Amsterdam, Nederland",
       description: "Installatie nieuwe kozijnen woonkamer",
       status: "Gepland",
       createdAt: new Date().toISOString()
@@ -52,9 +54,22 @@ export const PlanningManagement = () => {
       employeeId: 3,
       project: "Nieuwe ramen installeren",
       projectId: "2",
-      location: "Utrecht",
+      location: "Kerkstraat 45, Utrecht, Nederland",
       description: "Opmeting en adviesgesprek",
       status: "Bevestigd",
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: "3",
+      date: "2025-05-28",
+      time: "10:00",
+      employee: "Peter Bakker",
+      employeeId: 3,
+      project: "Kozijnen vervangen",
+      projectId: "1",
+      location: "Marktplein 12, Rotterdam, Nederland",
+      description: "Eindcontrole en oplevering",
+      status: "Gepland",
       createdAt: new Date().toISOString()
     }
   ]);
@@ -67,9 +82,10 @@ export const PlanningManagement = () => {
   const installers = users.filter(user => user.role === "Installateur");
 
   const handleCreatePlanning = (formData: FormData) => {
+    const selectedDateFormatted = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : new Date().toISOString().split('T')[0];
     const newPlanning: PlanningItem = {
       id: Date.now().toString(),
-      date: formData.get('date') as string,
+      date: selectedDateFormatted,
       time: formData.get('time') as string,
       employee: users.find(u => u.id === parseInt(formData.get('employee') as string))?.name || '',
       employeeId: parseInt(formData.get('employee') as string),
@@ -87,7 +103,7 @@ export const PlanningManagement = () => {
     
     toast({
       title: "Planning aangemaakt",
-      description: `Planning voor ${newPlanning.employee} is succesvol aangemaakt.`,
+      description: `Planning voor ${newPlanning.employee} op ${format(selectedDate || new Date(), 'dd MMMM yyyy', { locale: nl })} is succesvol aangemaakt.`,
     });
   };
 
@@ -101,10 +117,24 @@ export const PlanningManagement = () => {
     }
   };
 
-  const todaysPlannings = planningItems.filter(item => {
-    const today = new Date().toISOString().split('T')[0];
-    return item.date === today;
+  // Get plannings for selected date
+  const selectedDatePlannings = planningItems.filter(item => {
+    if (!selectedDate) return false;
+    const selectedDateFormatted = format(selectedDate, 'yyyy-MM-dd');
+    return item.date === selectedDateFormatted;
   });
+
+  // Get dates that have plannings for calendar highlighting
+  const planningDates = planningItems.map(item => new Date(item.date));
+
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+  };
+
+  const formatSelectedDate = () => {
+    if (!selectedDate) return "Geen datum geselecteerd";
+    return format(selectedDate, 'EEEE dd MMMM yyyy', { locale: nl });
+  };
 
   return (
     <div className="space-y-6">
@@ -112,16 +142,16 @@ export const PlanningManagement = () => {
         <h2 className="text-2xl font-bold">Planning Beheer</h2>
         <Dialog open={newPlanningDialogOpen} onOpenChange={setNewPlanningDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              Nieuwe Planning
+            <Button disabled={!selectedDate}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nieuwe Planning voor {selectedDate ? format(selectedDate, 'dd/MM', { locale: nl }) : 'Selecteer datum'}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Nieuwe planning aanmaken</DialogTitle>
+              <DialogTitle>Nieuwe planning voor {formatSelectedDate()}</DialogTitle>
               <DialogDescription>
-                Plan werk in voor een monteur op een specifieke datum en tijd.
+                Plan werk in voor een monteur op {formatSelectedDate()}.
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={(e) => {
@@ -132,7 +162,12 @@ export const PlanningManagement = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium">Datum</label>
-                  <Input type="date" name="date" required className="mt-1" />
+                  <Input 
+                    type="text" 
+                    value={formatSelectedDate()}
+                    disabled 
+                    className="mt-1 bg-gray-50" 
+                  />
                 </div>
                 <div>
                   <label className="text-sm font-medium">Tijd</label>
@@ -198,57 +233,99 @@ export const PlanningManagement = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Calendar */}
+        {/* Interactive Calendar */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CalendarIcon className="h-5 w-5" />
               Kalender
             </CardTitle>
+            <CardDescription>
+              Klik op een datum om planningen te bekijken
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Calendar
               mode="single"
               selected={selectedDate}
-              onSelect={setSelectedDate}
+              onSelect={handleDateSelect}
+              modifiers={{
+                hasPlanning: planningDates
+              }}
+              modifiersStyles={{
+                hasPlanning: {
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  fontWeight: 'bold'
+                }
+              }}
               className="rounded-md border pointer-events-auto"
             />
+            <div className="mt-4 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                <span>Dagen met planning</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Today's Planning */}
+        {/* Selected Date Planning */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Clock className="h-5 w-5" />
-              Planning Vandaag
+              Planning voor {formatSelectedDate()}
             </CardTitle>
             <CardDescription>
-              Overzicht van geplande activiteiten voor vandaag
+              {selectedDatePlannings.length > 0 
+                ? `${selectedDatePlannings.length} activiteit(en) gepland`
+                : "Geen activiteiten gepland voor deze dag"
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {todaysPlannings.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">
-                Geen planning voor vandaag
-              </p>
+            {selectedDatePlannings.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground mb-4">
+                  Geen planning voor deze dag
+                </p>
+                {selectedDate && (
+                  <Button 
+                    onClick={() => setNewPlanningDialogOpen(true)}
+                    variant="outline"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Planning Toevoegen
+                  </Button>
+                )}
+              </div>
             ) : (
               <div className="space-y-3">
-                {todaysPlannings.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className="text-sm font-medium">{item.time}</div>
-                      <div>
+                {selectedDatePlannings.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                    <div className="flex items-center gap-4">
+                      <div className="text-lg font-medium text-blue-600">{item.time}</div>
+                      <div className="flex-1">
                         <div className="font-medium">{item.project}</div>
-                        <div className="text-sm text-muted-foreground flex items-center gap-1">
-                          <User className="h-3 w-3" />
-                          {item.employee}
-                          <MapPin className="h-3 w-3 ml-2" />
-                          {item.location}
+                        <div className="text-sm text-muted-foreground flex items-center gap-4 mt-1">
+                          <div className="flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            {item.employee}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {item.location}
+                          </div>
                         </div>
+                        {item.description && (
+                          <div className="text-sm text-muted-foreground mt-1">
+                            {item.description}
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(item.status)}`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
                       {item.status}
                     </span>
                   </div>
@@ -279,13 +356,15 @@ export const PlanningManagement = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {planningItems.map((item) => (
+              {planningItems
+                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                .map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell>{new Date(item.date).toLocaleDateString('nl-NL')}</TableCell>
+                  <TableCell>{format(new Date(item.date), 'dd MMM yyyy', { locale: nl })}</TableCell>
                   <TableCell>{item.time}</TableCell>
                   <TableCell>{item.employee}</TableCell>
                   <TableCell>{item.project}</TableCell>
-                  <TableCell>{item.location}</TableCell>
+                  <TableCell className="max-w-xs truncate">{item.location}</TableCell>
                   <TableCell>
                     <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(item.status)}`}>
                       {item.status}
