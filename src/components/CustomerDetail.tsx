@@ -6,17 +6,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ProjectsBoard } from "@/components/ProjectsBoard";
+import { useCrmStore } from "@/hooks/useCrmStore";
 
-// Import mock data 
-import { mockCustomers, mockProjects, mockInvoices } from "@/data/mockData";
+// Import mock data for invoices only
+import { mockInvoices } from "@/data/mockData";
 
 const CustomerDetail = () => {
   const { customerId } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("projects");
+  const { customers, projects } = useCrmStore();
 
-  // Find the customer from the mock data
-  const customer = mockCustomers.find(c => c.id.toString() === customerId);
+  // Find the customer from the CRM store
+  const customer = customers.find(c => c.id.toString() === customerId);
   
   // If customer not found, show error message
   if (!customer) {
@@ -34,14 +36,7 @@ const CustomerDetail = () => {
   }
 
   // Filter projects for this customer
-  const customerProjects = mockProjects.filter(p => p.customer === customer.name);
-  
-  // Format projects for the ProjectsBoard component
-  const formattedProjects = customerProjects.map(project => ({
-    ...project,
-    id: project.id.toString(),
-    status: getProjectStatus(project.status)
-  }));
+  const customerProjects = projects.filter(p => p.customerId === customer.id);
 
   // Filter invoices for this customer
   const customerInvoices = mockInvoices.filter(i => i.customer === customer.name);
@@ -85,8 +80,8 @@ const CustomerDetail = () => {
           <CardContent>
             <div className="space-y-1">
               <p className="text-sm"><span className="font-medium">Totaal aantal projecten:</span> {customerProjects.length}</p>
-              <p className="text-sm"><span className="font-medium">Actieve projecten:</span> {customerProjects.filter(p => p.status !== "Afgerond").length}</p>
-              <p className="text-sm"><span className="font-medium">Afgeronde projecten:</span> {customerProjects.filter(p => p.status === "Afgerond").length}</p>
+              <p className="text-sm"><span className="font-medium">Actieve projecten:</span> {customerProjects.filter(p => p.status !== "afgerond").length}</p>
+              <p className="text-sm"><span className="font-medium">Afgeronde projecten:</span> {customerProjects.filter(p => p.status === "afgerond").length}</p>
             </div>
           </CardContent>
         </Card>
@@ -132,7 +127,7 @@ const CustomerDetail = () => {
         <TabsContent value="projects">
           <h3 className="text-xl font-semibold mb-4">Projecten van {customer.name}</h3>
           {customerProjects.length > 0 ? (
-            <ProjectsBoard initialProjects={formattedProjects} />
+            <ProjectsBoard />
           ) : (
             <Card>
               <CardContent className="py-8">
@@ -216,15 +211,5 @@ const CustomerDetail = () => {
     </div>
   );
 };
-
-// Helper function to map project status to board status
-function getProjectStatus(status: string): "te-plannen" | "gepland" | "herkeuring" | "afgerond" {
-  switch (status) {
-    case "Gepland": return "gepland";
-    case "In uitvoering": return "te-plannen";
-    case "Afgerond": return "afgerond";
-    default: return "te-plannen";
-  }
-}
 
 export default CustomerDetail;
