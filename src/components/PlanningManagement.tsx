@@ -9,9 +9,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from "@/hooks/use-toast";
 import { useUserStore } from "@/hooks/useUserStore";
 import { useCrmStore } from "@/hooks/useCrmStore";
-import { CalendarIcon, Clock, MapPin, User, Plus } from "lucide-react";
+import { CalendarIcon, Clock, MapPin, User, Plus, CalendarDays } from "lucide-react";
 import LocationMapInput from "./LocationMapInput";
-import { format } from "date-fns";
+import { format, addDays, parseISO } from "date-fns";
 import { nl } from "date-fns/locale";
 
 interface PlanningItem {
@@ -31,7 +31,12 @@ interface PlanningItem {
 export const PlanningManagement = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [newPlanningDialogOpen, setNewPlanningDialogOpen] = useState(false);
+  const [multiDayPlanningDialogOpen, setMultiDayPlanningDialogOpen] = useState(false);
   const [locationValue, setLocationValue] = useState("");
+  const [multiDayLocationValue, setMultiDayLocationValue] = useState("");
+  const [startDate, setStartDate] = useState<Date | undefined>(new Date());
+  const [endDate, setEndDate] = useState<Date | undefined>(addDays(new Date(), 7));
+  
   const [planningItems, setPlanningItems] = useState<PlanningItem[]>([
     {
       id: "1",
@@ -107,6 +112,69 @@ export const PlanningManagement = () => {
     });
   };
 
+  const handleCreateMultiDayPlanning = (formData: FormData) => {
+    if (!startDate || !endDate) {
+      toast({
+        title: "Fout",
+        description: "Selecteer een start- en einddatum.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const selectedEmployee = users.find(u => u.id === parseInt(formData.get('employee') as string));
+    const selectedProject = projects.find(p => p.id === formData.get('project') as string);
+    const time = formData.get('time') as string;
+    const description = formData.get('description') as string;
+    const selectedDays = formData.getAll('days') as string[];
+
+    if (selectedDays.length === 0) {
+      toast({
+        title: "Fout",
+        description: "Selecteer minimaal één dag van de week.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const newPlannings: PlanningItem[] = [];
+    let currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+      const dayOfWeek = currentDate.getDay().toString();
+      
+      if (selectedDays.includes(dayOfWeek)) {
+        const newPlanning: PlanningItem = {
+          id: `${Date.now()}-${currentDate.getTime()}`,
+          date: format(currentDate, 'yyyy-MM-dd'),
+          time: time,
+          employee: selectedEmployee?.name || '',
+          employeeId: selectedEmployee?.id || 0,
+          project: selectedProject?.title || '',
+          projectId: selectedProject?.id || '',
+          location: multiDayLocationValue,
+          description: description,
+          status: "Gepland",
+          createdAt: new Date().toISOString()
+        };
+        newPlannings.push(newPlanning);
+      }
+      
+      currentDate = addDays(currentDate, 1);
+    }
+
+    setPlanningItems([...planningItems, ...newPlannings]);
+    setMultiDayPlanningDialogOpen(false);
+    setMultiDayLocationValue("");
+    setStartDate(new Date());
+    setEndDate(addDays(new Date(), 7));
+    
+    toast({
+      title: "Meerdaagse planning aangemaakt",
+      description: `${newPlannings.length} planning(en) succesvol aangemaakt voor ${selectedEmployee?.name}.`,
+    });
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Gepland": return "bg-blue-100 text-blue-800";
@@ -136,100 +204,229 @@ export const PlanningManagement = () => {
     return format(selectedDate, 'EEEE dd MMMM yyyy', { locale: nl });
   };
 
+  const dayOptions = [
+    { value: "1", label: "Maandag" },
+    { value: "2", label: "Dinsdag" },
+    { value: "3", label: "Woensdag" },
+    { value: "4", label: "Donderdag" },
+    { value: "5", label: "Vrijdag" },
+    { value: "6", label: "Zaterdag" },
+    { value: "0", label: "Zondag" },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Planning Beheer</h2>
-        <Dialog open={newPlanningDialogOpen} onOpenChange={setNewPlanningDialogOpen}>
-          <DialogTrigger asChild>
-            <Button disabled={!selectedDate}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nieuwe Planning voor {selectedDate ? format(selectedDate, 'dd/MM', { locale: nl }) : 'Selecteer datum'}
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Nieuwe planning voor {formatSelectedDate()}</DialogTitle>
-              <DialogDescription>
-                Plan werk in voor een monteur op {formatSelectedDate()}.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              handleCreatePlanning(formData);
-            }} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium">Datum</label>
-                  <Input 
-                    type="text" 
-                    value={formatSelectedDate()}
-                    disabled 
-                    className="mt-1 bg-gray-50" 
-                  />
+        <div className="flex gap-2">
+          <Dialog open={multiDayPlanningDialogOpen} onOpenChange={setMultiDayPlanningDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <CalendarDays className="mr-2 h-4 w-4" />
+                Meerdaagse Planning
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl">
+              <DialogHeader>
+                <DialogTitle>Meerdaagse planning aanmaken</DialogTitle>
+                <DialogDescription>
+                  Maak planning aan voor meerdere dagen met specifieke tijden en dagen van de week.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                handleCreateMultiDayPlanning(formData);
+              }} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Startdatum</label>
+                    <Calendar
+                      mode="single"
+                      selected={startDate}
+                      onSelect={setStartDate}
+                      className="rounded-md border mt-1 pointer-events-auto"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Einddatum</label>
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={setEndDate}
+                      className="rounded-md border mt-1 pointer-events-auto"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Tijd</label>
+                    <Input type="time" name="time" required className="mt-1" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Monteur</label>
+                    <Select name="employee" required>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Kies monteur" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {installers.map((installer) => (
+                          <SelectItem key={installer.id} value={installer.id.toString()}>
+                            {installer.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Tijd</label>
-                  <Input type="time" name="time" required className="mt-1" />
+                  <label className="text-sm font-medium">Project</label>
+                  <Select name="project" required>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Kies project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.title} - {project.customer}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Monteur</label>
-                <Select name="employee" required>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Kies monteur" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {installers.map((installer) => (
-                      <SelectItem key={installer.id} value={installer.id.toString()}>
-                        {installer.name}
-                      </SelectItem>
+                <div>
+                  <label className="text-sm font-medium">Dagen van de week</label>
+                  <div className="grid grid-cols-4 gap-2 mt-1">
+                    {dayOptions.map((day) => (
+                      <label key={day.value} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          name="days"
+                          value={day.value}
+                          className="rounded"
+                        />
+                        <span className="text-sm">{day.label}</span>
+                      </label>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Project</label>
-                <Select name="project" required>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Kies project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projects.map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.title} - {project.customer}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Locatie</label>
-                <div className="mt-1">
-                  <LocationMapInput
-                    value={locationValue}
-                    onChange={setLocationValue}
-                    placeholder="Zoek adres of locatie..."
-                  />
+                  </div>
                 </div>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Beschrijving</label>
-                <Input name="description" className="mt-1" placeholder="Omschrijving van het werk" />
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => {
-                  setNewPlanningDialogOpen(false);
-                  setLocationValue("");
-                }}>
-                  Annuleren
-                </Button>
-                <Button type="submit">Planning Aanmaken</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+                <div>
+                  <label className="text-sm font-medium">Locatie</label>
+                  <div className="mt-1">
+                    <LocationMapInput
+                      value={multiDayLocationValue}
+                      onChange={setMultiDayLocationValue}
+                      placeholder="Zoek adres of locatie..."
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Beschrijving</label>
+                  <Input name="description" className="mt-1" placeholder="Omschrijving van het werk" />
+                </div>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => {
+                    setMultiDayPlanningDialogOpen(false);
+                    setMultiDayLocationValue("");
+                  }}>
+                    Annuleren
+                  </Button>
+                  <Button type="submit">Meerdaagse Planning Aanmaken</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+          <Dialog open={newPlanningDialogOpen} onOpenChange={setNewPlanningDialogOpen}>
+            <DialogTrigger asChild>
+              <Button disabled={!selectedDate}>
+                <Plus className="mr-2 h-4 w-4" />
+                Nieuwe Planning voor {selectedDate ? format(selectedDate, 'dd/MM', { locale: nl }) : 'Selecteer datum'}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Nieuwe planning voor {formatSelectedDate()}</DialogTitle>
+                <DialogDescription>
+                  Plan werk in voor een monteur op {formatSelectedDate()}.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                handleCreatePlanning(formData);
+              }} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Datum</label>
+                    <Input 
+                      type="text" 
+                      value={formatSelectedDate()}
+                      disabled 
+                      className="mt-1 bg-gray-50" 
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Tijd</label>
+                    <Input type="time" name="time" required className="mt-1" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Monteur</label>
+                  <Select name="employee" required>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Kies monteur" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {installers.map((installer) => (
+                        <SelectItem key={installer.id} value={installer.id.toString()}>
+                          {installer.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Project</label>
+                  <Select name="project" required>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Kies project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {projects.map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.title} - {project.customer}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Locatie</label>
+                  <div className="mt-1">
+                    <LocationMapInput
+                      value={locationValue}
+                      onChange={setLocationValue}
+                      placeholder="Zoek adres of locatie..."
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Beschrijving</label>
+                  <Input name="description" className="mt-1" placeholder="Omschrijving van het werk" />
+                </div>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => {
+                    setNewPlanningDialogOpen(false);
+                    setLocationValue("");
+                  }}>
+                    Annuleren
+                  </Button>
+                  <Button type="submit">Planning Aanmaken</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
