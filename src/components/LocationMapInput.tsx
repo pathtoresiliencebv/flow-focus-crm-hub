@@ -1,9 +1,11 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import mapboxgl from 'mapbox-gl';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MapPin, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import 'mapbox-gl/dist/mapbox-gl.css';
 
 interface LocationMapInputProps {
   value: string;
@@ -15,9 +17,16 @@ export const LocationMapInput = ({ value, onChange, placeholder = "Voer adres in
   const [searchQuery, setSearchQuery] = useState(value);
   const [isSearching, setIsSearching] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showMap, setShowMap] = useState(false);
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<mapboxgl.Map | null>(null);
+  const marker = useRef<mapboxgl.Marker | null>(null);
   const { toast } = useToast();
 
-  // Mock geocoding function - in real app you'd use Mapbox Geocoding API
+  // Set Mapbox access token
+  mapboxgl.accessToken = 'pk.eyJ1IjoicGF0aHRvcmVzaWxpZW5jZSIsImEiOiJjbWI1YWh3bDQyN3l6MmpxenczNmt5MWw2In0.n20L1mg1bLaxrQa4--AfBA';
+
+  // Real geocoding function using Mapbox Geocoding API
   const searchAddress = async (query: string) => {
     if (!query.trim()) {
       setSuggestions([]);
@@ -26,21 +35,82 @@ export const LocationMapInput = ({ value, onChange, placeholder = "Voer adres in
 
     setIsSearching(true);
     
-    // Simulate API call with mock Dutch addresses
-    setTimeout(() => {
+    try {
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&country=NL&types=address,poi`
+      );
+      const data = await response.json();
+      
+      const newSuggestions = data.features?.map((feature: any) => feature.place_name) || [];
+      setSuggestions(newSuggestions.slice(0, 5));
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      // Fallback to mock suggestions
       const mockSuggestions = [
         `${query}, Amsterdam, Nederland`,
         `${query}, Utrecht, Nederland`,
-        `${query}, Rotterdam, Nederland`,
-        `${query}, Den Haag, Nederland`,
-        `${query}, Eindhoven, Nederland`
-      ].filter(suggestion => 
-        suggestion.toLowerCase().includes(query.toLowerCase())
-      ).slice(0, 3);
-      
+        `${query}, Rotterdam, Nederland`
+      ].slice(0, 3);
       setSuggestions(mockSuggestions);
-      setIsSearching(false);
-    }, 300);
+    }
+    
+    setIsSearching(false);
+  };
+
+  // Initialize map
+  useEffect(() => {
+    if (showMap && mapContainer.current && !map.current) {
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [5.2913, 52.1326], // Netherlands center
+        zoom: 7
+      });
+
+      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    }
+
+    return () => {
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
+    };
+  }, [showMap]);
+
+  // Update map when location is selected
+  const updateMapLocation = async (address: string) => {
+    if (!map.current) return;
+
+    try {
+      const response = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${mapboxgl.accessToken}&limit=1`
+      );
+      const data = await response.json();
+      
+      if (data.features && data.features.length > 0) {
+        const [lng, lat] = data.features[0].center;
+        
+        // Remove existing marker
+        if (marker.current) {
+          marker.current.remove();
+        }
+        
+        // Add new marker
+        marker.current = new mapboxgl.Marker()
+          .setLngLat([lng, lat])
+          .addTo(map.current);
+          
+        // Fly to location
+        map.current.flyTo({
+          center: [lng, lat],
+          zoom: 15,
+          duration: 2000
+        });
+      }
+    } catch (error) {
+      console.error('Error updating map location:', error);
+    }
   };
 
   useEffect(() => {
@@ -57,6 +127,12 @@ export const LocationMapInput = ({ value, onChange, placeholder = "Voer adres in
     setSearchQuery(suggestion);
     onChange(suggestion);
     setSuggestions([]);
+    setShowMap(true);
+    
+    // Update map location after a brief delay to ensure map is initialized
+    setTimeout(() => {
+      updateMapLocation(suggestion);
+    }, 100);
     
     toast({
       title: "Locatie geselecteerd",
@@ -111,6 +187,38 @@ export const LocationMapInput = ({ value, onChange, placeholder = "Voer adres in
             <MapPin className="h-4 w-4" />
             <span>Geselecteerde locatie: {searchQuery}</span>
           </div>
+          {!showMap && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+              onClick={() => {
+                setShowMap(true);
+                setTimeout(() => updateMapLocation(searchQuery), 100);
+              }}
+            >
+              Toon op kaart
+            </Button>
+          )}
+        </div>
+      )}
+
+      {showMap && (
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-sm font-medium">Kaart locatie</h4>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setShowMap(false)}
+            >
+              Verberg kaart
+            </Button>
+          </div>
+          <div 
+            ref={mapContainer} 
+            className="w-full h-64 rounded-md border border-gray-200"
+          />
         </div>
       )}
     </div>
