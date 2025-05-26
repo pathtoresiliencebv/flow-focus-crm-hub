@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserStore } from "@/hooks/useUserStore";
 import { useCrmStore } from "@/hooks/useCrmStore";
 import { CalendarIcon, Clock, MapPin, User } from "lucide-react";
+import LocationMapInput from "./LocationMapInput";
 
 interface PlanningItem {
   id: string;
@@ -29,6 +29,7 @@ interface PlanningItem {
 export const PlanningManagement = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [newPlanningDialogOpen, setNewPlanningDialogOpen] = useState(false);
+  const [locationValue, setLocationValue] = useState("");
   const [planningItems, setPlanningItems] = useState<PlanningItem[]>([
     {
       id: "1",
@@ -74,7 +75,7 @@ export const PlanningManagement = () => {
       employeeId: parseInt(formData.get('employee') as string),
       project: projects.find(p => p.id === formData.get('project') as string)?.title || '',
       projectId: formData.get('project') as string,
-      location: formData.get('location') as string,
+      location: locationValue,
       description: formData.get('description') as string,
       status: "Gepland",
       createdAt: new Date().toISOString()
@@ -82,6 +83,7 @@ export const PlanningManagement = () => {
 
     setPlanningItems([...planningItems, newPlanning]);
     setNewPlanningDialogOpen(false);
+    setLocationValue("");
     
     toast({
       title: "Planning aangemaakt",
@@ -115,7 +117,7 @@ export const PlanningManagement = () => {
               Nieuwe Planning
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Nieuwe planning aanmaken</DialogTitle>
               <DialogDescription>
@@ -169,14 +171,23 @@ export const PlanningManagement = () => {
               </div>
               <div>
                 <label className="text-sm font-medium">Locatie</label>
-                <Input name="location" required className="mt-1" placeholder="Adres of locatie" />
+                <div className="mt-1">
+                  <LocationMapInput
+                    value={locationValue}
+                    onChange={setLocationValue}
+                    placeholder="Zoek adres of locatie..."
+                  />
+                </div>
               </div>
               <div>
                 <label className="text-sm font-medium">Beschrijving</label>
                 <Input name="description" className="mt-1" placeholder="Omschrijving van het werk" />
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setNewPlanningDialogOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => {
+                  setNewPlanningDialogOpen(false);
+                  setLocationValue("");
+                }}>
                   Annuleren
                 </Button>
                 <Button type="submit">Planning Aanmaken</Button>
