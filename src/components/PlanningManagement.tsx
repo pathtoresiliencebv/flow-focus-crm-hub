@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,10 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useUserStore } from "@/hooks/useUserStore";
 import { useCrmStore } from "@/hooks/useCrmStore";
-import { CalendarIcon, Clock, MapPin, User, Plus } from "lucide-react";
+import { CalendarIcon, Clock, MapPin, User, Plus, Filter } from "lucide-react";
 import LocationMapInput from "./LocationMapInput";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
@@ -30,6 +32,7 @@ interface PlanningItem {
 
 export const PlanningManagement = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedInstallers, setSelectedInstallers] = useState<number[]>([]);
   const [newPlanningDialogOpen, setNewPlanningDialogOpen] = useState(false);
   const [locationValue, setLocationValue] = useState("");
   const [planningItems, setPlanningItems] = useState<PlanningItem[]>([
@@ -81,6 +84,14 @@ export const PlanningManagement = () => {
   // Filter users with "Installateur" role
   const installers = users.filter(user => user.role === "Installateur");
 
+  const handleInstallerToggle = (installerId: number) => {
+    setSelectedInstallers(prev => 
+      prev.includes(installerId) 
+        ? prev.filter(id => id !== installerId)
+        : [...prev, installerId]
+    );
+  };
+
   const handleCreatePlanning = (formData: FormData) => {
     const selectedDateFormatted = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : new Date().toISOString().split('T')[0];
     const newPlanning: PlanningItem = {
@@ -117,12 +128,19 @@ export const PlanningManagement = () => {
     }
   };
 
-  // Get plannings for selected date
-  const selectedDatePlannings = planningItems.filter(item => {
-    if (!selectedDate) return false;
+  // Get filtered plannings for selected date and installers
+  const getFilteredPlannings = () => {
+    if (!selectedDate) return [];
+    
     const selectedDateFormatted = format(selectedDate, 'yyyy-MM-dd');
-    return item.date === selectedDateFormatted;
-  });
+    let filtered = planningItems.filter(item => item.date === selectedDateFormatted);
+    
+    if (selectedInstallers.length > 0) {
+      filtered = filtered.filter(item => selectedInstallers.includes(item.employeeId));
+    }
+    
+    return filtered.sort((a, b) => a.time.localeCompare(b.time));
+  };
 
   // Get dates that have plannings for calendar highlighting
   const planningDates = planningItems.map(item => new Date(item.date));
@@ -135,6 +153,21 @@ export const PlanningManagement = () => {
     if (!selectedDate) return "Geen datum geselecteerd";
     return format(selectedDate, 'EEEE dd MMMM yyyy', { locale: nl });
   };
+
+  // Group plannings by time slot for better visualization
+  const groupPlanningsByTime = (plannings: PlanningItem[]) => {
+    const grouped: { [time: string]: PlanningItem[] } = {};
+    plannings.forEach(planning => {
+      if (!grouped[planning.time]) {
+        grouped[planning.time] = [];
+      }
+      grouped[planning.time].push(planning);
+    });
+    return grouped;
+  };
+
+  const filteredPlannings = getFilteredPlannings();
+  const groupedPlannings = groupPlanningsByTime(filteredPlannings);
 
   return (
     <div className="space-y-6">
@@ -232,7 +265,7 @@ export const PlanningManagement = () => {
         </Dialog>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Interactive Calendar */}
         <Card>
           <CardHeader>
@@ -270,7 +303,58 @@ export const PlanningManagement = () => {
           </CardContent>
         </Card>
 
-        {/* Selected Date Planning */}
+        {/* Installer Filter */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Monteurs Filter
+            </CardTitle>
+            <CardDescription>
+              Selecteer monteurs om hun planning te bekijken
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center gap-2 mb-4">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setSelectedInstallers(installers.map(i => i.id))}
+              >
+                Alles selecteren
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setSelectedInstallers([])}
+              >
+                Niets selecteren
+              </Button>
+            </div>
+            {installers.map((installer) => (
+              <div key={installer.id} className="flex items-center space-x-2">
+                <Checkbox 
+                  id={`installer-${installer.id}`}
+                  checked={selectedInstallers.includes(installer.id)}
+                  onCheckedChange={() => handleInstallerToggle(installer.id)}
+                />
+                <label 
+                  htmlFor={`installer-${installer.id}`} 
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  {installer.name}
+                </label>
+              </div>
+            ))}
+            {selectedInstallers.length > 0 && (
+              <div className="mt-4 p-2 bg-blue-50 rounded text-sm">
+                <strong>{selectedInstallers.length}</strong> monteur(s) geselecteerd
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Interactive Daily Planning */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -278,17 +362,24 @@ export const PlanningManagement = () => {
               Planning voor {formatSelectedDate()}
             </CardTitle>
             <CardDescription>
-              {selectedDatePlannings.length > 0 
-                ? `${selectedDatePlannings.length} activiteit(en) gepland`
-                : "Geen activiteiten gepland voor deze dag"
+              {selectedInstallers.length > 0 && filteredPlannings.length > 0 
+                ? `${filteredPlannings.length} activiteit(en) voor geselecteerde monteurs`
+                : selectedInstallers.length > 0 
+                  ? "Geen activiteiten voor geselecteerde monteurs"
+                  : filteredPlannings.length > 0
+                    ? `${filteredPlannings.length} activiteit(en) gepland`
+                    : "Geen activiteiten gepland voor deze dag"
               }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {selectedDatePlannings.length === 0 ? (
+            {filteredPlannings.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-muted-foreground mb-4">
-                  Geen planning voor deze dag
+                  {selectedInstallers.length > 0 
+                    ? "Geen planning voor geselecteerde monteurs op deze dag"
+                    : "Geen planning voor deze dag"
+                  }
                 </p>
                 {selectedDate && (
                   <Button 
@@ -301,33 +392,43 @@ export const PlanningManagement = () => {
                 )}
               </div>
             ) : (
-              <div className="space-y-3">
-                {selectedDatePlannings.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                    <div className="flex items-center gap-4">
-                      <div className="text-lg font-medium text-blue-600">{item.time}</div>
-                      <div className="flex-1">
-                        <div className="font-medium">{item.project}</div>
-                        <div className="text-sm text-muted-foreground flex items-center gap-4 mt-1">
-                          <div className="flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            {item.employee}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {item.location}
-                          </div>
-                        </div>
-                        {item.description && (
-                          <div className="text-sm text-muted-foreground mt-1">
-                            {item.description}
-                          </div>
-                        )}
-                      </div>
+              <div className="space-y-4">
+                {Object.entries(groupedPlannings).map(([time, plannings]) => (
+                  <div key={time} className="border rounded-lg p-4">
+                    <div className="flex items-center gap-4 mb-3">
+                      <div className="text-lg font-bold text-blue-600 min-w-[60px]">{time}</div>
+                      <div className="h-px bg-gray-200 flex-1"></div>
+                      <div className="text-sm text-gray-500">{plannings.length} activiteit(en)</div>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
-                      {item.status}
-                    </span>
+                    <div className="space-y-3">
+                      {plannings.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                          <div className="flex items-center gap-4 flex-1">
+                            <div className="flex-1">
+                              <div className="font-medium">{item.project}</div>
+                              <div className="text-sm text-muted-foreground flex items-center gap-4 mt-1">
+                                <div className="flex items-center gap-1">
+                                  <User className="h-3 w-3" />
+                                  {item.employee}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  <span className="max-w-xs truncate">{item.location}</span>
+                                </div>
+                              </div>
+                              {item.description && (
+                                <div className="text-sm text-muted-foreground mt-1">
+                                  {item.description}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
+                            {item.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
               </div>
