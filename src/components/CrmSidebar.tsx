@@ -45,8 +45,12 @@ export const CrmSidebar = ({ activeTab, setActiveTab }: CrmSidebarProps) => {
     { id: "settings", label: "Instellingen", icon: Settings, path: "/settings" }
   ];
 
-  const handleMenuClick = (itemId: string) => {
+  const handleMenuClick = (itemId: string, path?: string) => {
     setActiveTab(itemId);
+    if (path && path !== "/") {
+      // Navigate to the specific path for items like settings
+      window.location.href = path;
+    }
   };
 
   return (
@@ -104,7 +108,7 @@ export const CrmSidebar = ({ activeTab, setActiveTab }: CrmSidebarProps) => {
                         className={`w-full justify-start text-sm ${
                           activeTab === subItem.id ? "bg-blue-600 hover:bg-blue-700" : ""
                         }`}
-                        onClick={() => handleMenuClick(subItem.id)}
+                        onClick={() => handleMenuClick(subItem.id, subItem.path)}
                       >
                         <subItem.icon className="mr-2 h-4 w-4" />
                         {subItem.label}
@@ -115,11 +119,11 @@ export const CrmSidebar = ({ activeTab, setActiveTab }: CrmSidebarProps) => {
               </Collapsible>
             ) : (
               <Button
-                variant={activeTab === item.id ? "default" : "ghost"}
+                variant={activeTab === item.id || (item.path === "/settings" && location.pathname === "/settings") ? "default" : "ghost"}
                 className={`w-full justify-start ${
-                  activeTab === item.id ? "bg-blue-600 hover:bg-blue-700" : ""
+                  activeTab === item.id || (item.path === "/settings" && location.pathname === "/settings") ? "bg-blue-600 hover:bg-blue-700" : ""
                 }`}
-                onClick={() => handleMenuClick(item.id)}
+                onClick={() => handleMenuClick(item.id, item.path)}
               >
                 <item.icon className="mr-2 h-5 w-5" />
                 {item.label}
