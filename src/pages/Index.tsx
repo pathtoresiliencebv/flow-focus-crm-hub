@@ -5,19 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { UsersIcon, Calendar as CalendarIcon, Folder, Database, Inbox, Eye, Edit, Trash2 } from "lucide-react";
-
 import { CustomerForm } from '@/components/CustomerForm';
 import { ProjectForm } from '@/components/ProjectForm';
 import { Dashboard } from '@/components/Dashboard';
@@ -33,10 +25,12 @@ import PlanningManagement from '@/components/PlanningManagement';
 
 // Import mock data from the central location
 import { mockAppointments, mockInventory } from '@/data/mockData';
-
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
-  const { customers, deleteCustomer } = useCrmStore();
+  const {
+    customers,
+    deleteCustomer
+  } = useCrmStore();
   const navigate = useNavigate();
   const [newProjectDialogOpen, setNewProjectDialogOpen] = useState(false);
   const [newCustomerDialogOpen, setNewCustomerDialogOpen] = useState(false);
@@ -45,29 +39,20 @@ const Index = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   // Filter customers based on search term
-  const filteredCustomers = customers.filter(customer =>
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.phone.includes(searchTerm)
-  );
-
+  const filteredCustomers = customers.filter(customer => customer.name.toLowerCase().includes(searchTerm.toLowerCase()) || customer.email.toLowerCase().includes(searchTerm.toLowerCase()) || customer.phone.includes(searchTerm));
   const handleCustomerClick = (customerId: number) => {
     navigate(`/customers/${customerId}`);
   };
-
   const handleEditCustomer = (customer: any) => {
     setEditingCustomer(customer);
     setEditCustomerDialogOpen(true);
   };
-
   const handleDeleteCustomer = (customerId: number, customerName: string) => {
     if (window.confirm(`Weet je zeker dat je klant "${customerName}" wilt verwijderen?`)) {
       deleteCustomer(customerId);
     }
   };
-
-  return (
-    <div className="flex h-screen bg-gray-100">
+  return <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
       <CrmSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
@@ -76,21 +61,12 @@ const Index = () => {
         {/* Top Header */}
         <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
           <div className="flex items-center space-x-3">
-            <img 
-              src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" 
-              alt="SMANS Logo" 
-              className="h-6 w-auto"
-            />
+            
             <h1 className="text-2xl font-bold text-smans-primary">SMANS CRM</h1>
           </div>
           
           <div className="flex items-center gap-4">
-            <Input 
-              className="max-w-xs" 
-              placeholder="Zoeken..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <Input className="max-w-xs" placeholder="Zoeken..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
             
             <NotificationsMenu />
           </div>
@@ -136,29 +112,20 @@ const Index = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredCustomers.map((customer) => (
-                        <TableRow key={customer.id} className="cursor-pointer hover:bg-gray-50" onClick={() => handleCustomerClick(customer.id)}>
+                      {filteredCustomers.map(customer => <TableRow key={customer.id} className="cursor-pointer hover:bg-gray-50" onClick={() => handleCustomerClick(customer.id)}>
                           <TableCell className="font-medium">{customer.name}</TableCell>
                           <TableCell>{customer.email}</TableCell>
                           <TableCell>{customer.phone}</TableCell>
                           <TableCell>{customer.city}</TableCell>
                           <TableCell>
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              customer.status === "Actief" ? "bg-green-100 text-green-800" :
-                              customer.status === "In behandeling" ? "bg-yellow-100 text-yellow-800" :
-                              "bg-gray-100 text-gray-800"
-                            }`}>
+                            <span className={`px-2 py-1 rounded-full text-xs ${customer.status === "Actief" ? "bg-green-100 text-green-800" : customer.status === "In behandeling" ? "bg-yellow-100 text-yellow-800" : "bg-gray-100 text-gray-800"}`}>
                               {customer.status}
                             </span>
                           </TableCell>
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  onClick={(e) => e.stopPropagation()}
-                                >
+                                <Button variant="ghost" size="sm" onClick={e => e.stopPropagation()}>
                                   Acties
                                 </Button>
                               </DropdownMenuTrigger>
@@ -171,18 +138,14 @@ const Index = () => {
                                   <Edit className="mr-2 h-4 w-4" />
                                   Bewerken
                                 </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => handleDeleteCustomer(customer.id, customer.name)}
-                                  className="text-red-600"
-                                >
+                                <DropdownMenuItem onClick={() => handleDeleteCustomer(customer.id, customer.name)} className="text-red-600">
                                   <Trash2 className="mr-2 h-4 w-4" />
                                   Verwijderen
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
-                        </TableRow>
-                      ))}
+                        </TableRow>)}
                     </TableBody>
                   </Table>
                 </CardContent>
@@ -239,17 +202,12 @@ const Index = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {mockInventory.map((item) => (
-                        <TableRow key={item.id}>
+                      {mockInventory.map(item => <TableRow key={item.id}>
                           <TableCell className="font-medium">{item.name}</TableCell>
                           <TableCell>{item.type}</TableCell>
                           <TableCell>{item.material}</TableCell>
                           <TableCell>
-                            <span className={`${
-                              item.stock > 10 ? "text-green-600" : 
-                              item.stock > 5 ? "text-yellow-600" : 
-                              "text-red-600"
-                            } font-medium`}>
+                            <span className={`${item.stock > 10 ? "text-green-600" : item.stock > 5 ? "text-yellow-600" : "text-red-600"} font-medium`}>
                               {item.stock}
                             </span>
                           </TableCell>
@@ -257,8 +215,7 @@ const Index = () => {
                           <TableCell>
                             <Button variant="ghost" size="sm">Bewerken</Button>
                           </TableCell>
-                        </TableRow>
-                      ))}
+                        </TableRow>)}
                     </TableBody>
                   </Table>
                 </CardContent>
@@ -297,17 +254,12 @@ const Index = () => {
               Pas de klantgegevens aan.
             </DialogDescription>
           </DialogHeader>
-          <CustomerForm 
-            onClose={() => {
-              setEditCustomerDialogOpen(false);
-              setEditingCustomer(null);
-            }} 
-            existingCustomer={editingCustomer}
-          />
+          <CustomerForm onClose={() => {
+          setEditCustomerDialogOpen(false);
+          setEditingCustomer(null);
+        }} existingCustomer={editingCustomer} />
         </DialogContent>
       </Dialog>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
