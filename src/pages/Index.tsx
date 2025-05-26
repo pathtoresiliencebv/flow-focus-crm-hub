@@ -75,7 +75,14 @@ const Index = () => {
       <div className="flex flex-col flex-1 overflow-hidden">
         {/* Top Header */}
         <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-800">Kozijnen CRM</h1>
+          <div className="flex items-center space-x-3">
+            <img 
+              src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" 
+              alt="SMANS Logo" 
+              className="h-6 w-auto"
+            />
+            <h1 className="text-2xl font-bold text-smans-primary">SMANS CRM</h1>
+          </div>
           
           <div className="flex items-center gap-4">
             <Input 
@@ -101,7 +108,7 @@ const Index = () => {
                 <h2 className="text-2xl font-bold">Klanten</h2>
                 <Dialog open={newCustomerDialogOpen} onOpenChange={setNewCustomerDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button>Nieuwe Klant</Button>
+                    <Button className="bg-smans-primary hover:bg-smans-primary text-white">Nieuwe Klant</Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
@@ -187,7 +194,7 @@ const Index = () => {
                 <h2 className="text-2xl font-bold">Projecten</h2>
                 <Dialog open={newProjectDialogOpen} onOpenChange={setNewProjectDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button>Nieuw Project</Button>
+                    <Button className="bg-smans-primary hover:bg-smans-primary text-white">Nieuw Project</Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
@@ -215,7 +222,7 @@ const Index = () => {
             <TabsContent value="inventory" className="mt-0">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold">Voorraad</h2>
-                <Button>Product Toevoegen</Button>
+                <Button className="bg-smans-primary hover:bg-smans-primary text-white">Product Toevoegen</Button>
               </div>
               
               <Card>

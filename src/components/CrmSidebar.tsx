@@ -53,7 +53,17 @@ export const CrmSidebar = ({ activeTab, setActiveTab }: CrmSidebarProps) => {
     <div className="bg-white border-r border-gray-200 w-64 flex flex-col">
       {/* Logo */}
       <div className="p-4 border-b border-gray-200">
-        <h2 className="text-xl font-bold text-blue-600">Kozijnen CRM</h2>
+        <div className="flex items-center space-x-3">
+          <img 
+            src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" 
+            alt="SMANS Logo" 
+            className="h-8 w-auto"
+          />
+          <div>
+            <h2 className="text-lg font-bold text-smans-primary">SMANS</h2>
+            <p className="text-xs text-gray-600">CRM SYSTEEM</p>
+          </div>
+        </div>
       </div>
 
       {/* Navigation */}
@@ -69,7 +79,7 @@ export const CrmSidebar = ({ activeTab, setActiveTab }: CrmSidebarProps) => {
                   <Button
                     variant={activeTab === item.id ? "default" : "ghost"}
                     className={`w-full justify-between ${
-                      activeTab === item.id ? "bg-blue-600 hover:bg-blue-700" : ""
+                      activeTab === item.id ? "bg-smans-primary hover:bg-smans-primary text-white" : ""
                     }`}
                     onClick={() => handleMenuClick(item.id)}
                   >
@@ -102,7 +112,7 @@ export const CrmSidebar = ({ activeTab, setActiveTab }: CrmSidebarProps) => {
                         key={subItem.id}
                         variant={activeTab === subItem.id ? "default" : "ghost"}
                         className={`w-full justify-start text-sm ${
-                          activeTab === subItem.id ? "bg-blue-600 hover:bg-blue-700" : ""
+                          activeTab === subItem.id ? "bg-smans-primary hover:bg-smans-primary text-white" : ""
                         }`}
                         onClick={() => handleMenuClick(subItem.id)}
                       >
@@ -118,7 +128,7 @@ export const CrmSidebar = ({ activeTab, setActiveTab }: CrmSidebarProps) => {
                 <Button
                   variant={activeTab === item.id || (item.path === "/settings" && location.pathname === "/settings") ? "default" : "ghost"}
                   className={`w-full justify-start ${
-                    activeTab === item.id || (item.path === "/settings" && location.pathname === "/settings") ? "bg-blue-600 hover:bg-blue-700" : ""
+                    activeTab === item.id || (item.path === "/settings" && location.pathname === "/settings") ? "bg-smans-primary hover:bg-smans-primary text-white" : ""
                   }`}
                   onClick={() => handleMenuClick(item.id)}
                 >
@@ -134,10 +144,10 @@ export const CrmSidebar = ({ activeTab, setActiveTab }: CrmSidebarProps) => {
       {/* User section */}
       <div className="p-4 border-t border-gray-200">
         <div className="flex items-center">
-          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">A</div>
+          <div className="w-8 h-8 rounded-full bg-smans-primary bg-opacity-10 flex items-center justify-center text-smans-primary font-bold">A</div>
           <div className="ml-3">
             <p className="text-sm font-medium">Admin Gebruiker</p>
-            <p className="text-xs text-gray-500">admin@kozijnencrm.nl</p>
+            <p className="text-xs text-gray-500">admin@smans.nl</p>
           </div>
         </div>
       </div>

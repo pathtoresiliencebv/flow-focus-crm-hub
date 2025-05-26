@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -49,6 +50,10 @@
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* SMANS brand color */
+    --smans-primary: 0 71% 36%;
+    --smans-primary-foreground: 0 0% 98%;
   }
 
   .dark {
@@ -87,6 +92,10 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* SMANS brand color for dark mode */
+    --smans-primary: 0 71% 36%;
+    --smans-primary-foreground: 0 0% 98%;
   }
 }
 
@@ -98,4 +107,21 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* SMANS brand utilities */
+.bg-smans-primary {
+  background-color: #aa1917;
+}
+
+.text-smans-primary {
+  color: #aa1917;
+}
+
+.border-smans-primary {
+  border-color: #aa1917;
+}
+
+.hover\:bg-smans-primary:hover {
+  background-color: #8b1415;
 }
