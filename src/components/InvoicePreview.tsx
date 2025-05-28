@@ -1,4 +1,3 @@
-
 import { Receipt } from "lucide-react";
 
 interface InvoicePreviewProps {
@@ -27,17 +26,11 @@ export function InvoicePreview({ formData, customers, projects }: InvoicePreview
       {/* Header with logo and company info */}
       <div className="flex justify-between items-start mb-8">
         <div className="flex items-center">
-          <div className="w-12 h-12 bg-smans-primary rounded-lg flex items-center justify-center mr-4">
-            <img 
-              src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" 
-              alt="SMANS Logo" 
-              className="h-8 w-auto object-contain"
-            />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">SMANS BV</h1>
-            <p className="text-sm text-gray-600">Kozijnen & Renovatie</p>
-          </div>
+          <img 
+            src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" 
+            alt="SMANS Logo" 
+            className="h-12 w-auto object-contain"
+          />
         </div>
         <div className="text-right">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">FACTUUR</h2>
