@@ -27,8 +27,12 @@ export function InvoicePreview({ formData, customers, projects }: InvoicePreview
       {/* Header with logo and company info */}
       <div className="flex justify-between items-start mb-8">
         <div className="flex items-center">
-          <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center mr-4">
-            <Receipt className="h-6 w-6 text-white" />
+          <div className="w-12 h-12 bg-smans-primary rounded-lg flex items-center justify-center mr-4">
+            <img 
+              src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" 
+              alt="SMANS Logo" 
+              className="h-8 w-auto object-contain"
+            />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">SMANS BV</h1>
@@ -37,7 +41,7 @@ export function InvoicePreview({ formData, customers, projects }: InvoicePreview
         </div>
         <div className="text-right">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">FACTUUR</h2>
-          <p className="text-lg font-medium text-blue-600">{formData.invoiceNumber || "INV-XXXX-XXXX"}</p>
+          <p className="text-lg font-medium text-smans-primary">{formData.invoiceNumber || "INV-XXXX-XXXX"}</p>
         </div>
       </div>
 
@@ -59,7 +63,7 @@ export function InvoicePreview({ formData, customers, projects }: InvoicePreview
           <div className="text-sm text-gray-600">
             <p className="font-medium">{customerName || "Selecteer klant..."}</p>
             {projectTitle && (
-              <p className="mt-2 text-blue-600">Project: {projectTitle}</p>
+              <p className="mt-2 text-smans-primary">Project: {projectTitle}</p>
             )}
           </div>
         </div>
@@ -127,7 +131,7 @@ export function InvoicePreview({ formData, customers, projects }: InvoicePreview
           </div>
           <div className="flex justify-between py-2 border-t-2 border-gray-200">
             <span className="font-bold text-lg">Totaal:</span>
-            <span className="font-bold text-lg text-blue-600">€{total.toFixed(2)}</span>
+            <span className="font-bold text-lg text-smans-primary">€{total.toFixed(2)}</span>
           </div>
         </div>
       </div>
