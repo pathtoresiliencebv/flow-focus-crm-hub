@@ -1,5 +1,6 @@
+
 import { Button } from "@/components/ui/button";
-import { Users, Calendar, Folder, Database, LayoutDashboard, Receipt, Clock, Briefcase, BarChart2, ShoppingCart, Settings, LogOut } from "lucide-react";
+import { Users, Calendar, Folder, Database, LayoutDashboard, Receipt, Clock, Briefcase, BarChart2, FileText, Settings, LogOut } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -46,9 +47,9 @@ export const CrmSidebar = ({
     icon: Clock,
     path: "/"
   }, {
-    id: "inventory",
-    label: "Inkoop",
-    icon: ShoppingCart,
+    id: "receipts",
+    label: "Bonnetjes",
+    icon: FileText,
     path: "/"
   }, {
     id: "invoicing",

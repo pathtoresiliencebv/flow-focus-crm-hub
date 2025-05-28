@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Toaster } from "@/components/ui/toaster";
@@ -20,6 +21,7 @@ import { NotificationsMenu } from '@/components/NotificationsMenu';
 import TimeRegistration from '@/components/TimeRegistration';
 import Personnel from '@/components/Personnel';
 import Reports from '@/components/Reports';
+import Receipts from '@/components/Receipts';
 import { useCrmStore } from '@/hooks/useCrmStore';
 import PlanningManagement from '@/components/PlanningManagement';
 
@@ -182,44 +184,8 @@ const Index = () => {
               <TimeRegistration />
             </TabsContent>
 
-            <TabsContent value="inventory" className="mt-0">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold">Voorraad</h2>
-                <Button className="bg-smans-primary hover:bg-smans-primary text-white">Product Toevoegen</Button>
-              </div>
-              
-              <Card>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Product</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Materiaal</TableHead>
-                        <TableHead>In voorraad</TableHead>
-                        <TableHead>Prijs</TableHead>
-                        <TableHead>Acties</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {mockInventory.map(item => <TableRow key={item.id}>
-                          <TableCell className="font-medium">{item.name}</TableCell>
-                          <TableCell>{item.type}</TableCell>
-                          <TableCell>{item.material}</TableCell>
-                          <TableCell>
-                            <span className={`${item.stock > 10 ? "text-green-600" : item.stock > 5 ? "text-yellow-600" : "text-red-600"} font-medium`}>
-                              {item.stock}
-                            </span>
-                          </TableCell>
-                          <TableCell>€{item.price}</TableCell>
-                          <TableCell>
-                            <Button variant="ghost" size="sm">Bewerken</Button>
-                          </TableCell>
-                        </TableRow>)}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
+            <TabsContent value="receipts" className="mt-0">
+              <Receipts />
             </TabsContent>
             
             <TabsContent value="invoicing" className="mt-0">
