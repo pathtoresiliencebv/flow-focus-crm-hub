@@ -15,7 +15,12 @@ export const useAuth = () => {
     // Check if user is already logged in (from localStorage)
     const savedUser = localStorage.getItem('crm_user');
     if (savedUser) {
-      setUser(JSON.parse(savedUser));
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (error) {
+        // Clear invalid data
+        localStorage.removeItem('crm_user');
+      }
     }
     setIsLoading(false);
   }, []);
