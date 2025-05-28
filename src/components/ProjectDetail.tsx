@@ -1,26 +1,37 @@
 
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, FileText, Users, Clipboard, BarChart } from "lucide-react";
+import { ArrowLeft, Calendar, FileText, Users, Clipboard, BarChart, Edit, Save, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { CrmSidebar } from "@/components/CrmSidebar";
 import { NotificationsMenu } from "@/components/NotificationsMenu";
-
-// Import mock data
-import { mockProjects, mockCustomers, mockInvoices } from "@/data/mockData";
+import { useCrmStore } from "@/hooks/useCrmStore";
 
 const ProjectDetail = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
+  const { projects, customers, updateProject } = useCrmStore();
   const [activeTab, setActiveTab] = useState("projects");
   const [projectDetailTab, setProjectDetailTab] = useState("details");
   const [searchTerm, setSearchTerm] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState({
+    title: "",
+    customerId: "",
+    date: "",
+    value: "",
+    status: "",
+    description: "",
+  });
 
-  // Find the project from the mock data
-  const project = mockProjects.find(p => p.id.toString() === projectId);
+  // Find the project from the CRM store
+  const project = projects.find(p => p.id === projectId);
   
   // If project not found, show error message
   if (!project) {
@@ -52,10 +63,54 @@ const ProjectDetail = () => {
   }
 
   // Find customer details
-  const customer = mockCustomers.find(c => c.name === project.customer);
-  
-  // Find related invoices
-  const projectInvoices = mockInvoices.filter(i => i.project === project.title);
+  const customer = customers.find(c => c.id === project.customerId);
+
+  const handleEditStart = () => {
+    setEditData({
+      title: project.title,
+      customerId: project.customerId.toString(),
+      date: project.date,
+      value: project.value,
+      status: project.status,
+      description: project.description,
+    });
+    setIsEditing(true);
+  };
+
+  const handleEditCancel = () => {
+    setIsEditing(false);
+    setEditData({
+      title: "",
+      customerId: "",
+      date: "",
+      value: "",
+      status: "",
+      description: "",
+    });
+  };
+
+  const handleEditSave = () => {
+    const selectedCustomer = customers.find(c => c.id.toString() === editData.customerId);
+    if (selectedCustomer) {
+      updateProject(project.id, {
+        title: editData.title,
+        customerId: selectedCustomer.id,
+        customer: selectedCustomer.name,
+        date: editData.date,
+        value: editData.value,
+        status: editData.status as "te-plannen" | "gepland" | "herkeuring" | "afgerond",
+        description: editData.description,
+      });
+    }
+    setIsEditing(false);
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setEditData(prev => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -74,20 +129,45 @@ const ProjectDetail = () => {
 
         <div className="flex-1 overflow-auto p-6">
           <div className="space-y-6">
-            <div className="flex items-center gap-4">
-              <Button variant="outline" onClick={() => navigate(-1)}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Terug
-              </Button>
-              <h2 className="text-2xl font-bold">Project: {project.title}</h2>
-              <span className={`px-2 py-1 rounded-full text-xs ${
-                project.status === "In uitvoering" ? "bg-blue-100 text-blue-800" :
-                project.status === "Gepland" ? "bg-orange-100 text-orange-800" :
-                project.status === "Afgerond" ? "bg-green-100 text-green-800" :
-                "bg-gray-100 text-gray-800"
-              }`}>
-                {project.status}
-              </span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button variant="outline" onClick={() => navigate(-1)}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Terug
+                </Button>
+                <h2 className="text-2xl font-bold">Project: {project.title}</h2>
+                <span className={`px-2 py-1 rounded-full text-xs ${
+                  project.status === "gepland" ? "bg-orange-100 text-orange-800" :
+                  project.status === "afgerond" ? "bg-green-100 text-green-800" :
+                  project.status === "herkeuring" ? "bg-gray-100 text-gray-800" :
+                  "bg-red-100 text-red-800"
+                }`}>
+                  {project.status === "te-plannen" ? "Te plannen" :
+                   project.status === "gepland" ? "Gepland" :
+                   project.status === "herkeuring" ? "Herkeuring" :
+                   "Afgerond"}
+                </span>
+              </div>
+              
+              <div className="flex gap-2">
+                {!isEditing ? (
+                  <Button onClick={handleEditStart}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Bewerken
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="outline" onClick={handleEditCancel}>
+                      <X className="mr-2 h-4 w-4" />
+                      Annuleren
+                    </Button>
+                    <Button onClick={handleEditSave}>
+                      <Save className="mr-2 h-4 w-4" />
+                      Opslaan
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -95,13 +175,81 @@ const ProjectDetail = () => {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium">Projectgegevens</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-1">
-                    <p className="text-sm"><span className="font-medium">Klant:</span> {project.customer}</p>
-                    <p className="text-sm"><span className="font-medium">Datum:</span> {project.date}</p>
-                    <p className="text-sm"><span className="font-medium">Status:</span> {project.status}</p>
-                    <p className="text-sm"><span className="font-medium">Waarde:</span> €{project.value}</p>
-                  </div>
+                <CardContent className="space-y-3">
+                  {isEditing ? (
+                    <>
+                      <div>
+                        <Label htmlFor="edit-title" className="text-xs font-medium">Projectnaam</Label>
+                        <Input
+                          id="edit-title"
+                          value={editData.title}
+                          onChange={(e) => handleInputChange("title", e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-customer" className="text-xs font-medium">Klant</Label>
+                        <Select value={editData.customerId} onValueChange={(value) => handleInputChange("customerId", value)}>
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Selecteer klant" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {customers.map((customer) => (
+                              <SelectItem key={customer.id} value={customer.id.toString()}>
+                                {customer.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-date" className="text-xs font-medium">Datum</Label>
+                        <Input
+                          id="edit-date"
+                          type="date"
+                          value={editData.date}
+                          onChange={(e) => handleInputChange("date", e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-status" className="text-xs font-medium">Status</Label>
+                        <Select value={editData.status} onValueChange={(value) => handleInputChange("status", value)}>
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Selecteer status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="te-plannen">Te plannen</SelectItem>
+                            <SelectItem value="gepland">Gepland</SelectItem>
+                            <SelectItem value="herkeuring">Herkeuring</SelectItem>
+                            <SelectItem value="afgerond">Afgerond</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="edit-value" className="text-xs font-medium">Waarde (€)</Label>
+                        <Input
+                          id="edit-value"
+                          type="number"
+                          value={editData.value}
+                          onChange={(e) => handleInputChange("value", e.target.value)}
+                          className="mt-1"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-1">
+                      <p className="text-sm"><span className="font-medium">Klant:</span> {project.customer}</p>
+                      <p className="text-sm"><span className="font-medium">Datum:</span> {project.date}</p>
+                      <p className="text-sm"><span className="font-medium">Status:</span> {
+                        project.status === "te-plannen" ? "Te plannen" :
+                        project.status === "gepland" ? "Gepland" :
+                        project.status === "herkeuring" ? "Herkeuring" :
+                        "Afgerond"
+                      }</p>
+                      <p className="text-sm"><span className="font-medium">Waarde:</span> €{project.value}</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -139,12 +287,8 @@ const ProjectDetail = () => {
                 <CardContent>
                   <div className="space-y-1">
                     <p className="text-sm"><span className="font-medium">Project waarde:</span> €{project.value}</p>
-                    <p className="text-sm"><span className="font-medium">Gefactureerd:</span> €{
-                      projectInvoices
-                        .reduce((sum, invoice) => sum + parseFloat(invoice.amount.replace(',', '.')), 0)
-                        .toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                    }</p>
-                    <p className="text-sm"><span className="font-medium">Aantal facturen:</span> {projectInvoices.length}</p>
+                    <p className="text-sm"><span className="font-medium">Gefactureerd:</span> €0.00</p>
+                    <p className="text-sm"><span className="font-medium">Aantal facturen:</span> 0</p>
                   </div>
                 </CardContent>
               </Card>
@@ -181,6 +325,21 @@ const ProjectDetail = () => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
+                      <h3 className="font-semibold mb-2">Beschrijving</h3>
+                      {isEditing ? (
+                        <Textarea
+                          value={editData.description}
+                          onChange={(e) => handleInputChange("description", e.target.value)}
+                          placeholder="Beschrijf het project..."
+                          rows={4}
+                        />
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          {project.description || "Nog geen beschrijving toegevoegd voor dit project."}
+                        </p>
+                      )}
+                    </div>
+                    <div>
                       <h3 className="font-semibold mb-2">Project specificaties</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -200,12 +359,6 @@ const ProjectDetail = () => {
                           <p className="text-sm text-muted-foreground">3-5 werkdagen</p>
                         </div>
                       </div>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold mb-2">Opmerkingen</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Nog geen opmerkingen toegevoegd voor dit project.
-                      </p>
                     </div>
                   </CardContent>
                 </Card>
