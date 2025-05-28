@@ -143,11 +143,11 @@ export function Invoicing() {
               Nieuwe Factuur
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[900px]">
+          <DialogContent className="sm:max-w-[1400px]">
             <DialogHeader>
               <DialogTitle>Nieuwe factuur aanmaken</DialogTitle>
               <DialogDescription>
-                Vul de factuurgegevens in om een nieuwe factuur aan te maken.
+                Vul de factuurgegevens in en bekijk direct de preview van je factuur.
               </DialogDescription>
             </DialogHeader>
             <InvoiceForm 
