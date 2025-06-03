@@ -1,16 +1,14 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { WeekCalendar } from "./WeekCalendar";
 
 export const TimeRegistration = () => {
-  const [date, setDate] = useState<Date | undefined>(new Date());
   const [activeTab, setActiveTab] = useState("overview");
   const { toast } = useToast();
   
@@ -20,6 +18,15 @@ export const TimeRegistration = () => {
       title: "Tijd geregistreerd",
       description: "De tijdsregistratie is succesvol opgeslagen.",
     });
+  };
+
+  const handleEventClick = (event: any) => {
+    console.log("Event clicked:", event);
+  };
+
+  const handleTimeSlotClick = (date: Date, hour: number) => {
+    console.log("Time slot clicked:", date, hour);
+    setActiveTab("register");
   };
 
   return (
@@ -32,6 +39,7 @@ export const TimeRegistration = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="mb-4">
           <TabsTrigger value="overview">Overzicht</TabsTrigger>
+          <TabsTrigger value="calendar">Weekkalender</TabsTrigger>
           <TabsTrigger value="register">Registreren</TabsTrigger>
           <TabsTrigger value="reports">Rapporten</TabsTrigger>
         </TabsList>
@@ -77,6 +85,21 @@ export const TimeRegistration = () => {
           </Card>
         </TabsContent>
 
+        <TabsContent value="calendar" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Weekkalender</CardTitle>
+              <CardDescription>Bekijk en beheer je tijdsregistraties in weekoverzicht</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <WeekCalendar 
+                onEventClick={handleEventClick}
+                onTimeSlotClick={handleTimeSlotClick}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="register" className="space-y-4">
           <Card>
             <CardHeader>
@@ -86,14 +109,19 @@ export const TimeRegistration = () => {
             <CardContent>
               <form onSubmit={handleSubmitTime} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Datum</label>
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={setDate}
-                      className="border rounded-md p-3"
-                    />
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium">Datum</label>
+                      <Input type="date" className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Starttijd</label>
+                      <Input type="time" className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Eindtijd</label>
+                      <Input type="time" className="mt-1" />
+                    </div>
                   </div>
                   <div className="space-y-4">
                     <div>
@@ -123,10 +151,6 @@ export const TimeRegistration = () => {
                           <SelectItem value="activity4">Administratie</SelectItem>
                         </SelectContent>
                       </Select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Uren</label>
-                      <Input type="number" step="0.5" min="0" className="mt-1" />
                     </div>
                     <div>
                       <label className="text-sm font-medium">Opmerkingen</label>

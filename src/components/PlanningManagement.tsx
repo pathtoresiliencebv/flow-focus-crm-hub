@@ -13,6 +13,8 @@ import { CalendarIcon, Clock, MapPin, User, Plus, CalendarDays } from "lucide-re
 import LocationMapInput from "./LocationMapInput";
 import { format, addDays, parseISO } from "date-fns";
 import { nl } from "date-fns/locale";
+import { WeekCalendar } from "./WeekCalendar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface PlanningItem {
   id: string;
@@ -36,11 +38,12 @@ export const PlanningManagement = () => {
   const [multiDayLocationValue, setMultiDayLocationValue] = useState("");
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
   const [endDate, setEndDate] = useState<Date | undefined>(addDays(new Date(), 7));
+  const [activeTab, setActiveTab] = useState("week");
   
   const [planningItems, setPlanningItems] = useState<PlanningItem[]>([
     {
       id: "1",
-      date: "2025-05-26",
+      date: "2025-06-02",
       time: "09:00",
       employee: "Peter Bakker",
       employeeId: 3,
@@ -53,7 +56,7 @@ export const PlanningManagement = () => {
     },
     {
       id: "2",
-      date: "2025-05-27",
+      date: "2025-06-04",
       time: "13:30",
       employee: "Peter Bakker",
       employeeId: 3,
@@ -66,7 +69,7 @@ export const PlanningManagement = () => {
     },
     {
       id: "3",
-      date: "2025-05-28",
+      date: "2025-06-06",
       time: "10:00",
       employee: "Peter Bakker",
       employeeId: 3,
@@ -85,6 +88,17 @@ export const PlanningManagement = () => {
 
   // Filter users with "Installateur" role
   const installers = users.filter(user => user.role === "Installateur");
+
+  // Convert planning items to calendar events
+  const calendarEvents = planningItems.map(item => ({
+    id: item.id,
+    title: `${item.project} - ${item.employee}`,
+    startTime: item.time,
+    endTime: format(addDays(parseISO(`${item.date}T${item.time}`), 0), 'HH:mm'),
+    date: item.date,
+    type: 'appointment' as const,
+    description: item.description
+  }));
 
   const handleCreatePlanning = (formData: FormData) => {
     const selectedDateFormatted = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : new Date().toISOString().split('T')[0];
@@ -183,6 +197,15 @@ export const PlanningManagement = () => {
       case "Geannuleerd": return "bg-red-100 text-red-800";
       default: return "bg-gray-100 text-gray-800";
     }
+  };
+
+  const handleEventClick = (event: any) => {
+    console.log("Planning event clicked:", event);
+  };
+
+  const handleTimeSlotClick = (date: Date, hour: number) => {
+    setSelectedDate(date);
+    setNewPlanningDialogOpen(true);
   };
 
   // Get plannings for selected date
@@ -340,7 +363,7 @@ export const PlanningManagement = () => {
             <DialogTrigger asChild>
               <Button disabled={!selectedDate}>
                 <Plus className="mr-2 h-4 w-4" />
-                Nieuwe Planning voor {selectedDate ? format(selectedDate, 'dd/MM', { locale: nl }) : 'Selecteer datum'}
+                Nieuwe Planning
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
@@ -429,155 +452,183 @@ export const PlanningManagement = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Interactive Calendar */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5" />
-              Kalender
-            </CardTitle>
-            <CardDescription>
-              Klik op een datum om planningen te bekijken
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={handleDateSelect}
-              modifiers={{
-                hasPlanning: planningDates
-              }}
-              modifiersStyles={{
-                hasPlanning: {
-                  backgroundColor: '#3b82f6',
-                  color: 'white',
-                  fontWeight: 'bold'
-                }
-              }}
-              className="rounded-md border pointer-events-auto"
-            />
-            <div className="mt-4 text-xs text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                <span>Dagen met planning</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="week">Weekkalender</TabsTrigger>
+          <TabsTrigger value="month">Maandoverzicht</TabsTrigger>
+          <TabsTrigger value="list">Lijstweergave</TabsTrigger>
+        </TabsList>
 
-        {/* Selected Date Planning */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5" />
-              Planning voor {formatSelectedDate()}
-            </CardTitle>
-            <CardDescription>
-              {selectedDatePlannings.length > 0 
-                ? `${selectedDatePlannings.length} activiteit(en) gepland`
-                : "Geen activiteiten gepland voor deze dag"
-              }
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {selectedDatePlannings.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">
-                  Geen planning voor deze dag
-                </p>
-                {selectedDate && (
-                  <Button 
-                    onClick={() => setNewPlanningDialogOpen(true)}
-                    variant="outline"
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Planning Toevoegen
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {selectedDatePlannings.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                    <div className="flex items-center gap-4">
-                      <div className="text-lg font-medium text-blue-600">{item.time}</div>
-                      <div className="flex-1">
-                        <div className="font-medium">{item.project}</div>
-                        <div className="text-sm text-muted-foreground flex items-center gap-4 mt-1">
-                          <div className="flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            {item.employee}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {item.location}
+        <TabsContent value="week" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Weekplanning</CardTitle>
+              <CardDescription>Overzicht van alle geplande activiteiten deze week</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <WeekCalendar 
+                events={calendarEvents}
+                onEventClick={handleEventClick}
+                onTimeSlotClick={handleTimeSlotClick}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="month" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Interactive Calendar */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CalendarIcon className="h-5 w-5" />
+                  Kalender
+                </CardTitle>
+                <CardDescription>
+                  Klik op een datum om planningen te bekijken
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={handleDateSelect}
+                  modifiers={{
+                    hasPlanning: planningDates
+                  }}
+                  modifiersStyles={{
+                    hasPlanning: {
+                      backgroundColor: '#3b82f6',
+                      color: 'white',
+                      fontWeight: 'bold'
+                    }
+                  }}
+                  className="rounded-md border pointer-events-auto"
+                />
+                <div className="mt-4 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                    <span>Dagen met planning</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Selected Date Planning */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Planning voor {formatSelectedDate()}
+                </CardTitle>
+                <CardDescription>
+                  {selectedDatePlannings.length > 0 
+                    ? `${selectedDatePlannings.length} activiteit(en) gepland`
+                    : "Geen activiteiten gepland voor deze dag"
+                  }
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {selectedDatePlannings.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground mb-4">
+                      Geen planning voor deze dag
+                    </p>
+                    {selectedDate && (
+                      <Button 
+                        onClick={() => setNewPlanningDialogOpen(true)}
+                        variant="outline"
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Planning Toevoegen
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {selectedDatePlannings.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                        <div className="flex items-center gap-4">
+                          <div className="text-lg font-medium text-blue-600">{item.time}</div>
+                          <div className="flex-1">
+                            <div className="font-medium">{item.project}</div>
+                            <div className="text-sm text-muted-foreground flex items-center gap-4 mt-1">
+                              <div className="flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                {item.employee}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                {item.location}
+                              </div>
+                            </div>
+                            {item.description && (
+                              <div className="text-sm text-muted-foreground mt-1">
+                                {item.description}
+                              </div>
+                            )}
                           </div>
                         </div>
-                        {item.description && (
-                          <div className="text-sm text-muted-foreground mt-1">
-                            {item.description}
-                          </div>
-                        )}
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
+                          {item.status}
+                        </span>
                       </div>
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
-                      {item.status}
-                    </span>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
-      {/* All Planning Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Alle Planningen</CardTitle>
-          <CardDescription>Overzicht van alle geplande activiteiten</CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Datum</TableHead>
-                <TableHead>Tijd</TableHead>
-                <TableHead>Monteur</TableHead>
-                <TableHead>Project</TableHead>
-                <TableHead>Locatie</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Acties</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {planningItems
-                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-                .map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>{format(new Date(item.date), 'dd MMM yyyy', { locale: nl })}</TableCell>
-                  <TableCell>{item.time}</TableCell>
-                  <TableCell>{item.employee}</TableCell>
-                  <TableCell>{item.project}</TableCell>
-                  <TableCell className="max-w-xs truncate">{item.location}</TableCell>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(item.status)}`}>
-                      {item.status}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm">
-                      Bewerken
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+        <TabsContent value="list" className="space-y-4">
+          {/* All Planning Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Alle Planningen</CardTitle>
+              <CardDescription>Overzicht van alle geplande activiteiten</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Datum</TableHead>
+                    <TableHead>Tijd</TableHead>
+                    <TableHead>Monteur</TableHead>
+                    <TableHead>Project</TableHead>
+                    <TableHead>Locatie</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Acties</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {planningItems
+                    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                    .map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>{format(new Date(item.date), 'dd MMM yyyy', { locale: nl })}</TableCell>
+                      <TableCell>{item.time}</TableCell>
+                      <TableCell>{item.employee}</TableCell>
+                      <TableCell>{item.project}</TableCell>
+                      <TableCell className="max-w-xs truncate">{item.location}</TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(item.status)}`}>
+                          {item.status}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm">
+                          Bewerken
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
