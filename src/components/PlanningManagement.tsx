@@ -33,12 +33,19 @@ interface PlanningItem {
 export const PlanningManagement = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [newPlanningDialogOpen, setNewPlanningDialogOpen] = useState(false);
+  const [quickPlanningDialogOpen, setQuickPlanningDialogOpen] = useState(false);
   const [multiDayPlanningDialogOpen, setMultiDayPlanningDialogOpen] = useState(false);
   const [locationValue, setLocationValue] = useState("");
+  const [quickLocationValue, setQuickLocationValue] = useState("");
   const [multiDayLocationValue, setMultiDayLocationValue] = useState("");
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
   const [endDate, setEndDate] = useState<Date | undefined>(addDays(new Date(), 7));
   const [activeTab, setActiveTab] = useState("week");
+  const [quickPlanningData, setQuickPlanningData] = useState<{
+    date: Date;
+    startHour: number;
+    endHour: number;
+  } | null>(null);
   
   const [planningItems, setPlanningItems] = useState<PlanningItem[]>([
     {
@@ -189,6 +196,52 @@ export const PlanningManagement = () => {
     });
   };
 
+  const handleEventClick = (event: any) => {
+    console.log("Planning event clicked:", event);
+    toast({
+      title: "Planning details",
+      description: `${event.title} - ${event.startTime}`,
+    });
+  };
+
+  const handleTimeSlotClick = (date: Date, hour: number) => {
+    setSelectedDate(date);
+    setNewPlanningDialogOpen(true);
+  };
+
+  const handleEventCreate = (date: Date, startHour: number, endHour: number) => {
+    setQuickPlanningData({ date, startHour, endHour });
+    setQuickPlanningDialogOpen(true);
+  };
+
+  const handleQuickPlanningCreate = (formData: FormData) => {
+    if (!quickPlanningData) return;
+
+    const newPlanning: PlanningItem = {
+      id: Date.now().toString(),
+      date: format(quickPlanningData.date, 'yyyy-MM-dd'),
+      time: `${quickPlanningData.startHour.toString().padStart(2, '0')}:00`,
+      employee: users.find(u => u.id === parseInt(formData.get('employee') as string))?.name || '',
+      employeeId: parseInt(formData.get('employee') as string),
+      project: projects.find(p => p.id === formData.get('project') as string)?.title || '',
+      projectId: formData.get('project') as string,
+      location: quickLocationValue,
+      description: formData.get('description') as string,
+      status: "Gepland",
+      createdAt: new Date().toISOString()
+    };
+
+    setPlanningItems([...planningItems, newPlanning]);
+    setQuickPlanningDialogOpen(false);
+    setQuickLocationValue("");
+    setQuickPlanningData(null);
+    
+    toast({
+      title: "Planning aangemaakt",
+      description: `Planning voor ${newPlanning.employee} op ${format(quickPlanningData.date, 'dd MMMM yyyy', { locale: nl })} van ${quickPlanningData.startHour}:00 tot ${quickPlanningData.endHour}:00 is succesvol aangemaakt.`,
+    });
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Gepland": return "bg-blue-100 text-blue-800";
@@ -197,15 +250,6 @@ export const PlanningManagement = () => {
       case "Geannuleerd": return "bg-red-100 text-red-800";
       default: return "bg-gray-100 text-gray-800";
     }
-  };
-
-  const handleEventClick = (event: any) => {
-    console.log("Planning event clicked:", event);
-  };
-
-  const handleTimeSlotClick = (date: Date, hour: number) => {
-    setSelectedDate(date);
-    setNewPlanningDialogOpen(true);
   };
 
   // Get plannings for selected date
@@ -449,6 +493,80 @@ export const PlanningManagement = () => {
               </form>
             </DialogContent>
           </Dialog>
+          <Dialog open={quickPlanningDialogOpen} onOpenChange={setQuickPlanningDialogOpen}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Snelle planning aanmaken</DialogTitle>
+                <DialogDescription>
+                  {quickPlanningData && 
+                    `Planning voor ${format(quickPlanningData.date, 'EEEE dd MMMM yyyy', { locale: nl })} van ${quickPlanningData.startHour}:00 tot ${quickPlanningData.endHour}:00`
+                  }
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                handleQuickPlanningCreate(formData);
+              }} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Monteur</label>
+                    <Select name="employee" required>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Kies monteur" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {installers.map((installer) => (
+                          <SelectItem key={installer.id} value={installer.id.toString()}>
+                            {installer.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Project</label>
+                    <Select name="project" required>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Kies project" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {projects.map((project) => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.title} - {project.customer}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Locatie</label>
+                  <div className="mt-1">
+                    <LocationMapInput
+                      value={quickLocationValue}
+                      onChange={setQuickLocationValue}
+                      placeholder="Zoek adres of locatie..."
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Beschrijving</label>
+                  <Input name="description" className="mt-1" placeholder="Omschrijving van het werk" />
+                </div>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => {
+                    setQuickPlanningDialogOpen(false);
+                    setQuickLocationValue("");
+                    setQuickPlanningData(null);
+                  }}>
+                    Annuleren
+                  </Button>
+                  <Button type="submit">Planning Aanmaken</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -463,13 +581,20 @@ export const PlanningManagement = () => {
           <Card>
             <CardHeader>
               <CardTitle>Weekplanning</CardTitle>
-              <CardDescription>Overzicht van alle geplande activiteiten deze week</CardDescription>
+              <CardDescription>
+                Overzicht van alle geplande activiteiten deze week
+                <br />
+                <span className="text-sm text-muted-foreground">
+                  💡 Tip: Sleep over tijdslots om snel een nieuwe planning aan te maken
+                </span>
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <WeekCalendar 
                 events={calendarEvents}
                 onEventClick={handleEventClick}
                 onTimeSlotClick={handleTimeSlotClick}
+                onEventCreate={handleEventCreate}
               />
             </CardContent>
           </Card>

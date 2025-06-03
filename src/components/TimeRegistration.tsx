@@ -4,29 +4,56 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WeekCalendar } from "./WeekCalendar";
+import { format } from "date-fns";
+import { nl } from "date-fns/locale";
 
 export const TimeRegistration = () => {
   const [activeTab, setActiveTab] = useState("overview");
+  const [timeDialogOpen, setTimeDialogOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedStartHour, setSelectedStartHour] = useState<number>(9);
+  const [selectedEndHour, setSelectedEndHour] = useState<number>(10);
   const { toast } = useToast();
   
   const handleSubmitTime = (e: React.FormEvent) => {
     e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    
     toast({
       title: "Tijd geregistreerd",
       description: "De tijdsregistratie is succesvol opgeslagen.",
     });
+    
+    setTimeDialogOpen(false);
+    setSelectedDate(null);
   };
 
   const handleEventClick = (event: any) => {
     console.log("Event clicked:", event);
+    toast({
+      title: "Event details",
+      description: `${event.title} - ${event.startTime} tot ${event.endTime}`,
+    });
   };
 
   const handleTimeSlotClick = (date: Date, hour: number) => {
     console.log("Time slot clicked:", date, hour);
+    setSelectedDate(date);
+    setSelectedStartHour(hour);
+    setSelectedEndHour(hour + 1);
     setActiveTab("register");
+  };
+
+  const handleEventCreate = (date: Date, startHour: number, endHour: number) => {
+    console.log("Creating event:", date, startHour, endHour);
+    setSelectedDate(date);
+    setSelectedStartHour(startHour);
+    setSelectedEndHour(endHour);
+    setTimeDialogOpen(true);
   };
 
   return (
@@ -89,12 +116,19 @@ export const TimeRegistration = () => {
           <Card>
             <CardHeader>
               <CardTitle>Weekkalender</CardTitle>
-              <CardDescription>Bekijk en beheer je tijdsregistraties in weekoverzicht</CardDescription>
+              <CardDescription>
+                Bekijk en beheer je tijdsregistraties in weekoverzicht. 
+                <br />
+                <span className="text-sm text-muted-foreground">
+                  💡 Tip: Sleep over tijdslots om snel een nieuwe registratie aan te maken
+                </span>
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <WeekCalendar 
                 onEventClick={handleEventClick}
                 onTimeSlotClick={handleTimeSlotClick}
+                onEventCreate={handleEventCreate}
               />
             </CardContent>
           </Card>
@@ -104,7 +138,12 @@ export const TimeRegistration = () => {
           <Card>
             <CardHeader>
               <CardTitle>Nieuwe tijdsregistratie</CardTitle>
-              <CardDescription>Registreer je gewerkte uren</CardDescription>
+              <CardDescription>
+                {selectedDate ? 
+                  `Registreer je gewerkte uren voor ${format(selectedDate, 'EEEE dd MMMM yyyy', { locale: nl })}` :
+                  "Registreer je gewerkte uren"
+                }
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmitTime} className="space-y-4">
@@ -112,21 +151,42 @@ export const TimeRegistration = () => {
                   <div className="space-y-4">
                     <div>
                       <label className="text-sm font-medium">Datum</label>
-                      <Input type="date" className="mt-1" />
+                      <Input 
+                        type="date" 
+                        className="mt-1" 
+                        value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''}
+                        onChange={(e) => setSelectedDate(e.target.value ? new Date(e.target.value) : null)}
+                      />
                     </div>
                     <div>
                       <label className="text-sm font-medium">Starttijd</label>
-                      <Input type="time" className="mt-1" />
+                      <Input 
+                        type="time" 
+                        className="mt-1" 
+                        value={`${selectedStartHour.toString().padStart(2, '0')}:00`}
+                        onChange={(e) => {
+                          const hour = parseInt(e.target.value.split(':')[0]);
+                          setSelectedStartHour(hour);
+                        }}
+                      />
                     </div>
                     <div>
                       <label className="text-sm font-medium">Eindtijd</label>
-                      <Input type="time" className="mt-1" />
+                      <Input 
+                        type="time" 
+                        className="mt-1" 
+                        value={`${selectedEndHour.toString().padStart(2, '0')}:00`}
+                        onChange={(e) => {
+                          const hour = parseInt(e.target.value.split(':')[0]);
+                          setSelectedEndHour(hour);
+                        }}
+                      />
                     </div>
                   </div>
                   <div className="space-y-4">
                     <div>
                       <label className="text-sm font-medium">Project</label>
-                      <Select>
+                      <Select name="project" required>
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder="Kies project" />
                         </SelectTrigger>
@@ -140,7 +200,7 @@ export const TimeRegistration = () => {
                     </div>
                     <div>
                       <label className="text-sm font-medium">Activiteit</label>
-                      <Select>
+                      <Select name="activity" required>
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder="Kies activiteit" />
                         </SelectTrigger>
@@ -154,7 +214,7 @@ export const TimeRegistration = () => {
                     </div>
                     <div>
                       <label className="text-sm font-medium">Opmerkingen</label>
-                      <Input className="mt-1" />
+                      <Input name="comments" className="mt-1" placeholder="Optionele opmerkingen" />
                     </div>
                     <Button type="submit" className="mt-4">Registreren</Button>
                   </div>
@@ -203,6 +263,62 @@ export const TimeRegistration = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Quick Time Registration Dialog */}
+      <Dialog open={timeDialogOpen} onOpenChange={setTimeDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Snelle tijdsregistratie</DialogTitle>
+            <DialogDescription>
+              {selectedDate && 
+                `Registreer tijd voor ${format(selectedDate, 'EEEE dd MMMM yyyy', { locale: nl })} van ${selectedStartHour}:00 tot ${selectedEndHour}:00`
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmitTime} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Project</label>
+              <Select name="project" required>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Kies project" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="project1">Renovatie woonkamer</SelectItem>
+                  <SelectItem value="project2">Nieuwe kozijnen achtergevel</SelectItem>
+                  <SelectItem value="project3">Vervangen voordeur</SelectItem>
+                  <SelectItem value="project4">Isolatieglas installatie</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Activiteit</label>
+              <Select name="activity" required>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Kies activiteit" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="activity1">Opmeten</SelectItem>
+                  <SelectItem value="activity2">Installatie</SelectItem>
+                  <SelectItem value="activity3">Adviesgesprek</SelectItem>
+                  <SelectItem value="activity4">Administratie</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Opmerkingen</label>
+              <Input name="comments" className="mt-1" placeholder="Optionele opmerkingen" />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setTimeDialogOpen(false)}>
+                Annuleren
+              </Button>
+              <Button type="submit">
+                Registreren
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

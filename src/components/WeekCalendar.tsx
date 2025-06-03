@@ -20,6 +20,7 @@ interface WeekCalendarProps {
   events?: CalendarEvent[];
   onEventClick?: (event: CalendarEvent) => void;
   onTimeSlotClick?: (date: Date, hour: number) => void;
+  onEventCreate?: (date: Date, startHour: number, endHour: number) => void;
 }
 
 const timeSlots = Array.from({ length: 14 }, (_, i) => i + 8); // 8 AM to 9 PM
@@ -75,8 +76,11 @@ const mockEvents: CalendarEvent[] = [
   }
 ];
 
-export const WeekCalendar = ({ events = mockEvents, onEventClick, onTimeSlotClick }: WeekCalendarProps) => {
+export const WeekCalendar = ({ events = mockEvents, onEventClick, onTimeSlotClick, onEventCreate }: WeekCalendarProps) => {
   const [currentWeek, setCurrentWeek] = useState(new Date());
+  const [dragStart, setDragStart] = useState<{date: Date, hour: number} | null>(null);
+  const [dragEnd, setDragEnd] = useState<{date: Date, hour: number} | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 }); // Start on Monday
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -109,8 +113,49 @@ export const WeekCalendar = ({ events = mockEvents, onEventClick, onTimeSlotClic
     return { top, height };
   };
 
+  const handleMouseDown = (date: Date, hour: number) => {
+    setDragStart({date, hour});
+    setIsDragging(true);
+  };
+
+  const handleMouseEnter = (date: Date, hour: number) => {
+    if (isDragging && dragStart) {
+      setDragEnd({date, hour});
+    }
+  };
+
+  const handleMouseUp = () => {
+    if (isDragging && dragStart && dragEnd && isSameDay(dragStart.date, dragEnd.date)) {
+      const startHour = Math.min(dragStart.hour, dragEnd.hour);
+      const endHour = Math.max(dragStart.hour, dragEnd.hour) + 1;
+      
+      if (onEventCreate) {
+        onEventCreate(dragStart.date, startHour, endHour);
+      }
+    } else if (isDragging && dragStart && !dragEnd) {
+      // Single click
+      if (onTimeSlotClick) {
+        onTimeSlotClick(dragStart.date, dragStart.hour);
+      }
+    }
+    
+    setDragStart(null);
+    setDragEnd(null);
+    setIsDragging(false);
+  };
+
+  const isInDragSelection = (date: Date, hour: number) => {
+    if (!isDragging || !dragStart || !dragEnd) return false;
+    if (!isSameDay(date, dragStart.date)) return false;
+    
+    const minHour = Math.min(dragStart.hour, dragEnd.hour);
+    const maxHour = Math.max(dragStart.hour, dragEnd.hour);
+    
+    return hour >= minHour && hour <= maxHour;
+  };
+
   return (
-    <div className="w-full bg-white rounded-lg border">
+    <div className="w-full bg-white rounded-lg border" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center gap-2">
@@ -164,8 +209,11 @@ export const WeekCalendar = ({ events = mockEvents, onEventClick, onTimeSlotClic
                   {timeSlots.map(hour => (
                     <div
                       key={hour}
-                      className="h-15 border-b border-gray-100 hover:bg-gray-50 cursor-pointer relative"
-                      onClick={() => onTimeSlotClick?.(day, hour)}
+                      className={`h-15 border-b border-gray-100 hover:bg-blue-50 cursor-pointer relative select-none ${
+                        isInDragSelection(day, hour) ? 'bg-blue-200' : ''
+                      }`}
+                      onMouseDown={() => handleMouseDown(day, hour)}
+                      onMouseEnter={() => handleMouseEnter(day, hour)}
                     >
                     </div>
                   ))}
@@ -176,9 +224,12 @@ export const WeekCalendar = ({ events = mockEvents, onEventClick, onTimeSlotClic
                     return (
                       <div
                         key={event.id}
-                        className={`absolute left-1 right-1 rounded px-2 py-1 text-xs cursor-pointer overflow-hidden ${eventColors[event.type]}`}
+                        className={`absolute left-1 right-1 rounded px-2 py-1 text-xs cursor-pointer overflow-hidden ${eventColors[event.type]} z-10`}
                         style={{ top: `${top}px`, height: `${Math.max(height, 20)}px` }}
-                        onClick={() => onEventClick?.(event)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEventClick?.(event);
+                        }}
                       >
                         <div className="font-medium truncate">{event.title}</div>
                         <div className="text-xs opacity-90">
