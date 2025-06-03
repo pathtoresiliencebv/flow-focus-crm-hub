@@ -158,6 +158,11 @@ export const ProjectsBoard: React.FC = () => {
     setNewProjectDialogOpen(true);
   };
 
+  const handleProjectCreated = () => {
+    setNewProjectDialogOpen(false);
+    // Projects will automatically update through the useCrmStore hook
+  };
+
   const projectsByStatus = statusColumns.reduce<Record<string, Project[]>>((acc, column) => {
     acc[column.id] = projects.filter(project => project.status === column.id);
     return acc;
@@ -174,7 +179,7 @@ export const ProjectsBoard: React.FC = () => {
             </DialogDescription>
           </DialogHeader>
           <ProjectForm 
-            onClose={() => setNewProjectDialogOpen(false)} 
+            onClose={handleProjectCreated} 
             initialStatus={selectedStatus}
           />
         </DialogContent>
