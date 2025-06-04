@@ -160,7 +160,7 @@ const CustomerDetail = () => {
               <TabsContent value="projects">
                 <h3 className="text-xl font-semibold mb-4">Projecten van {customer.name}</h3>
                 {customerProjects.length > 0 ? (
-                  <ProjectsBoard customerId={customer.id} disableDrag={true} />
+                  <ProjectsBoard />
                 ) : (
                   <Card>
                     <CardContent className="py-8">
