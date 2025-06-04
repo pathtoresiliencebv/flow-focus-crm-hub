@@ -1,4 +1,3 @@
-
 interface QuotePreviewProps {
   formData: {
     customer?: string;
@@ -8,6 +7,7 @@ interface QuotePreviewProps {
     project?: string;
     message?: string;
     items?: Array<{ id?: string; description?: string; quantity?: number; price?: number; vatRate?: number; total?: number }>;
+    adminSignature?: string;
   };
   customers: Array<{ id: number; name: string }>;
   projects?: Array<{ id: number; title: string; value: string; customer: string }>;
@@ -143,6 +143,21 @@ export function QuotePreview({ formData, customers, projects }: QuotePreviewProp
           </div>
         </div>
       </div>
+
+      {/* Admin Signature Preview */}
+      {formData.adminSignature && (
+        <div className="mt-12 pt-8 border-t border-gray-200">
+          <h4 className="font-medium text-gray-900 mb-4">SMANS BV</h4>
+          <div className="border rounded-lg p-4 bg-gray-50 inline-block">
+            <img 
+              src={formData.adminSignature} 
+              alt="SMANS Handtekening" 
+              className="max-w-xs h-24 object-contain"
+            />
+            <p className="text-sm text-gray-600 mt-2">Namens SMANS BV</p>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <div className="mt-12 pt-8 border-t border-gray-200">

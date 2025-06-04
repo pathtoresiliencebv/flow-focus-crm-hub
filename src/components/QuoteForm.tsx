@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,6 +24,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trash2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { QuotePreview } from './QuotePreview';
+import { SignatureCanvas } from './SignatureCanvas';
+import { supabase } from "@/integrations/supabase/client";
 
 // Form schema
 const formSchema = z.object({
@@ -46,13 +47,15 @@ const formSchema = z.object({
 
 interface QuoteFormProps {
   onClose: () => void;
-  customers: Array<{ id: number; name: string }>;
+  customers: Array<{ id: number; name: string; email?: string }>;
   projects?: Array<{ id: number; title: string; value: string; customer: string }>;
 }
 
 export function QuoteForm({ onClose, customers, projects }: QuoteFormProps) {
   const { toast } = useToast();
   const [previewMode, setPreviewMode] = useState(false);
+  const [adminSignature, setAdminSignature] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -60,7 +63,7 @@ export function QuoteForm({ onClose, customers, projects }: QuoteFormProps) {
       customer: "",
       quoteNumber: `OFF-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
       date: new Date().toISOString().split('T')[0],
-      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 dagen vanaf nu
+      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       project: "",
       message: "",
       items: [{
@@ -116,15 +119,86 @@ export function QuoteForm({ onClose, customers, projects }: QuoteFormProps) {
     }
   };
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log("Nieuwe offerte:", values);
-    
-    toast({
-      title: "Offerte aangemaakt",
-      description: `Offerte ${values.quoteNumber} is succesvol aangemaakt.`,
-    });
-    
-    onClose();
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setSaving(true);
+    try {
+      // Calculate totals
+      const items = values.items || [];
+      const subtotal = items.reduce((sum, item) => sum + (item.total || 0), 0);
+      const vatAmount = items.reduce((sum, item) => {
+        const itemTotal = item.total || 0;
+        const vatRate = item.vatRate || 0;
+        return sum + (itemTotal * vatRate / 100);
+      }, 0);
+      const total = subtotal + vatAmount;
+
+      // Find customer details
+      const customer = customers.find(c => c.id.toString() === values.customer);
+      const project = projects?.find(p => p.id.toString() === values.project);
+
+      // Generate public token
+      const { data: tokenData, error: tokenError } = await supabase
+        .rpc('generate_quote_public_token');
+
+      if (tokenError) {
+        console.error('Error generating token:', tokenError);
+        toast({
+          title: "Fout",
+          description: "Kon geen publieke link genereren.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Save quote to database
+      const { data, error } = await supabase
+        .from('quotes')
+        .insert({
+          quote_number: values.quoteNumber,
+          customer_name: customer?.name || '',
+          customer_email: customer?.email || '',
+          project_title: project?.title || '',
+          quote_date: values.date,
+          valid_until: values.validUntil,
+          message: values.message || '',
+          items: values.items,
+          subtotal: subtotal,
+          vat_amount: vatAmount,
+          total_amount: total,
+          status: 'concept',
+          public_token: tokenData,
+          admin_signature_data: adminSignature || null
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error saving quote:', error);
+        toast({
+          title: "Fout bij opslaan",
+          description: "De offerte kon niet worden opgeslagen.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Offerte opgeslagen",
+        description: `Offerte ${values.quoteNumber} is succesvol opgeslagen.`,
+      });
+
+      console.log("Quote saved with public link:", `${window.location.origin}/quote/${tokenData}`);
+      onClose();
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Fout",
+        description: "Er is een onverwachte fout opgetreden.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
   }
 
   const filteredProjects = projects?.filter(project => 
@@ -141,7 +215,6 @@ export function QuoteForm({ onClose, customers, projects }: QuoteFormProps) {
               Terug naar bewerken
             </Button>
           </div>
-          {/* Form content abbreviated for space */}
           <Card>
             <CardContent className="p-4">
               <p className="text-sm text-gray-600">
@@ -152,7 +225,10 @@ export function QuoteForm({ onClose, customers, projects }: QuoteFormProps) {
         </div>
         <div className="overflow-y-auto">
           <QuotePreview 
-            formData={watchedFields} 
+            formData={{
+              ...watchedFields,
+              adminSignature
+            }} 
             customers={customers}
             projects={projects}
           />
@@ -405,12 +481,18 @@ export function QuoteForm({ onClose, customers, projects }: QuoteFormProps) {
               </CardContent>
             </Card>
 
+            {/* Admin Signature */}
+            <SignatureCanvas
+              title="Uw handtekening (SMANS BV)"
+              onSignature={setAdminSignature}
+            />
+
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={onClose}>
                 Annuleren
               </Button>
-              <Button type="submit">
-                Offerte aanmaken
+              <Button type="submit" disabled={saving}>
+                {saving ? "Bezig met opslaan..." : "Offerte aanmaken"}
               </Button>
             </div>
           </form>
@@ -419,7 +501,10 @@ export function QuoteForm({ onClose, customers, projects }: QuoteFormProps) {
 
       <div className="overflow-y-auto">
         <QuotePreview 
-          formData={watchedFields} 
+          formData={{
+            ...watchedFields,
+            adminSignature
+          }} 
           customers={customers}
           projects={projects}
         />

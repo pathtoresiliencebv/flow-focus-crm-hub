@@ -9,13 +9,84 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      quotes: {
+        Row: {
+          admin_signature_data: string | null
+          client_name: string | null
+          client_signature_data: string | null
+          client_signed_at: string | null
+          created_at: string
+          customer_email: string | null
+          customer_name: string
+          id: string
+          items: Json
+          message: string | null
+          project_title: string | null
+          public_token: string | null
+          quote_date: string
+          quote_number: string
+          status: string
+          subtotal: number
+          total_amount: number
+          updated_at: string
+          valid_until: string
+          vat_amount: number
+        }
+        Insert: {
+          admin_signature_data?: string | null
+          client_name?: string | null
+          client_signature_data?: string | null
+          client_signed_at?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_name: string
+          id?: string
+          items?: Json
+          message?: string | null
+          project_title?: string | null
+          public_token?: string | null
+          quote_date: string
+          quote_number: string
+          status?: string
+          subtotal?: number
+          total_amount?: number
+          updated_at?: string
+          valid_until: string
+          vat_amount?: number
+        }
+        Update: {
+          admin_signature_data?: string | null
+          client_name?: string | null
+          client_signature_data?: string | null
+          client_signed_at?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string
+          id?: string
+          items?: Json
+          message?: string | null
+          project_title?: string | null
+          public_token?: string | null
+          quote_date?: string
+          quote_number?: string
+          status?: string
+          subtotal?: number
+          total_amount?: number
+          updated_at?: string
+          valid_until?: string
+          vat_amount?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_quote_public_token: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

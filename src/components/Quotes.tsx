@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Table,
   TableBody,
@@ -19,68 +19,72 @@ import {
   DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Eye, FileText, Edit, Link, Check, X } from "lucide-react";
+import { Eye, FileText, Edit, Link, Check, X, Send } from "lucide-react";
 import { QuoteForm } from './QuoteForm';
 import { useToast } from '@/hooks/use-toast';
-
-// Mock data voor offertes
-const mockQuotes = [
-  {
-    id: 1,
-    number: "OFF-2024-001",
-    customer: "Jan de Vries",
-    project: "Kozijnen vervangen",
-    date: "2024-01-10",
-    validUntil: "2024-02-09",
-    status: "Verzonden",
-    amount: "4,500.00",
-    publicLink: "https://smans.nl/quote/abc123",
-    approved: false,
-    signedAt: null
-  },
-  {
-    id: 2,
-    number: "OFF-2024-002",
-    customer: "Marie Jansen",
-    project: "Nieuwe ramen installeren",
-    date: "2024-01-12",
-    validUntil: "2024-02-11",
-    status: "Goedgekeurd",
-    amount: "7,500.00",
-    publicLink: "https://smans.nl/quote/def456",
-    approved: true,
-    signedAt: "2024-01-15T10:30:00Z"
-  },
-  {
-    id: 3,
-    number: "OFF-2024-003",
-    customer: "Peter van Dam",
-    project: "Voordeur plaatsen",
-    date: "2024-01-15",
-    validUntil: "2024-02-14",
-    status: "Concept",
-    amount: "1,512.50",
-    publicLink: null,
-    approved: false,
-    signedAt: null
-  }
-];
+import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 
 // Mock data van centraal punt
 import { mockCustomers, mockProjects } from '@/data/mockData';
+
+interface Quote {
+  id: string;
+  quote_number: string;
+  customer_name: string;
+  customer_email: string;
+  project_title: string;
+  quote_date: string;
+  valid_until: string;
+  status: string;
+  total_amount: number;
+  public_token: string;
+  client_signature_data: string;
+  client_signed_at: string;
+}
 
 export function Quotes() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
-  const [quotes, setQuotes] = useState([...mockQuotes]);
+  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchQuotes();
+  }, []);
+
+  const fetchQuotes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('quotes')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching quotes:', error);
+        toast({
+          title: "Fout",
+          description: "Kon offertes niet laden.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setQuotes(data || []);
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter quotes based on search term and status filter
   const filteredQuotes = quotes.filter(quote => {
     const matchesSearch = 
-      quote.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      quote.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      quote.project.toLowerCase().includes(searchTerm.toLowerCase());
+      quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (quote.project_title && quote.project_title.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesStatus = filterStatus === null || quote.status === filterStatus;
     
@@ -90,61 +94,74 @@ export function Quotes() {
   // Function to get status badge color
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "Goedgekeurd":
-        return "bg-green-100 text-green-800";
-      case "Verzonden":
-        return "bg-blue-100 text-blue-800";
-      case "Concept":
-        return "bg-gray-100 text-gray-800";
-      case "Verlopen":
-        return "bg-red-100 text-red-800";
-      case "Afgewezen":
-        return "bg-red-100 text-red-800";
+      case "approved":
+        return <Badge className="bg-green-100 text-green-800">Goedgekeurd</Badge>;
+      case "sent":
+        return <Badge className="bg-blue-100 text-blue-800">Verzonden</Badge>;
+      case "concept":
+        return <Badge className="bg-gray-100 text-gray-800">Concept</Badge>;
+      case "expired":
+        return <Badge className="bg-red-100 text-red-800">Verlopen</Badge>;
+      case "rejected":
+        return <Badge className="bg-red-100 text-red-800">Afgewezen</Badge>;
       default:
-        return "bg-gray-100 text-gray-800";
+        return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
     }
   };
 
-  // Handler for creating a new quote
-  const handleNewQuote = (newQuote: any) => {
-    setQuotes(prevQuotes => [...prevQuotes, newQuote]);
-    toast({
-      title: "Offerte aangemaakt",
-      description: `Offerte ${newQuote.number} is aangemaakt voor project ${newQuote.project}.`,
-    });
-  };
-
   // Handler for sending quote
-  const handleSendQuote = (quoteId: number) => {
-    const updatedQuotes = quotes.map(quote => 
-      quote.id === quoteId 
-        ? { 
-            ...quote, 
-            status: "Verzonden",
-            publicLink: `https://smans.nl/quote/${Math.random().toString(36).substr(2, 9)}`
-          } 
-        : quote
-    );
-    
-    setQuotes(updatedQuotes);
-    
-    const quote = quotes.find(q => q.id === quoteId);
-    if (quote) {
+  const handleSendQuote = async (quoteId: string) => {
+    try {
+      const { error } = await supabase
+        .from('quotes')
+        .update({ status: 'sent' })
+        .eq('id', quoteId);
+
+      if (error) {
+        console.error('Error sending quote:', error);
+        toast({
+          title: "Fout",
+          description: "Kon offerte niet verzenden.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({
         title: "Offerte verzonden",
-        description: `Offerte ${quote.number} is verzonden naar de klant voor project "${quote.project}".`,
+        description: "De offerte is succesvol verzonden naar de klant.",
       });
+
+      // Refresh quotes
+      fetchQuotes();
+    } catch (error) {
+      console.error('Error:', error);
     }
   };
 
   // Copy public link to clipboard
-  const copyPublicLink = (link: string) => {
+  const copyPublicLink = (token: string) => {
+    const link = `${window.location.origin}/quote/${token}`;
     navigator.clipboard.writeText(link);
     toast({
       title: "Link gekopieerd",
       description: "De openbare link is gekopieerd naar je klembord.",
     });
   };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold">Offertes</h2>
+        </div>
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-smans-primary mx-auto"></div>
+          <p className="mt-2 text-gray-600">Laden...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -170,6 +187,7 @@ export function Quotes() {
                 if (dialogCloseButton instanceof HTMLElement) {
                   dialogCloseButton.click();
                 }
+                fetchQuotes(); // Refresh quotes after creating new one
               }}
               customers={mockCustomers}
               projects={mockProjects}
@@ -196,30 +214,30 @@ export function Quotes() {
             Alle
           </Button>
           <Button 
-            variant={filterStatus === "Concept" ? "default" : "outline"} 
+            variant={filterStatus === "concept" ? "default" : "outline"} 
             size="sm"
-            onClick={() => setFilterStatus("Concept")}
+            onClick={() => setFilterStatus("concept")}
           >
             Concepten
           </Button>
           <Button 
-            variant={filterStatus === "Verzonden" ? "default" : "outline"} 
+            variant={filterStatus === "sent" ? "default" : "outline"} 
             size="sm"
-            onClick={() => setFilterStatus("Verzonden")}
+            onClick={() => setFilterStatus("sent")}
           >
             Verzonden
           </Button>
           <Button 
-            variant={filterStatus === "Goedgekeurd" ? "default" : "outline"} 
+            variant={filterStatus === "approved" ? "default" : "outline"} 
             size="sm"
-            onClick={() => setFilterStatus("Goedgekeurd")}
+            onClick={() => setFilterStatus("approved")}
           >
             Goedgekeurd
           </Button>
           <Button 
-            variant={filterStatus === "Verlopen" ? "default" : "outline"} 
+            variant={filterStatus === "expired" ? "default" : "outline"} 
             size="sm"
-            onClick={() => setFilterStatus("Verlopen")}
+            onClick={() => setFilterStatus("expired")}
           >
             Verlopen
           </Button>
@@ -244,73 +262,53 @@ export function Quotes() {
             <TableBody>
               {filteredQuotes.map((quote) => (
                 <TableRow key={quote.id}>
-                  <TableCell className="font-medium">{quote.number}</TableCell>
-                  <TableCell>{quote.customer}</TableCell>
-                  <TableCell>{quote.project}</TableCell>
-                  <TableCell>{quote.date}</TableCell>
-                  <TableCell>{quote.validUntil}</TableCell>
-                  <TableCell>
-                    <span className={`px-2 py-1 rounded-full text-xs ${getStatusBadge(quote.status)}`}>
-                      {quote.status}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">€{quote.amount}</TableCell>
+                  <TableCell className="font-medium">{quote.quote_number}</TableCell>
+                  <TableCell>{quote.customer_name}</TableCell>
+                  <TableCell>{quote.project_title || '-'}</TableCell>
+                  <TableCell>{new Date(quote.quote_date).toLocaleDateString('nl-NL')}</TableCell>
+                  <TableCell>{new Date(quote.valid_until).toLocaleDateString('nl-NL')}</TableCell>
+                  <TableCell>{getStatusBadge(quote.status)}</TableCell>
+                  <TableCell className="text-right">€{quote.total_amount.toFixed(2)}</TableCell>
                   <TableCell>
                     <div className="flex justify-end gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        title="Bekijken"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      
-                      {quote.status === "Concept" && (
-                        <>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            title="Bewerken"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            title="Verzenden"
-                            onClick={() => handleSendQuote(quote.id)}
-                          >
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-
-                      {quote.status === "Verzonden" && !quote.approved && (
+                      {quote.public_token && (
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          title="Bewerken (nog niet goedgekeurd)"
+                          title="Bekijk openbare versie"
+                          onClick={() => window.open(`/quote/${quote.public_token}`, '_blank')}
                         >
-                          <Edit className="h-4 w-4" />
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      )}
+                      
+                      {quote.status === "concept" && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          title="Verzenden naar klant"
+                          onClick={() => handleSendQuote(quote.id)}
+                        >
+                          <Send className="h-4 w-4" />
                         </Button>
                       )}
 
-                      {quote.publicLink && (
+                      {quote.public_token && (
                         <Button 
                           variant="ghost" 
                           size="icon" 
                           title="Openbare link kopiëren"
-                          onClick={() => copyPublicLink(quote.publicLink!)}
+                          onClick={() => copyPublicLink(quote.public_token)}
                         >
                           <Link className="h-4 w-4" />
                         </Button>
                       )}
 
-                      {quote.approved && (
+                      {quote.client_signed_at && (
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          title="Goedgekeurd"
+                          title="Goedgekeurd door klant"
                           disabled
                         >
                           <Check className="h-4 w-4 text-green-600" />
@@ -324,7 +322,7 @@ export function Quotes() {
               {filteredQuotes.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                    Geen offertes gevonden
+                    {quotes.length === 0 ? "Nog geen offertes aangemaakt" : "Geen offertes gevonden"}
                   </TableCell>
                 </TableRow>
               )}
@@ -339,7 +337,7 @@ export function Quotes() {
         </div>
         <div className="font-medium">
           Totaalbedrag: €{filteredQuotes
-            .reduce((sum, quote) => sum + parseFloat(quote.amount.replace(',', '.')), 0)
+            .reduce((sum, quote) => sum + quote.total_amount, 0)
             .toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
           }
         </div>
