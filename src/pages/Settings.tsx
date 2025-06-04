@@ -1,75 +1,21 @@
 
-import React, { useState, useEffect } from 'react';
-import { CrmSidebar } from "@/components/CrmSidebar";
-import { CompanySettingsForm } from "@/components/CompanySettingsForm";
-import { InvoiceSettingsForm } from "@/components/InvoiceSettingsForm";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { NotificationsMenu } from "@/components/NotificationsMenu";
-import { SearchInput } from "@/components/SearchInput";
-import { toast } from "@/hooks/use-toast";
+import React from 'react';
+import { QuoteSettingsForm } from '@/components/QuoteSettingsForm';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Settings as SettingsIcon } from "lucide-react";
 
-const Settings = () => {
-  const [activeTab, setActiveTab] = useState("settings");
-  const [activeSettingsTab, setActiveSettingsTab] = useState("company");
-
-  // Show a welcome toast when the page loads
-  useEffect(() => {
-    toast({
-      title: "Instellingen geladen",
-      description: "Pas uw bedrijfs- en factuurgegevens aan naar wens.",
-    });
-  }, []);
-
+export default function Settings() {
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <CrmSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Navigation */}
-        <header className="bg-white border-b border-gray-200 px-4 py-3">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold text-gray-800">Instellingen</h1>
-            <div className="flex items-center space-x-4">
-              <SearchInput />
-              <NotificationsMenu />
-            </div>
-          </div>
-        </header>
-
-        {/* Settings Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="max-w-4xl mx-auto">
-            <Tabs
-              defaultValue="company"
-              value={activeSettingsTab}
-              onValueChange={setActiveSettingsTab}
-              className="w-full"
-            >
-              <TabsList className="grid grid-cols-3 mb-8">
-                <TabsTrigger value="company">Bedrijfsgegevens</TabsTrigger>
-                <TabsTrigger value="invoice">Factuurgegevens</TabsTrigger>
-                <TabsTrigger value="appearance">Weergave</TabsTrigger>
-              </TabsList>
-              <TabsContent value="company">
-                <CompanySettingsForm />
-              </TabsContent>
-              <TabsContent value="invoice">
-                <InvoiceSettingsForm />
-              </TabsContent>
-              <TabsContent value="appearance">
-                <div className="bg-white p-6 rounded-lg shadow-sm">
-                  <h2 className="text-lg font-medium mb-6">Weergave-instellingen</h2>
-                  <p className="text-gray-500">Weergave-instellingen komen binnenkort beschikbaar.</p>
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
+    <div className="container mx-auto p-6">
+      <div className="mb-6">
+        <div className="flex items-center gap-3 mb-2">
+          <SettingsIcon className="h-8 w-8 text-smans-primary" />
+          <h1 className="text-3xl font-bold text-gray-900">Instellingen</h1>
         </div>
+        <p className="text-gray-600">Beheer uw bedrijfsgegevens en offerte instellingen</p>
       </div>
+
+      <QuoteSettingsForm />
     </div>
   );
-};
-
-export default Settings;
+}

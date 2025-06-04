@@ -38,10 +38,22 @@ interface QuoteData {
   client_name: string;
 }
 
+interface QuoteSettings {
+  terms_and_conditions?: string;
+  company_name?: string;
+  company_address?: string;
+  company_postal_code?: string;
+  company_city?: string;
+  company_country?: string;
+  company_vat_number?: string;
+  company_kvk_number?: string;
+}
+
 export default function PublicQuote() {
   const { token } = useParams<{ token: string }>();
   const { toast } = useToast();
   const [quote, setQuote] = useState<QuoteData | null>(null);
+  const [settings, setSettings] = useState<QuoteSettings>({});
   const [loading, setLoading] = useState(true);
   const [signing, setSigning] = useState(false);
   const [clientName, setClientName] = useState('');
@@ -50,8 +62,24 @@ export default function PublicQuote() {
   useEffect(() => {
     if (token) {
       fetchQuote();
+      fetchSettings();
     }
   }, [token]);
+
+  const fetchSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('quote_settings')
+        .select('*')
+        .single();
+
+      if (data) {
+        setSettings(data);
+      }
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+    }
+  };
 
   const fetchQuote = async () => {
     try {
@@ -213,12 +241,12 @@ export default function PublicQuote() {
             <div>
               <h3 className="font-semibold text-gray-900 mb-3">Van:</h3>
               <div className="text-sm text-gray-600">
-                <p className="font-medium">SMANS BV</p>
-                <p>Bedrijfsstraat 123</p>
-                <p>1234 AB Amsterdam</p>
-                <p>Nederland</p>
-                <p className="mt-2">BTW: NL123456789B01</p>
-                <p>KvK: 12345678</p>
+                <p className="font-medium">{settings.company_name || 'SMANS BV'}</p>
+                <p>{settings.company_address || 'Bedrijfsstraat 123'}</p>
+                <p>{settings.company_postal_code || '1234 AB'} {settings.company_city || 'Amsterdam'}</p>
+                <p>{settings.company_country || 'Nederland'}</p>
+                <p className="mt-2">BTW: {settings.company_vat_number || 'NL123456789B01'}</p>
+                <p>KvK: {settings.company_kvk_number || '12345678'}</p>
               </div>
             </div>
             <div>
@@ -317,17 +345,27 @@ export default function PublicQuote() {
           </div>
         </div>
 
+        {/* Terms and Conditions */}
+        {settings.terms_and_conditions && (
+          <div className="bg-white rounded-lg shadow-sm p-8 mb-6">
+            <h3 className="text-lg font-semibold mb-4">Algemene Voorwaarden</h3>
+            <div className="text-sm text-gray-600 whitespace-pre-line">
+              {settings.terms_and_conditions}
+            </div>
+          </div>
+        )}
+
         {/* Admin Signature */}
         {quote.admin_signature_data && (
           <div className="bg-white rounded-lg shadow-sm p-8 mb-6">
-            <h3 className="text-lg font-semibold mb-4">SMANS BV</h3>
+            <h3 className="text-lg font-semibold mb-4">{settings.company_name || 'SMANS BV'}</h3>
             <div className="border rounded-lg p-4 bg-gray-50">
               <img 
                 src={quote.admin_signature_data} 
                 alt="SMANS Handtekening" 
                 className="max-w-xs h-24 object-contain"
               />
-              <p className="text-sm text-gray-600 mt-2">Namens SMANS BV</p>
+              <p className="text-sm text-gray-600 mt-2">Namens {settings.company_name || 'SMANS BV'}</p>
             </div>
           </div>
         )}
@@ -367,7 +405,7 @@ export default function PublicQuote() {
                   <h3 className="text-lg font-semibold text-red-800 mb-2">Offerte Verlopen</h3>
                   <p className="text-gray-600">Deze offerte is verlopen en kan niet meer worden ondertekend.</p>
                   <p className="text-sm text-gray-500 mt-2">
-                    Neem contact op met SMANS BV voor een nieuwe offerte.
+                    Neem contact op met {settings.company_name || 'SMANS BV'} voor een nieuwe offerte.
                   </p>
                 </div>
               ) : (
@@ -411,7 +449,7 @@ export default function PublicQuote() {
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-gray-500">
-          <p>© 2025 SMANS BV - Alle rechten voorbehouden</p>
+          <p>© 2025 {settings.company_name || 'SMANS BV'} - Alle rechten voorbehouden</p>
         </div>
       </div>
     </div>

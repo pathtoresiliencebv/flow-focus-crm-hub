@@ -1,3 +1,7 @@
+
+import React, { useState, useEffect } from 'react';
+import { supabase } from "@/integrations/supabase/client";
+
 interface QuotePreviewProps {
   formData: {
     customer?: string;
@@ -13,7 +17,39 @@ interface QuotePreviewProps {
   projects?: Array<{ id: number; title: string; value: string; customer: string }>;
 }
 
+interface QuoteSettings {
+  terms_and_conditions?: string;
+  company_name?: string;
+  company_address?: string;
+  company_postal_code?: string;
+  company_city?: string;
+  company_country?: string;
+  company_vat_number?: string;
+  company_kvk_number?: string;
+}
+
 export function QuotePreview({ formData, customers, projects }: QuotePreviewProps) {
+  const [settings, setSettings] = useState<QuoteSettings>({});
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('quote_settings')
+        .select('*')
+        .single();
+
+      if (data) {
+        setSettings(data);
+      }
+    } catch (error) {
+      console.error('Error fetching settings:', error);
+    }
+  };
+
   const customerName = customers.find(c => c.id.toString() === formData.customer)?.name || "";
   const projectTitle = projects?.find(p => p.id.toString() === formData.project)?.title || "";
   
@@ -48,12 +84,12 @@ export function QuotePreview({ formData, customers, projects }: QuotePreviewProp
         <div>
           <h3 className="font-semibold text-gray-900 mb-2">Van:</h3>
           <div className="text-sm text-gray-600">
-            <p className="font-medium">SMANS BV</p>
-            <p>Bedrijfsstraat 123</p>
-            <p>1234 AB Amsterdam</p>
-            <p>Nederland</p>
-            <p className="mt-2">BTW: NL123456789B01</p>
-            <p>KvK: 12345678</p>
+            <p className="font-medium">{settings.company_name || 'SMANS BV'}</p>
+            <p>{settings.company_address || 'Bedrijfsstraat 123'}</p>
+            <p>{settings.company_postal_code || '1234 AB'} {settings.company_city || 'Amsterdam'}</p>
+            <p>{settings.company_country || 'Nederland'}</p>
+            <p className="mt-2">BTW: {settings.company_vat_number || 'NL123456789B01'}</p>
+            <p>KvK: {settings.company_kvk_number || '12345678'}</p>
           </div>
         </div>
         <div>
@@ -147,14 +183,24 @@ export function QuotePreview({ formData, customers, projects }: QuotePreviewProp
       {/* Admin Signature Preview */}
       {formData.adminSignature && (
         <div className="mt-12 pt-8 border-t border-gray-200">
-          <h4 className="font-medium text-gray-900 mb-4">SMANS BV</h4>
+          <h4 className="font-medium text-gray-900 mb-4">{settings.company_name || 'SMANS BV'}</h4>
           <div className="border rounded-lg p-4 bg-gray-50 inline-block">
             <img 
               src={formData.adminSignature} 
               alt="SMANS Handtekening" 
               className="max-w-xs h-24 object-contain"
             />
-            <p className="text-sm text-gray-600 mt-2">Namens SMANS BV</p>
+            <p className="text-sm text-gray-600 mt-2">Namens {settings.company_name || 'SMANS BV'}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Terms and Conditions */}
+      {settings.terms_and_conditions && (
+        <div className="mt-12 pt-8 border-t border-gray-200">
+          <h4 className="font-medium text-gray-900 mb-4">Algemene Voorwaarden</h4>
+          <div className="text-sm text-gray-600 whitespace-pre-line">
+            {settings.terms_and_conditions}
           </div>
         </div>
       )}
@@ -163,7 +209,7 @@ export function QuotePreview({ formData, customers, projects }: QuotePreviewProp
       <div className="mt-12 pt-8 border-t border-gray-200">
         <div className="text-sm text-gray-600 space-y-2">
           <p><strong>Deze offerte is geldig tot {formData.validUntil || "[datum]"}.</strong></p>
-          <p>Door akkoord te gaan met deze offerte gaat u een overeenkomst aan met SMANS BV onder de hieronder vermelde voorwaarden.</p>
+          <p>Door akkoord te gaan met deze offerte gaat u een overeenkomst aan met {settings.company_name || 'SMANS BV'} onder de hieronder vermelde voorwaarden.</p>
           <p>Prijzen zijn inclusief BTW tenzij anders vermeld. Bij aanvaarding van deze offerte zijn onze algemene voorwaarden van toepassing.</p>
         </div>
         

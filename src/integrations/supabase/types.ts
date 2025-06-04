@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      quote_settings: {
+        Row: {
+          company_address: string | null
+          company_city: string | null
+          company_country: string | null
+          company_kvk_number: string | null
+          company_name: string | null
+          company_postal_code: string | null
+          company_vat_number: string | null
+          created_at: string
+          id: string
+          terms_and_conditions: string | null
+          updated_at: string
+        }
+        Insert: {
+          company_address?: string | null
+          company_city?: string | null
+          company_country?: string | null
+          company_kvk_number?: string | null
+          company_name?: string | null
+          company_postal_code?: string | null
+          company_vat_number?: string | null
+          created_at?: string
+          id?: string
+          terms_and_conditions?: string | null
+          updated_at?: string
+        }
+        Update: {
+          company_address?: string | null
+          company_city?: string | null
+          company_country?: string | null
+          company_kvk_number?: string | null
+          company_name?: string | null
+          company_postal_code?: string | null
+          company_vat_number?: string | null
+          created_at?: string
+          id?: string
+          terms_and_conditions?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       quotes: {
         Row: {
           admin_signature_data: string | null
