@@ -32,6 +32,11 @@ const eventColors = {
   other: 'bg-gray-400 text-white'
 };
 
+// Dutch time formatting function
+const formatDutchTime = (hour: number) => {
+  return `${hour.toString().padStart(2, '0')}:00`;
+};
+
 const mockEvents: CalendarEvent[] = [
   {
     id: '1',
@@ -113,29 +118,43 @@ export const WeekCalendar = ({ events = mockEvents, onEventClick, onTimeSlotClic
     return { top, height };
   };
 
-  const handleMouseDown = (date: Date, hour: number) => {
+  const handleMouseDown = (e: React.MouseEvent, date: Date, hour: number) => {
+    e.preventDefault();
+    console.log('Mouse down on:', date, hour);
     setDragStart({date, hour});
+    setDragEnd({date, hour});
     setIsDragging(true);
   };
 
   const handleMouseEnter = (date: Date, hour: number) => {
-    if (isDragging && dragStart) {
+    if (isDragging && dragStart && isSameDay(date, dragStart.date)) {
+      console.log('Mouse enter on:', date, hour);
       setDragEnd({date, hour});
     }
   };
 
   const handleMouseUp = () => {
-    if (isDragging && dragStart && dragEnd && isSameDay(dragStart.date, dragEnd.date)) {
-      const startHour = Math.min(dragStart.hour, dragEnd.hour);
-      const endHour = Math.max(dragStart.hour, dragEnd.hour) + 1;
-      
-      if (onEventCreate) {
-        onEventCreate(dragStart.date, startHour, endHour);
-      }
-    } else if (isDragging && dragStart && !dragEnd) {
-      // Single click
-      if (onTimeSlotClick) {
-        onTimeSlotClick(dragStart.date, dragStart.hour);
+    console.log('Mouse up - isDragging:', isDragging, 'dragStart:', dragStart, 'dragEnd:', dragEnd);
+    
+    if (isDragging && dragStart) {
+      if (dragEnd && !isSameDay(dragStart.date, dragEnd.date)) {
+        // Drag across different days - not allowed
+        console.log('Drag across different days not allowed');
+      } else if (dragEnd && dragStart.hour !== dragEnd.hour) {
+        // Multi-hour selection
+        const startHour = Math.min(dragStart.hour, dragEnd.hour);
+        const endHour = Math.max(dragStart.hour, dragEnd.hour) + 1;
+        console.log('Creating event from', startHour, 'to', endHour);
+        
+        if (onEventCreate) {
+          onEventCreate(dragStart.date, startHour, endHour);
+        }
+      } else {
+        // Single click
+        console.log('Single click on:', dragStart.date, dragStart.hour);
+        if (onTimeSlotClick) {
+          onTimeSlotClick(dragStart.date, dragStart.hour);
+        }
       }
     }
     
@@ -155,7 +174,11 @@ export const WeekCalendar = ({ events = mockEvents, onEventClick, onTimeSlotClic
   };
 
   return (
-    <div className="w-full bg-white rounded-lg border" onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}>
+    <div 
+      className="w-full bg-white rounded-lg border select-none" 
+      onMouseUp={handleMouseUp} 
+      onMouseLeave={handleMouseUp}
+    >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center gap-2">
@@ -181,7 +204,7 @@ export const WeekCalendar = ({ events = mockEvents, onEventClick, onTimeSlotClic
           <div className="h-12 border-b"></div> {/* Header spacer */}
           {timeSlots.map(hour => (
             <div key={hour} className="h-15 border-b text-xs text-gray-600 p-1 text-right">
-              {hour === 12 ? '12 PM' : hour > 12 ? `${hour - 12} PM` : `${hour} AM`}
+              {formatDutchTime(hour)}
             </div>
           ))}
         </div>
@@ -209,12 +232,17 @@ export const WeekCalendar = ({ events = mockEvents, onEventClick, onTimeSlotClic
                   {timeSlots.map(hour => (
                     <div
                       key={hour}
-                      className={`h-15 border-b border-gray-100 hover:bg-blue-50 cursor-pointer relative select-none ${
+                      className={`h-15 border-b border-gray-100 hover:bg-blue-50 cursor-pointer relative transition-colors ${
                         isInDragSelection(day, hour) ? 'bg-blue-200' : ''
                       }`}
-                      onMouseDown={() => handleMouseDown(day, hour)}
+                      onMouseDown={(e) => handleMouseDown(e, day, hour)}
                       onMouseEnter={() => handleMouseEnter(day, hour)}
+                      style={{ userSelect: 'none' }}
                     >
+                      {/* Visual indicator for hour */}
+                      <div className="absolute left-1 top-1 text-xs text-gray-400 opacity-0 hover:opacity-100 transition-opacity">
+                        {formatDutchTime(hour)}
+                      </div>
                     </div>
                   ))}
 
@@ -224,10 +252,11 @@ export const WeekCalendar = ({ events = mockEvents, onEventClick, onTimeSlotClic
                     return (
                       <div
                         key={event.id}
-                        className={`absolute left-1 right-1 rounded px-2 py-1 text-xs cursor-pointer overflow-hidden ${eventColors[event.type]} z-10`}
+                        className={`absolute left-1 right-1 rounded px-2 py-1 text-xs cursor-pointer overflow-hidden ${eventColors[event.type]} z-10 shadow-sm`}
                         style={{ top: `${top}px`, height: `${Math.max(height, 20)}px` }}
                         onClick={(e) => {
                           e.stopPropagation();
+                          console.log('Event clicked:', event);
                           onEventClick?.(event);
                         }}
                       >
