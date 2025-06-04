@@ -2,15 +2,15 @@
 import { useState } from "react";
 import { CrmSidebar } from "@/components/CrmSidebar";
 import { Dashboard } from "@/components/Dashboard";
-import { CustomerDetail } from "@/components/CustomerDetail";
-import { ProjectDetail } from "@/components/ProjectDetail";
+import CustomerDetail from "@/components/CustomerDetail";
+import ProjectDetail from "@/components/ProjectDetail";
 import { ProjectsBoard } from "@/components/ProjectsBoard";
 import { PlanningManagement } from "@/components/PlanningManagement";
 import { TimeRegistration } from "@/components/TimeRegistration";
 import { Receipts } from "@/components/Receipts";
 import { Quotes } from "@/components/Quotes";
 import { Invoicing } from "@/components/Invoicing";
-import { Personnel } from "@/components/Personnel";
+import Personnel from "@/components/Personnel";
 import { Users } from "@/components/Users";
 import { Salary } from "@/components/Salary";
 import { Reports } from "@/components/Reports";
@@ -35,9 +35,9 @@ const Index = () => {
       case "dashboard":
         return <Dashboard />;
       case "customers":
-        return <ProjectsBoard onSelectCustomer={setSelectedCustomerId} activeTab="customers" />;
+        return <ProjectsBoard />;
       case "projects":
-        return <ProjectsBoard onSelectProject={setSelectedProjectId} activeTab="projects" />;
+        return <ProjectsBoard />;
       case "calendar":
         return <PlanningManagement />;
       case "time":

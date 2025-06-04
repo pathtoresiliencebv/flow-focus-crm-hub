@@ -1,13 +1,13 @@
 
 interface QuotePreviewProps {
   formData: {
-    customer: string;
-    quoteNumber: string;
-    date: string;
-    validUntil: string;
+    customer?: string;
+    quoteNumber?: string;
+    date?: string;
+    validUntil?: string;
     project?: string;
     message?: string;
-    items: Array<{ id: string; description: string; quantity: number; price: number; vatRate: number; total: number }>;
+    items?: Array<{ id?: string; description?: string; quantity?: number; price?: number; vatRate?: number; total?: number }>;
   };
   customers: Array<{ id: number; name: string }>;
   projects?: Array<{ id: number; title: string; value: string; customer: string }>;
@@ -17,8 +17,9 @@ export function QuotePreview({ formData, customers, projects }: QuotePreviewProp
   const customerName = customers.find(c => c.id.toString() === formData.customer)?.name || "";
   const projectTitle = projects?.find(p => p.id.toString() === formData.project)?.title || "";
   
-  const subtotal = formData.items.reduce((sum, item) => sum + (item.total || 0), 0);
-  const vatAmount = formData.items.reduce((sum, item) => {
+  const items = formData.items || [];
+  const subtotal = items.reduce((sum, item) => sum + (item.total || 0), 0);
+  const vatAmount = items.reduce((sum, item) => {
     const itemTotal = item.total || 0;
     const vatRate = item.vatRate || 0;
     return sum + (itemTotal * vatRate / 100);
@@ -103,18 +104,18 @@ export function QuotePreview({ formData, customers, projects }: QuotePreviewProp
             </tr>
           </thead>
           <tbody>
-            {formData.items.map((item, index) => (
-              <tr key={item.id} className="border-b border-gray-100">
+            {items.map((item, index) => (
+              <tr key={item.id || index} className="border-b border-gray-100">
                 <td className="py-3 text-gray-800">
                   {item.description || `Offertelijn ${index + 1}`}
                 </td>
-                <td className="py-3 text-center text-gray-800">{item.quantity}</td>
-                <td className="py-3 text-right text-gray-800">€{item.price.toFixed(2)}</td>
-                <td className="py-3 text-center text-gray-800">{item.vatRate}%</td>
+                <td className="py-3 text-center text-gray-800">{item.quantity || 0}</td>
+                <td className="py-3 text-right text-gray-800">€{(item.price || 0).toFixed(2)}</td>
+                <td className="py-3 text-center text-gray-800">{item.vatRate || 0}%</td>
                 <td className="py-3 text-right text-gray-800 font-medium">€{(item.total || 0).toFixed(2)}</td>
               </tr>
             ))}
-            {formData.items.length === 0 && (
+            {items.length === 0 && (
               <tr className="border-b border-gray-100">
                 <td colSpan={5} className="py-8 text-center text-gray-400 italic">
                   Voeg offerteregels toe...
