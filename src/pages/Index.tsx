@@ -67,7 +67,7 @@ const Index = () => {
     <div className="min-h-screen bg-gray-50 flex">
       <CrmSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden min-h-screen">
         <div className={`h-full ${isMobile ? 'p-2' : 'p-6'} overflow-y-auto`}>
           {renderContent()}
         </div>

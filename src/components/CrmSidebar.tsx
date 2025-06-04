@@ -94,9 +94,9 @@ export const CrmSidebar = ({
   };
 
   return (
-    <div className={`bg-white border-r border-gray-200 ${isMobile ? 'w-full' : 'w-64'} flex flex-col h-full`}>
+    <div className={`bg-white border-r border-gray-200 ${isMobile ? 'w-full' : 'w-64'} flex flex-col min-h-screen h-full`}>
       {/* Logo */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-gray-200 flex-shrink-0">
         <div className="flex items-center space-x-3">
           <img 
             src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" 
@@ -183,7 +183,7 @@ export const CrmSidebar = ({
       </nav>
 
       {/* User section */}
-      <div className={`${isMobile ? 'p-2' : 'p-4'} border-t border-gray-200`}>
+      <div className={`${isMobile ? 'p-2' : 'p-4'} border-t border-gray-200 flex-shrink-0`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center">
             <div className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'} rounded-full bg-smans-primary bg-opacity-10 flex items-center justify-center text-smans-primary font-bold`}>
