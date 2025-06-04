@@ -30,6 +30,20 @@ interface PlanningItem {
   createdAt: string;
 }
 
+// Generate time options from 6:00 to 22:00 in 15-minute intervals
+const generateTimeOptions = () => {
+  const times = [];
+  for (let hour = 6; hour <= 22; hour++) {
+    for (let minute = 0; minute < 60; minute += 15) {
+      const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      times.push(timeString);
+    }
+  }
+  return times;
+};
+
+const timeOptions = generateTimeOptions();
+
 export const PlanningManagement = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [newPlanningDialogOpen, setNewPlanningDialogOpen] = useState(false);
@@ -333,7 +347,18 @@ export const PlanningManagement = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium">Tijd</label>
-                      <Input type="time" name="time" required className="mt-1" />
+                      <Select name="time" required>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Selecteer tijd" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white z-50 max-h-60">
+                          {timeOptions.map((time) => (
+                            <SelectItem key={time} value={time}>
+                              {time}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <label className="text-sm font-medium">Monteur</label>
@@ -341,7 +366,7 @@ export const PlanningManagement = () => {
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder="Kies monteur" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white z-50">
                           {installers.map((installer) => (
                             <SelectItem key={installer.id} value={installer.id.toString()}>
                               {installer.name}
@@ -357,7 +382,7 @@ export const PlanningManagement = () => {
                       <SelectTrigger className="mt-1">
                         <SelectValue placeholder="Kies project" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white z-50">
                         {projects.map((project) => (
                           <SelectItem key={project.id} value={project.id}>
                             {project.title} - {project.customer}
@@ -410,7 +435,7 @@ export const PlanningManagement = () => {
             </Dialog>
             <Dialog open={newPlanningDialogOpen} onOpenChange={setNewPlanningDialogOpen}>
               <DialogTrigger asChild>
-                <Button disabled={!selectedDate} className="bg-blue-600 hover:bg-blue-700 shadow-sm hover:shadow-md transition-all w-full sm:w-auto">
+                <Button disabled={!selectedDate} className="bg-smans-primary hover:bg-smans-primary/90 text-white shadow-sm hover:shadow-md transition-all w-full sm:w-auto">
                   <Plus className="mr-2 h-4 w-4" />
                   Nieuwe Planning
                 </Button>
@@ -438,8 +463,19 @@ export const PlanningManagement = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Tijd</label>
-                      <Input type="time" name="time" required className="mt-1" />
+                      <label className="text-sm font-medium">Starttijd</label>
+                      <Select name="time" required>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Selecteer starttijd" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-white z-50 max-h-60">
+                          {timeOptions.map((time) => (
+                            <SelectItem key={time} value={time}>
+                              {time}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                   <div>
@@ -448,7 +484,7 @@ export const PlanningManagement = () => {
                       <SelectTrigger className="mt-1">
                         <SelectValue placeholder="Kies monteur" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white z-50">
                         {installers.map((installer) => (
                           <SelectItem key={installer.id} value={installer.id.toString()}>
                             {installer.name}
@@ -463,7 +499,7 @@ export const PlanningManagement = () => {
                       <SelectTrigger className="mt-1">
                         <SelectValue placeholder="Kies project" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-white z-50">
                         {projects.map((project) => (
                           <SelectItem key={project.id} value={project.id}>
                             {project.title} - {project.customer}
@@ -493,7 +529,7 @@ export const PlanningManagement = () => {
                     }} className="w-full sm:w-auto">
                       Annuleren
                     </Button>
-                    <Button type="submit" className="w-full sm:w-auto">Planning Aanmaken</Button>
+                    <Button type="submit" className="bg-smans-primary hover:bg-smans-primary/90 text-white w-full sm:w-auto">Planning Aanmaken</Button>
                   </DialogFooter>
                 </form>
               </DialogContent>
@@ -520,7 +556,7 @@ export const PlanningManagement = () => {
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder="Kies monteur" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white z-50">
                           {installers.map((installer) => (
                             <SelectItem key={installer.id} value={installer.id.toString()}>
                               {installer.name}
@@ -535,7 +571,7 @@ export const PlanningManagement = () => {
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder="Kies project" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white z-50">
                           {projects.map((project) => (
                             <SelectItem key={project.id} value={project.id}>
                               {project.title} - {project.customer}
@@ -567,7 +603,7 @@ export const PlanningManagement = () => {
                     }} className="w-full sm:w-auto">
                       Annuleren
                     </Button>
-                    <Button type="submit" className="w-full sm:w-auto">Planning Aanmaken</Button>
+                    <Button type="submit" className="bg-smans-primary hover:bg-smans-primary/90 text-white w-full sm:w-auto">Planning Aanmaken</Button>
                   </DialogFooter>
                 </form>
               </DialogContent>
@@ -674,7 +710,7 @@ export const PlanningManagement = () => {
                     {selectedDate && selectedDatePlannings.length === 0 && (
                       <Button 
                         onClick={() => setNewPlanningDialogOpen(true)}
-                        className="bg-blue-600 hover:bg-blue-700 shadow-sm w-full sm:w-auto"
+                        className="bg-smans-primary hover:bg-smans-primary/90 text-white shadow-sm w-full sm:w-auto"
                         size="sm"
                       >
                         <Plus className="mr-2 h-4 w-4" />
@@ -696,7 +732,7 @@ export const PlanningManagement = () => {
                       {selectedDate && (
                         <Button 
                           onClick={() => setNewPlanningDialogOpen(true)}
-                          className="bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all w-full sm:w-auto"
+                          className="bg-smans-primary hover:bg-smans-primary/90 text-white shadow-lg hover:shadow-xl transition-all w-full sm:w-auto"
                         >
                           <Plus className="mr-2 h-4 w-4" />
                           Eerste Planning Toevoegen
