@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -72,7 +71,19 @@ export default function PublicQuote() {
         return;
       }
 
-      setQuote(data);
+      // Type cast the items from Json to the expected array type
+      const typedQuote: QuoteData = {
+        ...data,
+        items: Array.isArray(data.items) ? data.items as Array<{
+          description: string;
+          quantity: number;
+          price: number;
+          vatRate: number;
+          total: number;
+        }> : []
+      };
+
+      setQuote(typedQuote);
     } catch (error) {
       console.error('Error:', error);
       toast({
