@@ -282,23 +282,23 @@ export const PlanningManagement = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header Section */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-3 sm:p-6">
+      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-8">
+        {/* Header Section - Now fully responsive */}
+        <div className="flex flex-col gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Planning Beheer</h1>
-            <p className="text-gray-600 mt-1">Beheer en plan alle activiteiten van je team</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Planning Beheer</h1>
+            <p className="text-gray-600 mt-1 text-sm sm:text-base">Beheer en plan alle activiteiten van je team</p>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <Dialog open={multiDayPlanningDialogOpen} onOpenChange={setMultiDayPlanningDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
+                <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow w-full sm:w-auto">
                   <CalendarDays className="mr-2 h-4 w-4" />
                   Meerdaagse Planning
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-3xl">
+              <DialogContent className="max-w-3xl w-[95vw] sm:w-full">
                 <DialogHeader>
                   <DialogTitle>Meerdaagse planning aanmaken</DialogTitle>
                   <DialogDescription>
@@ -310,7 +310,7 @@ export const PlanningManagement = () => {
                   const formData = new FormData(e.currentTarget);
                   handleCreateMultiDayPlanning(formData);
                 }} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium">Startdatum</label>
                       <Calendar
@@ -330,7 +330,7 @@ export const PlanningManagement = () => {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium">Tijd</label>
                       <Input type="time" name="time" required className="mt-1" />
@@ -368,7 +368,7 @@ export const PlanningManagement = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium">Dagen van de week</label>
-                    <div className="grid grid-cols-4 gap-2 mt-1">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-1">
                       {dayOptions.map((day) => (
                         <label key={day.value} className="flex items-center space-x-2">
                           <input
@@ -396,26 +396,26 @@ export const PlanningManagement = () => {
                     <label className="text-sm font-medium">Beschrijving</label>
                     <Input name="description" className="mt-1" placeholder="Omschrijving van het werk" />
                   </div>
-                  <DialogFooter>
+                  <DialogFooter className="flex-col sm:flex-row gap-2">
                     <Button type="button" variant="outline" onClick={() => {
                       setMultiDayPlanningDialogOpen(false);
                       setMultiDayLocationValue("");
-                    }}>
+                    }} className="w-full sm:w-auto">
                       Annuleren
                     </Button>
-                    <Button type="submit">Meerdaagse Planning Aanmaken</Button>
+                    <Button type="submit" className="w-full sm:w-auto">Meerdaagse Planning Aanmaken</Button>
                   </DialogFooter>
                 </form>
               </DialogContent>
             </Dialog>
             <Dialog open={newPlanningDialogOpen} onOpenChange={setNewPlanningDialogOpen}>
               <DialogTrigger asChild>
-                <Button disabled={!selectedDate} className="bg-blue-600 hover:bg-blue-700 shadow-sm hover:shadow-md transition-all">
+                <Button disabled={!selectedDate} className="bg-blue-600 hover:bg-blue-700 shadow-sm hover:shadow-md transition-all w-full sm:w-auto">
                   <Plus className="mr-2 h-4 w-4" />
                   Nieuwe Planning
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-2xl w-[95vw] sm:w-full">
                 <DialogHeader>
                   <DialogTitle>Nieuwe planning voor {formatSelectedDate()}</DialogTitle>
                   <DialogDescription>
@@ -427,7 +427,7 @@ export const PlanningManagement = () => {
                   const formData = new FormData(e.currentTarget);
                   handleCreatePlanning(formData);
                 }} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium">Datum</label>
                       <Input 
@@ -486,20 +486,20 @@ export const PlanningManagement = () => {
                     <label className="text-sm font-medium">Beschrijving</label>
                     <Input name="description" className="mt-1" placeholder="Omschrijving van het werk" />
                   </div>
-                  <DialogFooter>
+                  <DialogFooter className="flex-col sm:flex-row gap-2">
                     <Button type="button" variant="outline" onClick={() => {
                       setNewPlanningDialogOpen(false);
                       setLocationValue("");
-                    }}>
+                    }} className="w-full sm:w-auto">
                       Annuleren
                     </Button>
-                    <Button type="submit">Planning Aanmaken</Button>
+                    <Button type="submit" className="w-full sm:w-auto">Planning Aanmaken</Button>
                   </DialogFooter>
                 </form>
               </DialogContent>
             </Dialog>
             <Dialog open={quickPlanningDialogOpen} onOpenChange={setQuickPlanningDialogOpen}>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-2xl w-[95vw] sm:w-full">
                 <DialogHeader>
                   <DialogTitle>Snelle planning aanmaken</DialogTitle>
                   <DialogDescription>
@@ -513,7 +513,7 @@ export const PlanningManagement = () => {
                   const formData = new FormData(e.currentTarget);
                   handleQuickPlanningCreate(formData);
                 }} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="text-sm font-medium">Monteur</label>
                       <Select name="employee" required>
@@ -559,15 +559,15 @@ export const PlanningManagement = () => {
                     <label className="text-sm font-medium">Beschrijving</label>
                     <Input name="description" className="mt-1" placeholder="Omschrijving van het werk" />
                   </div>
-                  <DialogFooter>
+                  <DialogFooter className="flex-col sm:flex-row gap-2">
                     <Button type="button" variant="outline" onClick={() => {
                       setQuickPlanningDialogOpen(false);
                       setQuickLocationValue("");
                       setQuickPlanningData(null);
-                    }}>
+                    }} className="w-full sm:w-auto">
                       Annuleren
                     </Button>
-                    <Button type="submit">Planning Aanmaken</Button>
+                    <Button type="submit" className="w-full sm:w-auto">Planning Aanmaken</Button>
                   </DialogFooter>
                 </form>
               </DialogContent>
@@ -575,16 +575,16 @@ export const PlanningManagement = () => {
           </div>
         </div>
 
-        {/* Tabs Navigation */}
+        {/* Tabs Navigation - Made responsive */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 lg:w-fit lg:grid-cols-3 bg-white/50 backdrop-blur-sm shadow-sm">
-            <TabsTrigger value="week" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+          <TabsList className="grid w-full grid-cols-3 bg-white/50 backdrop-blur-sm shadow-sm">
+            <TabsTrigger value="week" className="data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm">
               Weekkalender
             </TabsTrigger>
-            <TabsTrigger value="month" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            <TabsTrigger value="month" className="data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm">
               Maandoverzicht
             </TabsTrigger>
-            <TabsTrigger value="list" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+            <TabsTrigger value="list" className="data-[state=active]:bg-white data-[state=active]:shadow-sm text-xs sm:text-sm">
               Lijstweergave
             </TabsTrigger>
           </TabsList>
@@ -592,11 +592,11 @@ export const PlanningManagement = () => {
           <TabsContent value="week" className="space-y-6 mt-6">
             <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
               <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-xl">
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                   <CalendarIcon className="h-5 w-5 text-blue-600" />
                   Weekplanning
                 </CardTitle>
-                <CardDescription className="text-gray-600">
+                <CardDescription className="text-gray-600 text-sm sm:text-base">
                   Overzicht van alle geplande activiteiten deze week
                   <br />
                   <span className="text-sm text-blue-600 font-medium">
@@ -615,16 +615,16 @@ export const PlanningManagement = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="month" className="space-y-6 mt-6">
-            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-              {/* Enhanced Interactive Calendar */}
-              <Card className="xl:col-span-1 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+          <TabsContent value="month" className="space-y-4 sm:space-y-6 mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+              {/* Enhanced Interactive Calendar - Made more responsive */}
+              <Card className="lg:col-span-1 shadow-lg border-0 bg-white/80 backdrop-blur-sm order-2 lg:order-1">
                 <CardHeader className="pb-4">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <CalendarIcon className="h-5 w-5 text-blue-600" />
+                  <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                    <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                     Kalender
                   </CardTitle>
-                  <CardDescription className="text-gray-600">
+                  <CardDescription className="text-gray-600 text-sm">
                     Klik op een datum om planningen te bekijken
                   </CardDescription>
                 </CardHeader>
@@ -644,27 +644,27 @@ export const PlanningManagement = () => {
                         borderRadius: '8px'
                       }
                     }}
-                    className="rounded-xl border-2 border-blue-100 pointer-events-auto bg-white shadow-sm"
+                    className="rounded-xl border-2 border-blue-100 pointer-events-auto bg-white shadow-sm w-full"
                   />
                   <div className="bg-blue-50 rounded-lg p-3">
                     <div className="flex items-center gap-2 text-sm">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                      <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0"></div>
                       <span className="text-gray-700 font-medium">Dagen met planning</span>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Enhanced Selected Date Planning */}
-              <Card className="xl:col-span-3 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+              {/* Enhanced Selected Date Planning - Made fully responsive */}
+              <Card className="lg:col-span-3 shadow-lg border-0 bg-white/80 backdrop-blur-sm order-1 lg:order-2">
                 <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2 text-lg">
-                        <Clock className="h-5 w-5 text-green-600" />
-                        Planning voor {formatSelectedDate()}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                        <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 flex-shrink-0" />
+                        <span className="truncate">Planning voor {formatSelectedDate()}</span>
                       </CardTitle>
-                      <CardDescription className="text-gray-600 mt-1">
+                      <CardDescription className="text-gray-600 mt-1 text-sm">
                         {selectedDatePlannings.length > 0 
                           ? `${selectedDatePlannings.length} activiteit(en) gepland`
                           : "Geen activiteiten gepland voor deze dag"
@@ -674,28 +674,29 @@ export const PlanningManagement = () => {
                     {selectedDate && selectedDatePlannings.length === 0 && (
                       <Button 
                         onClick={() => setNewPlanningDialogOpen(true)}
-                        className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+                        className="bg-blue-600 hover:bg-blue-700 shadow-sm w-full sm:w-auto"
                         size="sm"
                       >
                         <Plus className="mr-2 h-4 w-4" />
-                        Planning Toevoegen
+                        <span className="hidden sm:inline">Planning Toevoegen</span>
+                        <span className="sm:hidden">Toevoegen</span>
                       </Button>
                     )}
                   </div>
                 </CardHeader>
                 <CardContent>
                   {selectedDatePlannings.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <CalendarIcon className="h-8 w-8 text-gray-400" />
+                    <div className="text-center py-8 sm:py-12">
+                      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <CalendarIcon className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
                       </div>
-                      <p className="text-gray-500 mb-6 text-lg">
+                      <p className="text-gray-500 mb-4 sm:mb-6 text-base sm:text-lg">
                         Geen planning voor deze dag
                       </p>
                       {selectedDate && (
                         <Button 
                           onClick={() => setNewPlanningDialogOpen(true)}
-                          className="bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all"
+                          className="bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all w-full sm:w-auto"
                         >
                           <Plus className="mr-2 h-4 w-4" />
                           Eerste Planning Toevoegen
@@ -705,22 +706,22 @@ export const PlanningManagement = () => {
                   ) : (
                     <div className="space-y-4">
                       {selectedDatePlannings.map((item) => (
-                        <div key={item.id} className="group bg-gradient-to-r from-white to-gray-50 border border-gray-200 rounded-xl p-5 hover:shadow-md transition-all duration-200 hover:border-blue-200">
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-start gap-4 flex-1">
-                              <div className="bg-blue-100 text-blue-700 px-3 py-2 rounded-lg font-bold text-sm min-w-fit">
+                        <div key={item.id} className="group bg-gradient-to-r from-white to-gray-50 border border-gray-200 rounded-xl p-3 sm:p-5 hover:shadow-md transition-all duration-200 hover:border-blue-200">
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                            <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 flex-1 min-w-0">
+                              <div className="bg-blue-100 text-blue-700 px-3 py-2 rounded-lg font-bold text-sm w-fit">
                                 {item.time}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="font-semibold text-gray-900 text-lg mb-2">{item.project}</div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-600">
+                                <div className="font-semibold text-gray-900 text-base sm:text-lg mb-2">{item.project}</div>
+                                <div className="grid grid-cols-1 gap-2 sm:gap-3 text-sm text-gray-600">
                                   <div className="flex items-center gap-2">
-                                    <User className="h-4 w-4 text-blue-500" />
+                                    <User className="h-4 w-4 text-blue-500 flex-shrink-0" />
                                     <span className="font-medium">{item.employee}</span>
                                   </div>
-                                  <div className="flex items-center gap-2">
-                                    <MapPin className="h-4 w-4 text-green-500" />
-                                    <span className="truncate">{item.location}</span>
+                                  <div className="flex items-start gap-2">
+                                    <MapPin className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
+                                    <span className="break-words">{item.location}</span>
                                   </div>
                                 </div>
                                 {item.description && (
@@ -730,11 +731,11 @@ export const PlanningManagement = () => {
                                 )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-3 ml-4">
+                            <div className="flex items-center justify-between sm:justify-end gap-3">
                               <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(item.status)}`}>
                                 {item.status}
                               </span>
-                              <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity sm:ml-4">
                                 <ChevronRight className="h-4 w-4" />
                               </Button>
                             </div>
@@ -760,16 +761,16 @@ export const PlanningManagement = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="list" className="space-y-6 mt-6">
-            {/* Enhanced All Planning Table */}
+          <TabsContent value="list" className="space-y-4 sm:space-y-6 mt-6">
+            {/* Enhanced All Planning Table - Made responsive */}
             <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
               <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
-                    <CardTitle className="text-xl">Alle Planningen</CardTitle>
-                    <CardDescription className="text-gray-600">Overzicht van alle geplande activiteiten</CardDescription>
+                    <CardTitle className="text-lg sm:text-xl">Alle Planningen</CardTitle>
+                    <CardDescription className="text-gray-600 text-sm sm:text-base">Overzicht van alle geplande activiteiten</CardDescription>
                   </div>
-                  <Button variant="outline" size="sm" className="gap-2">
+                  <Button variant="outline" size="sm" className="gap-2 w-full sm:w-auto">
                     <Filter className="h-4 w-4" />
                     Filter
                   </Button>
@@ -780,13 +781,13 @@ export const PlanningManagement = () => {
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-gray-50">
-                        <TableHead className="font-semibold">Datum</TableHead>
-                        <TableHead className="font-semibold">Tijd</TableHead>
-                        <TableHead className="font-semibold">Monteur</TableHead>
-                        <TableHead className="font-semibold">Project</TableHead>
-                        <TableHead className="font-semibold">Locatie</TableHead>
-                        <TableHead className="font-semibold">Status</TableHead>
-                        <TableHead className="font-semibold">Acties</TableHead>
+                        <TableHead className="font-semibold text-xs sm:text-sm">Datum</TableHead>
+                        <TableHead className="font-semibold text-xs sm:text-sm">Tijd</TableHead>
+                        <TableHead className="font-semibold text-xs sm:text-sm hidden sm:table-cell">Monteur</TableHead>
+                        <TableHead className="font-semibold text-xs sm:text-sm">Project</TableHead>
+                        <TableHead className="font-semibold text-xs sm:text-sm hidden lg:table-cell">Locatie</TableHead>
+                        <TableHead className="font-semibold text-xs sm:text-sm">Status</TableHead>
+                        <TableHead className="font-semibold text-xs sm:text-sm">Acties</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -794,18 +795,18 @@ export const PlanningManagement = () => {
                         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
                         .map((item) => (
                         <TableRow key={item.id} className="hover:bg-blue-50 transition-colors">
-                          <TableCell className="font-medium">{format(new Date(item.date), 'dd MMM yyyy', { locale: nl })}</TableCell>
-                          <TableCell className="font-mono">{item.time}</TableCell>
-                          <TableCell>{item.employee}</TableCell>
-                          <TableCell className="font-medium">{item.project}</TableCell>
-                          <TableCell className="max-w-xs truncate">{item.location}</TableCell>
+                          <TableCell className="font-medium text-xs sm:text-sm">{format(new Date(item.date), 'dd MMM yyyy', { locale: nl })}</TableCell>
+                          <TableCell className="font-mono text-xs sm:text-sm">{item.time}</TableCell>
+                          <TableCell className="hidden sm:table-cell text-xs sm:text-sm">{item.employee}</TableCell>
+                          <TableCell className="font-medium text-xs sm:text-sm">{item.project}</TableCell>
+                          <TableCell className="max-w-xs truncate hidden lg:table-cell text-xs sm:text-sm">{item.location}</TableCell>
                           <TableCell>
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(item.status)}`}>
+                            <span className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(item.status)}`}>
                               {item.status}
                             </span>
                           </TableCell>
                           <TableCell>
-                            <Button variant="ghost" size="sm" className="hover:bg-blue-100">
+                            <Button variant="ghost" size="sm" className="hover:bg-blue-100 text-xs sm:text-sm">
                               Bewerken
                             </Button>
                           </TableCell>

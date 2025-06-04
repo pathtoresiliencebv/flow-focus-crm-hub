@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, File, CheckCircle, Clock, Receipt } from "lucide-react";
@@ -161,7 +160,7 @@ const CustomerDetail = () => {
               <TabsContent value="projects">
                 <h3 className="text-xl font-semibold mb-4">Projecten van {customer.name}</h3>
                 {customerProjects.length > 0 ? (
-                  <ProjectsBoard />
+                  <ProjectsBoard customerId={customer.id} disableDrag={true} />
                 ) : (
                   <Card>
                     <CardContent className="py-8">
