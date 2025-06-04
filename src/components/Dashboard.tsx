@@ -1,17 +1,19 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
-import { Area, AreaChart, Bar, BarChart, XAxis, YAxis, Legend, ResponsiveContainer, Tooltip } from "recharts";
+import { Bar, BarChart, XAxis, YAxis, Legend, ResponsiveContainer, Tooltip } from "recharts";
 import { useCrmStore } from "@/hooks/useCrmStore";
-import { Calendar, Clock, MapPin, User } from "lucide-react";
+import { Calendar, Clock, MapPin, User, Folder, Eye } from "lucide-react";
 import { format, isToday, isTomorrow, addDays } from "date-fns";
 import { nl } from "date-fns/locale";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 // Mock planning data (in a real app, this would come from your planning store)
 const mockPlanningItems = [
   {
     id: "1",
-    date: "2025-05-26",
+    date: "2025-06-04",
     time: "09:00",
     employee: "Peter Bakker",
     project: "Kozijnen vervangen",
@@ -20,7 +22,7 @@ const mockPlanningItems = [
   },
   {
     id: "2",
-    date: "2025-05-26",
+    date: "2025-06-04",
     time: "14:00",
     employee: "Peter Bakker",
     project: "Nieuwe ramen installeren",
@@ -29,7 +31,7 @@ const mockPlanningItems = [
   },
   {
     id: "3",
-    date: "2025-05-27",
+    date: "2025-06-05",
     time: "10:00",
     employee: "Peter Bakker",
     project: "Kozijnen vervangen",
@@ -38,7 +40,7 @@ const mockPlanningItems = [
   },
   {
     id: "4",
-    date: "2025-05-27",
+    date: "2025-06-05",
     time: "15:30",
     employee: "Peter Bakker",
     project: "Onderhoud kozijnen",
@@ -57,23 +59,6 @@ export const Dashboard = () => {
     .filter(p => p.status === "afgerond")
     .reduce((sum, p) => sum + parseFloat(p.value || "0"), 0);
   const plannedProjects = projects.filter(p => p.status === "gepland").length;
-
-  // Mock data for charts (in a real app, this would come from your database)
-  const revenueData = [
-    { name: "Jan", totaal: 4200 },
-    { name: "Feb", totaal: 4800 },
-    { name: "Mrt", totaal: 5600 },
-    { name: "Apr", totaal: 6200 },
-    { name: "Mei", totaal: Math.round(totalRevenue) },
-  ];
-
-  const projectData = [
-    { name: "Jan", afgerond: 8, nieuw: 12 },
-    { name: "Feb", afgerond: 10, nieuw: 9 },
-    { name: "Mrt", afgerond: 12, nieuw: 15 },
-    { name: "Apr", afgerond: 15, nieuw: 11 },
-    { name: "Mei", afgerond: projects.filter(p => p.status === "afgerond").length, nieuw: projects.filter(p => p.status === "te-plannen").length },
-  ];
 
   const statusCounts = {
     "te-plannen": projects.filter(p => p.status === "te-plannen").length,
@@ -110,6 +95,26 @@ export const Dashboard = () => {
       case "Afgerond": return "bg-gray-100 text-gray-800";
       case "Geannuleerd": return "bg-red-100 text-red-800";
       default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getProjectStatusColor = (status: string) => {
+    switch (status) {
+      case "te-plannen": return "bg-yellow-100 text-yellow-800";
+      case "gepland": return "bg-blue-100 text-blue-800";
+      case "herkeuring": return "bg-orange-100 text-orange-800";
+      case "afgerond": return "bg-green-100 text-green-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "te-plannen": return "Te plannen";
+      case "gepland": return "Gepland";
+      case "herkeuring": return "Herkeuring";
+      case "afgerond": return "Afgerond";
+      default: return status;
     }
   };
 
@@ -174,8 +179,9 @@ export const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Planning Agenda Section */}
+      {/* Planning Agenda and Projects Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Today's Planning */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -224,6 +230,7 @@ export const Dashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Tomorrow's Planning */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -272,73 +279,56 @@ export const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
-      
-      {/* Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+      {/* Projects Overview and Status Chart */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Recent Projects */}
         <Card>
           <CardHeader>
-            <CardTitle>Maandomzet</CardTitle>
-            <CardDescription>Omzet van de afgelopen maanden in Euro's</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Folder className="h-5 w-5 text-smans-primary" />
+              Recente Projecten
+            </CardTitle>
+            <CardDescription>Overzicht van de laatste projecten</CardDescription>
           </CardHeader>
-          <CardContent className="h-80">
-            <ChartContainer
-              config={{
-                totaal: {
-                  label: "Omzet",
-                  color: "#aa1917",
-                },
-              }}
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={revenueData}>
-                  <defs>
-                    <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#aa1917" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#aa1917" stopOpacity={0.1}/>
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      return (
-                        <div className="rounded-lg border bg-background p-2 shadow-sm">
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="flex flex-col">
-                              <span className="text-[0.70rem] uppercase text-muted-foreground">
-                                Maand
-                              </span>
-                              <span className="font-bold text-muted-foreground">
-                                {payload[0].payload.name}
-                              </span>
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-[0.70rem] uppercase text-muted-foreground">
-                                Omzet
-                              </span>
-                              <span className="font-bold">
-                                €{payload[0].value}
-                              </span>
-                            </div>
+          <CardContent>
+            {projects.length === 0 ? (
+              <div className="text-center py-4 text-muted-foreground">
+                Geen projecten beschikbaar
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {projects.slice(-5).reverse().map((project) => (
+                  <div key={project.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{project.title}</div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-3 mt-1">
+                          <div className="flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            {project.customer}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {new Date(project.date).toLocaleDateString('nl-NL')}
                           </div>
                         </div>
-                      );
-                    }
-                    return null;
-                  }} />
-                  <Area
-                    type="monotone"
-                    dataKey="totaal"
-                    stroke="#aa1917"
-                    fillOpacity={1}
-                    fill="url(#colorUv)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge className={getProjectStatusColor(project.status)}>
+                        {getStatusLabel(project.status)}
+                      </Badge>
+                      <span className="text-sm font-medium">€{parseFloat(project.value || "0").toLocaleString('nl-NL')}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
         
+        {/* Project Status Chart */}
         <Card>
           <CardHeader>
             <CardTitle>Project Status</CardTitle>
@@ -367,8 +357,8 @@ export const Dashboard = () => {
       </div>
       
       {/* Recent Activities */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="col-span-1 md:col-span-3">
+      <div className="grid grid-cols-1 gap-6">
+        <Card>
           <CardHeader>
             <CardTitle>Recente Activiteiten</CardTitle>
           </CardHeader>
