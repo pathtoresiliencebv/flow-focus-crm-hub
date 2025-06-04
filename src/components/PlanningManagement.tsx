@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from "@/hooks/use-toast";
 import { useUserStore } from "@/hooks/useUserStore";
 import { useCrmStore } from "@/hooks/useCrmStore";
-import { CalendarIcon, Clock, MapPin, User, Plus, CalendarDays } from "lucide-react";
+import { CalendarIcon, Clock, MapPin, User, Plus, CalendarDays, ChevronRight, Filter } from "lucide-react";
 import LocationMapInput from "./LocationMapInput";
 import { format, addDays, parseISO } from "date-fns";
 import { nl } from "date-fns/locale";
@@ -244,11 +244,11 @@ export const PlanningManagement = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Gepland": return "bg-blue-100 text-blue-800";
-      case "Bevestigd": return "bg-green-100 text-green-800";
-      case "Afgerond": return "bg-gray-100 text-gray-800";
-      case "Geannuleerd": return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "Gepland": return "bg-blue-100 text-blue-800 border-blue-200";
+      case "Bevestigd": return "bg-green-100 text-green-800 border-green-200";
+      case "Afgerond": return "bg-gray-100 text-gray-800 border-gray-200";
+      case "Geannuleerd": return "bg-red-100 text-red-800 border-red-200";
+      default: return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
@@ -282,233 +282,166 @@ export const PlanningManagement = () => {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Planning Beheer</h2>
-        <div className="flex gap-2">
-          <Dialog open={multiDayPlanningDialogOpen} onOpenChange={setMultiDayPlanningDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <CalendarDays className="mr-2 h-4 w-4" />
-                Meerdaagse Planning
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-3xl">
-              <DialogHeader>
-                <DialogTitle>Meerdaagse planning aanmaken</DialogTitle>
-                <DialogDescription>
-                  Maak planning aan voor meerdere dagen met specifieke tijden en dagen van de week.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                handleCreateMultiDayPlanning(formData);
-              }} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Startdatum</label>
-                    <Calendar
-                      mode="single"
-                      selected={startDate}
-                      onSelect={setStartDate}
-                      className="rounded-md border mt-1 pointer-events-auto"
-                    />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Planning Beheer</h1>
+            <p className="text-gray-600 mt-1">Beheer en plan alle activiteiten van je team</p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Dialog open={multiDayPlanningDialogOpen} onOpenChange={setMultiDayPlanningDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
+                  <CalendarDays className="mr-2 h-4 w-4" />
+                  Meerdaagse Planning
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle>Meerdaagse planning aanmaken</DialogTitle>
+                  <DialogDescription>
+                    Maak planning aan voor meerdere dagen met specifieke tijden en dagen van de week.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.currentTarget);
+                  handleCreateMultiDayPlanning(formData);
+                }} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">Startdatum</label>
+                      <Calendar
+                        mode="single"
+                        selected={startDate}
+                        onSelect={setStartDate}
+                        className="rounded-md border mt-1 pointer-events-auto"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Einddatum</label>
+                      <Calendar
+                        mode="single"
+                        selected={endDate}
+                        onSelect={setEndDate}
+                        className="rounded-md border mt-1 pointer-events-auto"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">Tijd</label>
+                      <Input type="time" name="time" required className="mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Monteur</label>
+                      <Select name="employee" required>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Kies monteur" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {installers.map((installer) => (
+                            <SelectItem key={installer.id} value={installer.id.toString()}>
+                              {installer.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Einddatum</label>
-                    <Calendar
-                      mode="single"
-                      selected={endDate}
-                      onSelect={setEndDate}
-                      className="rounded-md border mt-1 pointer-events-auto"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Tijd</label>
-                    <Input type="time" name="time" required className="mt-1" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Monteur</label>
-                    <Select name="employee" required>
+                    <label className="text-sm font-medium">Project</label>
+                    <Select name="project" required>
                       <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Kies monteur" />
+                        <SelectValue placeholder="Kies project" />
                       </SelectTrigger>
                       <SelectContent>
-                        {installers.map((installer) => (
-                          <SelectItem key={installer.id} value={installer.id.toString()}>
-                            {installer.name}
+                        {projects.map((project) => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.title} - {project.customer}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Project</label>
-                  <Select name="project" required>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Kies project" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {projects.map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.title} - {project.customer}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Dagen van de week</label>
-                  <div className="grid grid-cols-4 gap-2 mt-1">
-                    {dayOptions.map((day) => (
-                      <label key={day.value} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          name="days"
-                          value={day.value}
-                          className="rounded"
-                        />
-                        <span className="text-sm">{day.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Locatie</label>
-                  <div className="mt-1">
-                    <LocationMapInput
-                      value={multiDayLocationValue}
-                      onChange={setMultiDayLocationValue}
-                      placeholder="Zoek adres of locatie..."
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Beschrijving</label>
-                  <Input name="description" className="mt-1" placeholder="Omschrijving van het werk" />
-                </div>
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => {
-                    setMultiDayPlanningDialogOpen(false);
-                    setMultiDayLocationValue("");
-                  }}>
-                    Annuleren
-                  </Button>
-                  <Button type="submit">Meerdaagse Planning Aanmaken</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-          <Dialog open={newPlanningDialogOpen} onOpenChange={setNewPlanningDialogOpen}>
-            <DialogTrigger asChild>
-              <Button disabled={!selectedDate}>
-                <Plus className="mr-2 h-4 w-4" />
-                Nieuwe Planning
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Nieuwe planning voor {formatSelectedDate()}</DialogTitle>
-                <DialogDescription>
-                  Plan werk in voor een monteur op {formatSelectedDate()}.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                handleCreatePlanning(formData);
-              }} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium">Datum</label>
-                    <Input 
-                      type="text" 
-                      value={formatSelectedDate()}
-                      disabled 
-                      className="mt-1 bg-gray-50" 
-                    />
+                    <label className="text-sm font-medium">Dagen van de week</label>
+                    <div className="grid grid-cols-4 gap-2 mt-1">
+                      {dayOptions.map((day) => (
+                        <label key={day.value} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            name="days"
+                            value={day.value}
+                            className="rounded"
+                          />
+                          <span className="text-sm">{day.label}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Tijd</label>
-                    <Input type="time" name="time" required className="mt-1" />
+                    <label className="text-sm font-medium">Locatie</label>
+                    <div className="mt-1">
+                      <LocationMapInput
+                        value={multiDayLocationValue}
+                        onChange={setMultiDayLocationValue}
+                        placeholder="Zoek adres of locatie..."
+                      />
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Monteur</label>
-                  <Select name="employee" required>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Kies monteur" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {installers.map((installer) => (
-                        <SelectItem key={installer.id} value={installer.id.toString()}>
-                          {installer.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Project</label>
-                  <Select name="project" required>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Kies project" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {projects.map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.title} - {project.customer}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Locatie</label>
-                  <div className="mt-1">
-                    <LocationMapInput
-                      value={locationValue}
-                      onChange={setLocationValue}
-                      placeholder="Zoek adres of locatie..."
-                    />
+                  <div>
+                    <label className="text-sm font-medium">Beschrijving</label>
+                    <Input name="description" className="mt-1" placeholder="Omschrijving van het werk" />
                   </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Beschrijving</label>
-                  <Input name="description" className="mt-1" placeholder="Omschrijving van het werk" />
-                </div>
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => {
-                    setNewPlanningDialogOpen(false);
-                    setLocationValue("");
-                  }}>
-                    Annuleren
-                  </Button>
-                  <Button type="submit">Planning Aanmaken</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-          <Dialog open={quickPlanningDialogOpen} onOpenChange={setQuickPlanningDialogOpen}>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Snelle planning aanmaken</DialogTitle>
-                <DialogDescription>
-                  {quickPlanningData && 
-                    `Planning voor ${format(quickPlanningData.date, 'EEEE dd MMMM yyyy', { locale: nl })} van ${quickPlanningData.startHour}:00 tot ${quickPlanningData.endHour}:00`
-                  }
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                handleQuickPlanningCreate(formData);
-              }} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => {
+                      setMultiDayPlanningDialogOpen(false);
+                      setMultiDayLocationValue("");
+                    }}>
+                      Annuleren
+                    </Button>
+                    <Button type="submit">Meerdaagse Planning Aanmaken</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+            <Dialog open={newPlanningDialogOpen} onOpenChange={setNewPlanningDialogOpen}>
+              <DialogTrigger asChild>
+                <Button disabled={!selectedDate} className="bg-blue-600 hover:bg-blue-700 shadow-sm hover:shadow-md transition-all">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nieuwe Planning
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Nieuwe planning voor {formatSelectedDate()}</DialogTitle>
+                  <DialogDescription>
+                    Plan werk in voor een monteur op {formatSelectedDate()}.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.currentTarget);
+                  handleCreatePlanning(formData);
+                }} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">Datum</label>
+                      <Input 
+                        type="text" 
+                        value={formatSelectedDate()}
+                        disabled 
+                        className="mt-1 bg-gray-50" 
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Tijd</label>
+                      <Input type="time" name="time" required className="mt-1" />
+                    </div>
+                  </div>
                   <div>
                     <label className="text-sm font-medium">Monteur</label>
                     <Select name="employee" required>
@@ -539,221 +472,353 @@ export const PlanningManagement = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Locatie</label>
-                  <div className="mt-1">
-                    <LocationMapInput
-                      value={quickLocationValue}
-                      onChange={setQuickLocationValue}
-                      placeholder="Zoek adres of locatie..."
-                    />
+                  <div>
+                    <label className="text-sm font-medium">Locatie</label>
+                    <div className="mt-1">
+                      <LocationMapInput
+                        value={locationValue}
+                        onChange={setLocationValue}
+                        placeholder="Zoek adres of locatie..."
+                      />
+                    </div>
                   </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Beschrijving</label>
-                  <Input name="description" className="mt-1" placeholder="Omschrijving van het werk" />
-                </div>
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => {
-                    setQuickPlanningDialogOpen(false);
-                    setQuickLocationValue("");
-                    setQuickPlanningData(null);
-                  }}>
-                    Annuleren
-                  </Button>
-                  <Button type="submit">Planning Aanmaken</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  <div>
+                    <label className="text-sm font-medium">Beschrijving</label>
+                    <Input name="description" className="mt-1" placeholder="Omschrijving van het werk" />
+                  </div>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => {
+                      setNewPlanningDialogOpen(false);
+                      setLocationValue("");
+                    }}>
+                      Annuleren
+                    </Button>
+                    <Button type="submit">Planning Aanmaken</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+            <Dialog open={quickPlanningDialogOpen} onOpenChange={setQuickPlanningDialogOpen}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Snelle planning aanmaken</DialogTitle>
+                  <DialogDescription>
+                    {quickPlanningData && 
+                      `Planning voor ${format(quickPlanningData.date, 'EEEE dd MMMM yyyy', { locale: nl })} van ${quickPlanningData.startHour}:00 tot ${quickPlanningData.endHour}:00`
+                    }
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.currentTarget);
+                  handleQuickPlanningCreate(formData);
+                }} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium">Monteur</label>
+                      <Select name="employee" required>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Kies monteur" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {installers.map((installer) => (
+                            <SelectItem key={installer.id} value={installer.id.toString()}>
+                              {installer.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Project</label>
+                      <Select name="project" required>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Kies project" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {projects.map((project) => (
+                            <SelectItem key={project.id} value={project.id}>
+                              {project.title} - {project.customer}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Locatie</label>
+                    <div className="mt-1">
+                      <LocationMapInput
+                        value={quickLocationValue}
+                        onChange={setQuickLocationValue}
+                        placeholder="Zoek adres of locatie..."
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Beschrijving</label>
+                    <Input name="description" className="mt-1" placeholder="Omschrijving van het werk" />
+                  </div>
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => {
+                      setQuickPlanningDialogOpen(false);
+                      setQuickLocationValue("");
+                      setQuickPlanningData(null);
+                    }}>
+                      Annuleren
+                    </Button>
+                    <Button type="submit">Planning Aanmaken</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
-      </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="week">Weekkalender</TabsTrigger>
-          <TabsTrigger value="month">Maandoverzicht</TabsTrigger>
-          <TabsTrigger value="list">Lijstweergave</TabsTrigger>
-        </TabsList>
+        {/* Tabs Navigation */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3 lg:w-fit lg:grid-cols-3 bg-white/50 backdrop-blur-sm shadow-sm">
+            <TabsTrigger value="week" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              Weekkalender
+            </TabsTrigger>
+            <TabsTrigger value="month" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              Maandoverzicht
+            </TabsTrigger>
+            <TabsTrigger value="list" className="data-[state=active]:bg-white data-[state=active]:shadow-sm">
+              Lijstweergave
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="week" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Weekplanning</CardTitle>
-              <CardDescription>
-                Overzicht van alle geplande activiteiten deze week
-                <br />
-                <span className="text-sm text-muted-foreground">
-                  💡 Tip: Sleep over tijdslots om snel een nieuwe planning aan te maken
-                </span>
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <WeekCalendar 
-                events={calendarEvents}
-                onEventClick={handleEventClick}
-                onTimeSlotClick={handleTimeSlotClick}
-                onEventCreate={handleEventCreate}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="month" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Interactive Calendar */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CalendarIcon className="h-5 w-5" />
-                  Kalender
+          <TabsContent value="week" className="space-y-6 mt-6">
+            <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <CalendarIcon className="h-5 w-5 text-blue-600" />
+                  Weekplanning
                 </CardTitle>
-                <CardDescription>
-                  Klik op een datum om planningen te bekijken
+                <CardDescription className="text-gray-600">
+                  Overzicht van alle geplande activiteiten deze week
+                  <br />
+                  <span className="text-sm text-blue-600 font-medium">
+                    💡 Tip: Sleep over tijdslots om snel een nieuwe planning aan te maken
+                  </span>
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={handleDateSelect}
-                  modifiers={{
-                    hasPlanning: planningDates
-                  }}
-                  modifiersStyles={{
-                    hasPlanning: {
-                      backgroundColor: '#3b82f6',
-                      color: 'white',
-                      fontWeight: 'bold'
-                    }
-                  }}
-                  className="rounded-md border pointer-events-auto"
+                <WeekCalendar 
+                  events={calendarEvents}
+                  onEventClick={handleEventClick}
+                  onTimeSlotClick={handleTimeSlotClick}
+                  onEventCreate={handleEventCreate}
                 />
-                <div className="mt-4 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                    <span>Dagen met planning</span>
-                  </div>
-                </div>
               </CardContent>
             </Card>
+          </TabsContent>
 
-            {/* Selected Date Planning */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  Planning voor {formatSelectedDate()}
-                </CardTitle>
-                <CardDescription>
-                  {selectedDatePlannings.length > 0 
-                    ? `${selectedDatePlannings.length} activiteit(en) gepland`
-                    : "Geen activiteiten gepland voor deze dag"
-                  }
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {selectedDatePlannings.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-muted-foreground mb-4">
-                      Geen planning voor deze dag
-                    </p>
-                    {selectedDate && (
+          <TabsContent value="month" className="space-y-6 mt-6">
+            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+              {/* Enhanced Interactive Calendar */}
+              <Card className="xl:col-span-1 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <CalendarIcon className="h-5 w-5 text-blue-600" />
+                    Kalender
+                  </CardTitle>
+                  <CardDescription className="text-gray-600">
+                    Klik op een datum om planningen te bekijken
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={handleDateSelect}
+                    modifiers={{
+                      hasPlanning: planningDates
+                    }}
+                    modifiersStyles={{
+                      hasPlanning: {
+                        backgroundColor: '#3b82f6',
+                        color: 'white',
+                        fontWeight: 'bold',
+                        borderRadius: '8px'
+                      }
+                    }}
+                    className="rounded-xl border-2 border-blue-100 pointer-events-auto bg-white shadow-sm"
+                  />
+                  <div className="bg-blue-50 rounded-lg p-3">
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                      <span className="text-gray-700 font-medium">Dagen met planning</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Enhanced Selected Date Planning */}
+              <Card className="xl:col-span-3 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <Clock className="h-5 w-5 text-green-600" />
+                        Planning voor {formatSelectedDate()}
+                      </CardTitle>
+                      <CardDescription className="text-gray-600 mt-1">
+                        {selectedDatePlannings.length > 0 
+                          ? `${selectedDatePlannings.length} activiteit(en) gepland`
+                          : "Geen activiteiten gepland voor deze dag"
+                        }
+                      </CardDescription>
+                    </div>
+                    {selectedDate && selectedDatePlannings.length === 0 && (
                       <Button 
                         onClick={() => setNewPlanningDialogOpen(true)}
-                        variant="outline"
+                        className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+                        size="sm"
                       >
                         <Plus className="mr-2 h-4 w-4" />
                         Planning Toevoegen
                       </Button>
                     )}
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    {selectedDatePlannings.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                        <div className="flex items-center gap-4">
-                          <div className="text-lg font-medium text-blue-600">{item.time}</div>
-                          <div className="flex-1">
-                            <div className="font-medium">{item.project}</div>
-                            <div className="text-sm text-muted-foreground flex items-center gap-4 mt-1">
-                              <div className="flex items-center gap-1">
-                                <User className="h-3 w-3" />
-                                {item.employee}
+                </CardHeader>
+                <CardContent>
+                  {selectedDatePlannings.length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <CalendarIcon className="h-8 w-8 text-gray-400" />
+                      </div>
+                      <p className="text-gray-500 mb-6 text-lg">
+                        Geen planning voor deze dag
+                      </p>
+                      {selectedDate && (
+                        <Button 
+                          onClick={() => setNewPlanningDialogOpen(true)}
+                          className="bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all"
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Eerste Planning Toevoegen
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {selectedDatePlannings.map((item) => (
+                        <div key={item.id} className="group bg-gradient-to-r from-white to-gray-50 border border-gray-200 rounded-xl p-5 hover:shadow-md transition-all duration-200 hover:border-blue-200">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-4 flex-1">
+                              <div className="bg-blue-100 text-blue-700 px-3 py-2 rounded-lg font-bold text-sm min-w-fit">
+                                {item.time}
                               </div>
-                              <div className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                {item.location}
+                              <div className="flex-1 min-w-0">
+                                <div className="font-semibold text-gray-900 text-lg mb-2">{item.project}</div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-600">
+                                  <div className="flex items-center gap-2">
+                                    <User className="h-4 w-4 text-blue-500" />
+                                    <span className="font-medium">{item.employee}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <MapPin className="h-4 w-4 text-green-500" />
+                                    <span className="truncate">{item.location}</span>
+                                  </div>
+                                </div>
+                                {item.description && (
+                                  <div className="mt-3 p-3 bg-gray-50 rounded-lg text-sm text-gray-700 border-l-4 border-blue-300">
+                                    {item.description}
+                                  </div>
+                                )}
                               </div>
                             </div>
-                            {item.description && (
-                              <div className="text-sm text-muted-foreground mt-1">
-                                {item.description}
-                              </div>
-                            )}
+                            <div className="flex items-center gap-3 ml-4">
+                              <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(item.status)}`}>
+                                {item.status}
+                              </span>
+                              <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <ChevronRight className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
-                          {item.status}
-                        </span>
-                      </div>
-                    ))}
+                      ))}
+                      {selectedDate && (
+                        <div className="pt-4 border-t border-gray-200">
+                          <Button 
+                            onClick={() => setNewPlanningDialogOpen(true)}
+                            variant="outline"
+                            className="w-full border-dashed border-2 border-gray-300 hover:border-blue-400 hover:bg-blue-50 text-gray-600 hover:text-blue-600 py-3"
+                          >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Nog een planning toevoegen
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="list" className="space-y-6 mt-6">
+            {/* Enhanced All Planning Table */}
+            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-xl">Alle Planningen</CardTitle>
+                    <CardDescription className="text-gray-600">Overzicht van alle geplande activiteiten</CardDescription>
                   </div>
-                )}
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Filter className="h-4 w-4" />
+                    Filter
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-gray-50">
+                        <TableHead className="font-semibold">Datum</TableHead>
+                        <TableHead className="font-semibold">Tijd</TableHead>
+                        <TableHead className="font-semibold">Monteur</TableHead>
+                        <TableHead className="font-semibold">Project</TableHead>
+                        <TableHead className="font-semibold">Locatie</TableHead>
+                        <TableHead className="font-semibold">Status</TableHead>
+                        <TableHead className="font-semibold">Acties</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {planningItems
+                        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                        .map((item) => (
+                        <TableRow key={item.id} className="hover:bg-blue-50 transition-colors">
+                          <TableCell className="font-medium">{format(new Date(item.date), 'dd MMM yyyy', { locale: nl })}</TableCell>
+                          <TableCell className="font-mono">{item.time}</TableCell>
+                          <TableCell>{item.employee}</TableCell>
+                          <TableCell className="font-medium">{item.project}</TableCell>
+                          <TableCell className="max-w-xs truncate">{item.location}</TableCell>
+                          <TableCell>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusColor(item.status)}`}>
+                              {item.status}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="sm" className="hover:bg-blue-100">
+                              Bewerken
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </CardContent>
             </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="list" className="space-y-4">
-          {/* All Planning Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Alle Planningen</CardTitle>
-              <CardDescription>Overzicht van alle geplande activiteiten</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Datum</TableHead>
-                    <TableHead>Tijd</TableHead>
-                    <TableHead>Monteur</TableHead>
-                    <TableHead>Project</TableHead>
-                    <TableHead>Locatie</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Acties</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {planningItems
-                    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-                    .map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>{format(new Date(item.date), 'dd MMM yyyy', { locale: nl })}</TableCell>
-                      <TableCell>{item.time}</TableCell>
-                      <TableCell>{item.employee}</TableCell>
-                      <TableCell>{item.project}</TableCell>
-                      <TableCell className="max-w-xs truncate">{item.location}</TableCell>
-                      <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(item.status)}`}>
-                          {item.status}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm">
-                          Bewerken
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };
