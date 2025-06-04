@@ -23,12 +23,14 @@ const Index = () => {
   const isMobile = useIsMobile();
 
   const renderContent = () => {
+    // Note: CustomerDetail and ProjectDetail components use React Router
+    // for navigation and get their IDs from URL params, not props
     if (selectedCustomerId) {
-      return <CustomerDetail customerId={selectedCustomerId} onBack={() => setSelectedCustomerId(null)} />;
+      return <CustomerDetail />;
     }
     
     if (selectedProjectId) {
-      return <ProjectDetail projectId={selectedProjectId} onBack={() => setSelectedProjectId(null)} />;
+      return <ProjectDetail />;
     }
 
     switch (activeTab) {
