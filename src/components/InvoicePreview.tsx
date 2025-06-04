@@ -1,3 +1,4 @@
+
 import { Receipt } from "lucide-react";
 
 interface InvoicePreviewProps {
@@ -7,7 +8,8 @@ interface InvoicePreviewProps {
     date: string;
     dueDate: string;
     project?: string;
-    items: Array<{ id: string; description: string; quantity: number; price: number; total: number }>;
+    message?: string;
+    items: Array<{ id: string; description: string; quantity: number; price: number; vatRate: number; total: number }>;
   };
   customers: Array<{ id: number; name: string }>;
   projects?: Array<{ id: number; title: string; value: string; customer: string }>;
@@ -18,8 +20,12 @@ export function InvoicePreview({ formData, customers, projects }: InvoicePreview
   const projectTitle = projects?.find(p => p.id.toString() === formData.project)?.title || "";
   
   const subtotal = formData.items.reduce((sum, item) => sum + (item.total || 0), 0);
-  const vat = subtotal * 0.21;
-  const total = subtotal + vat;
+  const vatAmount = formData.items.reduce((sum, item) => {
+    const itemTotal = item.total || 0;
+    const vatRate = item.vatRate || 0;
+    return sum + (itemTotal * vatRate / 100);
+  }, 0);
+  const total = subtotal + vatAmount;
 
   return (
     <div className="bg-white border rounded-lg p-8 shadow-sm">
@@ -78,14 +84,23 @@ export function InvoicePreview({ formData, customers, projects }: InvoicePreview
         </div>
       </div>
 
+      {/* Message */}
+      {formData.message && (
+        <div className="mb-8 p-4 bg-blue-50 rounded-lg">
+          <h4 className="font-medium text-gray-700 mb-2">Bericht:</h4>
+          <p className="text-sm text-gray-600">{formData.message}</p>
+        </div>
+      )}
+
       {/* Invoice items table */}
       <div className="mb-8">
         <table className="w-full">
           <thead>
             <tr className="border-b-2 border-gray-200">
               <th className="text-left py-3 font-semibold text-gray-900">Omschrijving</th>
-              <th className="text-center py-3 font-semibold text-gray-900 w-20">Aantal</th>
-              <th className="text-right py-3 font-semibold text-gray-900 w-24">Prijs</th>
+              <th className="text-center py-3 font-semibold text-gray-900 w-16">Aantal</th>
+              <th className="text-right py-3 font-semibold text-gray-900 w-20">Prijs</th>
+              <th className="text-center py-3 font-semibold text-gray-900 w-16">BTW%</th>
               <th className="text-right py-3 font-semibold text-gray-900 w-24">Totaal</th>
             </tr>
           </thead>
@@ -97,12 +112,13 @@ export function InvoicePreview({ formData, customers, projects }: InvoicePreview
                 </td>
                 <td className="py-3 text-center text-gray-800">{item.quantity}</td>
                 <td className="py-3 text-right text-gray-800">€{item.price.toFixed(2)}</td>
+                <td className="py-3 text-center text-gray-800">{item.vatRate}%</td>
                 <td className="py-3 text-right text-gray-800 font-medium">€{(item.total || 0).toFixed(2)}</td>
               </tr>
             ))}
             {formData.items.length === 0 && (
               <tr className="border-b border-gray-100">
-                <td colSpan={4} className="py-8 text-center text-gray-400 italic">
+                <td colSpan={5} className="py-8 text-center text-gray-400 italic">
                   Voeg factuurregels toe...
                 </td>
               </tr>
@@ -119,8 +135,8 @@ export function InvoicePreview({ formData, customers, projects }: InvoicePreview
             <span className="font-medium">€{subtotal.toFixed(2)}</span>
           </div>
           <div className="flex justify-between py-1">
-            <span className="text-gray-600">BTW (21%):</span>
-            <span className="font-medium">€{vat.toFixed(2)}</span>
+            <span className="text-gray-600">BTW:</span>
+            <span className="font-medium">€{vatAmount.toFixed(2)}</span>
           </div>
           <div className="flex justify-between py-2 border-t-2 border-gray-200">
             <span className="font-bold text-lg">Totaal:</span>

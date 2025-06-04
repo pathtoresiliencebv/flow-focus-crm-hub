@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 
 // Define the form schema
@@ -38,6 +39,7 @@ const formSchema = z.object({
   paymentTerms: z.string().min(1, {
     message: "Betalingstermijn is verplicht.",
   }),
+  stripeIntegration: z.boolean().default(false),
 });
 
 export const InvoiceSettingsForm = () => {
@@ -54,6 +56,7 @@ export const InvoiceSettingsForm = () => {
       kvkNumber: "12345678",
       invoiceNotes: "Betaling binnen 14 dagen na factuurdatum. Bij niet tijdige betaling zijn wij genoodzaakt administratiekosten in rekening te brengen.",
       paymentTerms: "14",
+      stripeIntegration: false,
     },
   });
 
@@ -180,6 +183,32 @@ export const InvoiceSettingsForm = () => {
               </FormItem>
             )}
           />
+
+          <div className="border-t pt-6">
+            <h3 className="text-md font-medium mb-4">Integraties</h3>
+            <FormField
+              control={form.control}
+              name="stripeIntegration"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">
+                      Stripe Betalingslink
+                    </FormLabel>
+                    <FormDescription>
+                      Voeg automatisch een betaallink toe aan facturen
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+          </div>
           
           <div className="flex justify-end pt-4">
             <Button type="submit">Instellingen opslaan</Button>

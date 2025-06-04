@@ -1,8 +1,10 @@
+
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { PlusCircle, Trash2, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Form,
   FormControl,
@@ -33,7 +35,8 @@ interface InvoiceFormValues {
   date: string;
   dueDate: string;
   project?: string;
-  items: Array<{ id: string; description: string; quantity: number; price: number; total: number }>;
+  message?: string;
+  items: Array<{ id: string; description: string; quantity: number; price: number; vatRate: number; total: number }>;
 }
 
 export function InvoiceForm({ onClose, customers, projects }: InvoiceFormProps) {
@@ -45,8 +48,9 @@ export function InvoiceForm({ onClose, customers, projects }: InvoiceFormProps) 
       invoiceNumber: `INV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
       date: new Date().toISOString().split('T')[0],
       dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      message: "",
       items: [
-        { id: crypto.randomUUID(), description: "", quantity: 1, price: 0, total: 0 }
+        { id: crypto.randomUUID(), description: "", quantity: 1, price: 0, vatRate: 21, total: 0 }
       ]
     }
   });
@@ -54,12 +58,10 @@ export function InvoiceForm({ onClose, customers, projects }: InvoiceFormProps) 
   // Watch all form values for real-time preview
   const watchedValues = form.watch();
 
-  const { fields: items, append, remove } = form.control._formValues.items;
-
   const addItem = () => {
     form.setValue('items', [
       ...form.getValues('items'),
-      { id: crypto.randomUUID(), description: "", quantity: 1, price: 0, total: 0 }
+      { id: crypto.randomUUID(), description: "", quantity: 1, price: 0, vatRate: 21, total: 0 }
     ]);
   };
   
@@ -214,21 +216,40 @@ export function InvoiceForm({ onClose, customers, projects }: InvoiceFormProps) 
                 )}
               />
             </div>
+
+            <FormField
+              control={form.control}
+              name="message"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Bericht (optioneel)</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      {...field}
+                      placeholder="Extra bericht voor deze factuur"
+                      className="min-h-[80px]" 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             <div className="mt-6">
               <h4 className="font-medium mb-2">Factuurregels</h4>
               <div className="border rounded-md">
                 <div className="grid grid-cols-12 gap-2 bg-gray-50 p-3 border-b">
-                  <div className="col-span-5 font-medium text-sm">Omschrijving</div>
+                  <div className="col-span-4 font-medium text-sm">Omschrijving</div>
                   <div className="col-span-2 font-medium text-sm">Aantal</div>
                   <div className="col-span-2 font-medium text-sm">Prijs</div>
+                  <div className="col-span-1 font-medium text-sm">BTW%</div>
                   <div className="col-span-2 font-medium text-sm">Totaal</div>
                   <div className="col-span-1"></div>
                 </div>
                 
                 {form.watch('items').map((item, index) => (
                   <div key={item.id} className="grid grid-cols-12 gap-2 p-3 border-b items-center">
-                    <div className="col-span-5">
+                    <div className="col-span-4">
                       <Input 
                         placeholder="Omschrijving"
                         value={item.description}
@@ -265,6 +286,25 @@ export function InvoiceForm({ onClose, customers, projects }: InvoiceFormProps) 
                           calculateItemTotal(index);
                         }}
                       />
+                    </div>
+                    <div className="col-span-1">
+                      <Select
+                        value={item.vatRate.toString()}
+                        onValueChange={(value) => {
+                          const currentItems = [...form.getValues('items')];
+                          currentItems[index].vatRate = parseInt(value);
+                          form.setValue('items', currentItems);
+                        }}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">0%</SelectItem>
+                          <SelectItem value="9">9%</SelectItem>
+                          <SelectItem value="21">21%</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="col-span-2">
                       <Input 

@@ -18,6 +18,7 @@ interface InvoiceItem {
   description: string;
   quantity: number;
   price: string;
+  vatRate?: number;
   total: string;
 }
 
@@ -50,8 +51,17 @@ export function InvoiceDetails({ invoice, items, onSend, onClose }: InvoiceDetai
     }, 0);
   };
 
+  // Calculate VAT from items
+  const calculateVat = () => {
+    return items.reduce((sum, item) => {
+      const itemTotal = parseFloat(item.total.replace(',', '.'));
+      const vatRate = item.vatRate || 21; // Default to 21% if not specified
+      return sum + (itemTotal * vatRate / 100);
+    }, 0);
+  };
+
   const subtotal = calculateSubtotal();
-  const vat = subtotal * 0.21;
+  const vat = calculateVat();
   const total = subtotal + vat;
 
   const handleSendInvoice = () => {
@@ -132,6 +142,7 @@ export function InvoiceDetails({ invoice, items, onSend, onClose }: InvoiceDetai
                 <TableHead className="w-1/2">Omschrijving</TableHead>
                 <TableHead>Aantal</TableHead>
                 <TableHead>Prijs</TableHead>
+                <TableHead>BTW%</TableHead>
                 <TableHead className="text-right">Totaal</TableHead>
               </TableRow>
             </TableHeader>
@@ -141,6 +152,7 @@ export function InvoiceDetails({ invoice, items, onSend, onClose }: InvoiceDetai
                   <TableCell>{item.description}</TableCell>
                   <TableCell>{item.quantity}</TableCell>
                   <TableCell>€{item.price}</TableCell>
+                  <TableCell>{item.vatRate || 21}%</TableCell>
                   <TableCell className="text-right">€{item.total}</TableCell>
                 </TableRow>
               ))}
@@ -156,7 +168,7 @@ export function InvoiceDetails({ invoice, items, onSend, onClose }: InvoiceDetai
             <span>€{subtotal.toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span>BTW (21%):</span>
+            <span>BTW:</span>
             <span>€{vat.toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
           </div>
           <div className="flex justify-between font-medium border-t pt-2">
