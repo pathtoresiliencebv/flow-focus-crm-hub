@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Users, Calendar, Folder, LayoutDashboard, Receipt, Clock, Briefcase, BarChart2, FileText, Settings, LogOut, FileCheck } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -33,6 +33,7 @@ export const AppSidebar = ({
   setActiveTab
 }: AppSidebarProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { state } = useSidebar();
   
@@ -109,6 +110,11 @@ export const AppSidebar = ({
   const handleMenuClick = (itemId: string) => {
     setActiveTab(itemId);
     
+    // If we're on a detail page (customer or project), navigate back to home with the new tab
+    if (location.pathname !== "/" && location.pathname !== "/settings") {
+      navigate("/");
+    }
+    
     // Open personnel submenu if clicking on personnel or its subitems
     if (itemId === "personnel" || itemId === "users" || itemId === "salary") {
       setPersonnelOpen(true);
@@ -176,21 +182,21 @@ export const AppSidebar = ({
                     </Collapsible>
                   ) : (
                     <SidebarMenuButton 
-                      asChild={item.path !== "/"}
+                      asChild={item.path === "/settings"}
                       isActive={activeTab === item.id || (item.path === "/settings" && location.pathname === "/settings")}
-                      onClick={() => handleMenuClick(item.id)}
+                      onClick={item.path === "/settings" ? undefined : () => handleMenuClick(item.id)}
                       className="w-full justify-start gap-3 px-3 py-2 h-10 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
                     >
-                      {item.path === "/" ? (
-                        <span className="flex items-center gap-3 w-full">
-                          <item.icon className="h-4 w-4 flex-shrink-0" />
-                          <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
-                        </span>
-                      ) : (
+                      {item.path === "/settings" ? (
                         <Link to={item.path} className="flex items-center gap-3 w-full">
                           <item.icon className="h-4 w-4 flex-shrink-0" />
                           <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                         </Link>
+                      ) : (
+                        <span className="flex items-center gap-3 w-full">
+                          <item.icon className="h-4 w-4 flex-shrink-0" />
+                          <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
+                        </span>
                       )}
                     </SidebarMenuButton>
                   )}
