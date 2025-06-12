@@ -1,9 +1,13 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { CalendarDays, Users, FileText, TrendingUp, Clock, CheckCircle, AlertCircle, Plus } from "lucide-react";
+import { CalendarDays, Users, FileText, TrendingUp, Clock, CheckCircle, AlertCircle, Plus, Edit, Trash2 } from "lucide-react";
 import { WeekCalendar } from "./WeekCalendar";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface DashboardEvent {
   id: string;
@@ -13,6 +17,14 @@ interface DashboardEvent {
   date: string;
   type: 'meditation' | 'appointment' | 'meeting' | 'other';
   description?: string;
+}
+
+interface Task {
+  id: number;
+  title: string;
+  dueDate: string;
+  priority: 'Hoog' | 'Gemiddeld' | 'Laag';
+  status: 'pending' | 'completed';
 }
 
 export const Dashboard = () => {
@@ -37,6 +49,33 @@ export const Dashboard = () => {
       description: "Overleg nieuwe kozijnen"
     }
   ]);
+
+  const [tasks, setTasks] = useState<Task[]>([
+    {
+      id: 1,
+      title: "Offerte opstellen - Nieuwe kozijnen",
+      dueDate: "Vandaag",
+      priority: "Hoog",
+      status: "pending"
+    },
+    {
+      id: 2,
+      title: "Materiaal bestellen - Project Amsterdam",
+      dueDate: "Morgen",
+      priority: "Gemiddeld",
+      status: "pending"
+    },
+    {
+      id: 3,
+      title: "Klant terugbellen - Reparatie",
+      dueDate: "Vandaag",
+      priority: "Hoog",
+      status: "completed"
+    }
+  ]);
+
+  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   const handleEventClick = (event: DashboardEvent) => {
     toast({
@@ -67,6 +106,70 @@ export const Dashboard = () => {
     toast({
       title: "Planning toegevoegd",
       description: `${planning.title} is toegevoegd voor ${planning.date}`,
+    });
+  };
+
+  const handleTaskClick = (task: Task) => {
+    setEditingTask(task);
+    setTaskDialogOpen(true);
+  };
+
+  const handleAddTask = () => {
+    setEditingTask(null);
+    setTaskDialogOpen(true);
+  };
+
+  const handleTaskSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    const title = formData.get('title') as string;
+    const dueDate = formData.get('dueDate') as string;
+    const priority = formData.get('priority') as 'Hoog' | 'Gemiddeld' | 'Laag';
+
+    if (editingTask) {
+      // Update existing task
+      setTasks(prev => prev.map(task => 
+        task.id === editingTask.id 
+          ? { ...task, title, dueDate, priority }
+          : task
+      ));
+      toast({
+        title: "Taak bijgewerkt",
+        description: `${title} is bijgewerkt`,
+      });
+    } else {
+      // Add new task
+      const newTask: Task = {
+        id: Date.now(),
+        title,
+        dueDate,
+        priority,
+        status: 'pending'
+      };
+      setTasks(prev => [...prev, newTask]);
+      toast({
+        title: "Taak toegevoegd",
+        description: `${title} is toegevoegd`,
+      });
+    }
+
+    setTaskDialogOpen(false);
+    setEditingTask(null);
+  };
+
+  const handleTaskToggle = (taskId: number) => {
+    setTasks(prev => prev.map(task =>
+      task.id === taskId
+        ? { ...task, status: task.status === 'completed' ? 'pending' : 'completed' }
+        : task
+    ));
+  };
+
+  const handleTaskDelete = (taskId: number) => {
+    setTasks(prev => prev.filter(task => task.id !== taskId));
+    toast({
+      title: "Taak verwijderd",
+      description: "De taak is verwijderd",
     });
   };
 
@@ -101,33 +204,9 @@ export const Dashboard = () => {
     }
   ];
 
-  const upcomingTasks = [
-    {
-      id: 1,
-      title: "Offerte opstellen - Nieuwe kozijnen",
-      dueDate: "Vandaag",
-      priority: "Hoog",
-      status: "pending"
-    },
-    {
-      id: 2,
-      title: "Materiaal bestellen - Project Amsterdam",
-      dueDate: "Morgen",
-      priority: "Gemiddeld",
-      status: "pending"
-    },
-    {
-      id: 3,
-      title: "Klant terugbellen - Reparatie",
-      dueDate: "Vandaag",
-      priority: "Hoog",
-      status: "completed"
-    }
-  ];
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-full mx-auto space-y-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -166,10 +245,10 @@ export const Dashboard = () => {
           ))}
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          {/* Calendar - Takes 2 columns on XL screens */}
-          <div className="xl:col-span-2">
+        {/* Main Content - Full Width Calendar with Sidebar */}
+        <div className="flex gap-8">
+          {/* Calendar - Full Width */}
+          <div className="flex-1">
             <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
               <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2">
@@ -190,8 +269,8 @@ export const Dashboard = () => {
             </Card>
           </div>
 
-          {/* Tasks Sidebar */}
-          <div className="space-y-6">
+          {/* Sidebar - Fixed Width */}
+          <div className="w-80 space-y-6 flex-shrink-0">
             {/* Quick Actions */}
             <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
               <CardHeader className="pb-4">
@@ -216,21 +295,32 @@ export const Dashboard = () => {
             {/* Upcoming Tasks */}
             <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
               <CardHeader className="pb-4">
-                <CardTitle className="text-lg">Aankomende Taken</CardTitle>
-                <CardDescription>Belangrijke deadlines en to-dos</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg">Aankomende Taken</CardTitle>
+                    <CardDescription>Belangrijke deadlines en to-dos</CardDescription>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={handleAddTask}
+                    className="h-8 w-8 p-0"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {upcomingTasks.map((task) => (
-                    <div key={task.id} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100">
-                      <div className="mt-1">
+                  {tasks.map((task) => (
+                    <div key={task.id} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100 hover:bg-gray-100 transition-colors cursor-pointer group">
+                      <div className="mt-1" onClick={() => handleTaskToggle(task.id)}>
                         {task.status === 'completed' ? (
                           <CheckCircle className="h-4 w-4 text-green-500" />
                         ) : (
                           <AlertCircle className={`h-4 w-4 ${task.priority === 'Hoog' ? 'text-red-500' : 'text-orange-500'}`} />
                         )}
                       </div>
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0" onClick={() => handleTaskClick(task)}>
                         <p className={`text-sm font-medium ${task.status === 'completed' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
                           {task.title}
                         </p>
@@ -245,6 +335,19 @@ export const Dashboard = () => {
                           </span>
                         </div>
                       </div>
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleTaskDelete(task.id);
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -252,6 +355,63 @@ export const Dashboard = () => {
             </Card>
           </div>
         </div>
+
+        {/* Task Dialog */}
+        <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {editingTask ? 'Taak bewerken' : 'Nieuwe taak toevoegen'}
+              </DialogTitle>
+              <DialogDescription>
+                {editingTask ? 'Bewerk de taakdetails' : 'Voeg een nieuwe taak toe aan je lijst'}
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleTaskSubmit} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Titel</label>
+                <Input 
+                  name="title" 
+                  className="mt-1" 
+                  placeholder="Taak beschrijving..." 
+                  defaultValue={editingTask?.title || ''}
+                  required 
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Vervaldatum</label>
+                <Input 
+                  name="dueDate" 
+                  className="mt-1" 
+                  placeholder="Bijv. Vandaag, Morgen, 15 juni..."
+                  defaultValue={editingTask?.dueDate || ''}
+                  required 
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Prioriteit</label>
+                <Select name="priority" defaultValue={editingTask?.priority || 'Gemiddeld'}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Hoog">Hoog</SelectItem>
+                    <SelectItem value="Gemiddeld">Gemiddeld</SelectItem>
+                    <SelectItem value="Laag">Laag</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setTaskDialogOpen(false)}>
+                  Annuleren
+                </Button>
+                <Button type="submit">
+                  {editingTask ? 'Bijwerken' : 'Toevoegen'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
