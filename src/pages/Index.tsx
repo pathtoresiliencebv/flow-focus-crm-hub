@@ -4,6 +4,7 @@ import { useParams } from "react-router-dom";
 import { Dashboard } from "@/components/Dashboard";
 import CustomerDetail from "@/components/CustomerDetail";
 import ProjectDetail from "@/components/ProjectDetail";
+import { Customers } from "@/components/Customers";
 import { ProjectsBoard } from "@/components/ProjectsBoard";
 import { PlanningManagement } from "@/components/PlanningManagement";
 import { TimeRegistration } from "@/components/TimeRegistration";
@@ -47,7 +48,7 @@ const Index = () => {
       case "dashboard":
         return <Dashboard />;
       case "customers":
-        return <ProjectsBoard />;
+        return <Customers />;
       case "projects":
         return <ProjectsBoard />;
       case "calendar":
