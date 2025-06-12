@@ -184,6 +184,26 @@ export const Dashboard = () => {
     });
   };
 
+  const handleAddPlanning = (date: Date) => {
+    console.log('Add planning for date:', date);
+    toast({
+      title: "Nieuwe Planning Toevoegen",
+      description: `Planning toevoegen voor ${format(date, 'EEEE dd MMMM yyyy', { locale: nl })}`,
+      action: (
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => {
+            // This would typically open a planning form modal
+            console.log('Open planning form for:', date);
+          }}
+        >
+          Openen
+        </Button>
+      ),
+    });
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Dashboard</h2>
@@ -239,15 +259,16 @@ export const Dashboard = () => {
             Weekoverzicht Planning
           </CardTitle>
           <CardDescription>
-            Overzicht van alle afspraken en planning voor de gehele week
+            Overzicht van alle afspraken en planning voor de gehele week. Klik op een dag om planning toe te voegen.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-2 sm:p-6">
           <WeekCalendar 
             events={mockCalendarEvents}
             onEventClick={handleEventClick}
             onTimeSlotClick={handleTimeSlotClick}
             onEventCreate={handleEventCreate}
+            onAddPlanning={handleAddPlanning}
           />
         </CardContent>
       </Card>

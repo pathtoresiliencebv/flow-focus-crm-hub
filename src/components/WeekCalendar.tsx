@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { format, addDays, startOfWeek, addWeeks, subWeeks, isSameDay, parseISO } from "date-fns";
 import { nl } from "date-fns/locale";
 
@@ -21,6 +21,7 @@ interface WeekCalendarProps {
   onEventClick?: (event: CalendarEvent) => void;
   onTimeSlotClick?: (date: Date, hour: number) => void;
   onEventCreate?: (date: Date, startHour: number, endHour: number) => void;
+  onAddPlanning?: (date: Date) => void;
 }
 
 const timeSlots = Array.from({ length: 14 }, (_, i) => i + 8); // 8 AM to 9 PM
@@ -37,51 +38,13 @@ const formatDutchTime = (hour: number) => {
   return `${hour.toString().padStart(2, '0')}:00`;
 };
 
-const mockEvents: CalendarEvent[] = [
-  {
-    id: '1',
-    title: 'Mediteren',
-    startTime: '08:00',
-    endTime: '09:00',
-    date: '2025-06-01',
-    type: 'meditation',
-    description: 'Ochtend meditatie'
-  },
-  {
-    id: '2',
-    title: 'Mediteren',
-    startTime: '08:00',
-    endTime: '09:00',
-    date: '2025-06-02',
-    type: 'meditation'
-  },
-  {
-    id: '3',
-    title: 'Kozijnen specialist crm meeting',
-    startTime: '13:00',
-    endTime: '18:15',
-    date: '2025-06-04',
-    type: 'meeting'
-  },
-  {
-    id: '4',
-    title: 'Sven komt langs',
-    startTime: '10:00',
-    endTime: '11:00',
-    date: '2025-06-06',
-    type: 'appointment'
-  },
-  {
-    id: '5',
-    title: 'Met Kevie naar Breda',
-    startTime: '12:00',
-    endTime: '23:00',
-    date: '2025-06-07',
-    type: 'appointment'
-  }
-];
-
-export const WeekCalendar = ({ events = mockEvents, onEventClick, onTimeSlotClick, onEventCreate }: WeekCalendarProps) => {
+export const WeekCalendar = ({ 
+  events = [], 
+  onEventClick, 
+  onTimeSlotClick, 
+  onEventCreate,
+  onAddPlanning 
+}: WeekCalendarProps) => {
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [dragStart, setDragStart] = useState<{date: Date, hour: number} | null>(null);
   const [dragEnd, setDragEnd] = useState<{date: Date, hour: number} | null>(null);
@@ -90,7 +53,7 @@ export const WeekCalendar = ({ events = mockEvents, onEventClick, onTimeSlotClic
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 }); // Start on Monday
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   
-  const dayNames = ['ZON', 'MAA', 'DIN', 'WOE', 'DON', 'VRI', 'ZAT'];
+  const dayNames = ['MA', 'DI', 'WO', 'DO', 'VR', 'ZA', 'ZO'];
   
   const goToPreviousWeek = () => {
     setCurrentWeek(subWeeks(currentWeek, 1));
@@ -112,8 +75,8 @@ export const WeekCalendar = ({ events = mockEvents, onEventClick, onTimeSlotClic
     const startMinutes = (startHour - 8) * 60 + startMinute;
     const endMinutes = (endHour - 8) * 60 + endMinute;
     
-    const top = (startMinutes / 60) * 60; // 60px per hour
-    const height = ((endMinutes - startMinutes) / 60) * 60;
+    const top = (startMinutes / 60) * 48; // 48px per hour on mobile, 60px on desktop
+    const height = ((endMinutes - startMinutes) / 60) * 48;
     
     return { top, height };
   };
@@ -173,32 +136,101 @@ export const WeekCalendar = ({ events = mockEvents, onEventClick, onTimeSlotClic
     return hour >= minHour && hour <= maxHour;
   };
 
+  const handleAddPlanning = (date: Date) => {
+    if (onAddPlanning) {
+      onAddPlanning(date);
+    }
+  };
+
   return (
-    <div 
-      className="w-full bg-white rounded-lg border select-none" 
-      onMouseUp={handleMouseUp} 
-      onMouseLeave={handleMouseUp}
-    >
+    <div className="w-full bg-white rounded-lg border select-none">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between p-2 sm:p-4 border-b">
+        <div className="flex items-center gap-1 sm:gap-2">
           <Button variant="ghost" size="sm" onClick={goToPreviousWeek}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <h2 className="text-lg font-semibold">
-            {format(weekStart, 'dd MMMM', { locale: nl })} - {format(addDays(weekStart, 6), 'dd MMMM yyyy', { locale: nl })}
+          <h2 className="text-sm sm:text-lg font-semibold">
+            <span className="hidden sm:inline">
+              {format(weekStart, 'dd MMMM', { locale: nl })} - {format(addDays(weekStart, 6), 'dd MMMM yyyy', { locale: nl })}
+            </span>
+            <span className="sm:hidden">
+              {format(weekStart, 'dd MMM', { locale: nl })} - {format(addDays(weekStart, 6), 'dd MMM yyyy', { locale: nl })}
+            </span>
           </h2>
           <Button variant="ghost" size="sm" onClick={goToNextWeek}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <div className="text-sm text-gray-500">
+        <div className="text-xs sm:text-sm text-gray-500">
           GMT+02
         </div>
       </div>
 
-      {/* Calendar Grid */}
-      <div className="flex">
+      {/* Mobile View */}
+      <div className="block sm:hidden">
+        <div className="divide-y">
+          {weekDays.map((day, dayIndex) => {
+            const dayEvents = getEventsForDay(day);
+            const isToday = isSameDay(day, new Date());
+            
+            return (
+              <div key={day.toISOString()} className="p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="text-xs text-gray-600 font-medium">
+                      {dayNames[dayIndex]}
+                    </div>
+                    <div className={`text-lg font-bold ${isToday ? 'bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center' : ''}`}>
+                      {format(day, 'd')}
+                    </div>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => handleAddPlanning(day)}
+                    className="text-xs"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Planning
+                  </Button>
+                </div>
+                
+                {dayEvents.length === 0 ? (
+                  <div className="text-xs text-gray-400 py-2">
+                    Geen afspraken
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {dayEvents.map(event => (
+                      <div
+                        key={event.id}
+                        className={`text-xs p-2 rounded cursor-pointer ${eventColors[event.type]}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEventClick?.(event);
+                        }}
+                      >
+                        <div className="font-medium truncate">{event.title}</div>
+                        <div className="opacity-90">
+                          {event.startTime} - {event.endTime}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Desktop View */}
+      <div 
+        className="hidden sm:flex" 
+        onMouseUp={handleMouseUp} 
+        onMouseLeave={handleMouseUp}
+      >
         {/* Time Column */}
         <div className="w-16 bg-gray-50 border-r">
           <div className="h-12 border-b"></div> {/* Header spacer */}
@@ -218,13 +250,21 @@ export const WeekCalendar = ({ events = mockEvents, onEventClick, onTimeSlotClic
             return (
               <div key={day.toISOString()} className="flex-1 border-r last:border-r-0">
                 {/* Day Header */}
-                <div className={`h-12 border-b text-center p-2 ${isToday ? 'bg-blue-50' : ''}`}>
+                <div className={`h-12 border-b text-center p-2 relative ${isToday ? 'bg-blue-50' : ''}`}>
                   <div className="text-xs text-gray-600 font-medium">
                     {dayNames[dayIndex]}
                   </div>
                   <div className={`text-lg font-bold ${isToday ? 'bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center mx-auto' : ''}`}>
                     {format(day, 'd')}
                   </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => handleAddPlanning(day)}
+                    className="absolute top-1 right-1 h-6 w-6 p-0"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
                 </div>
 
                 {/* Time Slots */}
