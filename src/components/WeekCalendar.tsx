@@ -1,7 +1,9 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { format, addDays, startOfWeek, addWeeks, subWeeks, isSameDay, parseISO } from "date-fns";
 import { nl } from "date-fns/locale";
@@ -22,6 +24,13 @@ interface WeekCalendarProps {
   onTimeSlotClick?: (date: Date, hour: number) => void;
   onEventCreate?: (date: Date, startHour: number, endHour: number) => void;
   onAddPlanning?: (date: Date) => void;
+  onPlanningAdded?: (planning: {
+    title: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    description?: string;
+  }) => void;
 }
 
 const timeSlots = Array.from({ length: 14 }, (_, i) => i + 8); // 8 AM to 9 PM
@@ -43,12 +52,19 @@ export const WeekCalendar = ({
   onEventClick, 
   onTimeSlotClick, 
   onEventCreate,
-  onAddPlanning 
+  onAddPlanning,
+  onPlanningAdded
 }: WeekCalendarProps) => {
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [dragStart, setDragStart] = useState<{date: Date, hour: number} | null>(null);
   const [dragEnd, setDragEnd] = useState<{date: Date, hour: number} | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [planningDialogOpen, setPlanningDialogOpen] = useState(false);
+  const [selectedPlanningData, setSelectedPlanningData] = useState<{
+    date: Date;
+    startHour: number;
+    endHour: number;
+  } | null>(null);
   
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 }); // Start on Monday
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -106,20 +122,26 @@ export const WeekCalendar = ({
         // Drag across different days - not allowed
         console.log('Drag across different days not allowed');
       } else if (dragEnd && dragStart.hour !== dragEnd.hour) {
-        // Multi-hour selection
+        // Multi-hour selection - open dialog
         const startHour = Math.min(dragStart.hour, dragEnd.hour);
         const endHour = Math.max(dragStart.hour, dragEnd.hour) + 1;
         console.log('Creating event from', startHour, 'to', endHour);
         
-        if (onEventCreate) {
-          onEventCreate(dragStart.date, startHour, endHour);
-        }
+        setSelectedPlanningData({
+          date: dragStart.date,
+          startHour,
+          endHour
+        });
+        setPlanningDialogOpen(true);
       } else {
-        // Single click
+        // Single click - open dialog for 1 hour
         console.log('Single click on:', dragStart.date, dragStart.hour);
-        if (onTimeSlotClick) {
-          onTimeSlotClick(dragStart.date, dragStart.hour);
-        }
+        setSelectedPlanningData({
+          date: dragStart.date,
+          startHour: dragStart.hour,
+          endHour: dragStart.hour + 1
+        });
+        setPlanningDialogOpen(true);
       }
     }
     
@@ -139,9 +161,36 @@ export const WeekCalendar = ({
   };
 
   const handleAddPlanning = (date: Date) => {
-    if (onAddPlanning) {
-      onAddPlanning(date);
+    setSelectedPlanningData({
+      date,
+      startHour: 9,
+      endHour: 10
+    });
+    setPlanningDialogOpen(true);
+  };
+
+  const handlePlanningSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPlanningData) return;
+
+    const formData = new FormData(e.target as HTMLFormElement);
+    const title = formData.get('title') as string;
+    const description = formData.get('description') as string;
+    const startTime = formData.get('startTime') as string;
+    const endTime = formData.get('endTime') as string;
+
+    if (onPlanningAdded) {
+      onPlanningAdded({
+        title,
+        date: format(selectedPlanningData.date, 'yyyy-MM-dd'),
+        startTime,
+        endTime,
+        description
+      });
     }
+
+    setPlanningDialogOpen(false);
+    setSelectedPlanningData(null);
   };
 
   return (
@@ -319,6 +368,60 @@ export const WeekCalendar = ({
           })}
         </div>
       </div>
+
+      {/* Planning Dialog */}
+      <Dialog open={planningDialogOpen} onOpenChange={setPlanningDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Planning toevoegen</DialogTitle>
+            <DialogDescription>
+              {selectedPlanningData && 
+                `Nieuwe planning voor ${format(selectedPlanningData.date, 'EEEE dd MMMM yyyy', { locale: nl })} van ${selectedPlanningData.startHour}:00 tot ${selectedPlanningData.endHour}:00`
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handlePlanningSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Titel</label>
+              <Input name="title" className="mt-1" placeholder="Bijv. Vergadering met klant" required />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Starttijd</label>
+                <Input 
+                  name="startTime" 
+                  type="time" 
+                  className="mt-1" 
+                  defaultValue={selectedPlanningData ? `${selectedPlanningData.startHour.toString().padStart(2, '0')}:00` : '09:00'}
+                  required 
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Eindtijd</label>
+                <Input 
+                  name="endTime" 
+                  type="time" 
+                  className="mt-1" 
+                  defaultValue={selectedPlanningData ? `${selectedPlanningData.endHour.toString().padStart(2, '0')}:00` : '10:00'}
+                  required 
+                />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Beschrijving (optioneel)</label>
+              <Input name="description" className="mt-1" placeholder="Extra details..." />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setPlanningDialogOpen(false)}>
+                Annuleren
+              </Button>
+              <Button type="submit">
+                Planning toevoegen
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1,480 +1,260 @@
-
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
-import { Bar, BarChart, XAxis, YAxis, Legend, ResponsiveContainer, Tooltip } from "recharts";
-import { useCrmStore } from "@/hooks/useCrmStore";
-import { Calendar, Clock, MapPin, User, Folder, Eye } from "lucide-react";
-import { format, isToday, isTomorrow, addDays } from "date-fns";
-import { nl } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { WeekCalendar } from "@/components/WeekCalendar";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { CalendarDays, Users, FileText, TrendingUp, Clock, CheckCircle, AlertCircle, Plus } from "lucide-react";
+import { WeekCalendar } from "./WeekCalendar";
 
-// Mock planning data (in a real app, this would come from your planning store)
-const mockPlanningItems = [
-  {
-    id: "1",
-    date: "2025-06-12",
-    time: "09:00",
-    employee: "Peter Bakker",
-    project: "Kozijnen vervangen",
-    location: "Hoofdstraat 123, Amsterdam",
-    status: "Gepland"
-  },
-  {
-    id: "2",
-    date: "2025-06-12",
-    time: "14:00",
-    employee: "Peter Bakker",
-    project: "Nieuwe ramen installeren",
-    location: "Kerkstraat 45, Utrecht",
-    status: "Bevestigd"
-  },
-  {
-    id: "3",
-    date: "2025-06-13",
-    time: "10:00",
-    employee: "Peter Bakker",
-    project: "Kozijnen vervangen",
-    location: "Marktplein 12, Rotterdam",
-    status: "Gepland"
-  },
-  {
-    id: "4",
-    date: "2025-06-13",
-    time: "15:30",
-    employee: "Peter Bakker",
-    project: "Onderhoud kozijnen",
-    location: "Dorpsstraat 89, Haarlem",
-    status: "Gepland"
-  },
-  {
-    id: "5",
-    date: "2025-06-14",
-    time: "11:00",
-    employee: "Peter Bakker",
-    project: "Nieuwe ramen installeren",
-    location: "Parkstraat 67, Den Haag",
-    status: "Gepland"
-  }
-];
-
-// Convert mock planning items to calendar events
-const mockCalendarEvents = mockPlanningItems.map(item => ({
-  id: item.id,
-  title: `${item.project} - ${item.employee}`,
-  startTime: item.time,
-  endTime: format(new Date(`2000-01-01 ${item.time}`).getTime() + 2 * 60 * 60 * 1000, 'HH:mm'), // Add 2 hours
-  date: item.date,
-  type: 'appointment' as const,
-  description: `${item.project} bij ${item.location}`
-}));
+interface DashboardEvent {
+  id: string;
+  title: string;
+  startTime: string;
+  endTime: string;
+  date: string;
+  type: 'meditation' | 'appointment' | 'meeting' | 'other';
+  description?: string;
+}
 
 export const Dashboard = () => {
-  const { customers, projects } = useCrmStore();
   const { toast } = useToast();
-  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [events, setEvents] = useState<DashboardEvent[]>([
+    {
+      id: "1",
+      title: "Team vergadering",
+      startTime: "09:00",
+      endTime: "10:00",
+      date: "2025-06-12",
+      type: "meeting",
+      description: "Wekelijkse team sync"
+    },
+    {
+      id: "2", 
+      title: "Klant gesprek",
+      startTime: "14:00",
+      endTime: "15:30",
+      date: "2025-06-13",
+      type: "appointment",
+      description: "Overleg nieuwe kozijnen"
+    }
+  ]);
 
-  // Calculate real statistics
-  const totalCustomers = customers.length;
-  const activeProjects = projects.filter(p => p.status !== "afgerond").length;
-  const totalRevenue = projects
-    .filter(p => p.status === "afgerond")
-    .reduce((sum, p) => sum + parseFloat(p.value || "0"), 0);
-  const plannedProjects = projects.filter(p => p.status === "gepland").length;
-
-  const statusCounts = {
-    "te-plannen": projects.filter(p => p.status === "te-plannen").length,
-    "gepland": projects.filter(p => p.status === "gepland").length,
-    "herkeuring": projects.filter(p => p.status === "herkeuring").length,
-    "afgerond": projects.filter(p => p.status === "afgerond").length,
+  const handleEventClick = (event: DashboardEvent) => {
+    toast({
+      title: "Planning Details",
+      description: `${event.title} - ${event.startTime} tot ${event.endTime}`,
+    });
   };
 
-  const kozijnenData = [
-    { name: "Te plannen", waarde: statusCounts["te-plannen"] },
-    { name: "Gepland", waarde: statusCounts["gepland"] },
-    { name: "Herkeuring", waarde: statusCounts["herkeuring"] },
-    { name: "Afgerond", waarde: statusCounts["afgerond"] },
+  const handlePlanningAdded = (planning: {
+    title: string;
+    date: string;
+    startTime: string;
+    endTime: string;
+    description?: string;
+  }) => {
+    const newEvent: DashboardEvent = {
+      id: Date.now().toString(),
+      title: planning.title,
+      startTime: planning.startTime,
+      endTime: planning.endTime,
+      date: planning.date,
+      type: 'appointment',
+      description: planning.description
+    };
+
+    setEvents(prev => [...prev, newEvent]);
+
+    toast({
+      title: "Planning toegevoegd",
+      description: `${planning.title} is toegevoegd voor ${planning.date}`,
+    });
+  };
+
+  const stats = [
+    {
+      title: "Actieve Projecten",
+      value: "12",
+      description: "3 nieuwe deze week",
+      icon: FileText,
+      color: "bg-blue-500"
+    },
+    {
+      title: "Team Leden",
+      value: "8",
+      description: "2 installateurs beschikbaar",
+      icon: Users,
+      color: "bg-green-500"
+    },
+    {
+      title: "Deze Week",
+      value: "€15.420",
+      description: "+12% t.o.v. vorige week",
+      icon: TrendingUp,
+      color: "bg-purple-500"
+    },
+    {
+      title: "Vandaag",
+      value: "6",
+      description: "4 voltooid, 2 gepland",
+      icon: CalendarDays,
+      color: "bg-orange-500"
+    }
   ];
 
-  // Get today's and tomorrow's planning
-  const today = new Date();
-  const tomorrow = addDays(today, 1);
-  
-  const todayPlannings = mockPlanningItems.filter(item => {
-    const itemDate = new Date(item.date);
-    return isToday(itemDate);
-  });
-
-  const tomorrowPlannings = mockPlanningItems.filter(item => {
-    const itemDate = new Date(item.date);
-    return isTomorrow(itemDate);
-  });
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Gepland": return "bg-blue-100 text-blue-800";
-      case "Bevestigd": return "bg-green-100 text-green-800";
-      case "Afgerond": return "bg-gray-100 text-gray-800";
-      case "Geannuleerd": return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
+  const upcomingTasks = [
+    {
+      id: 1,
+      title: "Offerte opstellen - Nieuwe kozijnen",
+      dueDate: "Vandaag",
+      priority: "Hoog",
+      status: "pending"
+    },
+    {
+      id: 2,
+      title: "Materiaal bestellen - Project Amsterdam",
+      dueDate: "Morgen",
+      priority: "Gemiddeld",
+      status: "pending"
+    },
+    {
+      id: 3,
+      title: "Klant terugbellen - Reparatie",
+      dueDate: "Vandaag",
+      priority: "Hoog",
+      status: "completed"
     }
-  };
-
-  const getProjectStatusColor = (status: string) => {
-    switch (status) {
-      case "te-plannen": return "bg-yellow-100 text-yellow-800";
-      case "gepend": return "bg-blue-100 text-blue-800";
-      case "herkeuring": return "bg-orange-100 text-orange-800";
-      case "afgerond": return "bg-green-100 text-green-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "te-plannen": return "Te plannen";
-      case "gepland": return "Gepland";
-      case "herkeuring": return "Herkeuring";
-      case "afgerond": return "Afgerond";
-      default: return status;
-    }
-  };
-
-  // Recent activities based on real data
-  const recentActivities = [
-    ...customers.slice(-2).map(customer => ({
-      description: `Nieuwe klant geregistreerd: ${customer.name}`,
-      timestamp: new Date(customer.createdAt).toLocaleDateString('nl-NL'),
-      color: "bg-red-600"
-    })),
-    ...projects.slice(-3).map(project => ({
-      description: `Project "${project.title}" aangemaakt voor ${project.customer}`,
-      timestamp: new Date(project.createdAt).toLocaleDateString('nl-NL'),
-      color: project.status === "afgerond" ? "bg-green-500" : "bg-red-600"
-    }))
-  ].slice(0, 5);
-
-  const handleEventClick = (event: any) => {
-    console.log('Event clicked:', event);
-    const planningItem = mockPlanningItems.find(item => item.id === event.id);
-    if (planningItem) {
-      toast({
-        title: "Planning Details",
-        description: `${planningItem.project} - ${planningItem.employee} om ${planningItem.time} bij ${planningItem.location}`,
-      });
-    }
-  };
-
-  const handleTimeSlotClick = (date: Date, hour: number) => {
-    console.log('Time slot clicked:', date, hour);
-    toast({
-      title: "Nieuwe Planning",
-      description: `Klik hier om een nieuwe planning aan te maken voor ${format(date, 'dd MMMM yyyy', { locale: nl })} om ${hour}:00`,
-    });
-  };
-
-  const handleEventCreate = (date: Date, startHour: number, endHour: number) => {
-    console.log('Create event:', date, startHour, endHour);
-    toast({
-      title: "Planning Aanmaken",
-      description: `Nieuwe planning aanmaken voor ${format(date, 'dd MMMM yyyy', { locale: nl })} van ${startHour}:00 tot ${endHour}:00`,
-    });
-  };
-
-  const handleAddPlanning = (date: Date) => {
-    console.log('Add planning for date:', date);
-    toast({
-      title: "Nieuwe Planning Toevoegen",
-      description: `Planning toevoegen voor ${format(date, 'EEEE dd MMMM yyyy', { locale: nl })}`,
-      action: (
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => {
-            // This would typically open a planning form modal
-            console.log('Open planning form for:', date);
-          }}
-        >
-          Openen
-        </Button>
-      ),
-    });
-  };
+  ];
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold">Dashboard</h2>
-      
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Totale Klanten</CardDescription>
-            <CardTitle className="text-3xl">{totalCustomers}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-green-600 font-semibold">Actieve klanten</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Actieve Projecten</CardDescription>
-            <CardTitle className="text-3xl">{activeProjects}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-yellow-600 font-semibold">In behandeling</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Totale Omzet</CardDescription>
-            <CardTitle className="text-3xl">€{totalRevenue.toLocaleString('nl-NL')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-green-600 font-semibold">Afgeronde projecten</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Geplande Projecten</CardDescription>
-            <CardTitle className="text-3xl">{plannedProjects}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-red-600 font-semibold">Deze maand</p>
-          </CardContent>
-        </Card>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-600 mt-1">Welkom terug! Hier is je overzicht voor vandaag.</p>
+          </div>
+          <div className="flex gap-3">
+            <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
+              <FileText className="mr-2 h-4 w-4" />
+              Rapport
+            </Button>
+            <Button className="bg-smans-primary hover:bg-smans-primary/90 text-white shadow-sm hover:shadow-md transition-all">
+              <Plus className="mr-2 h-4 w-4" />
+              Nieuw Project
+            </Button>
+          </div>
+        </div>
 
-      {/* Week Calendar Overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-smans-primary" />
-            Weekoverzicht Planning
-          </CardTitle>
-          <CardDescription>
-            Overzicht van alle afspraken en planning voor de gehele week. Klik op een dag om planning toe te voegen.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-2 sm:p-6">
-          <WeekCalendar 
-            events={mockCalendarEvents}
-            onEventClick={handleEventClick}
-            onTimeSlotClick={handleTimeSlotClick}
-            onEventCreate={handleEventCreate}
-            onAddPlanning={handleAddPlanning}
-          />
-        </CardContent>
-      </Card>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {stats.map((stat, index) => (
+            <Card key={index} className="shadow-lg border-0 bg-white/70 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">{stat.title}</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-2">{stat.value}</p>
+                    <p className="text-sm text-gray-500 mt-1">{stat.description}</p>
+                  </div>
+                  <div className={`${stat.color} p-3 rounded-full`}>
+                    <stat.icon className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-      {/* Planning Agenda and Projects Overview */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Today's Planning */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-smans-primary" />
-              Vandaag - {format(today, 'EEEE dd MMMM', { locale: nl })}
-            </CardTitle>
-            <CardDescription>
-              {todayPlannings.length > 0 
-                ? `${todayPlannings.length} afspraak${todayPlannings.length > 1 ? 'en' : ''} gepland`
-                : "Geen afspraken vandaag"
-              }
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {todayPlannings.length === 0 ? (
-              <div className="text-center py-4 text-muted-foreground">
-                Geen planning voor vandaag
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {todayPlannings.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
-                    <div className="flex items-center gap-3">
-                      <div className="text-sm font-medium text-smans-primary min-w-[45px]">{item.time}</div>
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{item.project}</div>
-                        <div className="text-xs text-muted-foreground flex items-center gap-3 mt-1">
-                          <div className="flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            {item.employee}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {item.location}
-                          </div>
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+          {/* Calendar - Takes 2 columns on XL screens */}
+          <div className="xl:col-span-2">
+            <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2">
+                  <CalendarDays className="h-5 w-5 text-blue-600" />
+                  Deze Week Planning
+                </CardTitle>
+                <CardDescription>
+                  Klik op een tijdslot of sleep om een nieuwe planning toe te voegen
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <WeekCalendar 
+                  events={events}
+                  onEventClick={handleEventClick}
+                  onPlanningAdded={handlePlanningAdded}
+                />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Tasks Sidebar */}
+          <div className="space-y-6">
+            {/* Quick Actions */}
+            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg">Snelle Acties</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button className="w-full justify-start bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nieuwe Offerte
+                </Button>
+                <Button className="w-full justify-start bg-green-50 text-green-700 hover:bg-green-100 border border-green-200">
+                  <Users className="mr-2 h-4 w-4" />
+                  Klant Toevoegen
+                </Button>
+                <Button className="w-full justify-start bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200">
+                  <Clock className="mr-2 h-4 w-4" />
+                  Tijd Registreren
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Upcoming Tasks */}
+            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg">Aankomende Taken</CardTitle>
+                <CardDescription>Belangrijke deadlines en to-dos</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {upcomingTasks.map((task) => (
+                    <div key={task.id} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100">
+                      <div className="mt-1">
+                        {task.status === 'completed' ? (
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <AlertCircle className={`h-4 w-4 ${task.priority === 'Hoog' ? 'text-red-500' : 'text-orange-500'}`} />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm font-medium ${task.status === 'completed' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                          {task.title}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-gray-500">{task.dueDate}</span>
+                          <span className={`text-xs px-2 py-1 rounded-full ${
+                            task.priority === 'Hoog' ? 'bg-red-100 text-red-700' :
+                            task.priority === 'Gemiddeld' ? 'bg-orange-100 text-orange-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {task.priority}
+                          </span>
                         </div>
                       </div>
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
-                      {item.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Tomorrow's Planning */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-smans-primary" />
-              Morgen - {format(tomorrow, 'EEEE dd MMMM', { locale: nl })}
-            </CardTitle>
-            <CardDescription>
-              {tomorrowPlannings.length > 0 
-                ? `${tomorrowPlannings.length} afspraak${tomorrowPlannings.length > 1 ? 'en' : ''} gepland`
-                : "Geen afspraken morgen"
-              }
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {tomorrowPlannings.length === 0 ? (
-              <div className="text-center py-4 text-muted-foreground">
-                Geen planning voor morgen
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {tomorrowPlannings.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
-                    <div className="flex items-center gap-3">
-                      <div className="text-sm font-medium text-smans-primary min-w-[45px]">{item.time}</div>
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{item.project}</div>
-                        <div className="text-xs text-muted-foreground flex items-center gap-3 mt-1">
-                          <div className="flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            {item.employee}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {item.location}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(item.status)}`}>
-                      {item.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Projects Overview and Status Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Projects */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Folder className="h-5 w-5 text-smans-primary" />
-              Recente Projecten
-            </CardTitle>
-            <CardDescription>Overzicht van de laatste projecten</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {projects.length === 0 ? (
-              <div className="text-center py-4 text-muted-foreground">
-                Geen projecten beschikbaar
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {projects.slice(-5).reverse().map((project) => (
-                  <div key={project.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{project.title}</div>
-                        <div className="text-xs text-muted-foreground flex items-center gap-3 mt-1">
-                          <div className="flex items-center gap-1">
-                            <User className="h-3 w-3" />
-                            {project.customer}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {new Date(project.date).toLocaleDateString('nl-NL')}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge className={getProjectStatusColor(project.status)}>
-                        {getStatusLabel(project.status)}
-                      </Badge>
-                      <span className="text-sm font-medium">€{parseFloat(project.value || "0").toLocaleString('nl-NL')}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        
-        {/* Project Status Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Project Status</CardTitle>
-            <CardDescription>Huidige verdeling van projectstatussen</CardDescription>
-          </CardHeader>
-          <CardContent className="h-80">
-            <ChartContainer
-              config={{
-                waarde: {
-                  label: "Aantal projecten",
-                  color: "#aa1917",
-                },
-              }}
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={kozijnenData} layout="vertical">
-                  <XAxis type="number" />
-                  <YAxis dataKey="name" type="category" />
-                  <Tooltip />
-                  <Bar dataKey="waarde" fill="#aa1917" />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Recent Activities */}
-      <div className="grid grid-cols-1 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Recente Activiteiten</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentActivities.length > 0 ? (
-                recentActivities.map((activity, index) => (
-                  <div key={index} className="flex items-start">
-                    <div className={`w-2 h-2 mt-2 rounded-full ${activity.color}`}></div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium">{activity.description}</p>
-                      <p className="text-xs text-gray-500">{activity.timestamp}</p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-gray-500">Nog geen activiteiten</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
+
+export default Dashboard;
