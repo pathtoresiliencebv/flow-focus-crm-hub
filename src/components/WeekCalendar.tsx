@@ -75,8 +75,10 @@ export const WeekCalendar = ({
     const startMinutes = (startHour - 8) * 60 + startMinute;
     const endMinutes = (endHour - 8) * 60 + endMinute;
     
-    const top = (startMinutes / 60) * 48; // 48px per hour on mobile, 60px on desktop
-    const height = ((endMinutes - startMinutes) / 60) * 48;
+    // Different heights for mobile vs desktop
+    const hourHeight = window.innerWidth < 640 ? 40 : 60; // 40px on mobile, 60px on desktop
+    const top = (startMinutes / 60) * hourHeight;
+    const height = Math.max(((endMinutes - startMinutes) / 60) * hourHeight, 20);
     
     return { top, height };
   };
@@ -143,45 +145,47 @@ export const WeekCalendar = ({
   };
 
   return (
-    <div className="w-full bg-white rounded-lg border select-none">
+    <div className="w-full bg-white rounded-lg border select-none overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-2 sm:p-4 border-b">
-        <div className="flex items-center gap-1 sm:gap-2">
-          <Button variant="ghost" size="sm" onClick={goToPreviousWeek}>
+      <div className="flex items-center justify-between p-3 sm:p-4 border-b bg-gray-50">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={goToPreviousWeek} className="h-8 w-8 p-0">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <h2 className="text-sm sm:text-lg font-semibold">
+          <h2 className="text-sm sm:text-lg font-semibold min-w-0">
             <span className="hidden sm:inline">
               {format(weekStart, 'dd MMMM', { locale: nl })} - {format(addDays(weekStart, 6), 'dd MMMM yyyy', { locale: nl })}
             </span>
-            <span className="sm:hidden">
-              {format(weekStart, 'dd MMM', { locale: nl })} - {format(addDays(weekStart, 6), 'dd MMM yyyy', { locale: nl })}
+            <span className="sm:hidden text-xs">
+              {format(weekStart, 'dd MMM', { locale: nl })} - {format(addDays(weekStart, 6), 'dd MMM yy', { locale: nl })}
             </span>
           </h2>
-          <Button variant="ghost" size="sm" onClick={goToNextWeek}>
+          <Button variant="ghost" size="sm" onClick={goToNextWeek} className="h-8 w-8 p-0">
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <div className="text-xs sm:text-sm text-gray-500">
+        <div className="text-xs text-gray-500 hidden sm:block">
           GMT+02
         </div>
       </div>
 
       {/* Mobile View */}
       <div className="block sm:hidden">
-        <div className="divide-y">
+        <div className="divide-y divide-gray-100">
           {weekDays.map((day, dayIndex) => {
             const dayEvents = getEventsForDay(day);
             const isToday = isSameDay(day, new Date());
             
             return (
               <div key={day.toISOString()} className="p-3">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <div className="text-xs text-gray-600 font-medium">
+                    <div className="text-xs text-gray-600 font-medium min-w-[20px]">
                       {dayNames[dayIndex]}
                     </div>
-                    <div className={`text-lg font-bold ${isToday ? 'bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center' : ''}`}>
+                    <div className={`text-lg font-bold flex items-center justify-center ${
+                      isToday ? 'bg-blue-500 text-white rounded-full w-8 h-8' : 'w-8 h-8'
+                    }`}>
                       {format(day, 'd')}
                     </div>
                   </div>
@@ -189,30 +193,30 @@ export const WeekCalendar = ({
                     variant="ghost" 
                     size="sm"
                     onClick={() => handleAddPlanning(day)}
-                    className="text-xs"
+                    className="text-xs h-7 px-2"
                   >
                     <Plus className="h-3 w-3 mr-1" />
-                    Planning
+                    <span className="hidden xs:inline">Planning</span>
                   </Button>
                 </div>
                 
                 {dayEvents.length === 0 ? (
-                  <div className="text-xs text-gray-400 py-2">
+                  <div className="text-xs text-gray-400 py-2 pl-2">
                     Geen afspraken
                   </div>
                 ) : (
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     {dayEvents.map(event => (
                       <div
                         key={event.id}
-                        className={`text-xs p-2 rounded cursor-pointer ${eventColors[event.type]}`}
+                        className={`text-xs p-2 rounded cursor-pointer ${eventColors[event.type]} transition-opacity hover:opacity-80`}
                         onClick={(e) => {
                           e.stopPropagation();
                           onEventClick?.(event);
                         }}
                       >
                         <div className="font-medium truncate">{event.title}</div>
-                        <div className="opacity-90">
+                        <div className="opacity-90 text-xs mt-1">
                           {event.startTime} - {event.endTime}
                         </div>
                       </div>
@@ -227,28 +231,28 @@ export const WeekCalendar = ({
 
       {/* Desktop View */}
       <div 
-        className="hidden sm:flex" 
+        className="hidden sm:flex overflow-x-auto" 
         onMouseUp={handleMouseUp} 
         onMouseLeave={handleMouseUp}
       >
         {/* Time Column */}
-        <div className="w-16 bg-gray-50 border-r">
+        <div className="w-16 bg-gray-50 border-r flex-shrink-0">
           <div className="h-12 border-b"></div> {/* Header spacer */}
           {timeSlots.map(hour => (
-            <div key={hour} className="h-15 border-b text-xs text-gray-600 p-1 text-right">
+            <div key={hour} className="h-15 border-b text-xs text-gray-600 p-1 text-right flex items-center justify-end">
               {formatDutchTime(hour)}
             </div>
           ))}
         </div>
 
         {/* Days Columns */}
-        <div className="flex-1 flex">
+        <div className="flex-1 flex min-w-0">
           {weekDays.map((day, dayIndex) => {
             const dayEvents = getEventsForDay(day);
             const isToday = isSameDay(day, new Date());
             
             return (
-              <div key={day.toISOString()} className="flex-1 border-r last:border-r-0">
+              <div key={day.toISOString()} className="flex-1 border-r last:border-r-0 min-w-[120px]">
                 {/* Day Header */}
                 <div className={`h-12 border-b text-center p-2 relative ${isToday ? 'bg-blue-50' : ''}`}>
                   <div className="text-xs text-gray-600 font-medium">
@@ -292,8 +296,8 @@ export const WeekCalendar = ({
                     return (
                       <div
                         key={event.id}
-                        className={`absolute left-1 right-1 rounded px-2 py-1 text-xs cursor-pointer overflow-hidden ${eventColors[event.type]} z-10 shadow-sm`}
-                        style={{ top: `${top}px`, height: `${Math.max(height, 20)}px` }}
+                        className={`absolute left-1 right-1 rounded px-2 py-1 text-xs cursor-pointer overflow-hidden ${eventColors[event.type]} z-10 shadow-sm transition-opacity hover:opacity-90`}
+                        style={{ top: `${top}px`, height: `${height}px` }}
                         onClick={(e) => {
                           e.stopPropagation();
                           console.log('Event clicked:', event);
@@ -301,9 +305,11 @@ export const WeekCalendar = ({
                         }}
                       >
                         <div className="font-medium truncate">{event.title}</div>
-                        <div className="text-xs opacity-90">
-                          {event.startTime} - {event.endTime}
-                        </div>
+                        {height > 30 && (
+                          <div className="text-xs opacity-90 truncate">
+                            {event.startTime} - {event.endTime}
+                          </div>
+                        )}
                       </div>
                     );
                   })}

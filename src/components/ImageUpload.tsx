@@ -71,12 +71,14 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   return (
     <div className={`relative ${className}`}>
       {value ? (
-        <div className="relative overflow-hidden rounded-lg">
-          <img
-            src={value}
-            alt="Logo preview"
-            className="w-full h-full object-contain bg-gray-50"
-          />
+        <div className="relative overflow-hidden rounded-lg bg-gray-50 border border-gray-200">
+          <div className="w-full h-32 sm:h-40 flex items-center justify-center p-4">
+            <img
+              src={value}
+              alt="Logo preview"
+              className="max-w-full max-h-full object-contain"
+            />
+          </div>
           <Button
             variant="destructive"
             size="icon"
@@ -92,10 +94,10 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
-          className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-4 transition-colors bg-gray-50 
+          className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-6 sm:p-8 transition-colors bg-gray-50 min-h-[120px] sm:min-h-[160px]
             ${dragActive ? "border-primary bg-primary/5" : "border-gray-300"}`}
         >
-          <Upload className="h-10 w-10 text-gray-400 mb-2" />
+          <Upload className="h-8 w-8 sm:h-10 sm:w-10 text-gray-400 mb-2" />
           <p className="text-sm text-center text-gray-600 mb-2">
             Sleep uw logo hierheen of
           </p>
