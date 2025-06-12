@@ -205,39 +205,39 @@ export const Dashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
-      <div className="max-w-full mx-auto space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-3 sm:p-6">
+      <div className="max-w-full mx-auto space-y-6 sm:space-y-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600 mt-1">Welkom terug! Hier is je overzicht voor vandaag.</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-600 mt-1 text-sm sm:text-base">Welkom terug! Hier is je overzicht voor vandaag.</p>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow">
-              <FileText className="mr-2 h-4 w-4" />
+          <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
+            <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow flex-1 sm:flex-none text-xs sm:text-sm">
+              <FileText className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
               Rapport
             </Button>
-            <Button className="bg-smans-primary hover:bg-smans-primary/90 text-white shadow-sm hover:shadow-md transition-all">
-              <Plus className="mr-2 h-4 w-4" />
+            <Button className="bg-smans-primary hover:bg-smans-primary/90 text-white shadow-sm hover:shadow-md transition-all flex-1 sm:flex-none text-xs sm:text-sm">
+              <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
               Nieuw Project
             </Button>
           </div>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {stats.map((stat, index) => (
             <Card key={index} className="shadow-lg border-0 bg-white/70 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
-              <CardContent className="p-6">
+              <CardContent className="p-3 sm:p-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-2">{stat.value}</p>
-                    <p className="text-sm text-gray-500 mt-1">{stat.description}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">{stat.title}</p>
+                    <p className="text-lg sm:text-3xl font-bold text-gray-900 mt-1 sm:mt-2">{stat.value}</p>
+                    <p className="text-xs sm:text-sm text-gray-500 mt-1 truncate">{stat.description}</p>
                   </div>
-                  <div className={`${stat.color} p-3 rounded-full`}>
-                    <stat.icon className="h-6 w-6 text-white" />
+                  <div className={`${stat.color} p-2 sm:p-3 rounded-full flex-shrink-0`}>
+                    <stat.icon className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
                   </div>
                 </div>
               </CardContent>
@@ -245,21 +245,21 @@ export const Dashboard = () => {
           ))}
         </div>
 
-        {/* Main Content - Full Width Calendar with Sidebar */}
-        <div className="flex gap-8">
-          {/* Calendar - Full Width */}
-          <div className="flex-1">
+        {/* Main Content - Responsive Layout */}
+        <div className="flex flex-col lg:flex-row gap-4 sm:gap-8">
+          {/* Calendar - Takes full width on mobile, flex-1 on desktop */}
+          <div className="flex-1 min-w-0">
             <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm">
               <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2">
-                  <CalendarDays className="h-5 w-5 text-blue-600" />
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                  <CalendarDays className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
                   Deze Week Planning
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs sm:text-sm">
                   Klik op een tijdslot of sleep om een nieuwe planning toe te voegen
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-2 sm:p-6">
                 <WeekCalendar 
                   events={events}
                   onEventClick={handleEventClick}
@@ -269,24 +269,24 @@ export const Dashboard = () => {
             </Card>
           </div>
 
-          {/* Sidebar - Fixed Width */}
-          <div className="w-80 space-y-6 flex-shrink-0">
+          {/* Sidebar - Full width on mobile, fixed width on desktop */}
+          <div className="w-full lg:w-80 space-y-4 sm:space-y-6 lg:flex-shrink-0">
             {/* Quick Actions */}
             <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
               <CardHeader className="pb-4">
-                <CardTitle className="text-lg">Snelle Acties</CardTitle>
+                <CardTitle className="text-base sm:text-lg">Snelle Acties</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <Button className="w-full justify-start bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200">
-                  <Plus className="mr-2 h-4 w-4" />
+              <CardContent className="space-y-2 sm:space-y-3">
+                <Button className="w-full justify-start bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-xs sm:text-sm">
+                  <Plus className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                   Nieuwe Offerte
                 </Button>
-                <Button className="w-full justify-start bg-green-50 text-green-700 hover:bg-green-100 border border-green-200">
-                  <Users className="mr-2 h-4 w-4" />
+                <Button className="w-full justify-start bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 text-xs sm:text-sm">
+                  <Users className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                   Klant Toevoegen
                 </Button>
-                <Button className="w-full justify-start bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200">
-                  <Clock className="mr-2 h-4 w-4" />
+                <Button className="w-full justify-start bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 text-xs sm:text-sm">
+                  <Clock className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                   Tijd Registreren
                 </Button>
               </CardContent>
@@ -297,36 +297,36 @@ export const Dashboard = () => {
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-lg">Aankomende Taken</CardTitle>
-                    <CardDescription>Belangrijke deadlines en to-dos</CardDescription>
+                    <CardTitle className="text-base sm:text-lg">Aankomende Taken</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">Belangrijke deadlines en to-dos</CardDescription>
                   </div>
                   <Button
                     size="sm"
                     onClick={handleAddTask}
-                    className="h-8 w-8 p-0"
+                    className="h-6 w-6 sm:h-8 sm:w-8 p-0"
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
                   </Button>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {tasks.map((task) => (
-                    <div key={task.id} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100 hover:bg-gray-100 transition-colors cursor-pointer group">
+                    <div key={task.id} className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-gray-50 border border-gray-100 hover:bg-gray-100 transition-colors cursor-pointer group">
                       <div className="mt-1" onClick={() => handleTaskToggle(task.id)}>
                         {task.status === 'completed' ? (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
                         ) : (
-                          <AlertCircle className={`h-4 w-4 ${task.priority === 'Hoog' ? 'text-red-500' : 'text-orange-500'}`} />
+                          <AlertCircle className={`h-3 w-3 sm:h-4 sm:w-4 ${task.priority === 'Hoog' ? 'text-red-500' : 'text-orange-500'}`} />
                         )}
                       </div>
                       <div className="flex-1 min-w-0" onClick={() => handleTaskClick(task)}>
-                        <p className={`text-sm font-medium ${task.status === 'completed' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                        <p className={`text-xs sm:text-sm font-medium ${task.status === 'completed' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
                           {task.title}
                         </p>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs text-gray-500">{task.dueDate}</span>
-                          <span className={`text-xs px-2 py-1 rounded-full ${
+                          <span className={`text-xs px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full ${
                             task.priority === 'Hoog' ? 'bg-red-100 text-red-700' :
                             task.priority === 'Gemiddeld' ? 'bg-orange-100 text-orange-700' :
                             'bg-gray-100 text-gray-700'
@@ -339,13 +339,13 @@ export const Dashboard = () => {
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                          className="h-5 w-5 sm:h-6 sm:w-6 p-0 text-red-500 hover:text-red-700"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleTaskDelete(task.id);
                           }}
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                         </Button>
                       </div>
                     </div>
