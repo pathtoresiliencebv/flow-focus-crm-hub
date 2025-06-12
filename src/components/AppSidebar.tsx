@@ -116,25 +116,30 @@ export const AppSidebar = ({
   };
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader>
-        <div className="flex items-center space-x-3 px-2">
+    <Sidebar 
+      collapsible="icon" 
+      className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground"
+    >
+      <SidebarHeader className="border-b border-sidebar-border">
+        <div className="flex items-center gap-3 px-3 py-2">
           <img 
             src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" 
             alt="SMANS Logo" 
-            className="h-8 w-auto object-contain" 
+            className="h-8 w-8 flex-shrink-0" 
           />
-          {state === "expanded" && (
-            <span className="font-semibold text-lg">SMANS</span>
-          )}
+          <span className="font-semibold text-lg text-sidebar-foreground group-data-[collapsible=icon]:hidden">
+            SMANS
+          </span>
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="flex-1 overflow-y-auto">
         <SidebarGroup>
-          <SidebarGroupLabel>Navigatie</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-sidebar-foreground/70 text-xs font-medium px-3 py-2">
+            Navigatie
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1 px-2">
               {menuItems.map(item => (
                 <SidebarMenuItem key={item.id}>
                   {item.subItems ? (
@@ -146,21 +151,23 @@ export const AppSidebar = ({
                         <SidebarMenuButton 
                           isActive={activeTab === item.id || activeTab === "users" || activeTab === "salary"}
                           onClick={() => handleMenuClick(item.id)}
+                          className="w-full justify-start gap-3 px-3 py-2 h-10 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
                         >
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.label}</span>
+                          <item.icon className="h-4 w-4 flex-shrink-0" />
+                          <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                         </SidebarMenuButton>
                       </CollapsibleTrigger>
                       <CollapsibleContent>
-                        <SidebarMenuSub>
+                        <SidebarMenuSub className="ml-6 mt-1 space-y-1">
                           {item.subItems.map(subItem => (
                             <SidebarMenuSubItem key={subItem.id}>
                               <SidebarMenuSubButton 
                                 isActive={activeTab === subItem.id}
                                 onClick={() => handleMenuClick(subItem.id)}
+                                className="w-full justify-start gap-3 px-3 py-2 h-9 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
                               >
-                                <subItem.icon className="h-4 w-4" />
-                                <span>{subItem.label}</span>
+                                <subItem.icon className="h-4 w-4 flex-shrink-0" />
+                                <span className="group-data-[collapsible=icon]:hidden">{subItem.label}</span>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>
                           ))}
@@ -172,16 +179,17 @@ export const AppSidebar = ({
                       asChild={item.path !== "/"}
                       isActive={activeTab === item.id || (item.path === "/settings" && location.pathname === "/settings")}
                       onClick={() => handleMenuClick(item.id)}
+                      className="w-full justify-start gap-3 px-3 py-2 h-10 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
                     >
                       {item.path === "/" ? (
-                        <span>
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.label}</span>
+                        <span className="flex items-center gap-3 w-full">
+                          <item.icon className="h-4 w-4 flex-shrink-0" />
+                          <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                         </span>
                       ) : (
-                        <Link to={item.path}>
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.label}</span>
+                        <Link to={item.path} className="flex items-center gap-3 w-full">
+                          <item.icon className="h-4 w-4 flex-shrink-0" />
+                          <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                         </Link>
                       )}
                     </SidebarMenuButton>
@@ -193,38 +201,32 @@ export const AppSidebar = ({
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <div className="flex items-center justify-between p-2">
-              <div className="flex items-center">
-                <div className="w-8 h-8 rounded-full bg-[#aa1917] bg-opacity-10 flex items-center justify-center text-[#aa1917] font-bold mr-3">
-                  <span className="text-sm">
-                    {user?.name?.charAt(0).toUpperCase() || 'A'}
-                  </span>
-                </div>
-                {state === "expanded" && (
-                  <div>
-                    <p className="text-sm font-medium">
-                      {user?.name || 'Admin Gebruiker'}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {user?.email || 'admin@smans.nl'}
-                    </p>
-                  </div>
-                )}
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={logout}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
+      <SidebarFooter className="border-t border-sidebar-border p-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="w-8 h-8 rounded-full bg-smans-primary bg-opacity-10 flex items-center justify-center text-smans-primary font-bold flex-shrink-0">
+              <span className="text-sm">
+                {user?.name?.charAt(0).toUpperCase() || 'A'}
+              </span>
             </div>
-          </SidebarMenuItem>
-        </SidebarMenu>
+            <div className="group-data-[collapsible=icon]:hidden min-w-0 flex-1">
+              <p className="text-sm font-medium text-sidebar-foreground truncate">
+                {user?.name || 'Admin Gebruiker'}
+              </p>
+              <p className="text-xs text-sidebar-foreground/70 truncate">
+                {user?.email || 'admin@smans.nl'}
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={logout}
+            className="flex-shrink-0 text-sidebar-foreground/70 hover:text-destructive hover:bg-sidebar-accent h-8 w-8 p-0"
+          >
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );
