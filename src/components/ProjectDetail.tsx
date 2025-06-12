@@ -9,15 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { CrmSidebar } from "@/components/CrmSidebar";
-import { NotificationsMenu } from "@/components/NotificationsMenu";
 import { useCrmStore } from "@/hooks/useCrmStore";
 
 const ProjectDetail = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { projects, customers, updateProject } = useCrmStore();
-  const [activeTab, setActiveTab] = useState("projects");
   const [projectDetailTab, setProjectDetailTab] = useState("details");
   const [searchTerm, setSearchTerm] = useState("");
   const [isEditing, setIsEditing] = useState(false);
@@ -36,27 +33,13 @@ const ProjectDetail = () => {
   // If project not found, show error message
   if (!project) {
     return (
-      <div className="flex h-screen bg-gray-100">
-        <CrmSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-        <div className="flex flex-col flex-1 overflow-hidden">
-          <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
-            <div className="flex items-center space-x-3">
-              <h1 className="text-2xl font-bold text-smans-primary">SMANS CRM</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <Input className="max-w-xs" placeholder="Zoeken..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-              <NotificationsMenu />
-            </div>
-          </header>
-          <div className="flex-1 overflow-auto p-6">
-            <Button variant="outline" onClick={() => navigate(-1)}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Terug
-            </Button>
-            <div className="mt-6">
-              <h2 className="text-2xl font-bold">Project niet gevonden</h2>
-            </div>
-          </div>
+      <div className="flex-1 overflow-auto p-6">
+        <Button variant="outline" onClick={() => navigate(-1)}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Terug
+        </Button>
+        <div className="mt-6">
+          <h2 className="text-2xl font-bold">Project niet gevonden</h2>
         </div>
       </div>
     );
@@ -113,312 +96,294 @@ const ProjectDetail = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-100">
-      <CrmSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <header className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
-          <div className="flex items-center space-x-3">
-            <h1 className="text-2xl font-bold text-smans-primary">SMANS CRM</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <Input className="max-w-xs" placeholder="Zoeken..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
-            <NotificationsMenu />
-          </div>
-        </header>
-
-        <div className="flex-1 overflow-auto p-6">
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Button variant="outline" onClick={() => navigate(-1)}>
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Terug
-                </Button>
-                <h2 className="text-2xl font-bold">Project: {project.title}</h2>
-                <span className={`px-2 py-1 rounded-full text-xs ${
-                  project.status === "gepland" ? "bg-orange-100 text-orange-800" :
-                  project.status === "afgerond" ? "bg-green-100 text-green-800" :
-                  project.status === "herkeuring" ? "bg-gray-100 text-gray-800" :
-                  "bg-red-100 text-red-800"
-                }`}>
-                  {project.status === "te-plannen" ? "Te plannen" :
-                   project.status === "gepland" ? "Gepland" :
-                   project.status === "herkeuring" ? "Herkeuring" :
-                   "Afgerond"}
-                </span>
-              </div>
-              
-              <div className="flex gap-2">
-                {!isEditing ? (
-                  <Button onClick={handleEditStart}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Bewerken
-                  </Button>
-                ) : (
-                  <>
-                    <Button variant="outline" onClick={handleEditCancel}>
-                      <X className="mr-2 h-4 w-4" />
-                      Annuleren
-                    </Button>
-                    <Button onClick={handleEditSave}>
-                      <Save className="mr-2 h-4 w-4" />
-                      Opslaan
-                    </Button>
-                  </>
-                )}
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Projectgegevens</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {isEditing ? (
-                    <>
-                      <div>
-                        <Label htmlFor="edit-title" className="text-xs font-medium">Projectnaam</Label>
-                        <Input
-                          id="edit-title"
-                          value={editData.title}
-                          onChange={(e) => handleInputChange("title", e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-customer" className="text-xs font-medium">Klant</Label>
-                        <Select value={editData.customerId} onValueChange={(value) => handleInputChange("customerId", value)}>
-                          <SelectTrigger className="mt-1">
-                            <SelectValue placeholder="Selecteer klant" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {customers.map((customer) => (
-                              <SelectItem key={customer.id} value={customer.id.toString()}>
-                                {customer.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-date" className="text-xs font-medium">Datum</Label>
-                        <Input
-                          id="edit-date"
-                          type="date"
-                          value={editData.date}
-                          onChange={(e) => handleInputChange("date", e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-status" className="text-xs font-medium">Status</Label>
-                        <Select value={editData.status} onValueChange={(value) => handleInputChange("status", value)}>
-                          <SelectTrigger className="mt-1">
-                            <SelectValue placeholder="Selecteer status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="te-plannen">Te plannen</SelectItem>
-                            <SelectItem value="gepland">Gepland</SelectItem>
-                            <SelectItem value="herkeuring">Herkeuring</SelectItem>
-                            <SelectItem value="afgerond">Afgerond</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="edit-value" className="text-xs font-medium">Waarde (€)</Label>
-                        <Input
-                          id="edit-value"
-                          type="number"
-                          value={editData.value}
-                          onChange={(e) => handleInputChange("value", e.target.value)}
-                          className="mt-1"
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <div className="space-y-1">
-                      <p className="text-sm"><span className="font-medium">Klant:</span> {project.customer}</p>
-                      <p className="text-sm"><span className="font-medium">Datum:</span> {project.date}</p>
-                      <p className="text-sm"><span className="font-medium">Status:</span> {
-                        project.status === "te-plannen" ? "Te plannen" :
-                        project.status === "gepland" ? "Gepland" :
-                        project.status === "herkeuring" ? "Herkeuring" :
-                        "Afgerond"
-                      }</p>
-                      <p className="text-sm"><span className="font-medium">Waarde:</span> €{project.value}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Klantgegevens</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-1">
-                    {customer ? (
-                      <>
-                        <p className="text-sm"><span className="font-medium">Naam:</span> {customer.name}</p>
-                        <p className="text-sm"><span className="font-medium">Email:</span> {customer.email}</p>
-                        <p className="text-sm"><span className="font-medium">Telefoon:</span> {customer.phone}</p>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="mt-2"
-                          onClick={() => navigate(`/customers/${customer.id}`)}
-                        >
-                          Bekijk klant
-                        </Button>
-                      </>
-                    ) : (
-                      <p className="text-muted-foreground">Geen klantgegevens beschikbaar</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Financieel overzicht</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-1">
-                    <p className="text-sm"><span className="font-medium">Project waarde:</span> €{project.value}</p>
-                    <p className="text-sm"><span className="font-medium">Gefactureerd:</span> €0.00</p>
-                    <p className="text-sm"><span className="font-medium">Aantal facturen:</span> 0</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <Tabs value={projectDetailTab} onValueChange={setProjectDetailTab} className="w-full">
-              <TabsList className="mb-4">
-                <TabsTrigger value="details">
-                  <Clipboard className="mr-2 h-4 w-4" />
-                  Details
-                </TabsTrigger>
-                <TabsTrigger value="planning">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Planning
-                </TabsTrigger>
-                <TabsTrigger value="materials">
-                  <FileText className="mr-2 h-4 w-4" />
-                  Materialen
-                </TabsTrigger>
-                <TabsTrigger value="personnel">
-                  <Users className="mr-2 h-4 w-4" />
-                  Personeel
-                </TabsTrigger>
-                <TabsTrigger value="reports">
-                  <BarChart className="mr-2 h-4 w-4" />
-                  Rapportages
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="details">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Projectdetails</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <h3 className="font-semibold mb-2">Beschrijving</h3>
-                      {isEditing ? (
-                        <Textarea
-                          value={editData.description}
-                          onChange={(e) => handleInputChange("description", e.target.value)}
-                          placeholder="Beschrijf het project..."
-                          rows={4}
-                        />
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          {project.description || "Nog geen beschrijving toegevoegd voor dit project."}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold mb-2">Project specificaties</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm font-medium">Type project</p>
-                          <p className="text-sm text-muted-foreground">{project.title.includes("kozijn") ? "Kozijnwerk" : "Glaswerk"}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Locatie</p>
-                          <p className="text-sm text-muted-foreground">Nog niet gespecificeerd</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Omvang werk</p>
-                          <p className="text-sm text-muted-foreground">Standaard installatie</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">Verwachte doorlooptijd</p>
-                          <p className="text-sm text-muted-foreground">3-5 werkdagen</p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="planning">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Planning</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-center text-muted-foreground py-8">
-                      Nog geen planning beschikbaar voor dit project.
-                    </p>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="materials">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Materialen</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-center text-muted-foreground py-8">
-                      Nog geen materiaallijst beschikbaar voor dit project.
-                    </p>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="personnel">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Toegewezen personeel</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-center text-muted-foreground py-8">
-                      Nog geen personeel toegewezen aan dit project.
-                    </p>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="reports">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Rapportages</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-center text-muted-foreground py-8">
-                      Nog geen rapportages beschikbaar voor dit project.
-                    </p>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" onClick={() => navigate(-1)}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Terug
+          </Button>
+          <h2 className="text-2xl font-bold">Project: {project.title}</h2>
+          <span className={`px-2 py-1 rounded-full text-xs ${
+            project.status === "gepland" ? "bg-orange-100 text-orange-800" :
+            project.status === "afgerond" ? "bg-green-100 text-green-800" :
+            project.status === "herkeuring" ? "bg-gray-100 text-gray-800" :
+            "bg-red-100 text-red-800"
+          }`}>
+            {project.status === "te-plannen" ? "Te plannen" :
+             project.status === "gepland" ? "Gepland" :
+             project.status === "herkeuring" ? "Herkeuring" :
+             "Afgerond"}
+          </span>
+        </div>
+        
+        <div className="flex gap-2">
+          {!isEditing ? (
+            <Button onClick={handleEditStart}>
+              <Edit className="mr-2 h-4 w-4" />
+              Bewerken
+            </Button>
+          ) : (
+            <>
+              <Button variant="outline" onClick={handleEditCancel}>
+                <X className="mr-2 h-4 w-4" />
+                Annuleren
+              </Button>
+              <Button onClick={handleEditSave}>
+                <Save className="mr-2 h-4 w-4" />
+                Opslaan
+              </Button>
+            </>
+          )}
         </div>
       </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Projectgegevens</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {isEditing ? (
+              <>
+                <div>
+                  <Label htmlFor="edit-title" className="text-xs font-medium">Projectnaam</Label>
+                  <Input
+                    id="edit-title"
+                    value={editData.title}
+                    onChange={(e) => handleInputChange("title", e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-customer" className="text-xs font-medium">Klant</Label>
+                  <Select value={editData.customerId} onValueChange={(value) => handleInputChange("customerId", value)}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Selecteer klant" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {customers.map((customer) => (
+                        <SelectItem key={customer.id} value={customer.id.toString()}>
+                          {customer.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-date" className="text-xs font-medium">Datum</Label>
+                  <Input
+                    id="edit-date"
+                    type="date"
+                    value={editData.date}
+                    onChange={(e) => handleInputChange("date", e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-status" className="text-xs font-medium">Status</Label>
+                  <Select value={editData.status} onValueChange={(value) => handleInputChange("status", value)}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Selecteer status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="te-plannen">Te plannen</SelectItem>
+                      <SelectItem value="gepland">Gepland</SelectItem>
+                      <SelectItem value="herkeuring">Herkeuring</SelectItem>
+                      <SelectItem value="afgerond">Afgerond</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="edit-value" className="text-xs font-medium">Waarde (€)</Label>
+                  <Input
+                    id="edit-value"
+                    type="number"
+                    value={editData.value}
+                    onChange={(e) => handleInputChange("value", e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="space-y-1">
+                <p className="text-sm"><span className="font-medium">Klant:</span> {project.customer}</p>
+                <p className="text-sm"><span className="font-medium">Datum:</span> {project.date}</p>
+                <p className="text-sm"><span className="font-medium">Status:</span> {
+                  project.status === "te-plannen" ? "Te plannen" :
+                  project.status === "gepland" ? "Gepland" :
+                  project.status === "herkeuring" ? "Herkeuring" :
+                  "Afgerond"
+                }</p>
+                <p className="text-sm"><span className="font-medium">Waarde:</span> €{project.value}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Klantgegevens</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1">
+              {customer ? (
+                <>
+                  <p className="text-sm"><span className="font-medium">Naam:</span> {customer.name}</p>
+                  <p className="text-sm"><span className="font-medium">Email:</span> {customer.email}</p>
+                  <p className="text-sm"><span className="font-medium">Telefoon:</span> {customer.phone}</p>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="mt-2"
+                    onClick={() => navigate(`/customers/${customer.id}`)}
+                  >
+                    Bekijk klant
+                  </Button>
+                </>
+              ) : (
+                <p className="text-muted-foreground">Geen klantgegevens beschikbaar</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Financieel overzicht</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1">
+              <p className="text-sm"><span className="font-medium">Project waarde:</span> €{project.value}</p>
+              <p className="text-sm"><span className="font-medium">Gefactureerd:</span> €0.00</p>
+              <p className="text-sm"><span className="font-medium">Aantal facturen:</span> 0</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs value={projectDetailTab} onValueChange={setProjectDetailTab} className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="details">
+            <Clipboard className="mr-2 h-4 w-4" />
+            Details
+          </TabsTrigger>
+          <TabsTrigger value="planning">
+            <Calendar className="mr-2 h-4 w-4" />
+            Planning
+          </TabsTrigger>
+          <TabsTrigger value="materials">
+            <FileText className="mr-2 h-4 w-4" />
+            Materialen
+          </TabsTrigger>
+          <TabsTrigger value="personnel">
+            <Users className="mr-2 h-4 w-4" />
+            Personeel
+          </TabsTrigger>
+          <TabsTrigger value="reports">
+            <BarChart className="mr-2 h-4 w-4" />
+            Rapportages
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="details">
+          <Card>
+            <CardHeader>
+              <CardTitle>Projectdetails</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <h3 className="font-semibold mb-2">Beschrijving</h3>
+                {isEditing ? (
+                  <Textarea
+                    value={editData.description}
+                    onChange={(e) => handleInputChange("description", e.target.value)}
+                    placeholder="Beschrijf het project..."
+                    rows={4}
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {project.description || "Nog geen beschrijving toegevoegd voor dit project."}
+                  </p>
+                )}
+              </div>
+              <div>
+                <h3 className="font-semibold mb-2">Project specificaties</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium">Type project</p>
+                    <p className="text-sm text-muted-foreground">{project.title.includes("kozijn") ? "Kozijnwerk" : "Glaswerk"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Locatie</p>
+                    <p className="text-sm text-muted-foreground">Nog niet gespecificeerd</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Omvang werk</p>
+                    <p className="text-sm text-muted-foreground">Standaard installatie</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Verwachte doorlooptijd</p>
+                    <p className="text-sm text-muted-foreground">3-5 werkdagen</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="planning">
+          <Card>
+            <CardHeader>
+              <CardTitle>Planning</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-center text-muted-foreground py-8">
+                Nog geen planning beschikbaar voor dit project.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="materials">
+          <Card>
+            <CardHeader>
+              <CardTitle>Materialen</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-center text-muted-foreground py-8">
+                Nog geen materiaallijst beschikbaar voor dit project.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="personnel">
+          <Card>
+            <CardHeader>
+              <CardTitle>Toegewezen personeel</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-center text-muted-foreground py-8">
+                Nog geen personeel toegewezen aan dit project.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="reports">
+          <Card>
+            <CardHeader>
+              <CardTitle>Rapportages</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-center text-muted-foreground py-8">
+                Nog geen rapportages beschikbaar voor dit project.
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -1,5 +1,6 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { Dashboard } from "@/components/Dashboard";
 import CustomerDetail from "@/components/CustomerDetail";
 import ProjectDetail from "@/components/ProjectDetail";
@@ -19,18 +20,26 @@ import { AppSidebar } from "@/components/AppSidebar";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [selectedCustomerId, setSelectedCustomerId] = useState<number | null>(null);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const { customerId, projectId } = useParams();
   const isMobile = useIsMobile();
 
+  // Update active tab based on URL params
+  useEffect(() => {
+    if (customerId) {
+      setActiveTab("customers");
+    } else if (projectId) {
+      setActiveTab("projects");
+    }
+  }, [customerId, projectId]);
+
   const renderContent = () => {
-    // Note: CustomerDetail and ProjectDetail components use React Router
-    // for navigation and get their IDs from URL params, not props
-    if (selectedCustomerId) {
+    // Show customer detail if customerId is in URL
+    if (customerId) {
       return <CustomerDetail />;
     }
     
-    if (selectedProjectId) {
+    // Show project detail if projectId is in URL
+    if (projectId) {
       return <ProjectDetail />;
     }
 
