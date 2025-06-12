@@ -34,7 +34,6 @@ export const AppSidebar = ({
 }: AppSidebarProps) => {
   const location = useLocation();
   const { user, logout } = useAuth();
-  const isMobile = useIsMobile();
   const { state } = useSidebar();
   
   // Track submenu states
@@ -109,6 +108,11 @@ export const AppSidebar = ({
 
   const handleMenuClick = (itemId: string) => {
     setActiveTab(itemId);
+    
+    // Open personnel submenu if clicking on personnel or its subitems
+    if (itemId === "personnel" || itemId === "users" || itemId === "salary") {
+      setPersonnelOpen(true);
+    }
   };
 
   return (
@@ -135,12 +139,12 @@ export const AppSidebar = ({
                 <SidebarMenuItem key={item.id}>
                   {item.subItems ? (
                     <Collapsible 
-                      open={item.id === "personnel" ? personnelOpen : false} 
-                      onOpenChange={item.id === "personnel" ? setPersonnelOpen : undefined}
+                      open={personnelOpen} 
+                      onOpenChange={setPersonnelOpen}
                     >
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton 
-                          isActive={activeTab === item.id}
+                          isActive={activeTab === item.id || activeTab === "users" || activeTab === "salary"}
                           onClick={() => handleMenuClick(item.id)}
                         >
                           <item.icon className="h-4 w-4" />
@@ -194,7 +198,7 @@ export const AppSidebar = ({
           <SidebarMenuItem>
             <div className="flex items-center justify-between p-2">
               <div className="flex items-center">
-                <div className="w-8 h-8 rounded-full bg-smans-primary bg-opacity-10 flex items-center justify-center text-smans-primary font-bold mr-3">
+                <div className="w-8 h-8 rounded-full bg-[#aa1917] bg-opacity-10 flex items-center justify-center text-[#aa1917] font-bold mr-3">
                   <span className="text-sm">
                     {user?.name?.charAt(0).toUpperCase() || 'A'}
                   </span>
@@ -204,7 +208,7 @@ export const AppSidebar = ({
                     <p className="text-sm font-medium">
                       {user?.name || 'Admin Gebruiker'}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-muted-foreground">
                       {user?.email || 'admin@smans.nl'}
                     </p>
                   </div>
@@ -214,7 +218,7 @@ export const AppSidebar = ({
                 variant="ghost"
                 size="sm"
                 onClick={logout}
-                className="text-gray-500 hover:text-red-600"
+                className="text-muted-foreground hover:text-destructive"
               >
                 <LogOut className="h-4 w-4" />
               </Button>
