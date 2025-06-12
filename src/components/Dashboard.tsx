@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { Bar, BarChart, XAxis, YAxis, Legend, ResponsiveContainer, Tooltip } from "recharts";
@@ -8,6 +7,7 @@ import { format, isToday, isTomorrow, addDays } from "date-fns";
 import { nl } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { WeekCalendar } from "@/components/WeekCalendar";
 
 // Mock planning data (in a real app, this would come from your planning store)
 const mockPlanningItems = [
@@ -48,6 +48,17 @@ const mockPlanningItems = [
     status: "Gepland"
   }
 ];
+
+// Convert mock planning items to calendar events
+const mockCalendarEvents = mockPlanningItems.map(item => ({
+  id: item.id,
+  title: `${item.project} - ${item.employee}`,
+  startTime: item.time,
+  endTime: format(new Date(`2000-01-01 ${item.time}`).getTime() + 2 * 60 * 60 * 1000, 'HH:mm'), // Add 2 hours
+  date: item.date,
+  type: 'appointment' as const,
+  description: `${item.project} bij ${item.location}`
+}));
 
 export const Dashboard = () => {
   const { customers, projects } = useCrmStore();
@@ -132,6 +143,18 @@ export const Dashboard = () => {
     }))
   ].slice(0, 5);
 
+  const handleEventClick = (event: any) => {
+    console.log('Event clicked:', event);
+  };
+
+  const handleTimeSlotClick = (date: Date, hour: number) => {
+    console.log('Time slot clicked:', date, hour);
+  };
+
+  const handleEventCreate = (date: Date, startHour: number, endHour: number) => {
+    console.log('Create event:', date, startHour, endHour);
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Dashboard</h2>
@@ -178,6 +201,27 @@ export const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Week Calendar Overview */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-smans-primary" />
+            Weekoverzicht Planning
+          </CardTitle>
+          <CardDescription>
+            Overzicht van alle afspraken en planning voor de gehele week
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <WeekCalendar 
+            events={mockCalendarEvents}
+            onEventClick={handleEventClick}
+            onTimeSlotClick={handleTimeSlotClick}
+            onEventCreate={handleEventCreate}
+          />
+        </CardContent>
+      </Card>
 
       {/* Planning Agenda and Projects Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
