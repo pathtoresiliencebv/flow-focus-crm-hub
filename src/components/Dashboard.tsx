@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { Bar, BarChart, XAxis, YAxis, Legend, ResponsiveContainer, Tooltip } from "recharts";
@@ -8,12 +9,14 @@ import { nl } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { WeekCalendar } from "@/components/WeekCalendar";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 // Mock planning data (in a real app, this would come from your planning store)
 const mockPlanningItems = [
   {
     id: "1",
-    date: "2025-06-04",
+    date: "2025-06-12",
     time: "09:00",
     employee: "Peter Bakker",
     project: "Kozijnen vervangen",
@@ -22,7 +25,7 @@ const mockPlanningItems = [
   },
   {
     id: "2",
-    date: "2025-06-04",
+    date: "2025-06-12",
     time: "14:00",
     employee: "Peter Bakker",
     project: "Nieuwe ramen installeren",
@@ -31,7 +34,7 @@ const mockPlanningItems = [
   },
   {
     id: "3",
-    date: "2025-06-05",
+    date: "2025-06-13",
     time: "10:00",
     employee: "Peter Bakker",
     project: "Kozijnen vervangen",
@@ -40,11 +43,20 @@ const mockPlanningItems = [
   },
   {
     id: "4",
-    date: "2025-06-05",
+    date: "2025-06-13",
     time: "15:30",
     employee: "Peter Bakker",
     project: "Onderhoud kozijnen",
     location: "Dorpsstraat 89, Haarlem",
+    status: "Gepland"
+  },
+  {
+    id: "5",
+    date: "2025-06-14",
+    time: "11:00",
+    employee: "Peter Bakker",
+    project: "Nieuwe ramen installeren",
+    location: "Parkstraat 67, Den Haag",
     status: "Gepland"
   }
 ];
@@ -62,6 +74,8 @@ const mockCalendarEvents = mockPlanningItems.map(item => ({
 
 export const Dashboard = () => {
   const { customers, projects } = useCrmStore();
+  const { toast } = useToast();
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
   // Calculate real statistics
   const totalCustomers = customers.length;
@@ -112,7 +126,7 @@ export const Dashboard = () => {
   const getProjectStatusColor = (status: string) => {
     switch (status) {
       case "te-plannen": return "bg-yellow-100 text-yellow-800";
-      case "gepland": return "bg-blue-100 text-blue-800";
+      case "gepend": return "bg-blue-100 text-blue-800";
       case "herkeuring": return "bg-orange-100 text-orange-800";
       case "afgerond": return "bg-green-100 text-green-800";
       default: return "bg-gray-100 text-gray-800";
@@ -145,14 +159,29 @@ export const Dashboard = () => {
 
   const handleEventClick = (event: any) => {
     console.log('Event clicked:', event);
+    const planningItem = mockPlanningItems.find(item => item.id === event.id);
+    if (planningItem) {
+      toast({
+        title: "Planning Details",
+        description: `${planningItem.project} - ${planningItem.employee} om ${planningItem.time} bij ${planningItem.location}`,
+      });
+    }
   };
 
   const handleTimeSlotClick = (date: Date, hour: number) => {
     console.log('Time slot clicked:', date, hour);
+    toast({
+      title: "Nieuwe Planning",
+      description: `Klik hier om een nieuwe planning aan te maken voor ${format(date, 'dd MMMM yyyy', { locale: nl })} om ${hour}:00`,
+    });
   };
 
   const handleEventCreate = (date: Date, startHour: number, endHour: number) => {
     console.log('Create event:', date, startHour, endHour);
+    toast({
+      title: "Planning Aanmaken",
+      description: `Nieuwe planning aanmaken voor ${format(date, 'dd MMMM yyyy', { locale: nl })} van ${startHour}:00 tot ${endHour}:00`,
+    });
   };
 
   return (
