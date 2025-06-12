@@ -7,6 +7,7 @@ import { WeekCalendar } from "./WeekCalendar";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ProjectForm } from "./ProjectForm";
 
 interface DashboardEvent {
   id: string;
@@ -75,6 +76,7 @@ export const Dashboard = () => {
 
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [newProjectDialogOpen, setNewProjectDialogOpen] = useState(false);
 
   const handleEventClick = (event: DashboardEvent) => {
     toast({
@@ -172,6 +174,18 @@ export const Dashboard = () => {
     });
   };
 
+  const handleNewProject = () => {
+    setNewProjectDialogOpen(true);
+  };
+
+  const handleProjectCreated = () => {
+    setNewProjectDialogOpen(false);
+    toast({
+      title: "Project aangemaakt",
+      description: "Het nieuwe project is succesvol aangemaakt.",
+    });
+  };
+
   const stats = [
     {
       title: "Actieve Projecten",
@@ -217,7 +231,10 @@ export const Dashboard = () => {
               <FileText className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
               Rapport
             </Button>
-            <Button className="bg-smans-primary hover:bg-smans-primary/90 text-white shadow-sm hover:shadow-md transition-all flex-1 sm:flex-none text-xs sm:text-sm">
+            <Button 
+              onClick={handleNewProject}
+              className="bg-smans-primary hover:bg-smans-primary/90 text-white shadow-sm hover:shadow-md transition-all flex-1 sm:flex-none text-xs sm:text-sm"
+            >
               <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
               Nieuw Project
             </Button>
@@ -489,6 +506,22 @@ export const Dashboard = () => {
                 </Button>
               </DialogFooter>
             </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* New Project Dialog */}
+        <Dialog open={newProjectDialogOpen} onOpenChange={setNewProjectDialogOpen}>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Nieuw project aanmaken</DialogTitle>
+              <DialogDescription>
+                Maak een nieuw project aan en voeg het toe aan je projectenbord.
+              </DialogDescription>
+            </DialogHeader>
+            <ProjectForm 
+              onClose={handleProjectCreated}
+              initialStatus="te-plannen"
+            />
           </DialogContent>
         </Dialog>
       </div>
