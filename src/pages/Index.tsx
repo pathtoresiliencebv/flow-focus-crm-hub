@@ -1,6 +1,8 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import LoginScreen from "@/components/LoginScreen";
 import { Dashboard } from "@/components/Dashboard";
 import CustomerDetail from "@/components/CustomerDetail";
 import ProjectDetail from "@/components/ProjectDetail";
@@ -23,6 +25,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const { customerId, projectId } = useParams();
   const isMobile = useIsMobile();
+  const { user, login, isLoading } = useAuth();
 
   // Update active tab based on URL params
   useEffect(() => {
@@ -32,6 +35,27 @@ const Index = () => {
       setActiveTab("projects");
     }
   }, [customerId, projectId]);
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <img 
+            src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" 
+            alt="SMANS Logo" 
+            className="mx-auto h-12 w-auto mb-4"
+          />
+          <p className="text-gray-600">Laden...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login screen if not authenticated
+  if (!user) {
+    return <LoginScreen onLogin={login} />;
+  }
 
   const renderContent = () => {
     // Show customer detail if customerId is in URL
