@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import {
   Table,
@@ -21,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Eye, FileText, Edit, Link, Check, X, Send } from "lucide-react";
 import { QuoteForm } from './QuoteForm';
+import { SendInvoiceDialog } from './SendInvoiceDialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +49,8 @@ export function Quotes() {
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showSendDialog, setShowSendDialog] = useState(false);
+  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
 
   useEffect(() => {
     fetchQuotes();
@@ -111,11 +113,21 @@ export function Quotes() {
 
   // Handler for sending quote
   const handleSendQuote = async (quoteId: string) => {
+    const quote = quotes.find(q => q.id === quoteId);
+    if (quote) {
+      setSelectedQuote(quote);
+      setShowSendDialog(true);
+    }
+  };
+
+  const handleSendConfirm = async (emailData: { to: string; subject: string; message: string }) => {
+    if (!selectedQuote) return;
+
     try {
       const { error } = await supabase
         .from('quotes')
         .update({ status: 'sent' })
-        .eq('id', quoteId);
+        .eq('id', selectedQuote.id);
 
       if (error) {
         console.error('Error sending quote:', error);
@@ -129,11 +141,12 @@ export function Quotes() {
 
       toast({
         title: "Offerte verzonden",
-        description: "De offerte is succesvol verzonden naar de klant.",
+        description: `De offerte is succesvol verzonden naar ${emailData.to}.`,
       });
 
       // Refresh quotes
       fetchQuotes();
+      setSelectedQuote(null);
     } catch (error) {
       console.error('Error:', error);
     }
@@ -282,11 +295,11 @@ export function Quotes() {
                         </Button>
                       )}
                       
-                      {quote.status === "concept" && (
+                      {(quote.status === "concept" || quote.status === "sent") && (
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          title="Verzenden naar klant"
+                          title={quote.status === "concept" ? "Verzenden naar klant" : "Opnieuw verzenden"}
                           onClick={() => handleSendQuote(quote.id)}
                         >
                           <Send className="h-4 w-4" />
@@ -342,6 +355,16 @@ export function Quotes() {
           }
         </div>
       </div>
+
+      <SendInvoiceDialog
+        open={showSendDialog}
+        onOpenChange={setShowSendDialog}
+        onSend={handleSendConfirm}
+        invoiceNumber={selectedQuote?.quote_number || ''}
+        customerEmail={selectedQuote?.customer_email || ''}
+        customerName={selectedQuote?.customer_name || ''}
+        type="quote"
+      />
     </div>
   );
 }

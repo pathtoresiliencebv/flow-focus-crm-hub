@@ -22,6 +22,7 @@ import { Eye, FileText, Receipt, Send } from "lucide-react";
 import { InvoiceForm } from './InvoiceForm';
 import { useToast } from '@/hooks/use-toast';
 import { InvoiceDetails } from './InvoiceDetails';
+import { SendInvoiceDialog } from './SendInvoiceDialog';
 
 // Import mock data from central location
 import { mockInvoices, mockCustomers, mockProjects } from '@/data/mockData';
@@ -51,6 +52,8 @@ export function Invoicing() {
   const [selectedInvoice, setSelectedInvoice] = useState<number | null>(null);
   const [invoices, setInvoices] = useState([...mockInvoices]);
   const [openDetailDialog, setOpenDetailDialog] = useState(false);
+  const [showSendDialog, setShowSendDialog] = useState(false);
+  const [invoiceToSend, setInvoiceToSend] = useState<any>(null);
 
   // Filter invoices based on search term and status filter
   const filteredInvoices = invoices.filter(invoice => {
@@ -89,24 +92,33 @@ export function Invoicing() {
     });
   };
 
-  // Handler for sending invoice
+  // Handler for sending invoice with popup
   const handleSendInvoice = (invoiceId: number) => {
+    const invoice = invoices.find(inv => inv.id === invoiceId);
+    if (invoice) {
+      setInvoiceToSend(invoice);
+      setShowSendDialog(true);
+    }
+  };
+
+  // Handler for confirming send
+  const handleSendConfirm = (emailData: { to: string; subject: string; message: string }) => {
+    if (!invoiceToSend) return;
+
     const updatedInvoices = invoices.map(inv => 
-      inv.id === invoiceId 
+      inv.id === invoiceToSend.id 
         ? { ...inv, status: "Verzonden" } 
         : inv
     );
     
     setInvoices(updatedInvoices);
     
-    const invoice = invoices.find(inv => inv.id === invoiceId);
-    if (invoice) {
-      toast({
-        title: "Factuur verzonden",
-        description: `Factuur ${invoice.number} is verzonden naar de klant voor project "${invoice.project}".`,
-      });
-    }
+    toast({
+      title: "Factuur verzonden",
+      description: `Factuur ${invoiceToSend.number} is verzonden naar ${emailData.to}.`,
+    });
     
+    setInvoiceToSend(null);
     setOpenDetailDialog(false);
   };
 
@@ -252,11 +264,11 @@ export function Invoicing() {
                         <Eye className="h-4 w-4" />
                       </Button>
                       
-                      {invoice.status === "Concept" && (
+                      {(invoice.status === "Concept" || invoice.status === "Verzonden" || invoice.status === "Verlopen") && (
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          title="Verzenden"
+                          title={invoice.status === "Concept" ? "Verzenden" : "Opnieuw verzenden"}
                           onClick={() => handleSendInvoice(invoice.id)}
                         >
                           <Send className="h-4 w-4" />
@@ -304,6 +316,17 @@ export function Invoicing() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Send Invoice Dialog */}
+      <SendInvoiceDialog
+        open={showSendDialog}
+        onOpenChange={setShowSendDialog}
+        onSend={handleSendConfirm}
+        invoiceNumber={invoiceToSend?.number || ''}
+        customerEmail="klant@example.com" // In echte app van klantgegevens
+        customerName={invoiceToSend?.customer || ''}
+        type="invoice"
+      />
     </div>
   );
 }

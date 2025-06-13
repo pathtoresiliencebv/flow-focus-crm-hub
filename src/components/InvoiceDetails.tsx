@@ -11,6 +11,8 @@ import { Receipt, Send } from "lucide-react";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { SendInvoiceDialog } from "./SendInvoiceDialog";
 
 interface InvoiceItem {
   id: number;
@@ -42,6 +44,7 @@ interface InvoiceDetailsProps {
 
 export function InvoiceDetails({ invoice, items, onSend, onClose }: InvoiceDetailsProps) {
   const { toast } = useToast();
+  const [showSendDialog, setShowSendDialog] = useState(false);
   
   // Calculate subtotal from items
   const calculateSubtotal = () => {
@@ -64,15 +67,17 @@ export function InvoiceDetails({ invoice, items, onSend, onClose }: InvoiceDetai
   const vat = calculateVat();
   const total = subtotal + vat;
 
-  const handleSendInvoice = () => {
+  const handleSendInvoice = (emailData: { to: string; subject: string; message: string }) => {
+    console.log('Verzenden naar:', emailData);
+    
     if (onSend) {
       onSend(invoice.id);
-    } else {
-      toast({
-        title: "Factuur verzonden",
-        description: `Factuur ${invoice.number} is verzonden naar ${invoice.customer}.`,
-      });
     }
+    
+    toast({
+      title: "Factuur verzonden",
+      description: `Factuur ${invoice.number} is verzonden naar ${emailData.to}.`,
+    });
     
     if (onClose) {
       onClose();
@@ -80,6 +85,7 @@ export function InvoiceDetails({ invoice, items, onSend, onClose }: InvoiceDetai
   };
 
   const canSendInvoice = invoice.status === "Concept";
+  const canResendInvoice = invoice.status === "Verzonden" || invoice.status === "Verlopen";
 
   return (
     <>
@@ -180,9 +186,15 @@ export function InvoiceDetails({ invoice, items, onSend, onClose }: InvoiceDetai
 
       <div className="flex justify-end gap-2 mt-6">
         {canSendInvoice && (
-          <Button onClick={handleSendInvoice} className="bg-blue-500 hover:bg-blue-600">
+          <Button onClick={() => setShowSendDialog(true)} className="bg-blue-500 hover:bg-blue-600">
             <Send className="mr-2 h-4 w-4" />
             Verzenden
+          </Button>
+        )}
+        {canResendInvoice && (
+          <Button onClick={() => setShowSendDialog(true)} variant="outline">
+            <Send className="mr-2 h-4 w-4" />
+            Opnieuw verzenden
           </Button>
         )}
         <Button>
@@ -190,6 +202,16 @@ export function InvoiceDetails({ invoice, items, onSend, onClose }: InvoiceDetai
           Downloaden
         </Button>
       </div>
+
+      <SendInvoiceDialog
+        open={showSendDialog}
+        onOpenChange={setShowSendDialog}
+        onSend={handleSendInvoice}
+        invoiceNumber={invoice.number}
+        customerEmail="klant@example.com" // In echte app van klantgegevens
+        customerName={invoice.customer}
+        type="invoice"
+      />
     </>
   );
 }
