@@ -87,7 +87,7 @@ export const DesktopSidebar = ({
 }: React.ComponentProps<"div">) => {
   const { open, animate } = useSidebar();
   
-  // Filter out HTML drag event handlers that conflict with Framer Motion
+  // Filter out HTML event handlers that conflict with Framer Motion
   const {
     onDrag,
     onDragStart,
@@ -97,6 +97,10 @@ export const DesktopSidebar = ({
     onDragLeave,
     onDragOver,
     onDrop,
+    onAnimationStart,
+    onAnimationEnd,
+    onAnimationIteration,
+    onTransitionEnd,
     ...motionCompatibleProps
   } = props;
   
@@ -124,6 +128,7 @@ export const MobileSidebar = ({
 }: React.ComponentProps<"div">) => {
   const { open, setOpen } = useSidebar();
   
+  // Filter out HTML event handlers that conflict with Framer Motion
   const {
     onDrag,
     onDragStart,
