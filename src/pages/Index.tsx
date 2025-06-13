@@ -18,8 +18,8 @@ import { Users } from "@/components/Users";
 import { Salary } from "@/components/Salary";
 import { Reports } from "@/components/Reports";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { cn } from "@/lib/utils";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -99,25 +99,20 @@ const Index = () => {
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gray-50">
-        <AppSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-        
-        <SidebarInset>
-          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
-            <SidebarTrigger className="-ml-1" />
-            <div className="h-6 w-px bg-gray-300" />
-            <h1 className="text-lg font-semibold">SMANS CRM</h1>
-          </header>
-          
-          <main className="flex-1 overflow-hidden">
-            <div className={`h-full ${isMobile ? 'p-2' : 'p-6'} overflow-y-auto`}>
-              {renderContent()}
-            </div>
-          </main>
-        </SidebarInset>
+    <div className={cn(
+      "min-h-screen flex w-full bg-gray-50",
+      "md:flex-row flex-col"
+    )}>
+      <AppSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      
+      <div className="flex flex-1 flex-col">
+        <main className="flex-1 overflow-hidden">
+          <div className={`h-full ${isMobile ? 'p-2' : 'p-6'} overflow-y-auto`}>
+            {renderContent()}
+          </div>
+        </main>
       </div>
-    </SidebarProvider>
+    </div>
   );
 };
 

@@ -1,239 +1,171 @@
 
-import { Button } from "@/components/ui/button";
-import { Users, Calendar, Folder, LayoutDashboard, Receipt, Clock, Briefcase, BarChart2, FileText, Settings, LogOut, FileCheck } from "lucide-react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { useIsMobile } from "@/hooks/use-mobile";
+import React, { useState } from "react";
+import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
-  useSidebar,
-} from "@/components/ui/sidebar";
+  LayoutDashboard,
+  Users,
+  FolderKanban,
+  Calendar,
+  Clock,
+  Receipt,
+  FileText,
+  CreditCard,
+  UserCheck,
+  Shield,
+  DollarSign,
+  BarChart,
+  LogOut
+} from "lucide-react";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 interface AppSidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
 }
 
-export const AppSidebar = ({
-  activeTab,
-  setActiveTab
-}: AppSidebarProps) => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
-  const { state } = useSidebar();
-  
-  // Track submenu states
-  const [personnelOpen, setPersonnelOpen] = useState(activeTab === "personnel" || activeTab === "users" || activeTab === "salary");
-  
-  const menuItems = [{
-    id: "dashboard",
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    path: "/"
-  }, {
-    id: "customers",
-    label: "Klanten",
-    icon: Users,
-    path: "/"
-  }, {
-    id: "projects",
-    label: "Projecten",
-    icon: Folder,
-    path: "/"
-  }, {
-    id: "calendar",
-    label: "Planning",
-    icon: Calendar,
-    path: "/"
-  }, {
-    id: "time",
-    label: "Tijdsregistratie",
-    icon: Clock,
-    path: "/"
-  }, {
-    id: "receipts",
-    label: "Bonnetjes",
-    icon: FileText,
-    path: "/"
-  }, {
-    id: "quotes",
-    label: "Offertes",
-    icon: FileCheck,
-    path: "/"
-  }, {
-    id: "invoicing",
-    label: "Facturering",
-    icon: Receipt,
-    path: "/"
-  }, {
-    id: "personnel",
-    label: "Personeelszaken",
-    icon: Briefcase,
-    subItems: [{
-      id: "users",
-      label: "Gebruikers",
-      icon: Users,
-      path: "/"
-    }, {
-      id: "salary",
-      label: "Salaris",
-      icon: Receipt,
-      path: "/"
-    }]
-  }, {
-    id: "reports",
-    label: "Rapportages",
-    icon: BarChart2,
-    path: "/"
-  }, {
-    id: "settings",
-    label: "Instellingen",
-    icon: Settings,
-    path: "/settings"
-  }];
+export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
+  const { logout } = useAuth();
+  const [open, setOpen] = useState(false);
 
-  const handleMenuClick = (itemId: string) => {
-    setActiveTab(itemId);
-    
-    // If we're on a detail page (customer or project), navigate back to home with the new tab
-    if (location.pathname !== "/" && location.pathname !== "/settings") {
-      navigate("/");
+  const links = [
+    {
+      label: "Dashboard",
+      href: "#",
+      icon: <LayoutDashboard className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
+      key: "dashboard"
+    },
+    {
+      label: "Klanten",
+      href: "#",
+      icon: <Users className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
+      key: "customers"
+    },
+    {
+      label: "Projecten",
+      href: "#",
+      icon: <FolderKanban className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
+      key: "projects"
+    },
+    {
+      label: "Planning",
+      href: "#",
+      icon: <Calendar className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
+      key: "calendar"
+    },
+    {
+      label: "Tijdregistratie",
+      href: "#",
+      icon: <Clock className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
+      key: "time"
+    },
+    {
+      label: "Bonnetjes",
+      href: "#",
+      icon: <Receipt className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
+      key: "receipts"
+    },
+    {
+      label: "Offertes",
+      href: "#",
+      icon: <FileText className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
+      key: "quotes"
+    },
+    {
+      label: "Facturatie",
+      href: "#",
+      icon: <CreditCard className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
+      key: "invoicing"
+    },
+    {
+      label: "Personeel",
+      href: "#",
+      icon: <UserCheck className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
+      key: "personnel"
+    },
+    {
+      label: "Gebruikers",
+      href: "#",
+      icon: <Shield className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
+      key: "users"
+    },
+    {
+      label: "Salaris",
+      href: "#",
+      icon: <DollarSign className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
+      key: "salary"
+    },
+    {
+      label: "Rapportages",
+      href: "#",
+      icon: <BarChart className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
+      key: "reports"
     }
-    
-    // Open personnel submenu if clicking on personnel or its subitems
-    if (itemId === "personnel" || itemId === "users" || itemId === "salary") {
-      setPersonnelOpen(true);
-    }
-  };
+  ];
 
   return (
-    <Sidebar 
-      collapsible="icon" 
-      className="border-r border-sidebar-border bg-sidebar text-sidebar-foreground"
-    >
-      <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center gap-3 px-3 py-2">
-          <img 
-            src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" 
-            alt="SMANS Logo" 
-            className="h-8 w-8 flex-shrink-0" 
-          />
-          <span className="font-semibold text-lg text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-            SMANS
-          </span>
-        </div>
-      </SidebarHeader>
-
-      <SidebarContent className="flex-1 overflow-y-auto">
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/70 text-xs font-medium px-3 py-2">
-            Navigatie
-          </SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1 px-2">
-              {menuItems.map(item => (
-                <SidebarMenuItem key={item.id}>
-                  {item.subItems ? (
-                    <Collapsible 
-                      open={personnelOpen} 
-                      onOpenChange={setPersonnelOpen}
-                    >
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton 
-                          isActive={activeTab === item.id || activeTab === "users" || activeTab === "salary"}
-                          onClick={() => handleMenuClick(item.id)}
-                          className="w-full justify-start gap-3 px-3 py-2 h-10 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
-                        >
-                          <item.icon className="h-4 w-4 flex-shrink-0" />
-                          <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SidebarMenuSub className="ml-6 mt-1 space-y-1">
-                          {item.subItems.map(subItem => (
-                            <SidebarMenuSubItem key={subItem.id}>
-                              <SidebarMenuSubButton 
-                                isActive={activeTab === subItem.id}
-                                onClick={() => handleMenuClick(subItem.id)}
-                                className="w-full justify-start gap-3 px-3 py-2 h-9 text-sm text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
-                              >
-                                <subItem.icon className="h-4 w-4 flex-shrink-0" />
-                                <span className="group-data-[collapsible=icon]:hidden">{subItem.label}</span>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  ) : (
-                    <SidebarMenuButton 
-                      asChild={item.path === "/settings"}
-                      isActive={activeTab === item.id || (item.path === "/settings" && location.pathname === "/settings")}
-                      onClick={item.path === "/settings" ? undefined : () => handleMenuClick(item.id)}
-                      className="w-full justify-start gap-3 px-3 py-2 h-10 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground data-[active=true]:bg-sidebar-accent data-[active=true]:text-sidebar-accent-foreground"
-                    >
-                      {item.path === "/settings" ? (
-                        <Link to={item.path} className="flex items-center gap-3 w-full">
-                          <item.icon className="h-4 w-4 flex-shrink-0" />
-                          <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
-                        </Link>
-                      ) : (
-                        <span className="flex items-center gap-3 w-full">
-                          <item.icon className="h-4 w-4 flex-shrink-0" />
-                          <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
-                        </span>
-                      )}
-                    </SidebarMenuButton>
-                  )}
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-
-      <SidebarFooter className="border-t border-sidebar-border p-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="w-8 h-8 rounded-full bg-smans-primary bg-opacity-10 flex items-center justify-center text-smans-primary font-bold flex-shrink-0">
-              <span className="text-sm">
-                {user?.name?.charAt(0).toUpperCase() || 'A'}
-              </span>
-            </div>
-            <div className="group-data-[collapsible=icon]:hidden min-w-0 flex-1">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">
-                {user?.name || 'Admin Gebruiker'}
-              </p>
-              <p className="text-xs text-sidebar-foreground/70 truncate">
-                {user?.email || 'admin@smans.nl'}
-              </p>
-            </div>
+    <Sidebar open={open} setOpen={setOpen}>
+      <SidebarBody className="justify-between gap-10">
+        <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
+          {open ? <Logo /> : <LogoIcon />}
+          <div className="mt-8 flex flex-col gap-2">
+            {links.map((link, idx) => (
+              <SidebarLink
+                key={idx}
+                link={link}
+                className={cn(
+                  "hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-md px-2",
+                  activeTab === link.key && "bg-smans-primary/10 text-smans-primary"
+                )}
+                onClick={() => setActiveTab(link.key)}
+              />
+            ))}
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={logout}
-            className="flex-shrink-0 text-sidebar-foreground/70 hover:text-destructive hover:bg-sidebar-accent h-8 w-8 p-0"
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
         </div>
-      </SidebarFooter>
+        <div>
+          <SidebarLink
+            link={{
+              label: "Uitloggen",
+              href: "#",
+              icon: <LogOut className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />
+            }}
+            className="hover:bg-red-100 dark:hover:bg-red-900/20 rounded-md px-2 text-red-600"
+            onClick={logout}
+          />
+        </div>
+      </SidebarBody>
     </Sidebar>
+  );
+}
+
+export const Logo = () => {
+  return (
+    <div className="font-normal flex space-x-2 items-center text-sm text-black py-1 relative z-20">
+      <img 
+        src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" 
+        alt="SMANS Logo" 
+        className="h-8 w-auto flex-shrink-0"
+      />
+      <motion.span
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="font-medium text-smans-primary whitespace-pre"
+      >
+        SMANS CRM
+      </motion.span>
+    </div>
+  );
+};
+
+export const LogoIcon = () => {
+  return (
+    <div className="font-normal flex space-x-2 items-center text-sm text-black py-1 relative z-20">
+      <img 
+        src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" 
+        alt="SMANS Logo" 
+        className="h-8 w-auto flex-shrink-0"
+      />
+    </div>
   );
 };
