@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import {
@@ -14,12 +15,11 @@ import {
   DollarSign,
   BarChart,
   LogOut,
-  Bell,
   Settings,
-  Mail,
   Inbox,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Menu
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -165,7 +165,14 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
     <Sidebar open={open} setOpen={setOpen}>
       <SidebarBody className="justify-between gap-10">
         <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
-          {open ? <Logo /> : <LogoIcon />}
+          <div className="flex items-center justify-between mb-4">
+            {open ? <Logo /> : <LogoIcon />}
+            <Menu 
+              className="text-neutral-700 dark:text-neutral-200 h-5 w-5 cursor-pointer flex-shrink-0" 
+              onClick={() => setOpen(!open)}
+            />
+          </div>
+          
           <div className="mt-8 flex flex-col gap-2">
             {menuGroups.map((group) => (
               <div key={group.label} className="mb-2">

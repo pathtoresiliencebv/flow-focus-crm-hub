@@ -85,17 +85,21 @@ export const DesktopSidebar = ({
   children,
   ...props
 }: React.ComponentProps<"div">) => {
-  const { animate } = useSidebar();
+  const { open, animate } = useSidebar();
   return (
-    <div
+    <motion.div
       className={cn(
-        "h-screen px-4 py-4 hidden md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 w-[60px] flex-shrink-0 fixed left-0 top-0 z-40 overflow-y-auto",
+        "h-screen px-4 py-4 hidden md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 flex-shrink-0 fixed left-0 top-0 z-40 overflow-y-auto",
         className
       )}
+      animate={{
+        width: animate ? (open ? "300px" : "60px") : "300px",
+      }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
       {...props}
     >
       {children}
-    </div>
+    </motion.div>
   );
 };
 
@@ -106,7 +110,6 @@ export const MobileSidebar = ({
 }: React.ComponentProps<"div">) => {
   const { open, setOpen } = useSidebar();
   
-  // Filter out all React event handlers that conflict with Framer Motion
   const {
     onDrag,
     onDragStart,
