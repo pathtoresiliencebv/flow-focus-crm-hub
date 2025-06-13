@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import {
   LayoutDashboard,
@@ -43,7 +43,7 @@ interface MenuGroup {
 export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
   const { logout } = useAuth();
   const [open, setOpen] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(['dashboard', 'crm', 'postvak']);
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
 
   const menuGroups: MenuGroup[] = [
     {
@@ -153,6 +153,17 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
     }
   ];
 
+  // Automatically expand groups that contain the active tab
+  useEffect(() => {
+    const activeGroup = menuGroups.find(group => 
+      group.items.some(item => item.key === activeTab)
+    );
+    
+    if (activeGroup && !expandedGroups.includes(activeGroup.label)) {
+      setExpandedGroups(prev => [...prev, activeGroup.label]);
+    }
+  }, [activeTab]);
+
   const toggleGroup = (groupLabel: string) => {
     setExpandedGroups(prev => 
       prev.includes(groupLabel) 
@@ -167,20 +178,19 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
         <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
           <div className="flex items-center justify-between mb-4">
             {open ? <Logo /> : <LogoIcon />}
-            <Menu 
-              className="text-neutral-700 dark:text-neutral-200 h-5 w-5 cursor-pointer flex-shrink-0" 
-              onClick={() => setOpen(!open)}
-            />
           </div>
           
           <div className="mt-8 flex flex-col gap-2">
             {menuGroups.map((group) => (
               <div key={group.label} className="mb-2">
                 <div
-                  className="flex items-center justify-between px-2 py-1 text-xs font-medium text-neutral-500 uppercase tracking-wider cursor-pointer hover:text-neutral-700 dark:hover:text-neutral-300"
+                  className={cn(
+                    "flex items-center justify-between px-2 py-1 text-xs font-medium text-neutral-500 uppercase tracking-wider cursor-pointer hover:text-neutral-700 dark:hover:text-neutral-300",
+                    !open && "justify-center"
+                  )}
                   onClick={() => toggleGroup(group.label)}
                 >
-                  <span className={cn(!open && "hidden")}>{group.label}</span>
+                  {open && <span>{group.label}</span>}
                   {open && (
                     expandedGroups.includes(group.label) 
                       ? <ChevronDown className="h-3 w-3" />
