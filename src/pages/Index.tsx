@@ -20,7 +20,6 @@ import { Reports } from "@/components/Reports";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AppSidebar } from "@/components/AppSidebar";
 import { cn } from "@/lib/utils";
-import { useSidebar } from "@/components/ui/sidebar";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -104,8 +103,8 @@ const Index = () => {
       <AppSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       
       <div className={cn(
-        "min-h-screen transition-all duration-300",
-        isMobile ? "ml-0 pt-14" : "ml-[60px] hover:ml-[300px]"
+        "min-h-screen",
+        isMobile ? "ml-0 pt-14" : "ml-[60px]"
       )}>
         <main className="h-full overflow-y-auto">
           <div className={`h-full ${isMobile ? 'p-2' : 'p-6'}`}>
