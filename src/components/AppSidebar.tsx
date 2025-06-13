@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import {
@@ -14,11 +13,14 @@ import {
   Shield,
   DollarSign,
   BarChart,
-  LogOut
+  LogOut,
+  Bell,
+  Settings
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { NotificationsMenu } from "@/components/NotificationsMenu";
 
 interface AppSidebarProps {
   activeTab: string;
@@ -101,6 +103,12 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
       href: "#",
       icon: <BarChart className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
       key: "reports"
+    },
+    {
+      label: "Instellingen",
+      href: "#",
+      icon: <Settings className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
+      key: "settings"
     }
   ];
 
@@ -123,7 +131,10 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
             ))}
           </div>
         </div>
-        <div>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-center">
+            <NotificationsMenu />
+          </div>
           <SidebarLink
             link={{
               label: "Uitloggen",

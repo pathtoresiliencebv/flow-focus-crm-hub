@@ -17,6 +17,7 @@ import Personnel from "@/components/Personnel";
 import { Users } from "@/components/Users";
 import { Salary } from "@/components/Salary";
 import { Reports } from "@/components/Reports";
+import Settings from "@/pages/Settings";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AppSidebar } from "@/components/AppSidebar";
 import { cn } from "@/lib/utils";
@@ -93,6 +94,8 @@ const Index = () => {
         return <Salary />;
       case "reports":
         return <Reports />;
+      case "settings":
+        return <Settings />;
       default:
         return <Dashboard />;
     }

@@ -16,9 +16,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CreditCard, Calendar, Settings } from "lucide-react";
+import { CreditCard, Calendar, Settings, Banknote } from "lucide-react";
 
 // Define the form schema
 const formSchema = z.object({
@@ -43,6 +44,9 @@ const formSchema = z.object({
   }),
   stripeIntegration: z.boolean().default(false),
   stripePublishableKey: z.string().optional(),
+  paymentMethods: z.array(z.string()).default([]),
+  invoiceFooterText: z.string().optional(),
+  autoSendInvoices: z.boolean().default(false),
   googleCalendarIntegration: z.boolean().default(false),
 });
 
@@ -62,13 +66,15 @@ export const InvoiceSettingsForm = () => {
       paymentTerms: "14",
       stripeIntegration: true,
       stripePublishableKey: "pk_test_51PiYZJRv5cVaeSzxGHsOUYYVgBQqC8Z331OCb5vOQMb7IL9MUaneQ2lZzAjy2ssbIcF7ugnJ8aOq0pwvNczsQL5N00AONIMOOZ",
+      paymentMethods: ["ideal", "creditcard", "bancontact"],
+      invoiceFooterText: "Dank voor uw vertrouwen in SMANS BV",
+      autoSendInvoices: false,
       googleCalendarIntegration: false,
     },
   });
 
   // Handle form submission
   function onSubmit(values: z.infer<typeof formSchema>) {
-    // In a real app, we would send this to the backend
     console.log("Invoice settings:", values);
     
     toast({
@@ -76,6 +82,15 @@ export const InvoiceSettingsForm = () => {
       description: "Uw factuurgegevens zijn succesvol bijgewerkt.",
     });
   }
+
+  const paymentMethodOptions = [
+    { id: "ideal", label: "iDEAL" },
+    { id: "creditcard", label: "Creditcard" },
+    { id: "bancontact", label: "Bancontact" },
+    { id: "sepa", label: "SEPA Direct Debit" },
+    { id: "paypal", label: "PayPal" },
+    { id: "sofort", label: "SOFORT" },
+  ];
 
   return (
     <div className="space-y-6">
@@ -195,6 +210,43 @@ export const InvoiceSettingsForm = () => {
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="invoiceFooterText"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Footer tekst</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Tekst onderaan factuur/offerte" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="autoSendInvoices"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">
+                        Automatisch facturen verzenden
+                      </FormLabel>
+                      <FormDescription>
+                        Verzend facturen automatisch per email na goedkeuring
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
             </form>
           </Form>
         </CardContent>
@@ -211,7 +263,7 @@ export const InvoiceSettingsForm = () => {
           <Form {...form}>
             <FormField
               control={form.control}
-              name="stripeIntegration"
+              name="stripeInt"
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
@@ -219,7 +271,7 @@ export const InvoiceSettingsForm = () => {
                       Stripe Betalingslinks inschakelen
                     </FormLabel>
                     <FormDescription>
-                      Voeg automatisch een betaallink toe aan facturen
+                      Voeg automatisch een betaallink toe aan facturen en offertes
                     </FormDescription>
                   </div>
                   <FormControl>
@@ -233,22 +285,75 @@ export const InvoiceSettingsForm = () => {
             />
 
             {form.watch("stripeIntegration") && (
-              <FormField
-                control={form.control}
-                name="stripePublishableKey"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Stripe Publishable Key</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="pk_test_..." />
-                    </FormControl>
-                    <FormDescription>
-                      Uw Stripe publishable key voor het verwerken van betalingen
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <>
+                <FormField
+                  control={form.control}
+                  name="stripePublishableKey"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Stripe Publishable Key</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="pk_test_..." />
+                      </FormControl>
+                      <FormDescription>
+                        Uw Stripe publishable key voor het verwerken van betalingen
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="paymentMethods"
+                  render={() => (
+                    <FormItem>
+                      <div className="mb-4">
+                        <FormLabel className="text-base">Betaalmethodes</FormLabel>
+                        <FormDescription>
+                          Selecteer welke betaalmethodes beschikbaar zijn voor klanten
+                        </FormDescription>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {paymentMethodOptions.map((item) => (
+                          <FormField
+                            key={item.id}
+                            control={form.control}
+                            name="paymentMethods"
+                            render={({ field }) => {
+                              return (
+                                <FormItem
+                                  key={item.id}
+                                  className="flex flex-row items-start space-x-3 space-y-0"
+                                >
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value?.includes(item.id)}
+                                      onCheckedChange={(checked) => {
+                                        return checked
+                                          ? field.onChange([...field.value, item.id])
+                                          : field.onChange(
+                                              field.value?.filter(
+                                                (value) => value !== item.id
+                                              )
+                                            )
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="text-sm font-normal">
+                                    {item.label}
+                                  </FormLabel>
+                                </FormItem>
+                              )
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
             )}
 
             <div className="bg-green-50 p-4 rounded-lg border border-green-200">
@@ -257,6 +362,7 @@ export const InvoiceSettingsForm = () => {
                 <li>• Stripe Secret Key: Geconfigureerd in Supabase</li>
                 <li>• Publishable Key: {form.watch("stripePublishableKey") ? "Ingesteld" : "Nog in te stellen"}</li>
                 <li>• Payment Function: Beschikbaar</li>
+                <li>• Geselecteerde betaalmethodes: {form.watch("paymentMethods")?.length || 0} actief</li>
               </ul>
             </div>
           </Form>
