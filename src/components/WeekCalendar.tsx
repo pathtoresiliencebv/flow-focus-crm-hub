@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -106,15 +105,15 @@ export const WeekCalendar = ({
     const startMinutes = (startHour - 8) * 60 + startMinute;
     const endMinutes = (endHour - 8) * 60 + endMinute;
     
-    // Different heights for mobile vs desktop
-    const hourHeight = window.innerWidth < 640 ? 40 : 60; // 40px on mobile, 60px on desktop
+    // Responsive hour height
+    const hourHeight = 60; // Fixed height for better alignment
     const top = (startMinutes / 60) * hourHeight;
     const height = Math.max(((endMinutes - startMinutes) / 60) * hourHeight, 20);
     
     return { top, height };
   };
 
-  // Calculate current time line position
+  // Calculate current time line position - FIXED calculation
   const getCurrentTimeLinePosition = () => {
     if (!showCurrentTimeLine) return null;
     
@@ -125,9 +124,10 @@ export const WeekCalendar = ({
     // Only show if current time is within calendar hours (8-22)
     if (hour < 8 || hour >= 22) return null;
     
-    const hourHeight = window.innerWidth < 640 ? 40 : 60;
-    const totalMinutes = (hour - 8) * 60 + minutes;
-    const top = (totalMinutes / 60) * hourHeight;
+    // Calculate exact position based on time
+    const hourHeight = 60; // Must match the CSS height
+    const totalMinutesFromStart = (hour - 8) * 60 + minutes;
+    const top = (totalMinutesFromStart / 60) * hourHeight;
     
     return { top, hour, minutes };
   };
@@ -262,7 +262,7 @@ export const WeekCalendar = ({
         </div>
       </div>
 
-      {/* Mobile View */}
+      {/* Mobile View - Improved responsiveness */}
       <div className="block sm:hidden">
         <div className="divide-y divide-gray-100">
           {weekDays.map((day, dayIndex) => {
@@ -322,7 +322,7 @@ export const WeekCalendar = ({
         </div>
       </div>
 
-      {/* Desktop View */}
+      {/* Desktop View - Fixed time alignment */}
       <div 
         className="hidden sm:flex overflow-x-auto" 
         onMouseUp={handleMouseUp} 
@@ -332,7 +332,7 @@ export const WeekCalendar = ({
         <div className="w-16 bg-gray-50 border-r flex-shrink-0">
           <div className="h-12 border-b"></div> {/* Header spacer */}
           {timeSlots.map(hour => (
-            <div key={hour} className="h-15 border-b text-xs text-gray-600 p-1 text-right flex items-center justify-end">
+            <div key={hour} className="h-[60px] border-b text-xs text-gray-600 p-1 text-right flex items-center justify-end">
               {formatDutchTime(hour)}
             </div>
           ))}
@@ -340,14 +340,14 @@ export const WeekCalendar = ({
 
         {/* Days Columns */}
         <div className="flex-1 flex min-w-0 relative">
-          {/* Current Time Line - spans across all days */}
+          {/* Current Time Line - FIXED positioning */}
           {showCurrentTimeLine && currentTimeLinePosition && isSameWeek(currentTime, weekStart) && (
             <div 
               className="absolute left-0 right-0 z-20 pointer-events-none"
-              style={{ top: `${48 + currentTimeLinePosition.top}px` }} // 48px for header
+              style={{ top: `${48 + currentTimeLinePosition.top}px` }} // 48px for header + calculated position
             >
               <div className="flex items-center">
-                <div className="bg-red-500 text-white text-xs px-1 py-0.5 rounded-l font-bold min-w-[40px] text-center">
+                <div className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-l font-bold min-w-[50px] text-center">
                   {formatDutchTime(currentTimeLinePosition.hour)}:{currentTimeLinePosition.minutes.toString().padStart(2, '0')}
                 </div>
                 <div className="flex-1 h-0.5 bg-red-500"></div>
@@ -380,12 +380,12 @@ export const WeekCalendar = ({
                   </Button>
                 </div>
 
-                {/* Time Slots */}
+                {/* Time Slots - Fixed height */}
                 <div className="relative">
                   {timeSlots.map(hour => (
                     <div
                       key={hour}
-                      className={`h-15 border-b border-gray-100 hover:bg-blue-50 cursor-pointer relative transition-colors ${
+                      className={`h-[60px] border-b border-gray-100 hover:bg-blue-50 cursor-pointer relative transition-colors ${
                         isInDragSelection(day, hour) ? 'bg-blue-200' : ''
                       }`}
                       onMouseDown={(e) => handleMouseDown(e, day, hour)}
