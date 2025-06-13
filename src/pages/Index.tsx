@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,7 +17,6 @@ import { Users } from "@/components/Users";
 import { Salary } from "@/components/Salary";
 import { Reports } from "@/components/Reports";
 import Settings from "@/pages/Settings";
-import { Inbox } from "@/components/Inbox";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ResizableChatWidget } from "@/components/ResizableChatWidget";
@@ -82,8 +80,6 @@ const Index = () => {
         return <PlanningManagement />;
       case "time":
         return <TimeRegistration />;
-      case "inbox":
-        return <Inbox />;
       case "receipts":
         return <Receipts />;
       case "quotes":
@@ -110,7 +106,7 @@ const Index = () => {
       <AppSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
       
       <div className={cn(
-        "min-h-screen transition-all duration-300",
+        "min-h-screen",
         isMobile ? "ml-0 pt-14" : "ml-[60px]"
       )}>
         <main className="h-full overflow-y-auto">
