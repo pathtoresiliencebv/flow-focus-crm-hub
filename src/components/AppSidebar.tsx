@@ -19,7 +19,6 @@ import {
   Inbox,
   ChevronDown,
   ChevronRight,
-  Menu
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -162,7 +161,7 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
     if (activeGroup && !expandedGroups.includes(activeGroup.label)) {
       setExpandedGroups(prev => [...prev, activeGroup.label]);
     }
-  }, [activeTab]);
+  }, [activeTab, menuGroups, expandedGroups]);
 
   const toggleGroup = (groupLabel: string) => {
     setExpandedGroups(prev => 
