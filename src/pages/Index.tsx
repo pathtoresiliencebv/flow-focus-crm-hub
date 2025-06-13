@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,6 +17,7 @@ import Personnel from "@/components/Personnel";
 import { Users } from "@/components/Users";
 import { Salary } from "@/components/Salary";
 import { Reports } from "@/components/Reports";
+import { Email } from "@/components/Email";
 import Settings from "@/pages/Settings";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -23,7 +25,7 @@ import { ResizableChatWidget } from "@/components/ResizableChatWidget";
 import { cn } from "@/lib/utils";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab]  = useState("dashboard");
   const { customerId, projectId } = useParams();
   const isMobile = useIsMobile();
   const { user, login, isLoading } = useAuth();
@@ -94,6 +96,8 @@ const Index = () => {
         return <Salary />;
       case "reports":
         return <Reports />;
+      case "email":
+        return <Email />;
       case "settings":
         return <Settings />;
       default:

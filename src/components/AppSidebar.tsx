@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar";
 import {
@@ -15,7 +16,8 @@ import {
   BarChart,
   LogOut,
   Bell,
-  Settings
+  Settings,
+  Mail
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -79,6 +81,12 @@ export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
       href: "#",
       icon: <CreditCard className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
       key: "invoicing"
+    },
+    {
+      label: "Postvak IN",
+      href: "#",
+      icon: <Mail className="text-neutral-700 dark:text-neutral-200 h-5 w-5 flex-shrink-0" />,
+      key: "email"
     },
     {
       label: "Personeel",
