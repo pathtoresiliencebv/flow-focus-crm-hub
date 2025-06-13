@@ -1,532 +1,380 @@
-import { useState } from 'react';
+
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { CalendarDays, Users, FileText, TrendingUp, Clock, CheckCircle, AlertCircle, Plus, Edit, Trash2 } from "lucide-react";
-import { WeekCalendar } from "./WeekCalendar";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ProjectForm } from "./ProjectForm";
+import { Badge } from "@/components/ui/badge";
+import { CalendarDays, Users, FileText, Euro, Plus, TrendingUp, Clock, MapPin, User } from "lucide-react";
+import { WeekCalendar } from "./WeekCalendar";
+import { useCrmStore } from "@/hooks/useCrmStore";
+import { useUserStore } from "@/hooks/useUserStore";
+import { useToast } from "@/hooks/use-toast";
+import { format, addDays, parseISO } from "date-fns";
+import { nl } from "date-fns/locale";
 
-interface DashboardEvent {
+// Real planning interface to match PlanningManagement
+interface PlanningItem {
   id: string;
-  title: string;
-  startTime: string;
-  endTime: string;
   date: string;
-  type: 'meditation' | 'appointment' | 'meeting' | 'other';
-  description?: string;
-}
-
-interface Task {
-  id: number;
-  title: string;
-  dueDate: string;
-  priority: 'Hoog' | 'Gemiddeld' | 'Laag';
-  status: 'pending' | 'completed';
+  time: string;
+  employee: string;
+  employeeId: number;
+  project: string;
+  projectId: string;
+  location: string;
+  description: string;
+  status: "Gepland" | "Bevestigd" | "Afgerond" | "Geannuleerd";
+  createdAt: string;
 }
 
 export const Dashboard = () => {
+  const [newProjectDialogOpen, setNewProjectDialogOpen] = useState(false);
+  const { customers, projects, addProject } = useCrmStore();
+  const { users } = useUserStore();
   const { toast } = useToast();
-  const [events, setEvents] = useState<DashboardEvent[]>([
+
+  // Real planning data that matches the PlanningManagement component
+  const [planningItems] = useState<PlanningItem[]>([
     {
       id: "1",
-      title: "Team vergadering",
-      startTime: "09:00",
-      endTime: "10:00",
-      date: "2025-06-12",
-      type: "meeting",
-      description: "Wekelijkse team sync"
+      date: "2025-06-16", // This week
+      time: "09:00",
+      employee: "Peter Bakker",
+      employeeId: 3,
+      project: "Kozijnen vervangen",
+      projectId: "1",
+      location: "Hoofdstraat 123, Amsterdam, Nederland",
+      description: "Installatie nieuwe kozijnen woonkamer",
+      status: "Gepland",
+      createdAt: new Date().toISOString()
     },
     {
-      id: "2", 
-      title: "Klant gesprek",
-      startTime: "14:00",
-      endTime: "15:30",
-      date: "2025-06-13",
-      type: "appointment",
-      description: "Overleg nieuwe kozijnen"
+      id: "2",
+      date: "2025-06-17", // This week
+      time: "13:30",
+      employee: "Peter Bakker",
+      employeeId: 3,
+      project: "Nieuwe ramen installeren",
+      projectId: "2",
+      location: "Kerkstraat 45, Utrecht, Nederland",
+      description: "Opmeting en adviesgesprek",
+      status: "Bevestigd",
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: "3",
+      date: "2025-06-18", // This week
+      time: "10:00",
+      employee: "Peter Bakker",
+      employeeId: 3,
+      project: "Kozijnen vervangen",
+      projectId: "1",
+      location: "Marktplein 12, Rotterdam, Nederland",
+      description: "Eindcontrole en oplevering",
+      status: "Gepland",
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: "4",
+      date: "2025-06-19", // This week
+      time: "14:00",
+      employee: "Peter Bakker",
+      employeeId: 3,
+      project: "Nieuwe ramen installeren",
+      projectId: "2",
+      location: "Parkstraat 88, Den Haag, Nederland",
+      description: "Installatie aluminium ramen",
+      status: "Gepland",
+      createdAt: new Date().toISOString()
     }
   ]);
 
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: 1,
-      title: "Offerte opstellen - Nieuwe kozijnen",
-      dueDate: "Vandaag",
-      priority: "Hoog",
-      status: "pending"
-    },
-    {
-      id: 2,
-      title: "Materiaal bestellen - Project Amsterdam",
-      dueDate: "Morgen",
-      priority: "Gemiddeld",
-      status: "pending"
-    },
-    {
-      id: 3,
-      title: "Klant terugbellen - Reparatie",
-      dueDate: "Vandaag",
-      priority: "Hoog",
-      status: "completed"
-    }
-  ]);
+  // Convert real planning items to calendar events with proper end times
+  const calendarEvents = planningItems.map(item => {
+    const startTime = item.time;
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    // Assume 2-hour duration for each appointment
+    const endHour = startHour + 2;
+    const endTime = `${endHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
+    
+    return {
+      id: item.id,
+      title: `${item.project} - ${item.employee}`,
+      startTime: startTime,
+      endTime: endTime,
+      date: item.date,
+      type: 'appointment' as const,
+      description: `${item.description} - ${item.location}`
+    };
+  });
 
-  const [taskDialogOpen, setTaskDialogOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [newProjectDialogOpen, setNewProjectDialogOpen] = useState(false);
+  // Calculate statistics
+  const totalCustomers = customers.length;
+  const activeProjects = projects.filter(p => p.status !== "afgerond").length;
+  const totalRevenue = projects.reduce((sum, project) => sum + parseFloat(project.value), 0);
+  const completedProjects = projects.filter(p => p.status === "afgerond").length;
 
-  const handleEventClick = (event: DashboardEvent) => {
-    toast({
-      title: "Planning Details",
-      description: `${event.title} - ${event.startTime} tot ${event.endTime}`,
-    });
-  };
+  // Get upcoming planning items (next 7 days)
+  const today = new Date();
+  const nextWeek = addDays(today, 7);
+  const upcomingPlanning = planningItems.filter(item => {
+    const itemDate = new Date(item.date);
+    return itemDate >= today && itemDate <= nextWeek;
+  }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-  const handlePlanningAdded = (planning: {
-    title: string;
-    date: string;
-    startTime: string;
-    endTime: string;
-    description?: string;
-  }) => {
-    const newEvent: DashboardEvent = {
-      id: Date.now().toString(),
-      title: planning.title,
-      startTime: planning.startTime,
-      endTime: planning.endTime,
-      date: planning.date,
-      type: 'appointment',
-      description: planning.description
+  const handleCreateProject = (formData: FormData) => {
+    const customerId = parseInt(formData.get('customer') as string);
+    const customer = customers.find(c => c.id === customerId);
+    
+    if (!customer) return;
+
+    const newProject = {
+      title: formData.get('title') as string,
+      customer: customer.name,
+      customerId: customerId,
+      date: formData.get('date') as string,
+      value: formData.get('value') as string,
+      status: "te-plannen" as const,
+      description: formData.get('description') as string
     };
 
-    setEvents(prev => [...prev, newEvent]);
-
-    toast({
-      title: "Planning toegevoegd",
-      description: `${planning.title} is toegevoegd voor ${planning.date}`,
-    });
-  };
-
-  const handleTaskClick = (task: Task) => {
-    setEditingTask(task);
-    setTaskDialogOpen(true);
-  };
-
-  const handleAddTask = () => {
-    setEditingTask(null);
-    setTaskDialogOpen(true);
-  };
-
-  const handleTaskSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const formData = new FormData(e.target as HTMLFormElement);
-    const title = formData.get('title') as string;
-    const dueDate = formData.get('dueDate') as string;
-    const priority = formData.get('priority') as 'Hoog' | 'Gemiddeld' | 'Laag';
-
-    if (editingTask) {
-      // Update existing task
-      setTasks(prev => prev.map(task => 
-        task.id === editingTask.id 
-          ? { ...task, title, dueDate, priority }
-          : task
-      ));
-      toast({
-        title: "Taak bijgewerkt",
-        description: `${title} is bijgewerkt`,
-      });
-    } else {
-      // Add new task
-      const newTask: Task = {
-        id: Date.now(),
-        title,
-        dueDate,
-        priority,
-        status: 'pending'
-      };
-      setTasks(prev => [...prev, newTask]);
-      toast({
-        title: "Taak toegevoegd",
-        description: `${title} is toegevoegd`,
-      });
-    }
-
-    setTaskDialogOpen(false);
-    setEditingTask(null);
-  };
-
-  const handleTaskToggle = (taskId: number) => {
-    setTasks(prev => prev.map(task =>
-      task.id === taskId
-        ? { ...task, status: task.status === 'completed' ? 'pending' : 'completed' }
-        : task
-    ));
-  };
-
-  const handleTaskDelete = (taskId: number) => {
-    setTasks(prev => prev.filter(task => task.id !== taskId));
-    toast({
-      title: "Taak verwijderd",
-      description: "De taak is verwijderd",
-    });
-  };
-
-  const handleNewProject = () => {
-    setNewProjectDialogOpen(true);
-  };
-
-  const handleProjectCreated = () => {
+    addProject(newProject);
     setNewProjectDialogOpen(false);
+    
     toast({
       title: "Project aangemaakt",
-      description: "Het nieuwe project is succesvol aangemaakt.",
+      description: `${newProject.title} is succesvol aangemaakt.`,
     });
   };
 
-  const stats = [
-    {
-      title: "Actieve Projecten",
-      value: "12",
-      description: "3 nieuwe deze week",
-      icon: FileText,
-      color: "bg-blue-500"
-    },
-    {
-      title: "Team Leden",
-      value: "8",
-      description: "2 installateurs beschikbaar",
-      icon: Users,
-      color: "bg-green-500"
-    },
-    {
-      title: "Deze Week",
-      value: "€15.420",
-      description: "+12% t.o.v. vorige week",
-      icon: TrendingUp,
-      color: "bg-purple-500"
-    },
-    {
-      title: "Vandaag",
-      value: "6",
-      description: "4 voltooid, 2 gepland",
-      icon: CalendarDays,
-      color: "bg-orange-500"
+  const handleEventClick = (event: any) => {
+    toast({
+      title: "Planning details",
+      description: `${event.title} - ${event.startTime}`,
+    });
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Gepland": return "bg-blue-100 text-blue-800 border-blue-200";
+      case "Bevestigd": return "bg-green-100 text-green-800 border-green-200";
+      case "Afgerond": return "bg-gray-100 text-gray-800 border-gray-200";
+      case "Geannuleerd": return "bg-red-100 text-red-800 border-red-200";
+      default: return "bg-gray-100 text-gray-800 border-gray-200";
     }
-  ];
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-2 sm:p-4 lg:p-6">
-      <div className="w-full max-w-none space-y-4 sm:space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600 mt-1 text-sm sm:text-base">Welkom terug! Hier is je overzicht voor vandaag.</p>
+            <p className="text-gray-600 mt-1 text-sm sm:text-base">Welkom terug! Hier is een overzicht van je bedrijf.</p>
           </div>
-          <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">
-            <Button variant="outline" className="shadow-sm hover:shadow-md transition-shadow flex-1 sm:flex-none text-xs sm:text-sm">
-              <FileText className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-              Rapport
-            </Button>
-            <Button 
-              onClick={handleNewProject}
-              className="bg-smans-primary hover:bg-smans-primary/90 text-white shadow-sm hover:shadow-md transition-all flex-1 sm:flex-none text-xs sm:text-sm"
-            >
-              <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-              Nieuw Project
-            </Button>
-          </div>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-          {stats.map((stat, index) => (
-            <Card key={index} className="shadow-lg border-0 bg-white/70 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
-              <CardContent className="p-3 sm:p-4 lg:p-6">
-                <div className="flex items-center justify-between">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">{stat.title}</p>
-                    <p className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 mt-1 sm:mt-2">{stat.value}</p>
-                    <p className="text-xs sm:text-sm text-gray-500 mt-1 truncate">{stat.description}</p>
+          <Dialog open={newProjectDialogOpen} onOpenChange={setNewProjectDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-smans-primary hover:bg-smans-primary/90 text-white shadow-lg hover:shadow-xl transition-all w-full sm:w-auto">
+                <Plus className="mr-2 h-4 w-4" />
+                Nieuw Project
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl w-[95vw] sm:w-full">
+              <DialogHeader>
+                <DialogTitle>Nieuw project aanmaken</DialogTitle>
+                <DialogDescription>
+                  Maak een nieuw project aan voor een klant.
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                handleCreateProject(formData);
+              }} className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">Projectnaam</label>
+                  <Input name="title" className="mt-1" placeholder="Bijv. Kozijnen vervangen" required />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Klant</label>
+                  <Select name="customer" required>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Kies een klant" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {customers.map((customer) => (
+                        <SelectItem key={customer.id} value={customer.id.toString()}>
+                          {customer.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium">Geplande datum</label>
+                    <Input name="date" type="date" className="mt-1" required />
                   </div>
-                  <div className={`${stat.color} p-2 sm:p-3 rounded-full flex-shrink-0`}>
-                    <stat.icon className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-white" />
+                  <div>
+                    <label className="text-sm font-medium">Waarde (€)</label>
+                    <Input name="value" type="number" className="mt-1" placeholder="0" required />
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+                <div>
+                  <label className="text-sm font-medium">Beschrijving</label>
+                  <Input name="description" className="mt-1" placeholder="Omschrijving van het project" />
+                </div>
+                <DialogFooter className="flex-col sm:flex-row gap-2">
+                  <Button type="button" variant="outline" onClick={() => setNewProjectDialogOpen(false)} className="w-full sm:w-auto">
+                    Annuleren
+                  </Button>
+                  <Button type="submit" className="bg-smans-primary hover:bg-smans-primary/90 text-white w-full sm:w-auto">
+                    Project Aanmaken
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
 
-        {/* Full Width Calendar */}
-        <div className="w-full">
-          <Card className="shadow-lg border-0 bg-white/70 backdrop-blur-sm w-full">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                <CalendarDays className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-                Deze Week Planning
-              </CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                Klik op een tijdslot of sleep om een nieuwe planning toe te voegen
-              </CardDescription>
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Totaal Klanten</CardTitle>
+              <Users className="h-4 w-4 text-blue-600" />
             </CardHeader>
-            <CardContent className="p-2 sm:p-4 lg:p-6 w-full overflow-x-auto">
-              <div className="w-full min-w-[800px]">
-                <WeekCalendar 
-                  events={events}
-                  onEventClick={handleEventClick}
-                  onPlanningAdded={handlePlanningAdded}
-                />
-              </div>
+            <CardContent>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">{totalCustomers}</div>
+              <p className="text-xs text-green-600 font-medium">
+                <TrendingUp className="inline h-3 w-3 mr-1" />
+                Actief
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Actieve Projecten</CardTitle>
+              <FileText className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">{activeProjects}</div>
+              <p className="text-xs text-blue-600 font-medium">
+                In behandeling
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Totale Omzet</CardTitle>
+              <Euro className="h-4 w-4 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">€{totalRevenue.toLocaleString()}</div>
+              <p className="text-xs text-purple-600 font-medium">
+                Dit jaar
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Afgeronde Projecten</CardTitle>
+              <CalendarDays className="h-4 w-4 text-orange-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-xl sm:text-2xl font-bold text-gray-900">{completedProjects}</div>
+              <p className="text-xs text-orange-600 font-medium">
+                Succesvol
+              </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Floating Sidebar for Mobile, Fixed for Desktop */}
-        <div className="lg:hidden fixed bottom-4 right-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl p-4 w-80 max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto">
-            {/* Quick Actions */}
-            <div className="space-y-3 mb-6">
-              <h3 className="text-base font-semibold">Snelle Acties</h3>
-              <div className="space-y-2">
-                <Button className="w-full justify-start bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-xs">
-                  <Plus className="mr-2 h-3 w-3" />
-                  Nieuwe Offerte
-                </Button>
-                <Button className="w-full justify-start bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 text-xs">
-                  <Users className="mr-2 h-3 w-3" />
-                  Klant Toevoegen
-                </Button>
-                <Button className="w-full justify-start bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 text-xs">
-                  <Clock className="mr-2 h-3 w-3" />
-                  Tijd Registreren
-                </Button>
-              </div>
-            </div>
-
-            {/* Tasks */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-base font-semibold">Aankomende Taken</h3>
-                <Button
-                  size="sm"
-                  onClick={handleAddTask}
-                  className="h-6 w-6 p-0"
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
-              </div>
-              <div className="space-y-3">
-                {tasks.map((task) => (
-                  <div key={task.id} className="flex items-start gap-2 p-2 rounded-lg bg-gray-50 border border-gray-100 hover:bg-gray-100 transition-colors cursor-pointer group">
-                    <div className="mt-1" onClick={() => handleTaskToggle(task.id)}>
-                      {task.status === 'completed' ? (
-                        <CheckCircle className="h-3 w-3 text-green-500" />
-                      ) : (
-                        <AlertCircle className={`h-3 w-3 ${task.priority === 'Hoog' ? 'text-red-500' : 'text-orange-500'}`} />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0" onClick={() => handleTaskClick(task)}>
-                      <p className={`text-xs font-medium ${task.status === 'completed' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-                        {task.title}
-                      </p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-gray-500">{task.dueDate}</span>
-                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                          task.priority === 'Hoog' ? 'bg-red-100 text-red-700' :
-                          task.priority === 'Gemiddeld' ? 'bg-orange-100 text-orange-700' :
-                          'bg-gray-100 text-gray-700'
-                        }`}>
-                          {task.priority}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-5 w-5 p-0 text-red-500 hover:text-red-700"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleTaskDelete(task.id);
-                        }}
-                      >
-                        <Trash2 className="h-2.5 w-2.5" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+        {/* Main Content Area */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 sm:gap-6">
+          {/* Full Width Calendar */}
+          <Card className="xl:col-span-4 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <CalendarDays className="h-5 w-5 text-blue-600" />
+                Weekplanning
+              </CardTitle>
+              <CardDescription className="text-gray-600 text-sm sm:text-base">
+                Overzicht van alle geplande activiteiten deze week
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <WeekCalendar 
+                events={calendarEvents}
+                onEventClick={handleEventClick}
+              />
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Desktop Sidebar */}
-        <div className="hidden lg:block">
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            {/* Quick Actions */}
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg">Snelle Acties</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button className="w-full justify-start bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-sm">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nieuwe Offerte
-                </Button>
-                <Button className="w-full justify-start bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 text-sm">
-                  <Users className="mr-2 h-4 w-4" />
-                  Klant Toevoegen
-                </Button>
-                <Button className="w-full justify-start bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 text-sm">
-                  <Clock className="mr-2 h-4 w-4" />
-                  Tijd Registreren
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Tasks */}
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg">Aankomende Taken</CardTitle>
-                    <CardDescription className="text-sm">Belangrijke deadlines en to-dos</CardDescription>
+        {/* Quick Actions as floating element on mobile, below calendar on desktop */}
+        <div className="xl:hidden">
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+                Komende Afspraken
+              </CardTitle>
+              <CardDescription className="text-gray-600 text-sm">
+                {upcomingPlanning.length} afspraak/afspraken de komende week
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {upcomingPlanning.length === 0 ? (
+                <div className="text-center py-6">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Clock className="h-6 w-6 text-gray-400" />
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={handleAddTask}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
+                  <p className="text-gray-500 text-sm">Geen afspraken gepland</p>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {tasks.map((task) => (
-                    <div key={task.id} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100 hover:bg-gray-100 transition-colors cursor-pointer group">
-                      <div className="mt-1" onClick={() => handleTaskToggle(task.id)}>
-                        {task.status === 'completed' ? (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <AlertCircle className={`h-4 w-4 ${task.priority === 'Hoog' ? 'text-red-500' : 'text-orange-500'}`} />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0" onClick={() => handleTaskClick(task)}>
-                        <p className={`text-sm font-medium ${task.status === 'completed' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-                          {task.title}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-gray-500">{task.dueDate}</span>
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            task.priority === 'Hoog' ? 'bg-red-100 text-red-700' :
-                            task.priority === 'Gemiddeld' ? 'bg-orange-100 text-orange-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
-                            {task.priority}
-                          </span>
+              ) : (
+                <div className="space-y-3">
+                  {upcomingPlanning.slice(0, 4).map((item) => (
+                    <div key={item.id} className="group bg-gradient-to-r from-white to-gray-50 border border-gray-200 rounded-lg p-3 hover:shadow-md transition-all duration-200 hover:border-blue-200">
+                      <div className="flex items-start gap-3">
+                        <div className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">
+                          {format(new Date(item.date), 'dd MMM', { locale: nl })}
                         </div>
-                      </div>
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleTaskDelete(task.id);
-                          }}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm text-gray-900 mb-1">{item.project}</div>
+                          <div className="grid grid-cols-1 gap-1 text-xs text-gray-600">
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3 text-blue-500" />
+                              <span>{item.time}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <User className="h-3 w-3 text-green-500" />
+                              <span>{item.employee}</span>
+                            </div>
+                            <div className="flex items-start gap-1">
+                              <MapPin className="h-3 w-3 text-orange-500 flex-shrink-0 mt-0.5" />
+                              <span className="break-words text-xs">{item.location}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <Badge className={`text-xs ${getStatusColor(item.status)}`}>
+                          {item.status}
+                        </Badge>
                       </div>
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
-
-        {/* Task Dialog */}
-        <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>
-                {editingTask ? 'Taak bewerken' : 'Nieuwe taak toevoegen'}
-              </DialogTitle>
-              <DialogDescription>
-                {editingTask ? 'Bewerk de taakdetails' : 'Voeg een nieuwe taak toe aan je lijst'}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleTaskSubmit} className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Titel</label>
-                <Input 
-                  name="title" 
-                  className="mt-1" 
-                  placeholder="Taak beschrijving..." 
-                  defaultValue={editingTask?.title || ''}
-                  required 
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Vervaldatum</label>
-                <Input 
-                  name="dueDate" 
-                  className="mt-1" 
-                  placeholder="Bijv. Vandaag, Morgen, 15 juni..."
-                  defaultValue={editingTask?.dueDate || ''}
-                  required 
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Prioriteit</label>
-                <Select name="priority" defaultValue={editingTask?.priority || 'Gemiddeld'}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Hoog">Hoog</SelectItem>
-                    <SelectItem value="Gemiddeld">Gemiddeld</SelectItem>
-                    <SelectItem value="Laag">Laag</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setTaskDialogOpen(false)}>
-                  Annuleren
-                </Button>
-                <Button type="submit">
-                  {editingTask ? 'Bijwerken' : 'Toevoegen'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-
-        {/* New Project Dialog */}
-        <Dialog open={newProjectDialogOpen} onOpenChange={setNewProjectDialogOpen}>
-          <DialogContent className="sm:max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Nieuw project aanmaken</DialogTitle>
-              <DialogDescription>
-                Maak een nieuw project aan en voeg het toe aan je projectenbord.
-              </DialogDescription>
-            </DialogHeader>
-            <ProjectForm 
-              onClose={handleProjectCreated}
-              initialStatus="te-plannen"
-            />
-          </DialogContent>
-        </Dialog>
       </div>
     </div>
   );
 };
-
-export default Dashboard;
