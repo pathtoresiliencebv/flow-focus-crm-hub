@@ -16,7 +16,7 @@ serve(async (req) => {
   try {
     const { invoiceData } = await req.json();
     
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+    const stripe = new Stripe(Deno.env.get("STIPE_TEST_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
     });
 
