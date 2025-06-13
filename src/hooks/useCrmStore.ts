@@ -21,7 +21,7 @@ export interface Project {
   customerId: number;
   date: string;
   value: string;
-  status: "te-plannen" | "gepland" | "herkeuring" | "afgerond";
+  status: "te-plannen" | "gepland" | "in-uitvoering" | "herkeuring" | "afgerond";
   description: string;
   createdAt: string;
 }
