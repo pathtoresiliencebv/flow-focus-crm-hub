@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Send, Sparkles, FileText, X, Plus } from "lucide-react";
+import { Send, Sparkles, FileText, X } from "lucide-react";
 
 interface EmailComposeProps {
   open: boolean;
@@ -67,13 +67,11 @@ export function EmailCompose({ open, onOpenChange, replyTo }: EmailComposeProps)
   // Send email mutation
   const sendEmailMutation = useMutation({
     mutationFn: async (emailData: any) => {
-      // In een echte implementatie zou je hier de e-mail versturen via een edge function
-      // Voor nu slaan we het op als concept in de database
       const { error } = await supabase
         .from('emails')
         .insert({
           user_id: user?.id,
-          email_settings_id: emailData.from_account,
+          email_account_id: emailData.from_account,
           subject: emailData.subject,
           from_address: emailData.from_address,
           from_name: emailData.from_name,
@@ -110,21 +108,42 @@ export function EmailCompose({ open, onOpenChange, replyTo }: EmailComposeProps)
   const generateAIResponse = async (context: string) => {
     setIsGeneratingAI(true);
     try {
-      const response = await fetch('/api/ai-email', {
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': 'Bearer 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',
         },
         body: JSON.stringify({
-          context,
-          type: 'compose'
+          model: 'deepseek/deepseek-chat-v3-0324:free',
+          messages: [
+            {
+              role: 'system',
+              content: 'Je bent een professionele e-mail assistent. Schrijf professionele, beleefde en zakelijke e-mails in het Nederlands.'
+            },
+            {
+              role: 'user',
+              content: context
+            }
+          ],
+          max_tokens: 500,
+          temperature: 0.7
         })
       });
 
       if (!response.ok) throw new Error('AI response failed');
 
       const data = await response.json();
-      return data.content;
+      const aiContent = data.choices?.[0]?.message?.content;
+      
+      if (aiContent) {
+        const bodyField = document.querySelector('textarea[name="body"]') as HTMLTextAreaElement;
+        if (bodyField) {
+          bodyField.value = aiContent;
+        }
+      }
+      
+      return aiContent;
     } catch (error) {
       toast({
         title: "AI Fout",
@@ -258,7 +277,7 @@ export function EmailCompose({ open, onOpenChange, replyTo }: EmailComposeProps)
             </div>
           )}
 
-          {!showCc || !showBcc ? (
+          {(!showCc || !showBcc) && (
             <div className="flex gap-2">
               {!showCc && (
                 <Button
