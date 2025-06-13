@@ -1,7 +1,7 @@
 
 // Mock translation service - in productie zou dit een echte API aanroepen
 export class TranslationService {
-  private static translations: Record<string, Record<string, string>> = {
+  private static translations: Record<string, Record<string, Record<string, string>>> = {
     // Nederlands naar andere talen
     "nl": {
       "pl": {

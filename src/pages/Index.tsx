@@ -38,6 +38,9 @@ const Index = () => {
     }
   }, [customerId, projectId]);
 
+  // Check if user is admin (assuming email-based check for now)
+  const isAdmin = user?.email?.includes('admin') || user?.email === 'jan@kozijnencrm.nl';
+
   // Show loading state while checking authentication
   if (isLoading) {
     return (
@@ -118,7 +121,7 @@ const Index = () => {
       </div>
 
       {/* Chat Widget - alleen zichtbaar voor admins */}
-      {user?.role === "admin" && <ChatWidget />}
+      {isAdmin && <ChatWidget />}
     </div>
   );
 };
