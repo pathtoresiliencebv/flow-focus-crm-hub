@@ -10,7 +10,7 @@ import { ProjectForm } from './ProjectForm';
 import { useCrmStore, Project } from "@/hooks/useCrmStore";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-type ProjectStatus = "te-plannen" | "gepland" | "herkeuring" | "afgerond";
+type ProjectStatus = "te-plannen" | "gepland" | "in-uitvoering" | "herkeuring" | "afgerond";
 
 const statusColumns = [
   {
@@ -22,6 +22,11 @@ const statusColumns = [
     id: "gepland",
     title: "Geplande installaties",
     bgColor: "bg-orange-50 border-orange-200",
+  },
+  {
+    id: "in-uitvoering",
+    title: "In uitvoering",
+    bgColor: "bg-blue-50 border-blue-200",
   },
   {
     id: "herkeuring",
@@ -38,6 +43,7 @@ const statusColumns = [
 const statusDisplayMap: Record<ProjectStatus, string> = {
   "te-plannen": "Te plannen",
   "gepland": "Gepland",
+  "in-uitvoering": "In uitvoering",
   "herkeuring": "Herkeuring",
   "afgerond": "Afgerond",
 };
@@ -186,7 +192,7 @@ export const ProjectsBoard: React.FC = () => {
       </Dialog>
     
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           {statusColumns.map(column => (
             <div 
               key={column.id} 
@@ -197,6 +203,7 @@ export const ProjectsBoard: React.FC = () => {
                 <span className={`bg-white text-gray-700 text-xs font-medium px-2 py-1 rounded-full border ${
                   column.id === "te-plannen" ? "border-red-200" :
                   column.id === "gepland" ? "border-orange-200" :
+                  column.id === "in-uitvoering" ? "border-blue-200" :
                   column.id === "herkeuring" ? "border-gray-200" :
                   "border-green-200"
                 }`}>
@@ -213,10 +220,12 @@ export const ProjectsBoard: React.FC = () => {
                       snapshot.isDraggingOver ? 
                       (column.id === "te-plannen" ? "bg-red-100" :
                        column.id === "gepland" ? "bg-orange-100" :
+                       column.id === "in-uitvoering" ? "bg-blue-100" :
                        column.id === "herkeuring" ? "bg-gray-100" :
                        "bg-green-100") : 
                       (column.id === "te-plannen" ? "bg-white/50" :
                        column.id === "gepland" ? "bg-white/50" :
+                       column.id === "in-uitvoering" ? "bg-white/50" :
                        column.id === "herkeuring" ? "bg-white/50" :
                        "bg-white/50")
                     }`}
@@ -241,6 +250,7 @@ export const ProjectsBoard: React.FC = () => {
                 className={`w-full mt-3 text-xs ${
                   column.id === "te-plannen" ? "hover:bg-red-100" :
                   column.id === "gepland" ? "hover:bg-orange-100" :
+                  column.id === "in-uitvoering" ? "hover:bg-blue-100" :
                   column.id === "herkeuring" ? "hover:bg-gray-100" :
                   "hover:bg-green-100"
                 }`}

@@ -11,9 +11,9 @@ export const ChatWidget = () => {
 
   return (
     <>
-      {/* Chat Window */}
+      {/* Chat Window - Now taking up 50% of screen */}
       {isOpen && (
-        <div className="fixed bottom-20 right-4 z-50">
+        <div className="fixed bottom-20 right-4 z-50 w-[50vw] h-[50vh]">
           <ChatWindow onClose={() => setIsOpen(false)} />
         </div>
       )}

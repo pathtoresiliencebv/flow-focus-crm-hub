@@ -95,7 +95,7 @@ export const ChatWindow = ({ onClose }: ChatWindowProps) => {
   };
 
   return (
-    <Card className="w-96 h-[500px] shadow-xl">
+    <Card className="w-full h-full shadow-xl">
       {/* Header */}
       <CardHeader className="p-4 border-b flex flex-row items-center justify-between">
         <div className="flex items-center gap-3">
@@ -111,7 +111,7 @@ export const ChatWindow = ({ onClose }: ChatWindowProps) => {
         </Button>
       </CardHeader>
 
-      <CardContent className="p-0 flex h-[420px]">
+      <CardContent className="p-0 flex h-[calc(100%-80px)]">
         {/* User List */}
         <div className="w-1/3 border-r">
           <ScrollArea className="h-full">
