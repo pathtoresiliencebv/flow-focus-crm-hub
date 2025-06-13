@@ -3,6 +3,7 @@ import { useState } from "react";
 import { MessageCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChatWindow } from "./ChatWindow";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
 
 export const ChatWidget = () => {
@@ -11,10 +12,14 @@ export const ChatWidget = () => {
 
   return (
     <>
-      {/* Chat Window - Now taking up 50% of screen */}
+      {/* Chat Window - Now resizable */}
       {isOpen && (
-        <div className="fixed bottom-20 right-4 z-50 w-[50vw] h-[50vh]">
-          <ChatWindow onClose={() => setIsOpen(false)} />
+        <div className="fixed bottom-20 right-4 z-50 w-[50vw] h-[50vh] min-w-[300px] min-h-[300px] max-w-[80vw] max-h-[80vh]">
+          <ResizablePanelGroup direction="horizontal" className="w-full h-full">
+            <ResizablePanel defaultSize={100} minSize={30}>
+              <ChatWindow onClose={() => setIsOpen(false)} />
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </div>
       )}
 

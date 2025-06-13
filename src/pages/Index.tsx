@@ -19,7 +19,7 @@ import { Reports } from "@/components/Reports";
 import Settings from "@/pages/Settings";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AppSidebar } from "@/components/AppSidebar";
-import { ChatWidget } from "@/components/ChatWidget";
+import { ResizableChatWidget } from "@/components/ResizableChatWidget";
 import { cn } from "@/lib/utils";
 
 const Index = () => {
@@ -116,8 +116,8 @@ const Index = () => {
         </main>
       </div>
 
-      {/* Chat Widget - altijd zichtbaar voor alle gebruikers */}
-      <ChatWidget />
+      {/* Resizable Chat Widget */}
+      <ResizableChatWidget />
     </div>
   );
 };
