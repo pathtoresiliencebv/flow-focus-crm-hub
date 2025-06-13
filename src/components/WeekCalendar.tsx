@@ -1,11 +1,12 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { format, addDays, startOfWeek, addWeeks, subWeeks, isSameDay, parseISO } from "date-fns";
+import { format, addDays, startOfWeek, addWeeks, subWeeks, isSameDay, parseISO, isSameWeek } from "date-fns";
 import { nl } from "date-fns/locale";
 
 interface CalendarEvent {
@@ -31,6 +32,7 @@ interface WeekCalendarProps {
     endTime: string;
     description?: string;
   }) => void;
+  showCurrentTimeLine?: boolean;
 }
 
 const timeSlots = Array.from({ length: 14 }, (_, i) => i + 8); // 8 AM to 9 PM
@@ -53,7 +55,8 @@ export const WeekCalendar = ({
   onTimeSlotClick, 
   onEventCreate,
   onAddPlanning,
-  onPlanningAdded
+  onPlanningAdded,
+  showCurrentTimeLine = false
 }: WeekCalendarProps) => {
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [dragStart, setDragStart] = useState<{date: Date, hour: number} | null>(null);
@@ -65,11 +68,23 @@ export const WeekCalendar = ({
     startHour: number;
     endHour: number;
   } | null>(null);
+  const [currentTime, setCurrentTime] = useState(new Date());
   
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 }); // Start on Monday
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   
   const dayNames = ['MA', 'DI', 'WO', 'DO', 'VR', 'ZA', 'ZO'];
+
+  // Update current time every minute
+  useEffect(() => {
+    if (!showCurrentTimeLine) return;
+    
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(timer);
+  }, [showCurrentTimeLine]);
   
   const goToPreviousWeek = () => {
     setCurrentWeek(subWeeks(currentWeek, 1));
@@ -99,6 +114,26 @@ export const WeekCalendar = ({
     return { top, height };
   };
 
+  // Calculate current time line position
+  const getCurrentTimeLinePosition = () => {
+    if (!showCurrentTimeLine) return null;
+    
+    const now = currentTime;
+    const hour = now.getHours();
+    const minutes = now.getMinutes();
+    
+    // Only show if current time is within calendar hours (8-22)
+    if (hour < 8 || hour >= 22) return null;
+    
+    const hourHeight = window.innerWidth < 640 ? 40 : 60;
+    const totalMinutes = (hour - 8) * 60 + minutes;
+    const top = (totalMinutes / 60) * hourHeight;
+    
+    return { top, hour, minutes };
+  };
+
+  const currentTimeLinePosition = getCurrentTimeLinePosition();
+
   const handleMouseDown = (e: React.MouseEvent, date: Date, hour: number) => {
     e.preventDefault();
     console.log('Mouse down on:', date, hour);
@@ -122,26 +157,35 @@ export const WeekCalendar = ({
         // Drag across different days - not allowed
         console.log('Drag across different days not allowed');
       } else if (dragEnd && dragStart.hour !== dragEnd.hour) {
-        // Multi-hour selection - open dialog
+        // Multi-hour selection - create event
         const startHour = Math.min(dragStart.hour, dragEnd.hour);
         const endHour = Math.max(dragStart.hour, dragEnd.hour) + 1;
         console.log('Creating event from', startHour, 'to', endHour);
         
-        setSelectedPlanningData({
-          date: dragStart.date,
-          startHour,
-          endHour
-        });
-        setPlanningDialogOpen(true);
+        if (onEventCreate) {
+          onEventCreate(dragStart.date, startHour, endHour);
+        } else {
+          setSelectedPlanningData({
+            date: dragStart.date,
+            startHour,
+            endHour
+          });
+          setPlanningDialogOpen(true);
+        }
       } else {
-        // Single click - open dialog for 1 hour
+        // Single click - create 1 hour event
         console.log('Single click on:', dragStart.date, dragStart.hour);
-        setSelectedPlanningData({
-          date: dragStart.date,
-          startHour: dragStart.hour,
-          endHour: dragStart.hour + 1
-        });
-        setPlanningDialogOpen(true);
+        
+        if (onEventCreate) {
+          onEventCreate(dragStart.date, dragStart.hour, dragStart.hour + 1);
+        } else {
+          setSelectedPlanningData({
+            date: dragStart.date,
+            startHour: dragStart.hour,
+            endHour: dragStart.hour + 1
+          });
+          setPlanningDialogOpen(true);
+        }
       }
     }
     
@@ -295,7 +339,23 @@ export const WeekCalendar = ({
         </div>
 
         {/* Days Columns */}
-        <div className="flex-1 flex min-w-0">
+        <div className="flex-1 flex min-w-0 relative">
+          {/* Current Time Line - spans across all days */}
+          {showCurrentTimeLine && currentTimeLinePosition && isSameWeek(currentTime, weekStart) && (
+            <div 
+              className="absolute left-0 right-0 z-20 pointer-events-none"
+              style={{ top: `${48 + currentTimeLinePosition.top}px` }} // 48px for header
+            >
+              <div className="flex items-center">
+                <div className="bg-red-500 text-white text-xs px-1 py-0.5 rounded-l font-bold min-w-[40px] text-center">
+                  {formatDutchTime(currentTimeLinePosition.hour)}:{currentTimeLinePosition.minutes.toString().padStart(2, '0')}
+                </div>
+                <div className="flex-1 h-0.5 bg-red-500"></div>
+                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+              </div>
+            </div>
+          )}
+
           {weekDays.map((day, dayIndex) => {
             const dayEvents = getEventsForDay(day);
             const isToday = isSameDay(day, new Date());
