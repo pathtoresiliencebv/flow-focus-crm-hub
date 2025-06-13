@@ -86,6 +86,20 @@ export const DesktopSidebar = ({
   ...props
 }: React.ComponentProps<"div">) => {
   const { open, animate } = useSidebar();
+  
+  // Filter out HTML drag event handlers that conflict with Framer Motion
+  const {
+    onDrag,
+    onDragStart,
+    onDragEnd,
+    onDragEnter,
+    onDragExit,
+    onDragLeave,
+    onDragOver,
+    onDrop,
+    ...motionCompatibleProps
+  } = props;
+  
   return (
     <motion.div
       className={cn(
@@ -96,7 +110,7 @@ export const DesktopSidebar = ({
         width: animate ? (open ? "300px" : "60px") : "300px",
       }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
-      {...props}
+      {...motionCompatibleProps}
     >
       {children}
     </motion.div>
