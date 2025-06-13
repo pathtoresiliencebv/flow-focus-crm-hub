@@ -105,6 +105,10 @@ export const MobileSidebar = ({
   ...props
 }: React.ComponentProps<"div">) => {
   const { open, setOpen } = useSidebar();
+  
+  // Extract only the props that are compatible with motion.div
+  const { onDrag, onDragStart, onDragEnd, ...motionCompatibleProps } = props;
+  
   return (
     <>
       <div
@@ -132,7 +136,7 @@ export const MobileSidebar = ({
                 "fixed h-full w-full inset-0 bg-white dark:bg-neutral-900 p-10 z-[100] flex flex-col justify-between overflow-y-auto",
                 className
               )}
-              {...props}
+              {...motionCompatibleProps}
             >
               <div
                 className="absolute right-10 top-10 z-50 text-neutral-800 dark:text-neutral-200 cursor-pointer"
