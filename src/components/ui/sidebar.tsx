@@ -106,8 +106,17 @@ export const MobileSidebar = ({
 }: React.ComponentProps<"div">) => {
   const { open, setOpen } = useSidebar();
   
-  // Extract only the props that are compatible with motion.div
-  const { onDrag, onDragStart, onDragEnd, ...motionCompatibleProps } = props;
+  // Filter out all React event handlers that conflict with Framer Motion
+  const {
+    onDrag,
+    onDragStart,
+    onDragEnd,
+    onAnimationStart,
+    onAnimationEnd,
+    onAnimationIteration,
+    onTransitionEnd,
+    ...motionCompatibleProps
+  } = props;
   
   return (
     <>

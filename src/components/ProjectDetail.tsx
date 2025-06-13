@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, FileText, Users, Clipboard, BarChart, Edit, Save, X } from "lucide-react";
@@ -10,13 +9,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useCrmStore } from "@/hooks/useCrmStore";
+import { ProjectMaterials } from "./ProjectMaterials";
+import { ProjectPersonnel } from "./ProjectPersonnel";
+import { ProjectPlanning } from "./ProjectPlanning";
 
 const ProjectDetail = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { projects, customers, updateProject } = useCrmStore();
   const [projectDetailTab, setProjectDetailTab] = useState("details");
-  const [searchTerm, setSearchTerm] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     title: "",
@@ -333,42 +334,15 @@ const ProjectDetail = () => {
         </TabsContent>
 
         <TabsContent value="planning">
-          <Card>
-            <CardHeader>
-              <CardTitle>Planning</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-center text-muted-foreground py-8">
-                Nog geen planning beschikbaar voor dit project.
-              </p>
-            </CardContent>
-          </Card>
+          <ProjectPlanning projectId={project.id} projectTitle={project.title} />
         </TabsContent>
 
         <TabsContent value="materials">
-          <Card>
-            <CardHeader>
-              <CardTitle>Materialen</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-center text-muted-foreground py-8">
-                Nog geen materiaallijst beschikbaar voor dit project.
-              </p>
-            </CardContent>
-          </Card>
+          <ProjectMaterials projectId={project.id} />
         </TabsContent>
 
         <TabsContent value="personnel">
-          <Card>
-            <CardHeader>
-              <CardTitle>Toegewezen personeel</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-center text-muted-foreground py-8">
-                Nog geen personeel toegewezen aan dit project.
-              </p>
-            </CardContent>
-          </Card>
+          <ProjectPersonnel projectId={project.id} />
         </TabsContent>
 
         <TabsContent value="reports">

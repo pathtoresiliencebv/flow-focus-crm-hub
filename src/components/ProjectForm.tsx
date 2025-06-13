@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCrmStore, Project } from "@/hooks/useCrmStore";
+import { CustomerQuickAdd } from "./CustomerQuickAdd";
+import { Plus } from "lucide-react";
 
 interface ProjectFormProps {
   onClose: () => void;
@@ -16,6 +18,7 @@ interface ProjectFormProps {
 
 export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingProject }: ProjectFormProps) => {
   const { addProject, updateProject, customers } = useCrmStore();
+  const [showCustomerAdd, setShowCustomerAdd] = useState(false);
   const [formData, setFormData] = useState({
     title: existingProject?.title || "",
     customerId: existingProject?.customerId?.toString() || "",
@@ -47,6 +50,14 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
     }));
   };
 
+  const handleCustomerAdded = (customerId: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      customerId: customerId.toString(),
+    }));
+    setShowCustomerAdd(false);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -72,6 +83,17 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
     onClose();
   };
 
+  if (showCustomerAdd) {
+    return (
+      <div>
+        <CustomerQuickAdd 
+          onCustomerAdded={handleCustomerAdded}
+          onCancel={() => setShowCustomerAdd(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit}>
       <div className="grid gap-4 py-4">
@@ -90,18 +112,29 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="customer">Klant *</Label>
-            <Select value={formData.customerId} onValueChange={handleCustomerChange} required>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecteer klant" />
-              </SelectTrigger>
-              <SelectContent>
-                {customers.map((customer) => (
-                  <SelectItem key={customer.id} value={customer.id.toString()}>
-                    {customer.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Select value={formData.customerId} onValueChange={handleCustomerChange} required>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Selecteer klant" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customers.map((customer) => (
+                    <SelectItem key={customer.id} value={customer.id.toString()}>
+                      {customer.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowCustomerAdd(true)}
+                className="px-3"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
           
           <div className="space-y-2">
