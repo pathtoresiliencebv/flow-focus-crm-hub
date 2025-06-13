@@ -12,7 +12,7 @@ import { Plus } from "lucide-react";
 
 interface ProjectFormProps {
   onClose: () => void;
-  initialStatus?: "te-plannen" | "gepland" | "herkeuring" | "afgerond";
+  initialStatus?: "te-plannen" | "gepland" | "in-uitvoering" | "herkeuring" | "afgerond";
   existingProject?: Project;
 }
 
@@ -43,7 +43,7 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
     }));
   };
 
-  const handleStatusChange = (status: "te-plannen" | "gepland" | "herkeuring" | "afgerond") => {
+  const handleStatusChange = (status: "te-plannen" | "gepland" | "in-uitvoering" | "herkeuring" | "afgerond") => {
     setFormData((prev) => ({
       ...prev,
       status,
@@ -146,6 +146,7 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
               <SelectContent>
                 <SelectItem value="te-plannen">Te plannen</SelectItem>
                 <SelectItem value="gepland">Gepland</SelectItem>
+                <SelectItem value="in-uitvoering">In uitvoering</SelectItem>
                 <SelectItem value="herkeuring">Herkeuring</SelectItem>
                 <SelectItem value="afgerond">Afgerond</SelectItem>
               </SelectContent>
