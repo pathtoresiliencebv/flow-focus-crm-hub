@@ -75,7 +75,7 @@ export const SidebarBody = (props: React.ComponentProps<typeof motion.div>) => {
   return (
     <>
       <DesktopSidebar {...props} />
-      <MobileSidebar {...(props as React.ComponentProps<"div">)} />
+      <MobileSidebar {...props} />
     </>
   );
 };
@@ -108,7 +108,7 @@ export const MobileSidebar = ({
   className,
   children,
   ...props
-}: React.ComponentProps<"div">) => {
+}: React.ComponentProps<typeof motion.div>) => {
   const { open, setOpen } = useSidebar();
   return (
     <>
@@ -116,7 +116,6 @@ export const MobileSidebar = ({
         className={cn(
           "h-14 px-4 py-4 flex flex-row md:hidden items-center justify-between bg-neutral-100 dark:bg-neutral-800 w-full fixed top-0 left-0 z-50"
         )}
-        {...props}
       >
         <div className="flex justify-end z-20 w-full">
           <Menu
