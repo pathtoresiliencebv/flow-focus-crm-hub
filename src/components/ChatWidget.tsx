@@ -18,14 +18,15 @@ export const ChatWidget = () => {
         </div>
       )}
 
-      {/* Chat Toggle Button */}
-      <div className="fixed bottom-4 right-4 z-40">
+      {/* Chat Toggle Button - Fixed positioning for always visible */}
+      <div className="fixed bottom-4 right-4 z-50">
         <Button
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
             "h-14 w-14 rounded-full shadow-lg transition-all duration-200",
             "bg-smans-primary hover:bg-smans-primary/90",
-            "flex items-center justify-center relative"
+            "flex items-center justify-center relative",
+            "border-2 border-white"
           )}
         >
           {isOpen ? (
@@ -34,7 +35,7 @@ export const ChatWidget = () => {
             <>
               <MessageCircle className="h-6 w-6 text-white" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
                   {unreadCount}
                 </span>
               )}

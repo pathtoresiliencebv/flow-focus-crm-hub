@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,9 +36,6 @@ const Index = () => {
       setActiveTab("projects");
     }
   }, [customerId, projectId]);
-
-  // Check if user is admin (assuming email-based check for now)
-  const isAdmin = user?.email?.includes('admin') || user?.email === 'jan@kozijnencrm.nl';
 
   // Show loading state while checking authentication
   if (isLoading) {
@@ -120,8 +116,8 @@ const Index = () => {
         </main>
       </div>
 
-      {/* Chat Widget - alleen zichtbaar voor admins */}
-      {isAdmin && <ChatWidget />}
+      {/* Chat Widget - altijd zichtbaar voor alle gebruikers */}
+      <ChatWidget />
     </div>
   );
 };
