@@ -20,6 +20,7 @@ import { Reports } from "@/components/Reports";
 import Settings from "@/pages/Settings";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { AppSidebar } from "@/components/AppSidebar";
+import { ChatWidget } from "@/components/ChatWidget";
 import { cn } from "@/lib/utils";
 
 const Index = () => {
@@ -115,6 +116,9 @@ const Index = () => {
           </div>
         </main>
       </div>
+
+      {/* Chat Widget - alleen zichtbaar voor admins */}
+      {user?.role === "admin" && <ChatWidget />}
     </div>
   );
 };
