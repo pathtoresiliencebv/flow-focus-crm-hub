@@ -38,26 +38,21 @@ type Profile = {
   email?: string;
 };
 
-// We create a view in Supabase to easily get user emails
-// CREATE OR REPLACE VIEW public.users_with_email AS
-// SELECT p.id, p.full_name, p.role, p.status, u.email
-// FROM public.profiles p
-// JOIN auth.users u ON p.id = u.id;
-// Since we cannot run migrations now, we'll fetch users and then emails in a less optimal way.
-
+// We use a postgres function to securely fetch all user details.
+// This function can only be called by an 'Administrator'.
 async function fetchUsers() {
-  const { data: profiles, error: profilesError } = await supabase.from('profiles').select('*');
-  if (profilesError) throw new Error(profilesError.message);
-
-  const { data: authUsers, error: authUsersError } = await supabase.auth.admin.listUsers();
-  if (authUsersError) throw new Error(authUsersError.message);
+  const { data, error } = await supabase.rpc('get_all_user_details');
   
-  const emailMap = new Map(authUsers.users.map((u): [string, string | undefined] => [u.id, u.email]));
+  if (error) {
+    // Provide a more user-friendly error message for permission issues
+    if (error.message.includes('U heeft geen rechten om gebruikersgegevens op te halen.')) {
+        toast({ title: 'Geen Toegang', description: 'U heeft niet de benodigde rechten om gebruikers te zien.', variant: 'destructive' });
+    }
+    throw new Error(error.message);
+  }
 
-  return profiles.map(p => ({
-    ...p,
-    email: emailMap.get(p.id) || 'No email found'
-  })) as (Profile & { email: string })[];
+  // The RPC function returns all necessary fields, including email.
+  return data as (Profile & { email: string })[];
 }
 
 async function updateUser(profile: Partial<Profile> & { id: string }) {

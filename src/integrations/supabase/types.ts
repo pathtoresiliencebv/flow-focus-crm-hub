@@ -455,6 +455,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_all_user_details: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          full_name: string
+          role: Database["public"]["Enums"]["user_role"]
+          status: Database["public"]["Enums"]["user_status"]
+          email: string
+        }[]
+      }
       get_user_role: {
         Args: { p_user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
