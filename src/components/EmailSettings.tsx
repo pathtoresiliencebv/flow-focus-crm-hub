@@ -250,8 +250,10 @@ export function EmailSettings() {
                   <Button type="submit" disabled={mutation.isPending}>
                     {mutation.isPending ? 'Opslaan...' : 'Opslaan'}
                   </Button>
-                  <DialogClose type="button" variant="secondary">
-                    Annuleren
+                  <DialogClose asChild>
+                    <Button type="button" variant="secondary">
+                      Annuleren
+                    </Button>
                   </DialogClose>
                 </DialogFooter>
               </form>
@@ -300,4 +302,3 @@ export function EmailSettings() {
     </div>
   );
 }
-

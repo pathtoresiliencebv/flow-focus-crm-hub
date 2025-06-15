@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { toast } from '@/hooks/use-toast';
 
 interface User {
+  id: string;
   email: string;
   name: string;
 }
@@ -28,6 +29,7 @@ export const useAuth = () => {
   const login = (email: string, password: string) => {
     // For demo purposes, create a user object
     const userData: User = {
+      id: `mock-user-id-for-${email}`,
       email,
       name: email.split('@')[0].replace('.', ' ').split(' ').map(word => 
         word.charAt(0).toUpperCase() + word.slice(1)

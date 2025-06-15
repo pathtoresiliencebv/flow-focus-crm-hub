@@ -200,31 +200,31 @@ export function Email() {
             <Button onClick={() => setComposeOpen(true)} className="w-full mb-4 bg-smans-primary hover:bg-smans-primary/90">Nieuwe E-mail</Button>
           </div>
           <div className="space-y-1 px-2">
-            <Button variant="ghost" className="justify-start w-full font-normal" onClick={() => setActiveFolder('inbox')} active={activeFolder === 'inbox'}>
+            <Button variant={activeFolder === 'inbox' ? 'secondary' : 'ghost'} className="justify-start w-full font-normal" onClick={() => setActiveFolder('inbox')}>
               <Inbox className="h-4 w-4 mr-2" />
               Postvak IN
             </Button>
-            <Button variant="ghost" className="justify-start w-full font-normal" onClick={() => setActiveFolder('sent')} active={activeFolder === 'sent'}>
+            <Button variant={activeFolder === 'sent' ? 'secondary' : 'ghost'} className="justify-start w-full font-normal" onClick={() => setActiveFolder('sent')}>
               <Send className="h-4 w-4 mr-2" />
               Verzonden
             </Button>
-            <Button variant="ghost" className="justify-start w-full font-normal" onClick={() => setActiveFolder('archive')} active={activeFolder === 'archive'}>
+            <Button variant={activeFolder === 'archive' ? 'secondary' : 'ghost'} className="justify-start w-full font-normal" onClick={() => setActiveFolder('archive')}>
               <Archive className="h-4 w-4 mr-2" />
               Archief
             </Button>
-            <Button variant="ghost" className="justify-start w-full font-normal" onClick={() => setActiveFolder('drafts')} active={activeFolder === 'drafts'}>
+            <Button variant={activeFolder === 'drafts' ? 'secondary' : 'ghost'} className="justify-start w-full font-normal" onClick={() => setActiveFolder('drafts')}>
               <FileText className="h-4 w-4 mr-2" />
               Concepten
             </Button>
-            <Button variant="ghost" className="justify-start w-full font-normal" onClick={() => setActiveFolder('starred')} active={activeFolder === 'starred'}>
+            <Button variant={activeFolder === 'starred' ? 'secondary' : 'ghost'} className="justify-start w-full font-normal" onClick={() => setActiveFolder('starred')}>
               <Star className="h-4 w-4 mr-2" />
               Gemarkeerd
             </Button>
-            <Button variant="ghost" className="justify-start w-full font-normal" onClick={() => setActiveFolder('scheduled')} active={activeFolder === 'scheduled'}>
+            <Button variant={activeFolder === 'scheduled' ? 'secondary' : 'ghost'} className="justify-start w-full font-normal" onClick={() => setActiveFolder('scheduled')}>
               <Clock className="h-4 w-4 mr-2" />
               Gepland
             </Button>
-            <Button variant="ghost" className="justify-start w-full font-normal" onClick={() => setActiveFolder('trash')} active={activeFolder === 'trash'}>
+            <Button variant={activeFolder === 'trash' ? 'secondary' : 'ghost'} className="justify-start w-full font-normal" onClick={() => setActiveFolder('trash')}>
               <Trash className="h-4 w-4 mr-2" />
               Prullenbak
             </Button>
