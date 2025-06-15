@@ -167,7 +167,7 @@ export const Dashboard = () => {
 
   return (
     <div className="h-full bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="px-4 py-6 sm:px-6 lg:px-8 space-y-6">
+      <div className="p-4 sm:p-6 space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>

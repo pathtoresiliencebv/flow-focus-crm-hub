@@ -58,7 +58,7 @@ export const TimeRegistration = () => {
   };
 
   return (
-    <div className="px-4 py-6 sm:px-6 lg:px-8 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold">Tijdsregistratie</h2>
         <Button onClick={() => setActiveTab("register")}>Nieuwe registratie</Button>
