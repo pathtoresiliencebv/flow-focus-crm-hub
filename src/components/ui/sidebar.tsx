@@ -148,7 +148,7 @@ export const Sidebar = ({ links, user, logout, activeTab, setActiveTab, children
 
   const renderLink = (link, isCollapsible = false) => {
     const commonClasses = `flex gap-2 font-medium text-sm items-center w-full py-2 px-4 rounded-xl`;
-    const activeClasses = activeTab === link.key ? 'bg-gray-200' : 'hover:bg-gray-100';
+    const activeClasses = activeTab === link.key ? 'bg-smans-primary text-smans-primary-foreground' : 'hover:bg-smans-primary hover:text-smans-primary-foreground';
     const collapsibleClasses = isCollapsible ? 'text-left p-2' : '';
     return (
       <li key={link.key} className={!isCollapsible ? "mb-2" : ""}>
@@ -185,7 +185,7 @@ export const Sidebar = ({ links, user, logout, activeTab, setActiveTab, children
         {settingsLink && (
            <button
              onClick={createLinkHandler(settingsLink.key)}
-             className={`flex gap-2 font-medium text-sm items-center w-full py-2 px-4 rounded-xl mb-4 ${activeTab === settingsLink.key ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
+             className={`flex gap-2 font-medium text-sm items-center w-full py-2 px-4 rounded-xl mb-4 ${activeTab === settingsLink.key ? 'bg-smans-primary text-smans-primary-foreground' : 'hover:bg-smans-primary hover:text-smans-primary-foreground'}`}
            >
              <Settings className="h-5 w-5" />
              {settingsLink.label}

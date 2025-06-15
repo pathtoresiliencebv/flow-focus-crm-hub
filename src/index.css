@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -107,21 +106,4 @@
   body {
     @apply bg-background text-foreground;
   }
-}
-
-/* SMANS brand utilities */
-.bg-smans-primary {
-  background-color: #aa1917;
-}
-
-.text-smans-primary {
-  color: #aa1917;
-}
-
-.border-smans-primary {
-  border-color: #aa1917;
-}
-
-.hover\:bg-smans-primary:hover {
-  background-color: #8b1415;
 }
