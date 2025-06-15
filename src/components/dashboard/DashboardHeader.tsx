@@ -4,11 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
-
-interface Customer {
-  id: number;
-  name: string;
-}
+import { Customer } from "@/hooks/useCrmStore";
 
 interface DashboardHeaderProps {
   customers: Customer[];
@@ -55,7 +51,7 @@ export const DashboardHeader = ({ customers, handleCreateProject, newProjectDial
                 </SelectTrigger>
                 <SelectContent>
                   {customers.map((customer) => (
-                    <SelectItem key={customer.id} value={customer.id.toString()}>
+                    <SelectItem key={customer.id} value={customer.id}>
                       {customer.name}
                     </SelectItem>
                   ))}
