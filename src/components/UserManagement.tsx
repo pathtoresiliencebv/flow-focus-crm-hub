@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,7 +51,7 @@ async function fetchUsers() {
   const { data: authUsers, error: authUsersError } = await supabase.auth.admin.listUsers();
   if (authUsersError) throw new Error(authUsersError.message);
   
-  const emailMap = new Map(authUsers.users.map(u => [u.id, u.email]));
+  const emailMap = new Map(authUsers.users.map((u): [string, string | undefined] => [u.id, u.email]));
 
   return profiles.map(p => ({
     ...p,
@@ -190,4 +189,3 @@ const UserManagement = () => {
 };
 
 export default UserManagement;
-
