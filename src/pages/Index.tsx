@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Dashboard } from "@/components/Dashboard";
@@ -88,9 +87,9 @@ const Index = () => {
   return (
     <div className="flex h-screen bg-gray-50">
       <AppSidebar activeTab={activeTab} setActiveTab={handleSetActiveTab}>
-        <main className="flex-1 overflow-auto p-6">
+        <div>
           {renderContent()}
-        </main>
+        </div>
       </AppSidebar>
     </div>
   );

@@ -64,7 +64,7 @@ export const Customers = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto space-y-6 px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

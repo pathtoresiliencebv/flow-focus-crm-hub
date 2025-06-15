@@ -298,8 +298,7 @@ export const PlanningManagement = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-3 sm:p-6">
-      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-8">
+    <div className="container mx-auto space-y-4 px-4 py-8 sm:space-y-8 sm:px-6 lg:px-8">
         {/* Header Section - Now fully responsive */}
         <div className="flex flex-col gap-4">
           <div>
