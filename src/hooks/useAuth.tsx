@@ -6,6 +6,8 @@ import type { Session, User } from '@supabase/supabase-js';
 
 interface UserProfile {
   full_name: string;
+  role: 'Administrator' | 'Verkoper' | 'Installateur' | 'Administratie' | 'Bekijker';
+  status: 'Actief' | 'Inactief';
 }
 
 export const useAuth = () => {
@@ -17,7 +19,7 @@ export const useAuth = () => {
   const fetchProfile = useCallback(async (user: User) => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('full_name')
+      .select('full_name, role, status')
       .eq('id', user.id)
       .single();
 
@@ -29,7 +31,7 @@ export const useAuth = () => {
         variant: "destructive",
       });
     }
-    setProfile(data);
+    setProfile(data as UserProfile | null);
   }, []);
 
   useEffect(() => {
