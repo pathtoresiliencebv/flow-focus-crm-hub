@@ -3,8 +3,9 @@ import React from 'react';
 import { QuoteSettingsForm } from '@/components/QuoteSettingsForm';
 import { InvoiceSettingsForm } from '@/components/InvoiceSettingsForm';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, FileText, CreditCard } from "lucide-react";
+import { Settings as SettingsIcon, FileText, CreditCard, Mail } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EmailSettings } from '@/components/EmailSettings';
 
 export default function Settings() {
   return (
@@ -18,7 +19,7 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="quotes" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="quotes" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Offerte Instellingen
@@ -26,6 +27,10 @@ export default function Settings() {
           <TabsTrigger value="invoices" className="flex items-center gap-2">
             <CreditCard className="h-4 w-4" />
             Factuur & Betaling Instellingen
+          </TabsTrigger>
+          <TabsTrigger value="email" className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            E-mail Instellingen
           </TabsTrigger>
         </TabsList>
 
@@ -35,6 +40,10 @@ export default function Settings() {
 
         <TabsContent value="invoices" className="space-y-6">
           <InvoiceSettingsForm />
+        </TabsContent>
+
+        <TabsContent value="email" className="space-y-6">
+          <EmailSettings />
         </TabsContent>
       </Tabs>
     </div>

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -39,6 +40,13 @@ import { format } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface Email {
   id: string;
@@ -55,6 +63,7 @@ interface Email {
 
 interface EmailAccount {
   id: string;
+  display_name: string;
 }
 
 export function Email() {
@@ -65,18 +74,24 @@ export function Email() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isComposeOpen, setComposeOpen] = useState(false);
   const [replyToEmail, setReplyToEmail] = useState<Email | null>(null);
+  const [selectedAccountId, setSelectedAccountId] = useState<string | 'all'>('all');
 
   // Fetch emails
   const { data: emails = [], isLoading: isLoadingEmails, refetch } = useQuery<Email[]>({
-    queryKey: ['emails', user?.id, activeFolder],
+    queryKey: ['emails', user?.id, activeFolder, selectedAccountId],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data, error } = await supabase
+      let query = supabase
         .from('emails')
         .select('*')
         .eq('user_id', user.id)
-        .eq('folder', activeFolder)
-        .order('received_at', { ascending: false });
+        .eq('folder', activeFolder);
+
+      if (selectedAccountId !== 'all') {
+        query = query.eq('email_settings_id', selectedAccountId);
+      }
+      
+      const { data, error } = await query.order('received_at', { ascending: false });
 
       if (error) throw error;
       return data || [];
@@ -91,7 +106,7 @@ export function Email() {
       if (!user?.id) return [];
       const { data, error } = await supabase
         .from('user_email_settings')
-        .select('id')
+        .select('id, display_name')
         .eq('user_id', user.id);
       if (error) throw error;
       return data || [];
@@ -242,12 +257,28 @@ export function Email() {
         {/* Main content */}
         <div className="flex-1 p-4">
           <div className="flex items-center justify-between mb-4">
-            <Input
-              type="search"
-              placeholder="Zoek e-mails..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <div className="flex items-center gap-4">
+              <Input
+                type="search"
+                placeholder="Zoek e-mails..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-sm"
+              />
+              {hasEmailAccounts && (
+                <Select value={selectedAccountId} onValueChange={(value) => setSelectedAccountId(value)}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Selecteer account" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Alle Accounts</SelectItem>
+                    {emailAccounts.map(account => (
+                      <SelectItem key={account.id} value={account.id}>{account.display_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
             <div className="flex items-center space-x-2">
               <TooltipProvider>
                 <Tooltip>
