@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Dashboard } from "@/components/Dashboard";
@@ -19,10 +20,20 @@ import LoginScreen from "@/components/LoginScreen";
 import { useParams, useNavigate } from "react-router-dom";
 import CustomerDetail from "@/components/CustomerDetail";
 import ProjectDetail from "@/components/ProjectDetail";
+import { Permission } from "@/types/permissions";
+import { ShieldAlert } from "lucide-react";
 
+
+const AccessDenied = () => (
+  <div className="flex flex-col items-center justify-center h-full text-center p-4">
+    <ShieldAlert className="w-16 h-16 text-red-500 mb-4" />
+    <h1 className="text-2xl font-bold">Geen toegang</h1>
+    <p className="text-muted-foreground">U heeft niet de juiste rechten om deze pagina te bekijken.</p>
+  </div>
+);
 
 const Index = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, hasPermission } = useAuth();
   const { customerId, projectId } = useParams();
   const navigate = useNavigate();
 
@@ -45,10 +56,38 @@ const Index = () => {
   if (!isAuthenticated) {
     return <LoginScreen />;
   }
+  
+  const tabPermissions: Record<string, Permission | null> = {
+    dashboard: null,
+    customers: "customers_view",
+    projects: "projects_view",
+    calendar: "projects_view",
+    time: "projects_view",
+    receipts: "invoices_view",
+    quotes: "invoices_view",
+    invoicing: "invoices_view",
+    email: null,
+    personnel: "users_view",
+    users: "users_view",
+    salary: "users_view",
+    reports: "reports_view",
+    settings: "settings_edit",
+  };
 
   const renderContent = () => {
-    if (customerId && !projectId) return <CustomerDetail />;
-    if (projectId) return <ProjectDetail />;
+    if (customerId && !projectId) {
+      if (!hasPermission("customers_view")) return <AccessDenied />;
+      return <CustomerDetail />;
+    }
+    if (projectId) {
+      if (!hasPermission("projects_view")) return <AccessDenied />;
+      return <ProjectDetail />;
+    }
+
+    const requiredPermission = tabPermissions[activeTab];
+    if (requiredPermission && !hasPermission(requiredPermission)) {
+      return <AccessDenied />;
+    }
 
     switch (activeTab) {
       case "dashboard":

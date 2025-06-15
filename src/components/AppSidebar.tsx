@@ -11,13 +11,12 @@ import {
   FileText,
   CreditCard,
   UserCheck,
-  Shield,
-  DollarSign,
   BarChart,
   Settings,
   Mail
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { Permission } from "@/types/permissions";
 
 interface AppSidebarProps {
   activeTab: string;
@@ -26,80 +25,84 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProps) {
-  const { user, logout, profile } = useAuth();
+  const { user, logout, profile, hasPermission } = useAuth();
 
-  const links = [
+  const allLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null}[] = [
     {
       label: "Dashboard",
       icon: <LayoutDashboard className="h-5 w-5" />,
-      key: "dashboard"
+      key: "dashboard",
+      permission: null,
     },
     {
       label: "Klanten",
       icon: <Users className="h-5 w-5" />,
-      key: "customers"
+      key: "customers",
+      permission: "customers_view",
     },
     {
       label: "Projecten",
       icon: <FolderKanban className="h-5 w-5" />,
-      key: "projects"
+      key: "projects",
+      permission: "projects_view",
     },
     {
       label: "Planning",
       icon: <Calendar className="h-5 w-5" />,
-      key: "calendar"
+      key: "calendar",
+      permission: "projects_view",
     },
     {
       label: "Tijdregistratie",
       icon: <Clock className="h-5 w-5" />,
-      key: "time"
+      key: "time",
+      permission: "projects_view",
     },
     {
       label: "Bonnetjes",
       icon: <Receipt className="h-5 w-5" />,
-      key: "receipts"
+      key: "receipts",
+      permission: "invoices_view",
     },
     {
       label: "Offertes",
       icon: <FileText className="h-5 w-5" />,
-      key: "quotes"
+      key: "quotes",
+      permission: "invoices_view",
     },
     {
       label: "Facturatie",
       icon: <CreditCard className="h-5 w-5" />,
-      key: "invoicing"
+      key: "invoicing",
+      permission: "invoices_view",
     },
     {
       label: "Postvak IN",
       icon: <Mail className="h-5 w-5" />,
-      key: "email"
+      key: "email",
+      permission: null,
     },
     {
       label: "Personeel",
       icon: <UserCheck className="h-5 w-5" />,
-      key: "personnel"
-    },
-    {
-      label: "Gebruikers",
-      icon: <Shield className="h-5 w-5" />,
-      key: "users"
-    },
-    {
-      label: "Salaris",
-      icon: <DollarSign className="h-5 w-5" />,
-      key: "salary"
+      key: "personnel",
+      permission: "users_view",
     },
     {
       label: "Rapportages",
       icon: <BarChart className="h-5 w-5" />,
-      key: "reports"
+      key: "reports",
+      permission: "reports_view",
     },
     {
       label: "Instellingen",
       icon: <Settings className="h-5 w-5" />,
-      key: "settings"
+      key: "settings",
+      permission: "settings_edit",
     }
   ];
+
+  const links = allLinks.filter(link => link.permission === null || hasPermission(link.permission as Permission));
 
   return (
     <Sidebar 

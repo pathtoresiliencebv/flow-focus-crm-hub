@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,10 +11,12 @@ import { Plus, Search, Eye, Edit, Trash2, MoreHorizontal } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCrmStore, Customer } from "@/hooks/useCrmStore";
 import { CustomerForm } from './CustomerForm';
+import { useAuth } from '@/hooks/useAuth';
 
 export const Customers = () => {
   const navigate = useNavigate();
   const { customers, deleteCustomer } = useCrmStore();
+  const { hasPermission } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [newCustomerDialogOpen, setNewCustomerDialogOpen] = useState(false);
   const [editCustomerDialogOpen, setEditCustomerDialogOpen] = useState(false);
@@ -70,13 +73,15 @@ export const Customers = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Klanten</h1>
           <p className="text-gray-600 mt-1 text-sm sm:text-base">Beheer je klanten en hun gegevens</p>
         </div>
-        <Button 
-          onClick={() => setNewCustomerDialogOpen(true)}
-          className="bg-smans-primary hover:bg-smans-primary/90 text-white"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Nieuwe Klant
-        </Button>
+        {hasPermission('customers_edit') && (
+          <Button 
+            onClick={() => setNewCustomerDialogOpen(true)}
+            className="bg-smans-primary hover:bg-smans-primary/90 text-white"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Nieuwe Klant
+          </Button>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -150,17 +155,21 @@ export const Customers = () => {
                               <Eye className="mr-2 h-4 w-4" />
                               Bekijken
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditCustomer(customer)}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Bewerken
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleDeleteCustomer(customer.id, customer.name)}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Verwijderen
-                            </DropdownMenuItem>
+                            {hasPermission('customers_edit') && (
+                              <DropdownMenuItem onClick={() => handleEditCustomer(customer)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Bewerken
+                              </DropdownMenuItem>
+                            )}
+                            {hasPermission('customers_delete') && (
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteCustomer(customer.id, customer.name)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Verwijderen
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
