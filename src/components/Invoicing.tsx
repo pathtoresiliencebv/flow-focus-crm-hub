@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import {
   Table,
@@ -145,7 +146,7 @@ export function Invoicing() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="px-4 py-6 sm:px-6 lg:px-8 space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Facturering</h2>
         <Dialog>
