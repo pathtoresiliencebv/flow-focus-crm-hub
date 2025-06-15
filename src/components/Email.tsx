@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,7 +26,11 @@ interface EmailAccount {
   display_name: string;
 }
 
-export function Email() {
+interface EmailProps {
+  setActiveTab: (tab: string) => void;
+}
+
+export function Email({ setActiveTab }: EmailProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [activeFolder, setActiveFolder] = useState('inbox');
@@ -190,6 +193,7 @@ export function Email() {
           setActiveFolder={setActiveFolder}
           onComposeClick={() => setComposeOpen(true)}
           hasEmailAccounts={hasEmailAccounts}
+          onNavigateToSettings={() => setActiveTab('settings')}
         />
 
         <div className="flex-1 p-4 flex flex-col">

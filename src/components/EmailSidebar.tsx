@@ -8,6 +8,7 @@ interface EmailSidebarProps {
   setActiveFolder: (folder: string) => void;
   onComposeClick: () => void;
   hasEmailAccounts: boolean;
+  onNavigateToSettings: () => void;
 }
 
 export const EmailSidebar: React.FC<EmailSidebarProps> = ({
@@ -15,6 +16,7 @@ export const EmailSidebar: React.FC<EmailSidebarProps> = ({
   setActiveFolder,
   onComposeClick,
   hasEmailAccounts,
+  onNavigateToSettings,
 }) => {
   const folders = [
     { name: 'inbox', label: 'Postvak IN', icon: Inbox },
@@ -47,8 +49,8 @@ export const EmailSidebar: React.FC<EmailSidebarProps> = ({
       {!hasEmailAccounts && (
         <div className="mt-4 px-4 text-sm text-muted-foreground">
           <p>Er zijn nog geen e-mailaccounts ingesteld.</p>
-          <Button variant="link" asChild className="p-0 h-auto">
-            <a href="/settings">Ga naar instellingen om een account toe te voegen.</a>
+          <Button variant="link" className="p-0 h-auto" onClick={onNavigateToSettings}>
+            Ga naar instellingen om een account toe te voegen.
           </Button>
         </div>
       )}
