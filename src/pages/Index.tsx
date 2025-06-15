@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Dashboard } from "@/components/Dashboard";
@@ -9,7 +10,7 @@ import { Receipts } from "@/components/Receipts";
 import { Quotes } from "@/components/Quotes";
 import { Invoicing } from "@/components/Invoicing";
 import { Email } from "@/components/Email";
-import { Personnel } from "@/components/Personnel";
+import Personnel from "@/components/Personnel";
 import UserManagement from "@/components/UserManagement";
 import { Salary } from "@/components/Salary";
 import { Reports } from "@/components/Reports";
