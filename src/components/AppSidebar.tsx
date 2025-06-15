@@ -22,10 +22,9 @@ import { useAuth } from "@/hooks/useAuth";
 interface AppSidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
-  children: React.ReactNode;
 }
 
-export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProps) {
+export function AppSidebar({ activeTab, setActiveTab }: AppSidebarProps) {
   const { user, logout, profile } = useAuth();
 
   const links = [
@@ -109,8 +108,6 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
       logout={logout}
       activeTab={activeTab}
       setActiveTab={setActiveTab}
-    >
-      {children}
-    </Sidebar>
+    />
   );
 }
