@@ -1,17 +1,13 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { CalendarDays, Users, FileText, Euro, Plus, TrendingUp, Clock, MapPin, User } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { WeekCalendar } from "./WeekCalendar";
 import { useCrmStore } from "@/hooks/useCrmStore";
-import { useUserStore } from "@/hooks/useUserStore";
 import { useToast } from "@/hooks/use-toast";
-import { format, addDays, parseISO } from "date-fns";
-import { nl } from "date-fns/locale";
+import { addDays } from "date-fns";
+import { DashboardHeader } from "./dashboard/DashboardHeader";
+import { StatsGrid } from "./dashboard/StatsGrid";
+import { UpcomingAppointments } from "./dashboard/UpcomingAppointments";
 
 // Real planning interface to match PlanningManagement
 interface PlanningItem {
@@ -31,7 +27,6 @@ interface PlanningItem {
 export const Dashboard = () => {
   const [newProjectDialogOpen, setNewProjectDialogOpen] = useState(false);
   const { customers, projects, addProject } = useCrmStore();
-  const { users } = useUserStore();
   const { toast } = useToast();
 
   // Real planning data that matches the PlanningManagement component
@@ -155,145 +150,22 @@ export const Dashboard = () => {
     });
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Gepland": return "bg-blue-100 text-blue-800 border-blue-200";
-      case "Bevestigd": return "bg-green-100 text-green-800 border-green-200";
-      case "Afgerond": return "bg-gray-100 text-gray-800 border-gray-200";
-      case "Geannuleerd": return "bg-red-100 text-red-800 border-red-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
-
   return (
     <div className="h-full bg-gradient-to-br from-slate-50 to-blue-50">
       <div className="p-4 sm:p-6 space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600 mt-1 text-sm sm:text-base">Welkom terug! Hier is een overzicht van je bedrijf.</p>
-          </div>
-          <Dialog open={newProjectDialogOpen} onOpenChange={setNewProjectDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-smans-primary hover:bg-smans-primary/90 text-white shadow-lg hover:shadow-xl transition-all w-full sm:w-auto">
-                <Plus className="mr-2 h-4 w-4" />
-                Nieuw Project
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl w-[95vw] sm:w-full">
-              <DialogHeader>
-                <DialogTitle>Nieuw project aanmaken</DialogTitle>
-                <DialogDescription>
-                  Maak een nieuw project aan voor een klant.
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                handleCreateProject(formData);
-              }} className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Projectnaam</label>
-                  <Input name="title" className="mt-1" placeholder="Bijv. Kozijnen vervangen" required />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Klant</label>
-                  <Select name="customer" required>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Kies een klant" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {customers.map((customer) => (
-                        <SelectItem key={customer.id} value={customer.id.toString()}>
-                          {customer.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Geplande datum</label>
-                    <Input name="date" type="date" className="mt-1" required />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Waarde (€)</label>
-                    <Input name="value" type="number" className="mt-1" placeholder="0" required />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Beschrijving</label>
-                  <Input name="description" className="mt-1" placeholder="Omschrijving van het project" />
-                </div>
-                <DialogFooter className="flex-col sm:flex-row gap-2">
-                  <Button type="button" variant="outline" onClick={() => setNewProjectDialogOpen(false)} className="w-full sm:w-auto">
-                    Annuleren
-                  </Button>
-                  <Button type="submit" className="bg-smans-primary hover:bg-smans-primary/90 text-white w-full sm:w-auto">
-                    Project Aanmaken
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
+        <DashboardHeader
+          customers={customers}
+          handleCreateProject={handleCreateProject}
+          newProjectDialogOpen={newProjectDialogOpen}
+          setNewProjectDialogOpen={setNewProjectDialogOpen}
+        />
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Totaal Klanten</CardTitle>
-              <Users className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl sm:text-2xl font-bold text-gray-900">{totalCustomers}</div>
-              <p className="text-xs text-green-600 font-medium">
-                <TrendingUp className="inline h-3 w-3 mr-1" />
-                Actief
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Actieve Projecten</CardTitle>
-              <FileText className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl sm:text-2xl font-bold text-gray-900">{activeProjects}</div>
-              <p className="text-xs text-blue-600 font-medium">
-                In behandeling
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Totale Omzet</CardTitle>
-              <Euro className="h-4 w-4 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl sm:text-2xl font-bold text-gray-900">€{totalRevenue.toLocaleString()}</div>
-              <p className="text-xs text-purple-600 font-medium">
-                Dit jaar
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs sm:text-sm font-medium text-gray-600">Afgeronde Projecten</CardTitle>
-              <CalendarDays className="h-4 w-4 text-orange-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl sm:text-2xl font-bold text-gray-900">{completedProjects}</div>
-              <p className="text-xs text-orange-600 font-medium">
-                Succesvol
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        <StatsGrid
+          totalCustomers={totalCustomers}
+          activeProjects={activeProjects}
+          totalRevenue={totalRevenue}
+          completedProjects={completedProjects}
+        />
 
         {/* Main Content Area */}
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 sm:gap-6">
@@ -317,62 +189,7 @@ export const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Quick Actions as floating element on mobile, below calendar on desktop */}
-        <div className="xl:hidden">
-          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
-                Komende Afspraken
-              </CardTitle>
-              <CardDescription className="text-gray-600 text-sm">
-                {upcomingPlanning.length} afspraak/afspraken de komende week
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {upcomingPlanning.length === 0 ? (
-                <div className="text-center py-6">
-                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <Clock className="h-6 w-6 text-gray-400" />
-                  </div>
-                  <p className="text-gray-500 text-sm">Geen afspraken gepland</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {upcomingPlanning.slice(0, 4).map((item) => (
-                    <div key={item.id} className="group bg-gradient-to-r from-white to-gray-50 border border-gray-200 rounded-lg p-3 hover:shadow-md transition-all duration-200 hover:border-blue-200">
-                      <div className="flex items-start gap-3">
-                        <div className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">
-                          {format(new Date(item.date), 'dd MMM', { locale: nl })}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm text-gray-900 mb-1">{item.project}</div>
-                          <div className="grid grid-cols-1 gap-1 text-xs text-gray-600">
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3 text-blue-500" />
-                              <span>{item.time}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <User className="h-3 w-3 text-green-500" />
-                              <span>{item.employee}</span>
-                            </div>
-                            <div className="flex items-start gap-1">
-                              <MapPin className="h-3 w-3 text-orange-500 flex-shrink-0 mt-0.5" />
-                              <span className="break-words text-xs">{item.location}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <Badge className={`text-xs ${getStatusColor(item.status)}`}>
-                          {item.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+        <UpcomingAppointments planningItems={upcomingPlanning} />
       </div>
     </div>
   );
