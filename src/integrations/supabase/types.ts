@@ -447,6 +447,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      demote_other_admins: {
+        Args: { p_user_id_to_keep: string }
+        Returns: undefined
+      }
       generate_quote_public_token: {
         Args: Record<PropertyKey, never>
         Returns: string

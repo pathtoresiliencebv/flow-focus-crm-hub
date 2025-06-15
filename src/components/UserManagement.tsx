@@ -25,7 +25,8 @@ import { Edit, UserPlus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { UserRole } from '@/types/permissions';
 import { Input } from './ui/input';
-import { DialogTrigger } from '@radix-ui/react-dialog';
+import { CreateUserDialog } from './CreateUserDialog';
+import { useAuth } from '@/hooks/useAuth';
 
 
 type Profile = {
@@ -65,6 +66,18 @@ async function updateUser(profile: Partial<Profile> & { id: string }) {
   delete (updateData as any).email; 
   const { data, error } = await supabase.from('profiles').update(updateData).eq('id', id).select().single();
   if (error) throw new Error(error.message);
+
+  // If role is updated to Administrator, demote other admins
+  if (updateData.role === 'Administrator') {
+    const { error: rpcError } = await supabase.rpc('demote_other_admins', {
+      p_user_id_to_keep: id,
+    });
+    if (rpcError) {
+      // Don't throw, just toast a warning that this part failed.
+      toast({ title: 'Waarschuwing', description: `Gebruikersrol is bijgewerkt, maar het degraderen van andere beheerders is mislukt: ${rpcError.message}`, variant: 'destructive' });
+    }
+  }
+
   return data;
 }
 
@@ -140,6 +153,8 @@ const EditUserDialog = ({ user, onClose }: { user: Profile; onClose: () => void 
 const UserManagement = () => {
   const { data: users, isLoading, error } = useQuery({ queryKey: ['users'], queryFn: fetchUsers });
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
+  const [isCreateUserOpen, setCreateUserOpen] = useState(false);
+  const { hasPermission } = useAuth();
 
   if (isLoading) return <div>Loading users...</div>;
   if (error) return <div>Error fetching users: {error.message}</div>;
@@ -148,6 +163,12 @@ const UserManagement = () => {
     <div className="space-y-6">
        <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Gebruikersbeheer</h2>
+        {hasPermission('users_edit') && (
+          <Button onClick={() => setCreateUserOpen(true)}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Nieuwe Gebruiker
+          </Button>
+        )}
       </div>
       <Card>
         <Table>
@@ -183,6 +204,9 @@ const UserManagement = () => {
       </Card>
       {editingUser && (
         <EditUserDialog user={editingUser} onClose={() => setEditingUser(null)} />
+      )}
+      {hasPermission('users_edit') && (
+        <CreateUserDialog open={isCreateUserOpen} onOpenChange={setCreateUserOpen} />
       )}
     </div>
   );
