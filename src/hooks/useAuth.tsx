@@ -126,6 +126,7 @@ export const useAuth = () => {
     });
 
     if (error) {
+      console.error("Sign up error:", error); // For more detailed debugging
       toast({
         title: "Registratie mislukt",
         description: error.message,
