@@ -1,8 +1,9 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarDays } from "lucide-react";
 import { WeekCalendar } from "./WeekCalendar";
-import { useCrmStore, Customer, NewProject } from "@/hooks/useCrmStore";
+import { useCrmStore, NewProject } from "@/hooks/useCrmStore";
 import { useToast } from "@/hooks/use-toast";
 import { addDays } from "date-fns";
 import { DashboardHeader } from "./dashboard/DashboardHeader";

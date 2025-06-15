@@ -18,7 +18,7 @@ export type ProjectWithCustomerName = Project & {
 };
 
 // --- API functions for react-query ---
-const fetchCustomers = async () => {
+const fetchCustomers = async (): Promise<Customer[]> => {
   const { data, error } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
   if (error) throw error;
   return data;
@@ -44,7 +44,7 @@ export const useCrmStore = () => {
   const queryClient = useQueryClient();
 
   // --- QUERIES ---
-  const { data: customers = [], isLoading: isLoadingCustomers } = useQuery({
+  const { data: customers = [], isLoading: isLoadingCustomers } = useQuery<Customer[]>({
     queryKey: ['customers'],
     queryFn: fetchCustomers,
   });

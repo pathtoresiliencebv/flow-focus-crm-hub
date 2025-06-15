@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -6,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import LocationMapInput from "../LocationMapInput";
 import { User } from "@/hooks/useUserStore";
-import { Project } from "@/hooks/useCrmStore";
+import { ProjectWithCustomerName } from "@/hooks/useCrmStore";
 import { dayOptions, generateTimeOptions } from "./utils";
 
 const timeOptions = generateTimeOptions();
@@ -16,7 +15,7 @@ interface MultiDayPlanningDialogProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (formData: FormData) => void;
   installers: User[];
-  projects: Project[];
+  projects: ProjectWithCustomerName[];
   startDate: Date | undefined;
   onStartDateChange: (date: Date | undefined) => void;
   endDate: Date | undefined;
