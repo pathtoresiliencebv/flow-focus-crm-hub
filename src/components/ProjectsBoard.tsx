@@ -175,7 +175,7 @@ export const ProjectsBoard: React.FC = () => {
   }, {});
 
   return (
-    <div className="mt-6">
+    <div className="p-4 sm:p-6">
       <Dialog open={newProjectDialogOpen} onOpenChange={setNewProjectDialogOpen}>
         <DialogContent>
           <DialogHeader>

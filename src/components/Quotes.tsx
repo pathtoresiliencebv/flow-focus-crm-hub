@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import {
   Table,
@@ -164,7 +165,7 @@ export function Quotes() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="p-4 sm:p-6 space-y-6">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">Offertes</h2>
         </div>
@@ -177,7 +178,7 @@ export function Quotes() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Offertes</h2>
         <Dialog>
