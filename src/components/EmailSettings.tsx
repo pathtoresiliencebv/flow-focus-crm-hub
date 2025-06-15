@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -95,7 +96,9 @@ export function EmailSettings() {
         if (error) throw error;
       } else {
         // Create
-        const { error } = await supabase.from('user_email_settings').insert(payload);
+        // We spread the payload into a new object to help TypeScript with type inference,
+        // as it incorrectly widens the type when the same payload is also used for updates.
+        const { error } = await supabase.from('user_email_settings').insert({ ...payload });
         if (error) throw error;
       }
     },
@@ -302,3 +305,4 @@ export function EmailSettings() {
     </div>
   );
 }
+
