@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from "react";
@@ -167,14 +166,8 @@ export const Sidebar = ({ links, user, logout, activeTab, setActiveTab, children
   const SidebarContent = () => (
     <>
       <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center space-x-3">
-          <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-            <User className="h-6 w-6" />
-          </div>
-          <div>
-            <p className="font-semibold">SMANS</p>
-            <p className="text-sm text-gray-500">{user?.email}</p>
-          </div>
+        <div className="flex items-center justify-center">
+          <img src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="SMANS Logo" className="h-10 w-auto" />
         </div>
       </div>
       <nav className="flex-1 p-4 overflow-y-auto">
@@ -192,13 +185,21 @@ export const Sidebar = ({ links, user, logout, activeTab, setActiveTab, children
         {settingsLink && (
            <button
              onClick={createLinkHandler(settingsLink.key)}
-             className={`flex gap-2 font-medium text-sm items-center w-full py-2 px-4 rounded-xl mb-2 ${activeTab === settingsLink.key ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
+             className={`flex gap-2 font-medium text-sm items-center w-full py-2 px-4 rounded-xl mb-4 ${activeTab === settingsLink.key ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
            >
              <Settings className="h-5 w-5" />
              {settingsLink.label}
            </button>
         )}
-        <button onClick={logout} className="flex gap-2 font-medium text-sm items-center w-full p-2 text-center bg-red-100 rounded-xl hover:bg-red-200 text-red-700">
+        <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
+          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center shrink-0">
+            <User className="h-5 w-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm truncate">{user?.email}</p>
+          </div>
+        </div>
+        <button onClick={logout} className="flex gap-2 font-medium text-sm items-center w-full p-2 mt-4 text-center bg-red-100 rounded-xl hover:bg-red-200 text-red-700">
           <LogOut className="h-5 w-5" />
           Uitloggen
         </button>
