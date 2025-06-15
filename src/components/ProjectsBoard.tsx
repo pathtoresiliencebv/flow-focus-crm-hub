@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,7 +6,7 @@ import { Plus, Eye, Edit, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ProjectForm } from './ProjectForm';
-import { useCrmStore, Project } from "@/hooks/useCrmStore";
+import { useCrmStore, ProjectWithCustomerName as Project, UpdateProject } from "@/hooks/useCrmStore";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 type ProjectStatus = "te-plannen" | "gepland" | "in-uitvoering" | "herkeuring" | "afgerond";

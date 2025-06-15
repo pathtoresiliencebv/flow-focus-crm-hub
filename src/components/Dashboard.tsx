@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarDays } from "lucide-react";
 import { WeekCalendar } from "./WeekCalendar";
-import { useCrmStore } from "@/hooks/useCrmStore";
+import { useCrmStore, Customer, NewProject } from "@/hooks/useCrmStore";
 import { useToast } from "@/hooks/use-toast";
 import { addDays } from "date-fns";
 import { DashboardHeader } from "./dashboard/DashboardHeader";
@@ -107,7 +107,7 @@ export const Dashboard = () => {
   // Calculate statistics
   const totalCustomers = customers.length;
   const activeProjects = projects.filter(p => p.status !== "afgerond").length;
-  const totalRevenue = projects.reduce((sum, project) => sum + parseFloat(project.value), 0);
+  const totalRevenue = projects.reduce((sum, project) => sum + (project.value || 0), 0);
   const completedProjects = projects.filter(p => p.status === "afgerond").length;
 
   // Get upcoming planning items (next 7 days)
@@ -119,19 +119,18 @@ export const Dashboard = () => {
   }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   const handleCreateProject = (formData: FormData) => {
-    const customerId = parseInt(formData.get('customer') as string);
+    const customerId = formData.get('customer') as string;
     const customer = customers.find(c => c.id === customerId);
     
     if (!customer) return;
 
-    const newProject = {
+    const newProject: NewProject = {
       title: formData.get('title') as string,
-      customer: customer.name,
-      customerId: customerId,
-      date: formData.get('date') as string,
-      value: formData.get('value') as string,
-      status: "te-plannen" as const,
-      description: formData.get('description') as string
+      customer_id: customer.id,
+      date: (formData.get('date') as string) || null,
+      value: Number(formData.get('value') as string) || null,
+      status: "te-plannen",
+      description: (formData.get('description') as string) || null,
     };
 
     addProject(newProject);

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Plus, Search, Eye, Edit, Trash2, MoreHorizontal } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useCrmStore } from "@/hooks/useCrmStore";
+import { useCrmStore, Customer } from "@/hooks/useCrmStore";
 import { CustomerForm } from './CustomerForm';
 
 export const Customers = () => {
@@ -18,24 +17,24 @@ export const Customers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [newCustomerDialogOpen, setNewCustomerDialogOpen] = useState(false);
   const [editCustomerDialogOpen, setEditCustomerDialogOpen] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
   const filteredCustomers = customers.filter(customer =>
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.city.toLowerCase().includes(searchTerm.toLowerCase())
+    (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (customer.city && customer.city.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const handleViewCustomer = (customerId: number) => {
+  const handleViewCustomer = (customerId: string) => {
     navigate(`/customers/${customerId}`);
   };
 
-  const handleEditCustomer = (customer: any) => {
+  const handleEditCustomer = (customer: Customer) => {
     setSelectedCustomer(customer);
     setEditCustomerDialogOpen(true);
   };
 
-  const handleDeleteCustomer = (customerId: number, customerName: string) => {
+  const handleDeleteCustomer = (customerId: string, customerName: string) => {
     if (window.confirm(`Weet je zeker dat je klant "${customerName}" wilt verwijderen?`)) {
       deleteCustomer(customerId);
     }
@@ -133,12 +132,12 @@ export const Customers = () => {
                       <TableCell>
                         <Badge 
                           variant="secondary" 
-                          className={getStatusColor(customer.status)}
+                          className={getStatusColor(customer.status ?? '')}
                         >
                           {customer.status}
                         </Badge>
                       </TableCell>
-                      <TableCell>{new Date(customer.createdAt).toLocaleDateString('nl-NL')}</TableCell>
+                      <TableCell>{new Date(customer.created_at).toLocaleDateString('nl-NL')}</TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>

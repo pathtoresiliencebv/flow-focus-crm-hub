@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,7 +14,7 @@ export type UpdateProject = Database['public']['Tables']['projects']['Update'];
 
 // This is the type we get from the query, with the customer name joined.
 export type ProjectWithCustomerName = Project & {
-  customers: { name: string } | null;
+  customer: string;
 };
 
 // --- API functions for react-query ---
@@ -28,7 +27,16 @@ const fetchCustomers = async () => {
 const fetchProjects = async () => {
   const { data, error } = await supabase.from('projects').select('*, customers(name)').order('created_at', { ascending: false });
   if (error) throw error;
-  return data as ProjectWithCustomerName[];
+  
+  // Transform the data to add a simple 'customer' name property
+  const transformedData = data.map(p => {
+    const { customers, ...rest } = p;
+    return {
+      ...rest,
+      customer: customers?.name ?? 'Onbekende klant'
+    };
+  });
+  return transformedData as ProjectWithCustomerName[];
 };
 
 // --- Main hook ---
@@ -41,7 +49,7 @@ export const useCrmStore = () => {
     queryFn: fetchCustomers,
   });
 
-  const { data: projects = [], isLoading: isLoadingProjects } = useQuery({
+  const { data: projects = [], isLoading: isLoadingProjects } = useQuery<ProjectWithCustomerName[]>({
     queryKey: ['projects'],
     queryFn: fetchProjects,
   });
@@ -138,7 +146,9 @@ export const useCrmStore = () => {
 
   const updateProjectMutation = useMutation({
     mutationFn: async ({ id, ...projectData }: UpdateProject & { id: string }) => {
-      const { data, error } = await supabase.from('projects').update(projectData).eq('id', id).select().single();
+      // Ensure 'customer' field is not sent to Supabase
+      const { customer, ...restData } = projectData as any;
+      const { data, error } = await supabase.from('projects').update(restData).eq('id', id).select().single();
       if (error) throw error;
       return data;
     },
@@ -181,7 +191,7 @@ export const useCrmStore = () => {
 
   return {
     customers,
-    projects: projects, // Components will now receive the full project object including the nested customer name
+    projects, // Components will now receive the transformed project object
     isLoading: isLoadingCustomers || isLoadingProjects,
     
     // Provide async functions for components to call

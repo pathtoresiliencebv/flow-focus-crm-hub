@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,13 +5,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useCrmStore, Project } from "@/hooks/useCrmStore";
+import { useCrmStore, ProjectWithCustomerName as Project, NewProject, UpdateProject } from "@/hooks/useCrmStore";
 import { CustomerQuickAdd } from "./CustomerQuickAdd";
 import { Plus } from "lucide-react";
 
+type ProjectStatus = "te-plannen" | "gepland" | "in-uitvoering" | "herkeuring" | "afgerond";
 interface ProjectFormProps {
   onClose: () => void;
-  initialStatus?: "te-plannen" | "gepland" | "in-uitvoering" | "herkeuring" | "afgerond";
+  initialStatus?: ProjectStatus;
   existingProject?: Project;
 }
 
@@ -21,7 +21,7 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
   const [showCustomerAdd, setShowCustomerAdd] = useState(false);
   const [formData, setFormData] = useState({
     title: existingProject?.title || "",
-    customerId: existingProject?.customerId?.toString() || "",
+    customerId: existingProject?.customer_id || "",
     date: existingProject?.date || "",
     value: existingProject?.value || "",
     status: existingProject?.status || initialStatus,
@@ -43,17 +43,17 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
     }));
   };
 
-  const handleStatusChange = (status: "te-plannen" | "gepland" | "in-uitvoering" | "herkeuring" | "afgerond") => {
+  const handleStatusChange = (status: ProjectStatus) => {
     setFormData((prev) => ({
       ...prev,
       status,
     }));
   };
 
-  const handleCustomerAdded = (customerId: number) => {
+  const handleCustomerAdded = (customerId: string) => {
     setFormData((prev) => ({
       ...prev,
-      customerId: customerId.toString(),
+      customerId: customerId,
     }));
     setShowCustomerAdd(false);
   };
@@ -61,23 +61,25 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const selectedCustomer = customers.find(c => c.id.toString() === formData.customerId);
-    if (!selectedCustomer) return;
+    if (!formData.customerId) {
+      // Maybe show a toast?
+      console.error("Customer not selected");
+      return;
+    }
 
-    const projectData = {
+    const projectData: Omit<NewProject, 'id' | 'created_at' | 'updated_at' | 'user_id'> & { id?: string } = {
       title: formData.title,
-      customer: selectedCustomer.name,
-      customerId: selectedCustomer.id,
-      date: formData.date,
-      value: formData.value,
-      status: formData.status,
-      description: formData.description,
+      customer_id: formData.customerId,
+      date: formData.date || null,
+      value: Number(formData.value) || null,
+      status: formData.status as ProjectStatus,
+      description: formData.description || null,
     };
 
     if (existingProject) {
-      updateProject(existingProject.id, projectData);
+      updateProject(existingProject.id, projectData as UpdateProject);
     } else {
-      addProject(projectData);
+      addProject(projectData as NewProject);
     }
     
     onClose();
@@ -119,7 +121,7 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
                 </SelectTrigger>
                 <SelectContent>
                   {customers.map((customer) => (
-                    <SelectItem key={customer.id} value={customer.id.toString()}>
+                    <SelectItem key={customer.id} value={customer.id}>
                       {customer.name}
                     </SelectItem>
                   ))}
@@ -139,7 +141,7 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
           
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
-            <Select value={formData.status} onValueChange={handleStatusChange}>
+            <Select value={formData.status ?? 'te-plannen'} onValueChange={handleStatusChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecteer status" />
               </SelectTrigger>
@@ -174,7 +176,7 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
               type="number"
               min="0"
               step="0.01"
-              value={formData.value}
+              value={formData.value ?? ''}
               onChange={handleChange}
               placeholder="0.00"
             />

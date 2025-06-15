@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +7,7 @@ import { useCrmStore } from "@/hooks/useCrmStore";
 import { useToast } from "@/hooks/use-toast";
 
 interface CustomerQuickAddProps {
-  onCustomerAdded: (customerId: number) => void;
+  onCustomerAdded: (customerId: string) => void;
   onCancel: () => void;
 }
 
@@ -31,7 +30,7 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.name || !formData.email || !formData.phone) {
@@ -43,13 +42,18 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
       return;
     }
 
-    const newCustomer = addCustomer({
-      ...formData,
-      notes: "",
-      status: "Actief"
-    });
-    
-    onCustomerAdded(newCustomer.id);
+    try {
+      const newCustomer = await addCustomer({
+        ...formData,
+        notes: "",
+        status: "Actief"
+      });
+      
+      onCustomerAdded(newCustomer.id);
+    } catch (error) {
+      // Error toast is already handled in useCrmStore
+      console.error("Failed to add customer:", error);
+    }
   };
 
   return (

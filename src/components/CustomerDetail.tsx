@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, File, CheckCircle, Clock, Receipt } from "lucide-react";
@@ -21,7 +20,7 @@ const CustomerDetail = () => {
   const { customers, projects } = useCrmStore();
 
   // Find the customer from the CRM store
-  const customer = customers.find(c => c.id.toString() === customerId);
+  const customer = customers.find(c => c.id === customerId);
   
   // If customer not found, show error message
   if (!customer) {
@@ -39,7 +38,7 @@ const CustomerDetail = () => {
   }
 
   // Filter projects for this customer
-  const customerProjects = projects.filter(p => p.customerId === customer.id);
+  const customerProjects = projects.filter(p => p.customer_id === customer.id);
 
   // Filter invoices for this customer
   const customerInvoices = mockInvoices.filter(i => i.customer === customer.name);

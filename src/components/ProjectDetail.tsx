@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Calendar, FileText, Users, Clipboard, BarChart, Edit, Save, X } from "lucide-react";
@@ -8,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { useCrmStore } from "@/hooks/useCrmStore";
+import { useCrmStore, UpdateProject } from "@/hooks/useCrmStore";
 import { ProjectMaterials } from "./ProjectMaterials";
 import { ProjectPersonnel } from "./ProjectPersonnel";
 import { ProjectPlanning } from "./ProjectPlanning";
@@ -47,16 +48,16 @@ const ProjectDetail = () => {
   }
 
   // Find customer details
-  const customer = customers.find(c => c.id === project.customerId);
+  const customer = customers.find(c => c.id === project.customer_id);
 
   const handleEditStart = () => {
     setEditData({
       title: project.title,
-      customerId: project.customerId.toString(),
-      date: project.date,
-      value: project.value,
-      status: project.status,
-      description: project.description,
+      customerId: project.customer_id,
+      date: project.date ?? '',
+      value: project.value?.toString() ?? '',
+      status: project.status ?? 'te-plannen',
+      description: project.description ?? '',
     });
     setIsEditing(true);
   };
@@ -74,18 +75,15 @@ const ProjectDetail = () => {
   };
 
   const handleEditSave = () => {
-    const selectedCustomer = customers.find(c => c.id.toString() === editData.customerId);
-    if (selectedCustomer) {
-      updateProject(project.id, {
-        title: editData.title,
-        customerId: selectedCustomer.id,
-        customer: selectedCustomer.name,
-        date: editData.date,
-        value: editData.value,
-        status: editData.status as "te-plannen" | "gepland" | "herkeuring" | "afgerond",
-        description: editData.description,
-      });
-    }
+    const projectData: UpdateProject = {
+      title: editData.title,
+      customer_id: editData.customerId,
+      date: editData.date || null,
+      value: Number(editData.value) || null,
+      status: editData.status as "te-plannen" | "gepland" | "herkeuring" | "afgerond",
+      description: editData.description || null,
+    };
+    updateProject(project.id, projectData);
     setIsEditing(false);
   };
 
@@ -109,12 +107,15 @@ const ProjectDetail = () => {
             project.status === "gepland" ? "bg-orange-100 text-orange-800" :
             project.status === "afgerond" ? "bg-green-100 text-green-800" :
             project.status === "herkeuring" ? "bg-gray-100 text-gray-800" :
+            project.status === 'in-uitvoering' ? 'bg-blue-100 text-blue-800' :
             "bg-red-100 text-red-800"
           }`}>
             {project.status === "te-plannen" ? "Te plannen" :
              project.status === "gepland" ? "Gepland" :
+             project.status === "in-uitvoering" ? "In uitvoering" :
              project.status === "herkeuring" ? "Herkeuring" :
-             "Afgerond"}
+             project.status === "afgerond" ? "Afgerond" :
+             "Onbekend"}
           </span>
         </div>
         
@@ -164,7 +165,7 @@ const ProjectDetail = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {customers.map((customer) => (
-                        <SelectItem key={customer.id} value={customer.id.toString()}>
+                        <SelectItem key={customer.id} value={customer.id}>
                           {customer.name}
                         </SelectItem>
                       ))}
@@ -190,6 +191,7 @@ const ProjectDetail = () => {
                     <SelectContent>
                       <SelectItem value="te-plannen">Te plannen</SelectItem>
                       <SelectItem value="gepland">Gepland</SelectItem>
+                      <SelectItem value="in-uitvoering">In uitvoering</SelectItem>
                       <SelectItem value="herkeuring">Herkeuring</SelectItem>
                       <SelectItem value="afgerond">Afgerond</SelectItem>
                     </SelectContent>
@@ -213,8 +215,10 @@ const ProjectDetail = () => {
                 <p className="text-sm"><span className="font-medium">Status:</span> {
                   project.status === "te-plannen" ? "Te plannen" :
                   project.status === "gepland" ? "Gepland" :
+                  project.status === 'in-uitvoering' ? "In uitvoering" :
                   project.status === "herkeuring" ? "Herkeuring" :
-                  "Afgerond"
+                  project.status === "afgerond" ? "Afgerond" :
+                  "Onbekend"
                 }</p>
                 <p className="text-sm"><span className="font-medium">Waarde:</span> €{project.value}</p>
               </div>
