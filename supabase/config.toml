@@ -1,1 +1,8 @@
+
 project_id = "pvesgvkyiaqmsudmmtkc"
+
+[functions.auth-mobile]
+verify_jwt = false
+
+[functions.customers-mobile]
+verify_jwt = true
