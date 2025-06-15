@@ -1,197 +1,241 @@
 
 "use client";
 
-import { cn } from "@/lib/utils";
-import React, { useState, createContext, useContext } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { User, LogOut, Settings } from "lucide-react";
 
-interface Links {
-  label: string;
-  href: string;
-  icon: React.JSX.Element | React.ReactNode;
-}
-
-interface SidebarContextProps {
-  open: boolean;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  animate: boolean;
-}
-
-const SidebarContext = createContext<SidebarContextProps | undefined>(
-  undefined
+const AnimatedMenuToggle = ({
+  toggle,
+  isOpen,
+}: {
+  toggle: () => void;
+  isOpen: boolean;
+}) => (
+  <button
+    onClick={toggle}
+    aria-label="Toggle menu"
+    className="focus:outline-none z-[101]"
+  >
+    <motion.div animate={{ y: isOpen ? 13 : 0 }} transition={{ duration: 0.3 }}>
+      <motion.svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        initial="closed"
+        animate={isOpen ? "open" : "closed"}
+        transition={{ duration: 0.3 }}
+        className="text-black"
+      >
+        <motion.path
+          fill="transparent"
+          strokeWidth="3"
+          stroke="currentColor"
+          strokeLinecap="round"
+          variants={{
+            closed: { d: "M 2 2.5 L 22 2.5" },
+            open: { d: "M 3 16.5 L 17 2.5" },
+          }}
+        />
+        <motion.path
+          fill="transparent"
+          strokeWidth="3"
+          stroke="currentColor"
+          strokeLinecap="round"
+          variants={{
+            closed: { d: "M 2 12 L 22 12", opacity: 1 },
+            open: { opacity: 0 },
+          }}
+          transition={{ duration: 0.2 }}
+        />
+        <motion.path
+          fill="transparent"
+          strokeWidth="3"
+          stroke="currentColor"
+          strokeLinecap="round"
+          variants={{
+            closed: { d: "M 2 21.5 L 22 21.5" },
+            open: { d: "M 3 2.5 L 17 16.5" },
+          }}
+        />
+      </motion.svg>
+    </motion.div>
+  </button>
 );
 
-export const useSidebar = () => {
-  const context = useContext(SidebarContext);
-  if (!context) {
-    throw new Error("useSidebar must be used within a SidebarProvider");
-  }
-  return context;
-};
+const MenuIcon = () => (
+  <motion.svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
+    <motion.line x1="3" y1="12" x2="21" y2="12" />
+  </motion.svg>
+);
 
-export const SidebarProvider = ({
+const XIcon = () => (
+  <motion.svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
+    <motion.line x1="18" y1="6" x2="6" y2="18" />
+    <motion.line x1="6" y1="6" x2="18" y2="18" />
+  </motion.svg>
+);
+
+const CollapsibleSection = ({
+  title,
   children,
-  open: openProp,
-  setOpen: setOpenProp,
-  animate = true,
 }: {
+  title: string;
   children: React.ReactNode;
-  open?: boolean;
-  setOpen?: React.Dispatch<React.SetStateAction<boolean>>;
-  animate?: boolean;
 }) => {
-  const [openState, setOpenState] = useState(false);
-
-  const open = openProp !== undefined ? openProp : openState;
-  const setOpen = setOpenProp !== undefined ? setOpenProp : setOpenState;
+  const [open, setOpen] = useState(false);
 
   return (
-    <SidebarContext.Provider value={{ open, setOpen, animate }}>
-      {children}
-    </SidebarContext.Provider>
-  );
-};
-
-export const Sidebar = ({
-  children,
-  open,
-  setOpen,
-  animate,
-}: {
-  children: React.ReactNode;
-  open?: boolean;
-  setOpen?: React.Dispatch<React.SetStateAction<boolean>>;
-  animate?: boolean;
-}) => {
-  return (
-    <SidebarProvider open={open} setOpen={setOpen} animate={animate}>
-      {children}
-    </SidebarProvider>
-  );
-};
-
-export const SidebarBody = (props: React.ComponentProps<"div">) => {
-  return (
-    <>
-      <DesktopSidebar {...props} />
-      <MobileSidebar {...props} />
-    </>
-  );
-};
-
-export const DesktopSidebar = ({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<"div">) => {
-  const { animate } = useSidebar();
-  return (
-    <div
-      className={cn(
-        "h-screen px-4 py-4 hidden md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 w-[60px] flex-shrink-0 fixed left-0 top-0 z-40 overflow-y-auto",
-        className
-      )}
-      {...props}
-    >
-      {children}
+    <div className="mb-4">
+      <button
+        className="w-full flex items-center justify-between py-2 px-4 rounded-xl hover:bg-gray-100"
+        onClick={() => setOpen(!open)}
+      >
+        <span className="font-semibold">{title}</span>
+        {open ? <XIcon /> : <MenuIcon />}
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden"
+          >
+            <div className="p-2">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
-export const MobileSidebar = ({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<"div">) => {
-  const { open, setOpen } = useSidebar();
+export const Sidebar = ({ links, user, logout, activeTab, setActiveTab, children }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const mobileSidebarVariants = {
+    hidden: { x: "-100%" },
+    visible: { x: 0 },
+  };
+
+  const toggleSidebar = () => setIsOpen(!isOpen);
+
+  const mainLinks = links.slice(0, 4);
+  const werkLinks = links.filter(l => ["time", "receipts", "quotes", "invoicing", "email"].includes(l.key));
+  const beheerLinks = links.filter(l => ["personnel", "users", "salary", "reports"].includes(l.key));
+  const settingsLink = links.find(l => l.key === 'settings');
+
+  const createLinkHandler = (tabKey) => () => {
+    setActiveTab(tabKey);
+    if (isOpen) {
+      toggleSidebar();
+    }
+  };
+
+  const renderLink = (link, isCollapsible = false) => {
+    const commonClasses = `flex gap-2 font-medium text-sm items-center w-full py-2 px-4 rounded-xl`;
+    const activeClasses = activeTab === link.key ? 'bg-gray-200' : 'hover:bg-gray-100';
+    const collapsibleClasses = isCollapsible ? 'text-left p-2' : '';
+    return (
+      <li key={link.key} className={!isCollapsible ? "mb-2" : ""}>
+        <button
+          onClick={createLinkHandler(link.key)}
+          className={`${commonClasses} ${activeClasses} ${collapsibleClasses}`}
+        >
+          {!isCollapsible && link.icon}
+          {link.label}
+        </button>
+      </li>
+    );
+  };
   
-  // Filter out all React event handlers that conflict with Framer Motion
-  const {
-    onDrag,
-    onDragStart,
-    onDragEnd,
-    onAnimationStart,
-    onAnimationEnd,
-    onAnimationIteration,
-    onTransitionEnd,
-    ...motionCompatibleProps
-  } = props;
-  
-  return (
+  const SidebarContent = () => (
     <>
-      <div
-        className={cn(
-          "h-14 px-4 py-4 flex flex-row md:hidden items-center justify-between bg-neutral-100 dark:bg-neutral-800 w-full fixed top-0 left-0 z-50"
-        )}
-      >
-        <div className="flex justify-end z-20 w-full">
-          <Menu
-            className="text-neutral-800 dark:text-neutral-200 cursor-pointer"
-            onClick={() => setOpen(!open)}
-          />
+      <div className="p-4 border-b border-gray-200">
+        <div className="flex items-center space-x-3">
+          <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+            <User className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="font-semibold">SMANS</p>
+            <p className="text-sm text-gray-500">{user?.email}</p>
+          </div>
         </div>
-        <AnimatePresence>
-          {open && (
-            <motion.div
-              initial={{ x: "-100%", opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: "-100%", opacity: 0 }}
-              transition={{
-                duration: 0.3,
-                ease: "easeInOut",
-              }}
-              className={cn(
-                "fixed h-full w-full inset-0 bg-white dark:bg-neutral-900 p-10 z-[100] flex flex-col justify-between overflow-y-auto",
-                className
-              )}
-              {...motionCompatibleProps}
-            >
-              <div
-                className="absolute right-10 top-10 z-50 text-neutral-800 dark:text-neutral-200 cursor-pointer"
-                onClick={() => setOpen(!open)}
-              >
-                <X />
-              </div>
-              {children}
-            </motion.div>
-          )}
-        </AnimatePresence>
+      </div>
+      <nav className="flex-1 p-4 overflow-y-auto">
+        <ul>{mainLinks.map(link => renderLink(link))}</ul>
+        <div className="mt-4">
+          <CollapsibleSection title="Werk">
+            <ul>{werkLinks.map(link => renderLink(link, true))}</ul>
+          </CollapsibleSection>
+          <CollapsibleSection title="Beheer">
+            <ul>{beheerLinks.map(link => renderLink(link, true))}</ul>
+          </CollapsibleSection>
+        </div>
+      </nav>
+      <div className="p-4 border-t border-gray-200">
+        {settingsLink && (
+           <button
+             onClick={createLinkHandler(settingsLink.key)}
+             className={`flex gap-2 font-medium text-sm items-center w-full py-2 px-4 rounded-xl mb-2 ${activeTab === settingsLink.key ? 'bg-gray-200' : 'hover:bg-gray-100'}`}
+           >
+             <Settings className="h-5 w-5" />
+             {settingsLink.label}
+           </button>
+        )}
+        <button onClick={logout} className="flex gap-2 font-medium text-sm items-center w-full p-2 text-center bg-red-100 rounded-xl hover:bg-red-200 text-red-700">
+          <LogOut className="h-5 w-5" />
+          Uitloggen
+        </button>
       </div>
     </>
   );
-};
 
-export const SidebarLink = ({
-  link,
-  className,
-  onClick,
-  ...props
-}: {
-  link: Links;
-  className?: string;
-  onClick?: () => void;
-}) => {
-  const { open, animate } = useSidebar();
   return (
-    <div
-      className={cn(
-        "flex items-center justify-start gap-2 group/sidebar py-2 cursor-pointer",
-        className
-      )}
-      onClick={onClick}
-      {...props}
-    >
-      {link.icon}
-      <motion.span
-        animate={{
-          display: animate ? (open ? "inline-block" : "none") : "inline-block",
-          opacity: animate ? (open ? 1 : 0) : 1,
-        }}
-        className="text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0"
-      >
-        {link.label}
-      </motion.span>
+    <div className="flex h-screen bg-gray-50">
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+            variants={mobileSidebarVariants}
+            transition={{ duration: 0.3 }}
+            className="md:hidden fixed inset-0 z-[100] bg-white text-black flex flex-col h-full"
+          >
+            <SidebarContent />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="hidden md:flex flex-col fixed top-0 left-0 h-full w-64 bg-white text-black shadow">
+        <SidebarContent />
+      </div>
+
+      <div className="flex-1 ml-0 md:ml-64 transition-all duration-300 flex flex-col">
+        <div className="p-4 bg-white border-b border-gray-200 md:hidden flex justify-between items-center sticky top-0 z-50">
+          <img src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="SMANS Logo" className="h-8 w-auto" />
+          <AnimatedMenuToggle toggle={toggleSidebar} isOpen={isOpen} />
+        </div>
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
+      </div>
     </div>
   );
 };

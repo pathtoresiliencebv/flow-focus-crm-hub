@@ -96,9 +96,21 @@ export function EmailSettings() {
         if (error) throw error;
       } else {
         // Create
-        // We spread the payload into a new object to help TypeScript with type inference,
-        // as it incorrectly widens the type when the same payload is also used for updates.
-        const { error } = await supabase.from('user_email_settings').insert({ ...payload });
+        // Explicitly create payload to satisfy TypeScript types for insert
+        const { error } = await supabase.from('user_email_settings').insert({
+            user_id: user!.id,
+            display_name: accountData.display_name,
+            email_address: accountData.email_address,
+            imap_host: accountData.imap_host,
+            imap_port: accountData.imap_port,
+            imap_username: accountData.imap_username,
+            imap_password: accountData.imap_password,
+            smtp_host: accountData.smtp_host,
+            smtp_port: accountData.smtp_port,
+            smtp_username: accountData.smtp_username,
+            smtp_password: accountData.smtp_password,
+            is_active: accountData.is_active,
+        });
         if (error) throw error;
       }
     },
@@ -305,4 +317,3 @@ export function EmailSettings() {
     </div>
   );
 }
-

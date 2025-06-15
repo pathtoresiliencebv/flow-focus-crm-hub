@@ -19,16 +19,15 @@ import { Salary } from "@/components/Salary";
 import { Reports } from "@/components/Reports";
 import { Email } from "@/components/Email";
 import Settings from "@/pages/Settings";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { AppSidebar } from "@/components/AppSidebar";
 import { ResizableChatWidget } from "@/components/ResizableChatWidget";
-import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Index = () => {
-  const [activeTab, setActiveTab]  = useState("dashboard");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const { customerId, projectId } = useParams();
-  const isMobile = useIsMobile();
   const { user, login, isLoading } = useAuth();
+  const isMobile = useIsMobile();
 
   // Update active tab based on URL params
   useEffect(() => {
@@ -44,9 +43,9 @@ const Index = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <img 
-            src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" 
-            alt="SMANS Logo" 
+          <img
+            src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png"
+            alt="SMANS Logo"
             className="mx-auto h-12 w-auto mb-4"
           />
           <p className="text-gray-600">Laden...</p>
@@ -65,7 +64,7 @@ const Index = () => {
     if (customerId) {
       return <CustomerDetail />;
     }
-    
+
     // Show project detail if projectId is in URL
     if (projectId) {
       return <ProjectDetail />;
@@ -106,23 +105,14 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AppSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      
-      <div className={cn(
-        "min-h-screen",
-        isMobile ? "ml-0 pt-14" : "ml-[60px]"
-      )}>
-        <main className="h-full overflow-y-auto">
-          <div className={`h-full ${isMobile ? 'p-2' : 'p-6'}`}>
-            {renderContent()}
-          </div>
-        </main>
-      </div>
-
-      {/* Resizable Chat Widget */}
+    <>
+      <AppSidebar activeTab={activeTab} setActiveTab={setActiveTab}>
+        <div className={`h-full ${isMobile ? 'p-2' : 'p-6'}`}>
+          {renderContent()}
+        </div>
+      </AppSidebar>
       <ResizableChatWidget />
-    </div>
+    </>
   );
 };
 
