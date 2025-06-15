@@ -63,9 +63,18 @@ export const useAuth = () => {
   const login = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
+      let description = "Er is een onbekende fout opgetreden.";
+      if (error.message === 'Invalid login credentials') {
+        description = "Ongeldige inloggegevens. Controleer uw e-mailadres en wachtwoord.";
+      } else if (error.message.includes('Email not confirmed')) {
+        description = "Uw e-mailadres is nog niet bevestigd. Controleer uw inbox voor de bevestigingsmail.";
+      } else {
+        description = error.message;
+      }
+
       toast({
         title: "Inloggen mislukt",
-        description: error.message,
+        description: description,
         variant: "destructive"
       });
     } else {

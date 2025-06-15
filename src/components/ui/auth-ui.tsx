@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { useState, useId } from "react";
 import { Slot } from "@radix-ui/react-slot";
@@ -199,9 +198,6 @@ function AuthFormContainer({ onLogin, isLoading }: AuthFormContainerProps) {
                 <Button variant="link" className="pl-1 text-smans-primary hover:text-smans-primary/80" onClick={() => setIsSignIn(!isSignIn)}>
                     {isSignIn ? "Registreren" : "Inloggen"}
                 </Button>
-            </div>
-            <div className="text-center text-sm text-gray-500 mt-4">
-                Demo: gebruik elk e-mailadres en wachtwoord om in te loggen
             </div>
         </div>
     )
