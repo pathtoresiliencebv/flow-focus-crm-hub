@@ -1,207 +1,196 @@
 
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import type { Database } from '@/integrations/supabase/types';
 
-export interface Customer {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  city: string;
-  notes: string;
-  status: "Actief" | "In behandeling" | "Inactief";
-  createdAt: string;
-}
+// --- Types based on Supabase schema ---
+export type Customer = Database['public']['Tables']['customers']['Row'];
+export type Project = Database['public']['Tables']['projects']['Row'];
+export type NewCustomer = Database['public']['Tables']['customers']['Insert'];
+export type UpdateCustomer = Database['public']['Tables']['customers']['Update'];
+export type NewProject = Database['public']['Tables']['projects']['Insert'];
+export type UpdateProject = Database['public']['Tables']['projects']['Update'];
 
-export interface Project {
-  id: string;
-  title: string;
-  customer: string;
-  customerId: number;
-  date: string;
-  value: string;
-  status: "te-plannen" | "gepland" | "in-uitvoering" | "herkeuring" | "afgerond";
-  description: string;
-  createdAt: string;
-}
-
-const STORAGE_KEYS = {
-  CUSTOMERS: 'crm_customers',
-  PROJECTS: 'crm_projects'
+// This is the type we get from the query, with the customer name joined.
+export type ProjectWithCustomerName = Project & {
+  customers: { name: string } | null;
 };
 
-// Initial data
-const initialCustomers: Customer[] = [
-  {
-    id: 1,
-    name: "Jan de Vries",
-    email: "jan@example.com",
-    phone: "06-12345678",
-    address: "Hoofdstraat 123",
-    city: "Amsterdam",
-    notes: "Geïnteresseerd in kunststof kozijnen",
-    status: "Actief",
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: 2,
-    name: "Marie Jansen",
-    email: "marie@example.com",
-    phone: "06-87654321",
-    address: "Kerkstraat 45",
-    city: "Utrecht",
-    notes: "Wil offerte voor aluminium ramen",
-    status: "In behandeling",
-    createdAt: new Date().toISOString()
-  }
-];
+// --- API functions for react-query ---
+const fetchCustomers = async () => {
+  const { data, error } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+};
 
-const initialProjects: Project[] = [
-  {
-    id: "1",
-    title: "Kozijnen vervangen",
-    customer: "Jan de Vries",
-    customerId: 1,
-    date: "2025-01-15",
-    value: "4500",
-    status: "te-plannen",
-    description: "Vervangen van 6 kozijnen in woonhuis",
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: "2",
-    title: "Nieuwe ramen installeren",
-    customer: "Marie Jansen",
-    customerId: 2,
-    date: "2025-01-20",
-    value: "7500",
-    status: "gepland",
-    description: "Installatie van nieuwe aluminium ramen",
-    createdAt: new Date().toISOString()
-  }
-];
+const fetchProjects = async () => {
+  const { data, error } = await supabase.from('projects').select('*, customers(name)').order('created_at', { ascending: false });
+  if (error) throw error;
+  return data as ProjectWithCustomerName[];
+};
 
+// --- Main hook ---
 export const useCrmStore = () => {
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
+  const queryClient = useQueryClient();
 
-  // Load data from localStorage on mount
-  useEffect(() => {
-    const savedCustomers = localStorage.getItem(STORAGE_KEYS.CUSTOMERS);
-    const savedProjects = localStorage.getItem(STORAGE_KEYS.PROJECTS);
+  // --- QUERIES ---
+  const { data: customers = [], isLoading: isLoadingCustomers } = useQuery({
+    queryKey: ['customers'],
+    queryFn: fetchCustomers,
+  });
 
-    if (savedCustomers) {
-      setCustomers(JSON.parse(savedCustomers));
-    } else {
-      setCustomers(initialCustomers);
-      localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(initialCustomers));
-    }
+  const { data: projects = [], isLoading: isLoadingProjects } = useQuery({
+    queryKey: ['projects'],
+    queryFn: fetchProjects,
+  });
 
-    if (savedProjects) {
-      setProjects(JSON.parse(savedProjects));
-    } else {
-      setProjects(initialProjects);
-      localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(initialProjects));
-    }
-  }, []);
+  // --- MUTATIONS ---
+  const addCustomerMutation = useMutation({
+    mutationFn: async (customerData: NewCustomer) => {
+      const { data, error } = await supabase.from('customers').insert(customerData).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (newCustomer) => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      toast({
+        title: "Klant toegevoegd",
+        description: `${newCustomer.name} is succesvol toegevoegd.`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Fout bij toevoegen klant",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
-  // Customer functions
-  const addCustomer = (customerData: Omit<Customer, 'id' | 'createdAt'>) => {
-    const newCustomer: Customer = {
-      ...customerData,
-      id: Date.now(),
-      createdAt: new Date().toISOString()
-    };
-    
-    const updatedCustomers = [...customers, newCustomer];
-    setCustomers(updatedCustomers);
-    localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(updatedCustomers));
-    
-    toast({
-      title: "Klant toegevoegd",
-      description: `${newCustomer.name} is succesvol toegevoegd.`,
-    });
-    
-    return newCustomer;
-  };
+  const updateCustomerMutation = useMutation({
+    mutationFn: async ({ id, ...customerData }: UpdateCustomer & { id: string }) => {
+      const { data, error } = await supabase.from('customers').update(customerData).eq('id', id).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (updatedCustomer) => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      toast({
+        title: "Klant bijgewerkt",
+        description: `${updatedCustomer.name} is succesvol bijgewerkt.`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Fout bij bijwerken klant",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
-  const updateCustomer = (id: number, customerData: Partial<Customer>) => {
-    const updatedCustomers = customers.map(customer =>
-      customer.id === id ? { ...customer, ...customerData } : customer
-    );
-    setCustomers(updatedCustomers);
-    localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(updatedCustomers));
-    
-    toast({
-      title: "Klant bijgewerkt",
-      description: "Klantgegevens zijn succesvol bijgewerkt.",
-    });
-  };
+  const deleteCustomerMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('customers').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      toast({
+        title: "Klant verwijderd",
+        description: "Klant is succesvol verwijderd.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Fout bij verwijderen klant",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
-  const deleteCustomer = (id: number) => {
-    const updatedCustomers = customers.filter(customer => customer.id !== id);
-    setCustomers(updatedCustomers);
-    localStorage.setItem(STORAGE_KEYS.CUSTOMERS, JSON.stringify(updatedCustomers));
-    
-    toast({
-      title: "Klant verwijderd",
-      description: "Klant is succesvol verwijderd.",
-    });
-  };
+  const addProjectMutation = useMutation({
+    mutationFn: async (projectData: NewProject) => {
+      const { data, error } = await supabase.from('projects').insert(projectData).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (newProject) => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      toast({
+        title: "Project aangemaakt",
+        description: `${newProject.title} is succesvol aangemaakt.`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Fout bij aanmaken project",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
-  // Project functions
-  const addProject = (projectData: Omit<Project, 'id' | 'createdAt'>) => {
-    const newProject: Project = {
-      ...projectData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString()
-    };
-    
-    const updatedProjects = [...projects, newProject];
-    setProjects(updatedProjects);
-    localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(updatedProjects));
-    
-    toast({
-      title: "Project aangemaakt",
-      description: `${newProject.title} is succesvol aangemaakt.`,
-    });
-    
-    return newProject;
-  };
+  const updateProjectMutation = useMutation({
+    mutationFn: async ({ id, ...projectData }: UpdateProject & { id: string }) => {
+      const { data, error } = await supabase.from('projects').update(projectData).eq('id', id).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (updatedProject) => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      toast({
+        title: "Project bijgewerkt",
+        description: `Project "${updatedProject.title}" is succesvol bijgewerkt.`,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Fout bij bijwerken project",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
-  const updateProject = (id: string, projectData: Partial<Project>) => {
-    const updatedProjects = projects.map(project =>
-      project.id === id ? { ...project, ...projectData } : project
-    );
-    setProjects(updatedProjects);
-    localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(updatedProjects));
-    
-    toast({
-      title: "Project bijgewerkt",
-      description: "Project is succesvol bijgewerkt.",
-    });
-  };
-
-  const deleteProject = (id: string) => {
-    const updatedProjects = projects.filter(project => project.id !== id);
-    setProjects(updatedProjects);
-    localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(updatedProjects));
-    
-    toast({
-      title: "Project verwijderd",
-      description: "Project is succesvol verwijderd.",
-    });
-  };
+  const deleteProjectMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('projects').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      toast({
+        title: "Project verwijderd",
+        description: "Project is succesvol verwijderd.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Fout bij verwijderen project",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   return {
     customers,
-    projects,
-    addCustomer,
-    updateCustomer,
-    deleteCustomer,
-    addProject,
-    updateProject,
-    deleteProject
+    projects: projects, // Components will now receive the full project object including the nested customer name
+    isLoading: isLoadingCustomers || isLoadingProjects,
+    
+    // Provide async functions for components to call
+    addCustomer: addCustomerMutation.mutateAsync,
+    updateCustomer: (id: string, data: UpdateCustomer) => updateCustomerMutation.mutateAsync({ id, ...data }),
+    deleteCustomer: deleteCustomerMutation.mutateAsync,
+    
+    addProject: addProjectMutation.mutateAsync,
+    updateProject: (id: string, data: UpdateProject) => updateProjectMutation.mutateAsync({ id, ...data }),
+    deleteProject: deleteProjectMutation.mutateAsync,
   };
 };

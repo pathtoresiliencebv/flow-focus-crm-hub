@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      customers: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          status: Database["public"]["Enums"]["customer_status"] | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          status?: Database["public"]["Enums"]["customer_status"] | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          status?: Database["public"]["Enums"]["customer_status"] | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           body_html: string
@@ -169,6 +211,53 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      projects: {
+        Row: {
+          created_at: string
+          customer_id: string
+          date: string | null
+          description: string | null
+          id: string
+          status: Database["public"]["Enums"]["project_status"] | null
+          title: string
+          updated_at: string
+          user_id: string | null
+          value: number | null
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          date?: string | null
+          description?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["project_status"] | null
+          title: string
+          updated_at?: string
+          user_id?: string | null
+          value?: number | null
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          date?: string | null
+          description?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["project_status"] | null
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projects_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       quote_settings: {
         Row: {
@@ -346,6 +435,13 @@ export type Database = {
       }
     }
     Enums: {
+      customer_status: "Actief" | "In behandeling" | "Inactief"
+      project_status:
+        | "te-plannen"
+        | "gepland"
+        | "in-uitvoering"
+        | "herkeuring"
+        | "afgerond"
       user_role:
         | "Administrator"
         | "Verkoper"
@@ -468,6 +564,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      customer_status: ["Actief", "In behandeling", "Inactief"],
+      project_status: [
+        "te-plannen",
+        "gepland",
+        "in-uitvoering",
+        "herkeuring",
+        "afgerond",
+      ],
       user_role: [
         "Administrator",
         "Verkoper",
