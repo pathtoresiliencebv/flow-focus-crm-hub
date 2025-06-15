@@ -5,13 +5,13 @@ import Salary from "./Salary";
 
 const Personnel = () => {
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-4 sm:p-6 space-y-6">
+      <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Personeelszaken</h2>
       </div>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList className="mb-4">
+        <TabsList>
           <TabsTrigger value="users">Gebruikers</TabsTrigger>
           <TabsTrigger value="salary">Salarisadministratie</TabsTrigger>
         </TabsList>
