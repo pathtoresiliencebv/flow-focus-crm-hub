@@ -12,6 +12,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import { Send, Sparkles, FileText, X } from "lucide-react";
 
+interface EmailAccount {
+  id: string;
+  user_id: string;
+  email_address: string;
+  display_name: string;
+  is_active?: boolean;
+}
+
+interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  body_html: string;
+}
+
 interface EmailComposeProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -29,13 +44,13 @@ export function EmailCompose({ open, onOpenChange, replyTo }: EmailComposeProps)
   const [showBcc, setShowBcc] = useState(false);
 
   // Fetch email accounts
-  const { data: emailAccounts = [] } = useQuery({
+  const { data: emailAccounts = [] } = useQuery<EmailAccount[]>({
     queryKey: ['email-accounts', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
       
       const { data, error } = await supabase
-        .from('user_email_accounts')
+        .from('user_email_settings')
         .select('*')
         .eq('user_id', user.id)
         .eq('is_active', true);
@@ -47,7 +62,7 @@ export function EmailCompose({ open, onOpenChange, replyTo }: EmailComposeProps)
   });
 
   // Fetch email templates
-  const { data: templates = [] } = useQuery({
+  const { data: templates = [] } = useQuery<EmailTemplate[]>({
     queryKey: ['email-templates', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
@@ -71,7 +86,7 @@ export function EmailCompose({ open, onOpenChange, replyTo }: EmailComposeProps)
         .from('emails')
         .insert({
           user_id: user?.id,
-          email_account_id: emailData.from_account,
+          email_settings_id: emailData.from_account,
           subject: emailData.subject,
           from_address: emailData.from_address,
           from_name: emailData.from_name,

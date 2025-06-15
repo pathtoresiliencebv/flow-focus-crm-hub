@@ -1,57 +1,76 @@
-
-import React, { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "@/hooks/use-toast";
+import React, { useState, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
-  Mail,
-  Send,
-  Reply,
-  Star,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Folder,
   Archive,
   Trash2,
-  Settings,
-  Plus,
-  Sparkles,
-  RefreshCw,
-  Search,
-  Filter,
   MoreVertical,
-  Paperclip,
-  Forward
-} from "lucide-react";
-import { EmailSettings } from "./EmailSettings";
-import { EmailCompose } from "./EmailCompose";
-import { EmailTemplates } from "./EmailTemplates";
-import { format } from "date-fns";
-import { nl } from "date-fns/locale";
+  Inbox,
+  Send,
+  FileText,
+  Star,
+  Edit,
+  Settings,
+  RefreshCw,
+  Clock,
+  Trash
+} from 'lucide-react';
+import { EmailCompose } from './EmailCompose';
+import { format } from 'date-fns';
+import { toast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+interface Email {
+  id: string;
+  subject: string;
+  from_name: string;
+  from_address: string;
+  to_addresses: string[];
+  received_at: string;
+  is_read: boolean;
+  is_starred: boolean;
+  body_text: string;
+  folder: string;
+}
+
+interface EmailAccount {
+  id: string;
+}
 
 export function Email() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [selectedEmail, setSelectedEmail] = useState(null);
-  const [activeFolder, setActiveFolder] = useState("inbox");
-  const [showSettings, setShowSettings] = useState(false);
-  const [showCompose, setShowCompose] = useState(false);
-  const [showTemplates, setShowTemplates] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFolder, setActiveFolder] = useState('inbox');
+  const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isComposeOpen, setComposeOpen] = useState(false);
+  const [replyToEmail, setReplyToEmail] = useState<Email | null>(null);
 
-  // Fetch emails for current user
-  const { data: emails = [], isLoading: emailsLoading, refetch: refetchEmails } = useQuery({
+  // Fetch emails
+  const { data: emails = [], isLoading: isLoadingEmails, refetch } = useQuery<Email[]>({
     queryKey: ['emails', user?.id, activeFolder],
     queryFn: async () => {
       if (!user?.id) return [];
-      
       const { data, error } = await supabase
         .from('emails')
         .select('*')
@@ -65,339 +84,288 @@ export function Email() {
     enabled: !!user?.id
   });
 
-  // Fetch email accounts
-  const { data: emailAccounts = [] } = useQuery({
+  // Fetch accounts to check if any exist
+  const { data: emailAccounts = [] } = useQuery<EmailAccount[]>({
     queryKey: ['email-accounts', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      
       const { data, error } = await supabase
-        .from('user_email_accounts')
-        .select('*')
+        .from('user_email_settings')
+        .select('id')
         .eq('user_id', user.id);
-
       if (error) throw error;
       return data || [];
     },
     enabled: !!user?.id
   });
 
-  // Mark email as read
-  const markAsReadMutation = useMutation({
-    mutationFn: async (emailId: string) => {
-      const { error } = await supabase
-        .from('emails')
-        .update({ is_read: true })
-        .eq('id', emailId)
-        .eq('user_id', user?.id);
+  const emailMutation = useMutation({
+    mutationFn: async ({ action, ids }: { action: 'archive' | 'delete' | 'read' | 'unread' | 'star' | 'unstar', ids: string[] }) => {
+      if (action === 'delete') {
+        const { error } = await supabase.from('emails').delete().in('id', ids);
+        if (error) throw error;
+        return;
+      }
 
+      let updatePayload: any = {};
+      if (action === 'archive') updatePayload.folder = 'archive';
+      if (action === 'read') updatePayload.is_read = true;
+      if (action === 'unread') updatePayload.is_read = false;
+      if (action === 'star') updatePayload.is_starred = true;
+      if (action === 'unstar') updatePayload.is_starred = false;
+      
+      const { error } = await supabase.from('emails').update(updatePayload).in('id', ids).eq('user_id', user!.id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['emails'] });
-    }
-  });
-
-  // Star/unstar email
-  const toggleStarMutation = useMutation({
-    mutationFn: async ({ emailId, isStarred }: { emailId: string; isStarred: boolean }) => {
-      const { error } = await supabase
-        .from('emails')
-        .update({ is_starred: !isStarred })
-        .eq('id', emailId)
-        .eq('user_id', user?.id);
-
-      if (error) throw error;
+      setSelectedEmails([]);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['emails'] });
+    onError: (error: any) => {
+      toast({ title: 'Fout', description: error.message, variant: 'destructive' });
     }
   });
 
-  const handleEmailClick = (email: any) => {
-    setSelectedEmail(email);
-    if (!email.is_read) {
-      markAsReadMutation.mutate(email.id);
-    }
+  const handleSelectEmail = (id: string) => {
+    setSelectedEmails(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(emailId => emailId !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
   };
 
-  const getUnreadCount = (folder: string) => {
-    return emails.filter(email => email.folder === folder && !email.is_read).length;
-  };
-
-  const filteredEmails = emails.filter(email => {
-    if (!searchQuery) return true;
-    const searchLower = searchQuery.toLowerCase();
-    return (
-      email.subject.toLowerCase().includes(searchLower) ||
-      email.from_address.toLowerCase().includes(searchLower) ||
-      email.body_text?.toLowerCase().includes(searchLower)
+  const filteredEmails = useMemo(() => {
+    return emails.filter(email =>
+      email.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      email.body_text.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      email.from_name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  });
+  }, [emails, searchTerm]);
 
-  const folders = [
-    { key: 'inbox', label: 'Postvak IN', icon: Mail, count: getUnreadCount('inbox') },
-    { key: 'sent', label: 'Verzonden', icon: Send, count: 0 },
-    { key: 'starred', label: 'Met ster', icon: Star, count: 0 },
-    { key: 'archive', label: 'Archief', icon: Archive, count: 0 },
-    { key: 'trash', label: 'Prullenbak', icon: Trash2, count: 0 }
-  ];
+  const areAllSelected = filteredEmails.length > 0 && selectedEmails.length === filteredEmails.length;
+  const handleSelectAllEmails = () => {
+    if (areAllSelected) {
+      setSelectedEmails([]);
+    } else {
+      setSelectedEmails(filteredEmails.map(email => email.id));
+    }
+  };
+
+  const selectedEmailsData = useMemo(() => {
+    return emails.filter(email => selectedEmails.includes(email.id));
+  }, [emails, selectedEmails]);
+
+  const handleMoveToTrash = async () => {
+    await emailMutation.mutateAsync({ action: 'delete', ids: selectedEmails });
+  };
+
+  const handleArchive = async () => {
+    await emailMutation.mutateAsync({ action: 'archive', ids: selectedEmails });
+  };
+
+  const handleMarkAsRead = async () => {
+    await emailMutation.mutateAsync({ action: 'read', ids: selectedEmails });
+  };
+
+  const handleMarkAsUnread = async () => {
+    await emailMutation.mutateAsync({ action: 'unread', ids: selectedEmails });
+  };
+
+  const handleStar = async () => {
+    await emailMutation.mutateAsync({ action: 'star', ids: selectedEmails });
+  };
+
+  const handleUnstar = async () => {
+    await emailMutation.mutateAsync({ action: 'unstar', ids: selectedEmails });
+  };
+
+  const hasEmailAccounts = emailAccounts.length > 0;
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between p-6 border-b">
-        <div className="flex items-center gap-3">
-          <Mail className="h-8 w-8 text-smans-primary" />
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">E-mail</h1>
-            <p className="text-gray-600">Beheer uw e-mails en communicatie</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetchEmails()}
-            disabled={emailsLoading}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${emailsLoading ? 'animate-spin' : ''}`} />
-            Vernieuwen
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowTemplates(true)}
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            Templates
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowSettings(true)}
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            Instellingen
-          </Button>
-          <Button
-            onClick={() => setShowCompose(true)}
-            className="bg-smans-primary hover:bg-smans-primary/90"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nieuwe e-mail
-          </Button>
+      <EmailCompose open={isComposeOpen} onOpenChange={setComposeOpen} replyTo={replyToEmail} />
+
+      <div className="border-b">
+        <div className="container flex items-center h-14">
+          <h1 className="text-2xl font-semibold">E-mail</h1>
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="container h-full flex flex-col md:flex-row">
         {/* Sidebar */}
-        <div className="w-64 border-r bg-gray-50/50 p-4">
-          <div className="space-y-2">
-            {folders.map((folder) => {
-              const Icon = folder.icon;
-              return (
-                <button
-                  key={folder.key}
-                  onClick={() => setActiveFolder(folder.key)}
-                  className={`w-full flex items-center justify-between p-3 rounded-lg text-left transition-colors ${
-                    activeFolder === folder.key
-                      ? 'bg-smans-primary text-white'
-                      : 'hover:bg-gray-100'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon className="h-5 w-5" />
-                    <span className="font-medium">{folder.label}</span>
-                  </div>
-                  {folder.count > 0 && (
-                    <Badge variant="secondary" className="text-xs">
-                      {folder.count}
-                    </Badge>
-                  )}
-                </button>
-              );
-            })}
+        <div className="w-full md:w-64 border-r h-full py-4">
+          <div className="px-4">
+            <Button onClick={() => setComposeOpen(true)} className="w-full mb-4 bg-smans-primary hover:bg-smans-primary/90">Nieuwe E-mail</Button>
           </div>
-
-          {emailAccounts.length === 0 && (
-            <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-800 mb-2">
-                Geen e-mail accounts ingesteld
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowSettings(true)}
-                className="text-yellow-800 border-yellow-300"
-              >
-                Account toevoegen
+          <div className="space-y-1 px-2">
+            <Button variant="ghost" className="justify-start w-full font-normal" onClick={() => setActiveFolder('inbox')} active={activeFolder === 'inbox'}>
+              <Inbox className="h-4 w-4 mr-2" />
+              Postvak IN
+            </Button>
+            <Button variant="ghost" className="justify-start w-full font-normal" onClick={() => setActiveFolder('sent')} active={activeFolder === 'sent'}>
+              <Send className="h-4 w-4 mr-2" />
+              Verzonden
+            </Button>
+            <Button variant="ghost" className="justify-start w-full font-normal" onClick={() => setActiveFolder('archive')} active={activeFolder === 'archive'}>
+              <Archive className="h-4 w-4 mr-2" />
+              Archief
+            </Button>
+            <Button variant="ghost" className="justify-start w-full font-normal" onClick={() => setActiveFolder('drafts')} active={activeFolder === 'drafts'}>
+              <FileText className="h-4 w-4 mr-2" />
+              Concepten
+            </Button>
+            <Button variant="ghost" className="justify-start w-full font-normal" onClick={() => setActiveFolder('starred')} active={activeFolder === 'starred'}>
+              <Star className="h-4 w-4 mr-2" />
+              Gemarkeerd
+            </Button>
+            <Button variant="ghost" className="justify-start w-full font-normal" onClick={() => setActiveFolder('scheduled')} active={activeFolder === 'scheduled'}>
+              <Clock className="h-4 w-4 mr-2" />
+              Gepland
+            </Button>
+            <Button variant="ghost" className="justify-start w-full font-normal" onClick={() => setActiveFolder('trash')} active={activeFolder === 'trash'}>
+              <Trash className="h-4 w-4 mr-2" />
+              Prullenbak
+            </Button>
+          </div>
+          {!hasEmailAccounts && (
+            <div className="mt-4 px-4 text-sm text-muted-foreground">
+              <p>Er zijn nog geen e-mailaccounts ingesteld.</p>
+              <Button variant="link" onClick={() => { /* Navigate to settings */ }}>
+                <a href="/settings">Ga naar instellingen om een account toe te voegen.</a>
               </Button>
             </div>
           )}
         </div>
 
-        {/* Email List */}
-        <div className="flex-1 flex">
-          <div className="w-1/2 border-r flex flex-col">
-            <div className="p-4 border-b">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="Zoeken in e-mails..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto">
-              {emailsLoading ? (
-                <div className="p-8 text-center">
-                  <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-gray-400" />
-                  <p className="text-gray-600">E-mails laden...</p>
-                </div>
-              ) : filteredEmails.length === 0 ? (
-                <div className="p-8 text-center">
-                  <Mail className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <p className="text-gray-600 mb-2">Geen e-mails gevonden</p>
-                  <p className="text-sm text-gray-500">
-                    {activeFolder === 'inbox' ? 'Uw inbox is leeg' : `Geen e-mails in ${folders.find(f => f.key === activeFolder)?.label}`}
-                  </p>
-                </div>
-              ) : (
-                <div className="divide-y">
-                  {filteredEmails.map((email) => (
-                    <div
-                      key={email.id}
-                      onClick={() => handleEmailClick(email)}
-                      className={`p-4 cursor-pointer transition-colors hover:bg-gray-50 ${
-                        selectedEmail?.id === email.id ? 'bg-blue-50 border-r-2 border-blue-500' : ''
-                      } ${!email.is_read ? 'bg-blue-50/30' : ''}`}
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className={`font-medium ${!email.is_read ? 'font-bold' : ''}`}>
-                            {email.from_name || email.from_address}
-                          </span>
-                          {email.is_starred && (
-                            <Star className="h-4 w-4 text-yellow-500 fill-current" />
-                          )}
-                        </div>
-                        <span className="text-xs text-gray-500">
-                          {email.received_at && format(new Date(email.received_at), 'dd MMM', { locale: nl })}
-                        </span>
-                      </div>
-                      <p className={`text-sm mb-1 ${!email.is_read ? 'font-semibold' : ''}`}>
-                        {email.subject}
-                      </p>
-                      <p className="text-xs text-gray-600 line-clamp-2">
-                        {email.body_text?.substring(0, 100)}...
-                      </p>
-                    </div>
-                  ))}
-                </div>
+        {/* Main content */}
+        <div className="flex-1 p-4">
+          <div className="flex items-center justify-between mb-4">
+            <Input
+              type="search"
+              placeholder="Zoek e-mails..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <div className="flex items-center space-x-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" onClick={() => refetch()}>
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Verversen</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              {selectedEmails.length > 0 && (
+                <>
+                  <Button variant="outline" size="sm" onClick={handleMarkAsRead}>Markeer als gelezen</Button>
+                  <Button variant="outline" size="sm" onClick={handleMarkAsUnread}>Markeer als ongelezen</Button>
+                  <Button variant="outline" size="sm" onClick={handleStar}>Markeer als belangrijk</Button>
+                  <Button variant="outline" size="sm" onClick={handleUnstar}>Verwijder markering</Button>
+                  <Button variant="destructive" size="sm" onClick={handleMoveToTrash}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Verwijderen
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={handleArchive}>
+                    <Archive className="h-4 w-4 mr-2" />
+                    Archiveren
+                  </Button>
+                </>
               )}
             </div>
           </div>
 
-          {/* Email Detail */}
-          <div className="flex-1 flex flex-col">
-            {selectedEmail ? (
-              <>
-                <div className="p-6 border-b">
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <h2 className="text-xl font-semibold mb-2">{selectedEmail.subject}</h2>
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <span>Van: {selectedEmail.from_name || selectedEmail.from_address}</span>
-                        <span>Aan: {selectedEmail.to_addresses.join(', ')}</span>
-                        {selectedEmail.received_at && (
-                          <span>
-                            {format(new Date(selectedEmail.received_at), 'dd MMMM yyyy, HH:mm', { locale: nl })}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleStarMutation.mutate({
-                          emailId: selectedEmail.id,
-                          isStarred: selectedEmail.is_starred
-                        })}
-                      >
-                        <Star className={`h-4 w-4 ${selectedEmail.is_starred ? 'text-yellow-500 fill-current' : ''}`} />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <Reply className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <Forward className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex-1 p-6 overflow-y-auto">
-                  <div 
-                    className="prose max-w-none"
-                    dangerouslySetInnerHTML={{ 
-                      __html: selectedEmail.body_html || selectedEmail.body_text?.replace(/\n/g, '<br>') 
-                    }}
-                  />
-                </div>
-
-                <div className="p-6 border-t bg-gray-50">
-                  <div className="flex items-center gap-2">
-                    <Button className="bg-smans-primary hover:bg-smans-primary/90">
-                      <Reply className="h-4 w-4 mr-2" />
-                      Beantwoorden
-                    </Button>
-                    <Button variant="outline">
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      AI Antwoord
-                    </Button>
-                    <Button variant="outline">
-                      <Forward className="h-4 w-4 mr-2" />
-                      Doorsturen
-                    </Button>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center">
-                  <Mail className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-                  <p className="text-xl font-medium text-gray-600 mb-2">Selecteer een e-mail</p>
-                  <p className="text-gray-500">Kies een e-mail uit de lijst om de inhoud te bekijken</p>
-                </div>
-              </div>
-            )}
-          </div>
+          {isLoadingEmails ? (
+            <div className="text-center">E-mails laden...</div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[50px]">
+                      <Checkbox
+                        checked={areAllSelected}
+                        onCheckedChange={handleSelectAllEmails}
+                        aria-label="Select all emails"
+                      />
+                    </TableHead>
+                    <TableHead>Afzender</TableHead>
+                    <TableHead>Onderwerp</TableHead>
+                    <TableHead>Ontvangen</TableHead>
+                    <TableHead className="w-[100px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredEmails.map((email) => (
+                    <TableRow key={email.id}>
+                      <TableCell className="font-medium">
+                        <Checkbox
+                          checked={selectedEmails.includes(email.id)}
+                          onCheckedChange={() => handleSelectEmail(email.id)}
+                          aria-label={`Select email from ${email.from_address}`}
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium">{email.from_name}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-between">
+                          <div className="truncate">
+                            {!email.is_read && <Badge variant="secondary">Nieuw</Badge>}{' '}
+                            {email.subject}
+                          </div>
+                          {email.is_starred && (
+                            <Star className="h-4 w-4 text-yellow-500" />
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{format(new Date(email.received_at), 'dd-MM-yyyy HH:mm')}</TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Menu openen</span>
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => setReplyToEmail(email)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Beantwoorden
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleSelectEmail(email.id)}>
+                              <Star className="h-4 w-4 mr-2" />
+                              Markeer als belangrijk
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleSelectEmail(email.id)}>
+                              <Archive className="h-4 w-4 mr-2" />
+                              Archiveren
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleSelectEmail(email.id)}>
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Verwijderen
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {emails.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center">
+                        Geen e-mails gevonden.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Dialogs */}
-      <EmailSettings
-        open={showSettings}
-        onOpenChange={setShowSettings}
-      />
-      
-      <EmailCompose
-        open={showCompose}
-        onOpenChange={setShowCompose}
-        replyTo={null}
-      />
-
-      <EmailTemplates
-        open={showTemplates}
-        onOpenChange={setShowTemplates}
-      />
     </div>
   );
 }
