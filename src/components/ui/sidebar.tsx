@@ -124,7 +124,7 @@ const CollapsibleSection = ({
   );
 };
 
-export const Sidebar = ({ links, user, logout, activeTab, setActiveTab, children }) => {
+export const Sidebar = ({ links, user, profile, logout, activeTab, setActiveTab, children }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const mobileSidebarVariants = {
@@ -196,7 +196,7 @@ export const Sidebar = ({ links, user, logout, activeTab, setActiveTab, children
             <User className="h-5 w-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm truncate">{user?.email}</p>
+            <p className="font-semibold text-sm truncate">{profile?.full_name || user?.email}</p>
           </div>
         </div>
         <button onClick={logout} className="flex gap-2 font-medium text-sm items-center w-full p-2 mt-4 text-center bg-red-100 rounded-xl hover:bg-red-200 text-red-700">

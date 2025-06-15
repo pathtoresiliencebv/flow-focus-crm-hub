@@ -1,54 +1,111 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import type { Session, User } from '@supabase/supabase-js';
 
-interface User {
-  id: string;
-  email: string;
-  name: string;
+interface UserProfile {
+  full_name: string;
 }
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // Check if user is already logged in (from localStorage)
-    const savedUser = localStorage.getItem('crm_user');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (error) {
-        // Clear invalid data
-        localStorage.removeItem('crm_user');
-      }
+  const fetchProfile = useCallback(async (user: User) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+      console.error('Error fetching profile:', error);
+      toast({
+        title: "Fout bij profiel ophalen",
+        description: error.message,
+        variant: "destructive",
+      });
     }
-    setIsLoading(false);
+    setProfile(data);
   }, []);
 
-  const login = (email: string, password: string) => {
-    // For demo purposes, create a user object
-    const userData: User = {
-      id: `mock-user-id-for-${email}`,
-      email,
-      name: email.split('@')[0].replace('.', ' ').split(' ').map(word => 
-        word.charAt(0).toUpperCase() + word.slice(1)
-      ).join(' ')
-    };
-
-    setUser(userData);
-    localStorage.setItem('crm_user', JSON.stringify(userData));
-    
-    toast({
-      title: "Ingelogd",
-      description: `Welkom terug, ${userData.name}!`,
+  useEffect(() => {
+    setIsLoading(true);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+        await fetchProfile(session.user);
+      }
+      setIsLoading(false);
     });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        await fetchProfile(session.user);
+      } else {
+        setProfile(null);
+      }
+      setIsLoading(false);
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, [fetchProfile]);
+
+  const login = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      toast({
+        title: "Inloggen mislukt",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Ingelogd",
+        description: `Welkom terug!`,
+      });
+    }
+  };
+  
+  const signUp = async (email: string, password: string, fullName: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+        },
+        emailRedirectTo: window.location.origin
+      },
+    });
+
+    if (error) {
+      toast({
+        title: "Registratie mislukt",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Registratie succesvol",
+        description: "Controleer uw e-mail om uw account te verifiëren.",
+      });
+    }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
-    localStorage.removeItem('crm_user');
-    
+    setSession(null);
+    setProfile(null);
     toast({
       title: "Uitgelogd",
       description: "U bent succesvol uitgelogd.",
@@ -57,9 +114,12 @@ export const useAuth = () => {
 
   return {
     user,
+    profile,
+    session,
     isLoading,
     login,
+    signUp,
     logout,
-    isAuthenticated: !!user
+    isAuthenticated: !!user,
   };
 };

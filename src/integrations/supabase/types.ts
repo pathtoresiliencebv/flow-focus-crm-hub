@@ -146,6 +146,24 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          full_name: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          full_name?: string | null
+          id: string
+          updated_at?: string | null
+        }
+        Update: {
+          full_name?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       quote_settings: {
         Row: {
           company_address: string | null

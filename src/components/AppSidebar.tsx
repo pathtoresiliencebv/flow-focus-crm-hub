@@ -26,7 +26,7 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProps) {
-  const { user, logout } = useAuth();
+  const { user, logout, profile } = useAuth();
 
   const links = [
     {
@@ -105,6 +105,7 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
     <Sidebar 
       links={links}
       user={user}
+      profile={profile}
       logout={logout}
       activeTab={activeTab}
       setActiveTab={setActiveTab}

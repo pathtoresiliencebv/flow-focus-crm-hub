@@ -2,14 +2,12 @@
 import React from 'react';
 import { AuthUI } from "@/components/ui/auth-ui";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from '@/hooks/useAuth';
 
-interface LoginScreenProps {
-  onLogin: (email: string, password: string) => void;
-}
+const LoginScreen = () => {
+  const { login, signUp, isLoading } = useAuth();
 
-const LoginScreen = ({ onLogin }: LoginScreenProps) => {
-  const handleLogin = async (email: string, password: string, name?: string) => {
-    // Simple validation
+  const handleAuth = async (email: string, password: string, name?: string) => {
     if (!email || !password) {
       toast({
         title: "Fout",
@@ -19,15 +17,17 @@ const LoginScreen = ({ onLogin }: LoginScreenProps) => {
       return;
     }
 
-    // For demo purposes, accept any email/password combination
-    setTimeout(() => {
-      onLogin(email, password);
-    }, 1000);
+    if (name) {
+      await signUp(email, password, name);
+    } else {
+      await login(email, password);
+    }
   };
 
   return (
     <AuthUI 
-      onLogin={handleLogin}
+      onLogin={handleAuth}
+      isLoading={isLoading}
       quote={{
         text: "SMANS CRM helpt ons om onze projecten efficiënter te beheren en onze klanten beter te bedienen.",
         author: "SMANS Team"

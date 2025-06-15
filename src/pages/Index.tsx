@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,7 +25,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 const Index = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const { customerId, projectId } = useParams();
-  const { user, login, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const isMobile = useIsMobile();
 
   // Update active tab based on URL params
@@ -56,7 +55,7 @@ const Index = () => {
 
   // Show login screen if not authenticated
   if (!user) {
-    return <LoginScreen onLogin={login} />;
+    return <LoginScreen />;
   }
 
   const renderContent = () => {
