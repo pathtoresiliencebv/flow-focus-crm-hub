@@ -22,8 +22,8 @@ export const Salary = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-4 sm:p-6 space-y-6">
+      <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Salarisadministratie</h2>
         <div className="flex items-center gap-2">
           <Select value={month} onValueChange={setMonth}>
@@ -55,7 +55,7 @@ export const Salary = () => {
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="mb-4">
+        <TabsList>
           <TabsTrigger value="overview">Overzicht</TabsTrigger>
           <TabsTrigger value="history">Historie</TabsTrigger>
           <TabsTrigger value="settings">Instellingen</TabsTrigger>
