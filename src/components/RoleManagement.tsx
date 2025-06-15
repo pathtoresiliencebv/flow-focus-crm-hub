@@ -1,52 +1,85 @@
 
 import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useUserStore, Permission, UserRole } from "@/hooks/useUserStore";
+import { toast } from "@/hooks/use-toast";
+import {
+  Permission,
+  UserRole,
+  permissionLabels,
+  permissionCategories,
+  roleDescriptions,
+} from "@/types/permissions";
 
-const permissionLabels: Record<Permission, string> = {
-  "customers_view": "Klanten bekijken",
-  "customers_edit": "Klanten bewerken",
-  "customers_delete": "Klanten verwijderen",
-  "projects_view": "Projecten bekijken",
-  "projects_edit": "Projecten bewerken",
-  "projects_delete": "Projecten verwijderen",
-  "invoices_view": "Facturen bekijken",
-  "invoices_edit": "Facturen bewerken",
-  "invoices_delete": "Facturen verwijderen",
-  "users_view": "Gebruikers bekijken",
-  "users_edit": "Gebruikers bewerken",
-  "users_delete": "Gebruikers verwijderen",
-  "reports_view": "Rapporten bekijken",
-  "settings_edit": "Instellingen bewerken"
-};
-
-const permissionCategories = {
-  "Klanten": ["customers_view", "customers_edit", "customers_delete"] as Permission[],
-  "Projecten": ["projects_view", "projects_edit", "projects_delete"] as Permission[],
-  "Facturen": ["invoices_view", "invoices_edit", "invoices_delete"] as Permission[],
-  "Gebruikers": ["users_view", "users_edit", "users_delete"] as Permission[],
-  "Overig": ["reports_view", "settings_edit"] as Permission[]
-};
+interface RolePermissionData {
+  role: UserRole;
+  permissions: Permission[];
+  description: string;
+}
 
 export const RoleManagement = () => {
-  const { rolePermissions, updateRolePermissions } = useUserStore();
+  const queryClient = useQueryClient();
   const [selectedRole, setSelectedRole] = useState<UserRole>("Administrator");
 
-  const currentRolePermissions = rolePermissions.find(r => r.role === selectedRole);
+  const { data: roles, isLoading, error } = useQuery<RolePermissionData[], Error>({
+    queryKey: ['role_permissions'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('role_permissions').select('role, permission');
+      if (error) throw new Error(error.message);
+
+      const groupedByRole = data.reduce((acc, item) => {
+        const role = item.role as UserRole;
+        const permission = item.permission as Permission;
+        if (!acc[role]) {
+          acc[role] = [];
+        }
+        acc[role].push(permission);
+        return acc;
+      }, {} as Record<UserRole, Permission[]>);
+
+      return roleDescriptions.map(rd => ({
+        ...rd,
+        permissions: groupedByRole[rd.role] || [],
+      }));
+    },
+  });
+  
+  const updatePermissionsMutation = useMutation({
+    mutationFn: async ({ role, permissions }: { role: UserRole; permissions: Permission[] }) => {
+      const { error } = await supabase.rpc('update_role_permissions', {
+        p_role: role,
+        p_permissions: permissions,
+      });
+      if (error) throw new Error(`RPC Error: ${error.message}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['role_permissions'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] }); // Invalidate user queries as their permissions might change
+      toast({ title: 'Success', description: 'Role permissions updated successfully.' });
+    },
+    onError: (error: Error) => {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    },
+  });
+
 
   const handlePermissionChange = (permission: Permission, checked: boolean) => {
-    if (!currentRolePermissions) return;
+    const currentRoleData = roles?.find(r => r.role === selectedRole);
+    if (!currentRoleData) return;
 
     const updatedPermissions = checked
-      ? [...currentRolePermissions.permissions, permission]
-      : currentRolePermissions.permissions.filter(p => p !== permission);
-
-    updateRolePermissions(selectedRole, updatedPermissions);
+      ? [...currentRoleData.permissions, permission]
+      : currentRoleData.permissions.filter(p => p !== permission);
+    
+    updatePermissionsMutation.mutate({ role: selectedRole, permissions: updatedPermissions });
   };
+  
+  if (isLoading) return <div>Loading roles...</div>;
+  if (error) return <div>Error: {error.message}</div>;
 
   return (
     <div className="space-y-6">
@@ -59,14 +92,14 @@ export const RoleManagement = () => {
 
       <Tabs value={selectedRole} onValueChange={(value) => setSelectedRole(value as UserRole)}>
         <TabsList className="grid grid-cols-5 w-full">
-          {rolePermissions.map((role) => (
+          {roles?.map((role) => (
             <TabsTrigger key={role.role} value={role.role} className="text-xs">
               {role.role}
             </TabsTrigger>
           ))}
         </TabsList>
 
-        {rolePermissions.map((role) => (
+        {roles?.map((role) => (
           <TabsContent key={role.role} value={role.role}>
             <Card>
               <CardHeader>
@@ -89,6 +122,7 @@ export const RoleManagement = () => {
                             onCheckedChange={(checked) => 
                               handlePermissionChange(permission, checked as boolean)
                             }
+                            disabled={updatePermissionsMutation.isPending}
                           />
                           <label
                             htmlFor={`${role.role}-${permission}`}

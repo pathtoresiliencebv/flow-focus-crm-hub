@@ -2,11 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Session, User } from '@supabase/supabase-js';
+import { Permission, UserRole } from '@/types/permissions';
 
 interface UserProfile {
   full_name: string;
-  role: 'Administrator' | 'Verkoper' | 'Installateur' | 'Administratie' | 'Bekijker';
+  role: UserRole;
   status: 'Actief' | 'Inactief';
+  permissions: Permission[];
 }
 
 export const useAuth = () => {
@@ -16,7 +18,7 @@ export const useAuth = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchProfile = useCallback(async (user: User) => {
-    const { data, error } = await supabase
+    const { data: profileData, error } = await supabase
       .from('profiles')
       .select('full_name, role, status')
       .eq('id', user.id)
@@ -29,8 +31,31 @@ export const useAuth = () => {
         description: error.message,
         variant: "destructive",
       });
+      setProfile(null);
+      return;
     }
-    setProfile(data as UserProfile | null);
+
+    if (profileData) {
+      const { data: permissionsData, error: permissionsError } = await supabase
+        .from('role_permissions')
+        .select('permission')
+        .eq('role', profileData.role);
+      
+      if (permissionsError) {
+        console.error('Error fetching permissions:', permissionsError);
+        toast({
+          title: "Fout bij rechten ophalen",
+          description: permissionsError.message,
+          variant: "destructive",
+        });
+      }
+
+      const permissions = permissionsData?.map(p => p.permission as Permission) || [];
+      setProfile({ ...profileData, permissions });
+
+    } else {
+      setProfile(null);
+    }
   }, []);
 
   useEffect(() => {
@@ -46,9 +71,12 @@ export const useAuth = () => {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      
+      if (currentUser) {
+        // Use setTimeout to avoid potential deadlocks with Supabase auth flow
+        setTimeout(() => fetchProfile(currentUser), 0);
       } else {
         setProfile(null);
       }
@@ -122,6 +150,10 @@ export const useAuth = () => {
     });
   };
 
+  const hasPermission = (permission: Permission): boolean => {
+    return profile?.permissions.includes(permission) ?? false;
+  };
+
   return {
     user,
     profile,
@@ -131,5 +163,6 @@ export const useAuth = () => {
     signUp,
     logout,
     isAuthenticated: !!user,
+    hasPermission,
   };
 };

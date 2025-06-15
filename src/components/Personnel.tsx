@@ -1,7 +1,9 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Users from "./Users";
+import UserManagement from "./UserManagement";
+import RoleManagement from "./RoleManagement";
 import Salary from "./Salary";
+import { Users, Settings, CircleDollarSign } from 'lucide-react';
 
 const Personnel = () => {
   return (
@@ -11,13 +13,18 @@ const Personnel = () => {
       </div>
 
       <Tabs defaultValue="users" className="w-full">
-        <TabsList>
-          <TabsTrigger value="users">Gebruikers</TabsTrigger>
-          <TabsTrigger value="salary">Salarisadministratie</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="users"><Users className="mr-2 h-4 w-4" />Gebruikers</TabsTrigger>
+          <TabsTrigger value="roles"><Settings className="mr-2 h-4 w-4" />Rollen & Rechten</TabsTrigger>
+          <TabsTrigger value="salary"><CircleDollarSign className="mr-2 h-4 w-4" />Salarisadministratie</TabsTrigger>
         </TabsList>
 
         <TabsContent value="users">
-          <Users />
+          <UserManagement />
+        </TabsContent>
+
+        <TabsContent value="roles">
+          <RoleManagement />
         </TabsContent>
 
         <TabsContent value="salary">
@@ -29,3 +36,4 @@ const Personnel = () => {
 };
 
 export default Personnel;
+

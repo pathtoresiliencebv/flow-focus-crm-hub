@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,23 +22,48 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
-import { Edit } from 'lucide-react';
+import { Edit, UserPlus } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { UserRole } from '@/types/permissions';
+import { Input } from './ui/input';
+import { DialogTrigger } from '@radix-ui/react-dialog';
+
 
 type Profile = {
   id: string;
   full_name: string;
-  role: 'Administrator' | 'Verkoper' | 'Installateur' | 'Administratie' | 'Bekijker';
+  role: UserRole;
   status: 'Actief' | 'Inactief';
+  // Note: email is not in the profiles table but we will fetch it separately
+  email?: string;
 };
 
+// We create a view in Supabase to easily get user emails
+// CREATE OR REPLACE VIEW public.users_with_email AS
+// SELECT p.id, p.full_name, p.role, p.status, u.email
+// FROM public.profiles p
+// JOIN auth.users u ON p.id = u.id;
+// Since we cannot run migrations now, we'll fetch users and then emails in a less optimal way.
+
 async function fetchUsers() {
-  const { data, error } = await supabase.from('profiles').select('*');
-  if (error) throw new Error(error.message);
-  return data as Profile[];
+  const { data: profiles, error: profilesError } = await supabase.from('profiles').select('*');
+  if (profilesError) throw new Error(profilesError.message);
+
+  const { data: authUsers, error: authUsersError } = await supabase.auth.admin.listUsers();
+  if (authUsersError) throw new Error(authUsersError.message);
+  
+  const emailMap = new Map(authUsers.users.map(u => [u.id, u.email]));
+
+  return profiles.map(p => ({
+    ...p,
+    email: emailMap.get(p.id) || 'No email found'
+  })) as (Profile & { email: string })[];
 }
 
 async function updateUser(profile: Partial<Profile> & { id: string }) {
   const { id, ...updateData } = profile;
+  // remove email if it exists, as it's not in the profiles table
+  delete (updateData as any).email; 
   const { data, error } = await supabase.from('profiles').update(updateData).eq('id', id).select().single();
   if (error) throw new Error(error.message);
   return data;
@@ -120,13 +146,16 @@ const UserManagement = () => {
   if (error) return <div>Error fetching users: {error.message}</div>;
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
-      <h1 className="text-2xl font-bold">User Management</h1>
+    <div className="space-y-6">
+       <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Gebruikersbeheer</h2>
+      </div>
       <Card>
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
+              <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Actions</TableHead>
@@ -136,6 +165,7 @@ const UserManagement = () => {
             {users?.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>{user.full_name}</TableCell>
+                <TableCell>{user.email}</TableCell>
                 <TableCell>{user.role}</TableCell>
                 <TableCell>
                   <span className={`px-2 py-1 rounded-full text-xs ${user.status === 'Actief' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
@@ -159,7 +189,5 @@ const UserManagement = () => {
   );
 };
 
-// Re-export Card for use inside the component
-import { Card } from '@/components/ui/card';
-
 export default UserManagement;
+

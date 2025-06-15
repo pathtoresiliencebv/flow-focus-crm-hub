@@ -370,6 +370,24 @@ export type Database = {
         }
         Relationships: []
       }
+      role_permissions: {
+        Row: {
+          id: number
+          permission: Database["public"]["Enums"]["app_permission"]
+          role: Database["public"]["Enums"]["user_role"]
+        }
+        Insert: {
+          id?: number
+          permission: Database["public"]["Enums"]["app_permission"]
+          role: Database["public"]["Enums"]["user_role"]
+        }
+        Update: {
+          id?: number
+          permission?: Database["public"]["Enums"]["app_permission"]
+          role?: Database["public"]["Enums"]["user_role"]
+        }
+        Relationships: []
+      }
       user_email_settings: {
         Row: {
           created_at: string | null
@@ -433,8 +451,34 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_user_role: {
+        Args: { p_user_id: string }
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
+      update_role_permissions: {
+        Args: {
+          p_role: Database["public"]["Enums"]["user_role"]
+          p_permissions: Database["public"]["Enums"]["app_permission"][]
+        }
+        Returns: undefined
+      }
     }
     Enums: {
+      app_permission:
+        | "customers_view"
+        | "customers_edit"
+        | "customers_delete"
+        | "projects_view"
+        | "projects_edit"
+        | "projects_delete"
+        | "invoices_view"
+        | "invoices_edit"
+        | "invoices_delete"
+        | "users_view"
+        | "users_edit"
+        | "users_delete"
+        | "reports_view"
+        | "settings_edit"
       customer_status: "Actief" | "In behandeling" | "Inactief"
       project_status:
         | "te-plannen"
@@ -564,6 +608,22 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_permission: [
+        "customers_view",
+        "customers_edit",
+        "customers_delete",
+        "projects_view",
+        "projects_edit",
+        "projects_delete",
+        "invoices_view",
+        "invoices_edit",
+        "invoices_delete",
+        "users_view",
+        "users_edit",
+        "users_delete",
+        "reports_view",
+        "settings_edit",
+      ],
       customer_status: ["Actief", "In behandeling", "Inactief"],
       project_status: [
         "te-plannen",
