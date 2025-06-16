@@ -66,7 +66,9 @@ export function Quotes() {
       if (data) {
         const quotesWithBlocks = data.map(quote => ({
           ...quote,
-          blocks: Array.isArray(quote.items) ? quote.items : []
+          blocks: Array.isArray(quote.items) ? quote.items : [],
+          // Ensure total_vat_amount exists for compatibility
+          total_vat_amount: quote.vat_amount || 0
         }));
         setQuotes(quotesWithBlocks);
       }
@@ -137,6 +139,20 @@ export function Quotes() {
     window.open(url, '_blank');
   };
 
+  // Transform customers and projects for the form
+  const formCustomers = customers.map(customer => ({
+    id: customer.id,
+    name: customer.name,
+    email: customer.email || ''
+  }));
+
+  const formProjects = projects.map(project => ({
+    id: project.id,
+    title: project.title,
+    value: project.value?.toString() || '0',
+    customer: project.customer
+  }));
+
   if (loading) {
     return <div className="flex h-screen items-center justify-center">Loading...</div>;
   }
@@ -161,8 +177,8 @@ export function Quotes() {
                 setShowNewQuote(false);
                 fetchQuotes();
               }}
-              customers={customers}
-              projects={projects}
+              customers={formCustomers}
+              projects={formProjects}
             />
           </DialogContent>
         </Dialog>

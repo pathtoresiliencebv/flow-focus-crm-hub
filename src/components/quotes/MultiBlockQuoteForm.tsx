@@ -28,8 +28,8 @@ const formSchema = z.object({
 
 interface MultiBlockQuoteFormProps {
   onClose: () => void;
-  customers: Array<{ id: number; name: string; email?: string }>;
-  projects?: Array<{ id: number; title: string; value: string; customer: string }>;
+  customers: Array<{ id: string; name: string; email?: string }>;
+  projects?: Array<{ id: string; title: string; value: string; customer: string }>;
 }
 
 export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
@@ -101,8 +101,8 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setSaving(true);
     try {
-      const customer = customers.find(c => c.id.toString() === values.customer);
-      const project = projects?.find(p => p.id.toString() === values.project);
+      const customer = customers.find(c => c.id === values.customer);
+      const project = projects?.find(p => p.id === values.project);
 
       const totalAmount = calculateTotalAmount();
       const totalVAT = calculateTotalVAT();
@@ -172,7 +172,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   };
 
   const filteredProjects = projects?.filter(project => 
-    project.customer === customers.find(c => c.id.toString() === watchedFields.customer)?.name
+    project.customer === customers.find(c => c.id === watchedFields.customer)?.name
   ) || [];
 
   const totalAmount = calculateTotalAmount();
@@ -182,9 +182,9 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   // Create preview quote object
   const previewQuote: Quote = {
     quote_number: watchedFields.quoteNumber || `OFF-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
-    customer_name: customers.find(c => c.id.toString() === watchedFields.customer)?.name || '',
-    customer_email: customers.find(c => c.id.toString() === watchedFields.customer)?.email || '',
-    project_title: projects?.find(p => p.id.toString() === watchedFields.project)?.title || '',
+    customer_name: customers.find(c => c.id === watchedFields.customer)?.name || '',
+    customer_email: customers.find(c => c.id === watchedFields.customer)?.email || '',
+    project_title: projects?.find(p => p.id === watchedFields.project)?.title || '',
     quote_date: watchedFields.date || new Date().toISOString().split('T')[0],
     valid_until: watchedFields.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     message: watchedFields.message || '',
@@ -226,7 +226,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
                           </FormControl>
                           <SelectContent>
                             {customers.map((customer) => (
-                              <SelectItem key={customer.id} value={customer.id.toString()}>
+                              <SelectItem key={customer.id} value={customer.id}>
                                 {customer.name}
                               </SelectItem>
                             ))}
@@ -251,7 +251,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
                           </FormControl>
                           <SelectContent>
                             {filteredProjects.map((project) => (
-                              <SelectItem key={project.id} value={project.id.toString()}>
+                              <SelectItem key={project.id} value={project.id}>
                                 {project.title}
                               </SelectItem>
                             ))}
