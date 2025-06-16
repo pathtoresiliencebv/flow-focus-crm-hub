@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Quote } from '@/types/quote';
 import { supabase } from "@/integrations/supabase/client";
@@ -130,38 +131,41 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
               <div key={`${block.id}-${blockIndex}`} className="border-l-2 border-gray-300 pl-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-4 uppercase">{block.title}</h3>
                 
-                {/* Block items */}
+                {/* Block items in table format */}
                 {block.items && block.items.length > 0 ? (
-                  <div className="space-y-3 mb-4">
-                    {/* Table header for products */}
-                    {block.items.some(item => item.type === 'product') && (
-                      <div className="grid grid-cols-12 gap-3 py-2 border-b-2 border-gray-200 font-semibold text-gray-700">
-                        <div className="col-span-6">Beschrijving</div>
-                        <div className="col-span-2 text-center">Aantal</div>
-                        <div className="col-span-2 text-right">Prijs</div>
-                        <div className="col-span-1 text-center">BTW%</div>
-                        <div className="col-span-1 text-right">Totaal</div>
-                      </div>
-                    )}
+                  <div className="mb-4">
+                    {/* Table header */}
+                    <div className="grid grid-cols-12 gap-3 py-2 border-b-2 border-gray-200 font-semibold text-gray-700">
+                      <div className="col-span-6">Beschrijving</div>
+                      <div className="col-span-2 text-center">Aantal</div>
+                      <div className="col-span-2 text-right">Prijs</div>
+                      <div className="col-span-1 text-center">BTW%</div>
+                      <div className="col-span-1 text-right">Totaal</div>
+                    </div>
                     
+                    {/* Table rows */}
                     {block.items.map((item, itemIndex) => {
                       console.log('MultiBlockQuotePreview: Rendering item:', item);
                       return (
-                        <div key={`${item.id || itemIndex}-${blockIndex}-${itemIndex}`}>
+                        <div key={`${item.id || itemIndex}-${blockIndex}-${itemIndex}`} className="grid grid-cols-12 gap-3 py-2 border-b border-gray-100">
                           {item.type === 'product' ? (
-                            <div className="grid grid-cols-12 gap-3 py-2 border-b border-gray-100">
+                            <>
                               <div className="col-span-6 text-gray-800">{item.description || 'Geen beschrijving'}</div>
                               <div className="col-span-2 text-center text-gray-800">{item.quantity || 0}</div>
                               <div className="col-span-2 text-right text-gray-800">€{(item.unit_price || 0).toFixed(2)}</div>
                               <div className="col-span-1 text-center text-gray-800">{item.vat_rate || 0}%</div>
                               <div className="col-span-1 text-right text-gray-800 font-medium">€{(item.total || 0).toFixed(2)}</div>
-                            </div>
+                            </>
                           ) : (
-                            <div className="py-3 px-4 bg-blue-50 rounded-lg border-l-2 border-blue-200 mb-3" style={getItemStyle(item)}>
-                              <div className="text-gray-700 whitespace-pre-line leading-relaxed">
+                            <>
+                              <div className="col-span-6 text-gray-800 whitespace-pre-line" style={getItemStyle(item)}>
                                 {item.description || 'Geen tekst'}
                               </div>
-                            </div>
+                              <div className="col-span-2"></div>
+                              <div className="col-span-2"></div>
+                              <div className="col-span-1 text-center text-gray-800">{item.vat_rate || 0}%</div>
+                              <div className="col-span-1"></div>
+                            </>
                           )}
                         </div>
                       );

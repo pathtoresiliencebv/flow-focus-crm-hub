@@ -43,8 +43,21 @@ export const QuoteItemDisplay: React.FC<QuoteItemDisplayProps> = ({ item, onDele
               </div>
             </div>
           ) : (
-            <div className="text-sm" style={getItemStyle(item)}>
-              <div className="whitespace-pre-line">{item.description}</div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-sm">
+              <div>
+                <span className="text-gray-700 whitespace-pre-line" style={getItemStyle(item)}>
+                  {item.description}
+                </span>
+              </div>
+              <div>
+                <span className="text-gray-400">-</span>
+              </div>
+              <div>
+                <span className="text-gray-600">{item.vat_rate}% BTW</span>
+              </div>
+              <div>
+                <span className="text-gray-400">-</span>
+              </div>
             </div>
           )}
         </div>
