@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -162,9 +163,22 @@ export function PlanningManagement() {
     employee: item.assigned_user_id, // We'll need to map this to actual employee names
     employeeId: item.assigned_user_id,
     project: item.project_id || 'Geen project',
+    projectId: item.project_id || '',
     status: item.status,
     description: item.description || '',
-    location: item.location || ''
+    location: item.location || '',
+    createdAt: item.created_at
+  }));
+
+  // Convert for calendar view
+  const calendarEvents = planningItems.map(item => ({
+    id: item.id,
+    title: item.title,
+    startTime: item.start_time,
+    endTime: item.end_time,
+    date: item.start_date,
+    type: 'appointment' as const,
+    description: item.description || ''
   }));
 
   if (loading) {
@@ -327,7 +341,9 @@ export function PlanningManagement() {
         
         <TabsContent value="calendar" className="mt-4">
           <PlanningCalendarView
-            planningItems={convertedPlanningItems}
+            calendarView="week"
+            onCalendarViewChange={() => {}}
+            events={calendarEvents}
             onEventClick={handleEventClick}
             onTimeSlotClick={handleTimeSlotClick}
             onEventCreate={handleEventCreate}
@@ -337,10 +353,6 @@ export function PlanningManagement() {
         <TabsContent value="list" className="mt-4">
           <PlanningListView
             planningItems={convertedPlanningItems}
-            searchTerm={searchTerm}
-            filterStatus={filterStatus}
-            onEdit={() => {}}
-            onDelete={() => {}}
           />
         </TabsContent>
       </Tabs>

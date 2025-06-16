@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { EmailList } from './EmailList';
 import { EmailCompose } from './EmailCompose';
@@ -5,6 +6,7 @@ import { EmailSidebar } from './EmailSidebar';
 import { EmailToolbar } from './EmailToolbar';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
+import { Input } from './ui/input';
 import { Plus, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -168,24 +170,6 @@ export function Email() {
     setShowCompose(true);
   };
 
-  const handleCompose = (emailData: { to: string; subject: string; body: string; inReplyTo?: string }) => {
-    const newEmail: Email = {
-      id: Date.now().toString(),
-      from: 'jij@smans.nl',
-      to: emailData.to,
-      subject: emailData.subject,
-      body: emailData.body,
-      date: new Date().toISOString(),
-      isRead: true,
-      isStarred: false,
-      folder: 'sent'
-    };
-
-    setEmails(prev => [newEmail, ...prev]);
-    setShowCompose(false);
-    setReplyTo(null);
-  };
-
   const filteredEmails = emails.filter(email => {
     const searchTermLower = searchTerm.toLowerCase();
     const matchesSearch =
@@ -214,8 +198,7 @@ export function Email() {
         </div>
         <div className="flex-1 p-4">
           <EmailCompose
-            onSend={handleCompose}
-            onCancel={() => { setShowCompose(false); setReplyTo(null); }}
+            onClose={() => { setShowCompose(false); setReplyTo(null); }}
             replyTo={replyTo ? {
               to: replyTo.from,
               subject: replyTo.subject.startsWith('Re: ') ? replyTo.subject : `Re: ${replyTo.subject}`,
@@ -230,18 +213,29 @@ export function Email() {
   return (
     <div className="h-full flex">
       <EmailSidebar
-        currentFolder={currentFolder}
-        onFolderChange={setCurrentFolder}
-        onCompose={() => setShowCompose(true)}
+        activeFolder={currentFolder}
+        setActiveFolder={setCurrentFolder}
+        onComposeClick={() => setShowCompose(true)}
+        hasEmailAccounts={true}
+        onNavigateToSettings={() => {}}
       />
       
       <div className="flex-1 flex flex-col">
         <EmailToolbar
-          selectedCount={selectedEmails.length}
-          onArchive={() => handleBulkAction('archive')}
-          onDelete={() => handleBulkAction('delete')}
+          searchTerm={searchTerm}
+          onSearchTermChange={setSearchTerm}
+          selectedAccountId="all"
+          onSelectedAccountIdChange={() => {}}
+          hasEmailAccounts={true}
+          emailAccounts={[]}
+          onRefresh={() => {}}
+          selectedEmailsCount={selectedEmails.length}
           onMarkAsRead={() => handleBulkAction('markAsRead')}
           onMarkAsUnread={() => handleBulkAction('markAsUnread')}
+          onStar={() => {}}
+          onUnstar={() => {}}
+          onDelete={() => handleBulkAction('delete')}
+          onArchive={() => handleBulkAction('archive')}
         />
 
         <div className="p-4 border-b">

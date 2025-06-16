@@ -156,7 +156,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
           quote_date: values.date,
           valid_until: values.validUntil,
           message: values.message || '',
-          items: blocks, // Store blocks in the items JSONB field
+          items: JSON.parse(JSON.stringify(blocks)), // Convert to JSON-compatible format
           subtotal: totalAmount,
           vat_amount: totalVAT,
           total_amount: totalAmount + totalVAT,

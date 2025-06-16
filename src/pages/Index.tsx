@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Dashboard } from "@/components/Dashboard";
@@ -106,7 +107,7 @@ const Index = () => {
       case "invoicing":
         return <Invoicing />;
       case "email":
-        return <Email setActiveTab={handleSetActiveTab} />;
+        return <Email />;
       case "personnel":
         return <Personnel />;
       case "users":
