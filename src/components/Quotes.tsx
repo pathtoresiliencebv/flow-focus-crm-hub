@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import {
   Table,
@@ -19,17 +18,20 @@ import {
   DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Eye, FileText, Edit, Link, Check, X, Send } from "lucide-react";
+import { Eye, FileText, Edit, Link, Check, X, Send, Blocks } from "lucide-react";
 import { QuoteForm } from './QuoteForm';
+import { MultiBlockQuoteForm } from './quotes/MultiBlockQuoteForm';
+import { MultiBlockQuotePreview } from './quotes/MultiBlockQuotePreview';
 import { SendInvoiceDialog } from './SendInvoiceDialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import { Quote } from '@/types/quote';
 
 // Mock data van centraal punt
 import { mockCustomers, mockProjects } from '@/data/mockData';
 
-interface Quote {
+interface QuoteRecord {
   id: string;
   quote_number: string;
   customer_name: string;
@@ -48,10 +50,13 @@ export function Quotes() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
-  const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [quotes, setQuotes] = useState<QuoteRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSendDialog, setShowSendDialog] = useState(false);
-  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+  const [selectedQuote, setSelectedQuote] = useState<QuoteRecord | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewQuote, setPreviewQuote] = useState<Quote | null>(null);
+  const [showMultiBlockForm, setShowMultiBlockForm] = useState(false);
 
   useEffect(() => {
     fetchQuotes();
@@ -163,6 +168,11 @@ export function Quotes() {
     });
   };
 
+  const handlePreview = (quote: Quote) => {
+    setPreviewQuote(quote);
+    setShowPreview(true);
+  };
+
   if (loading) {
     return (
       <div className="p-4 sm:p-6 space-y-6">
@@ -181,33 +191,40 @@ export function Quotes() {
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Offertes</h2>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>
-              <FileText className="mr-2 h-4 w-4" />
-              Nieuwe Offerte
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[1400px]">
-            <DialogHeader>
-              <DialogTitle>Nieuwe offerte aanmaken</DialogTitle>
-              <DialogDescription>
-                Vul de offertegegevens in en bekijk direct de preview van je offerte.
-              </DialogDescription>
-            </DialogHeader>
-            <QuoteForm 
-              onClose={() => {
-                const dialogCloseButton = document.querySelector('[data-state="open"] button[data-state="closed"]');
-                if (dialogCloseButton instanceof HTMLElement) {
-                  dialogCloseButton.click();
-                }
-                fetchQuotes(); // Refresh quotes after creating new one
-              }}
-              customers={mockCustomers}
-              projects={mockProjects}
-            />
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <FileText className="mr-2 h-4 w-4" />
+                Klassieke Offerte
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[1400px]">
+              <DialogHeader>
+                <DialogTitle>Nieuwe klassieke offerte</DialogTitle>
+                <DialogDescription>
+                  Maak een traditionele offerte aan met één tabel van regels.
+                </DialogDescription>
+              </DialogHeader>
+              <QuoteForm 
+                onClose={() => {
+                  const dialogCloseButton = document.querySelector('[data-state="open"] button[data-state="closed"]');
+                  if (dialogCloseButton instanceof HTMLElement) {
+                    dialogCloseButton.click();
+                  }
+                  fetchQuotes();
+                }}
+                customers={mockCustomers}
+                projects={mockProjects}
+              />
+            </DialogContent>
+          </Dialog>
+
+          <Button onClick={() => setShowMultiBlockForm(true)}>
+            <Blocks className="mr-2 h-4 w-4" />
+            Multi-Blok Offerte
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -357,10 +374,43 @@ export function Quotes() {
         </div>
       </div>
 
+      {/* Multi-block quote form dialog */}
+      <Dialog open={showMultiBlockForm} onOpenChange={setShowMultiBlockForm}>
+        <DialogContent className="sm:max-w-[1400px]">
+          <DialogHeader>
+            <DialogTitle>Nieuwe multi-blok offerte</DialogTitle>
+            <DialogDescription>
+              Maak een geavanceerde offerte aan met meerdere blokken en flexibele structuur.
+            </DialogDescription>
+          </DialogHeader>
+          <MultiBlockQuoteForm
+            onClose={() => {
+              setShowMultiBlockForm(false);
+              fetchQuotes();
+            }}
+            onPreview={handlePreview}
+            customers={mockCustomers}
+            projects={mockProjects}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Preview dialog */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="sm:max-w-[1200px]">
+          <DialogHeader>
+            <DialogTitle>Offerte Preview</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[80vh] overflow-y-auto">
+            {previewQuote && <MultiBlockQuotePreview quote={previewQuote} />}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <SendInvoiceDialog
         open={showSendDialog}
         onOpenChange={setShowSendDialog}
-        onSend={handleSendConfirm}
+        onSend={() => {}}
         invoiceNumber={selectedQuote?.quote_number || ''}
         customerEmail={selectedQuote?.customer_email || ''}
         customerName={selectedQuote?.customer_name || ''}
