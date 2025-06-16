@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -42,19 +42,13 @@ export function PlanningManagement() {
     fetchPlanningItems 
   } = usePlanningStore();
 
-  const { users, fetchUsers } = useUserStore();
-  const { projects, fetchProjects } = useCrmStore();
+  const { users } = useUserStore();
+  const { projects } = useCrmStore();
 
   // Get installers (users with installer role)
   const installers = users.filter(user => 
-    user.role === 'Monteur' || user.role === 'Administrator'
+    user.role === 'Installateur' || user.role === 'Administrator'
   );
-
-  useEffect(() => {
-    fetchPlanningItems();
-    fetchUsers();
-    fetchProjects();
-  }, [fetchPlanningItems, fetchUsers, fetchProjects]);
 
   const handleQuickPlanning = async (formData: FormData) => {
     try {
