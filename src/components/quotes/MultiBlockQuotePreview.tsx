@@ -25,6 +25,10 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
     fetchSettings();
   }, []);
 
+  useEffect(() => {
+    console.log('MultiBlockQuotePreview: Quote prop updated:', quote);
+  }, [quote]);
+
   const fetchSettings = async () => {
     try {
       const { data, error } = await supabase
@@ -124,7 +128,7 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
           quote.blocks.map((block, blockIndex) => {
             console.log('MultiBlockQuotePreview: Rendering block:', block);
             return (
-              <div key={block.id} className="border-l-4 border-smans-primary pl-6">
+              <div key={`${block.id}-${blockIndex}`} className="border-l-4 border-smans-primary pl-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-4 uppercase">{block.title}</h3>
                 
                 {/* Block items */}
@@ -144,10 +148,10 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
                     {block.items.map((item, itemIndex) => {
                       console.log('MultiBlockQuotePreview: Rendering item:', item);
                       return (
-                        <div key={item.id || itemIndex}>
+                        <div key={`${item.id || itemIndex}-${blockIndex}-${itemIndex}`}>
                           {item.type === 'product' ? (
                             <div className="grid grid-cols-12 gap-3 py-2 border-b border-gray-100">
-                              <div className="col-span-6 text-gray-800">{item.description}</div>
+                              <div className="col-span-6 text-gray-800">{item.description || 'Geen beschrijving'}</div>
                               <div className="col-span-2 text-center text-gray-800">{item.quantity || 0}</div>
                               <div className="col-span-2 text-right text-gray-800">€{(item.unit_price || 0).toFixed(2)}</div>
                               <div className="col-span-1 text-center text-gray-800">{item.vat_rate || 0}%</div>
@@ -156,7 +160,7 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
                           ) : (
                             <div className="py-3 px-4 bg-gray-50 rounded-lg border-l-2 border-blue-300 mb-3" style={getItemStyle(item)}>
                               <div className="text-gray-700 whitespace-pre-line leading-relaxed">
-                                {item.description}
+                                {item.description || 'Geen tekst'}
                               </div>
                             </div>
                           )}
