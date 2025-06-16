@@ -11,6 +11,8 @@ import { NewPlanningDialog } from './planning/NewPlanningDialog';
 import { QuickPlanningDialog } from './planning/QuickPlanningDialog';
 import { MultiDayPlanningDialog } from './planning/MultiDayPlanningDialog';
 import { usePlanningStore } from '@/hooks/usePlanningStore';
+import { useUserStore } from '@/hooks/useUserStore';
+import { useCrmStore } from '@/hooks/useCrmStore';
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,10 +25,13 @@ export function PlanningManagement() {
   const [showNewPlanning, setShowNewPlanning] = useState(false);
   const [showQuickPlanning, setShowQuickPlanning] = useState(false);
   const [showMultiDayPlanning, setShowMultiDayPlanning] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [location, setLocation] = useState('');
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
   const { 
     planningItems, 
@@ -37,22 +42,32 @@ export function PlanningManagement() {
     fetchPlanningItems 
   } = usePlanningStore();
 
+  const { users, fetchUsers } = useUserStore();
+  const { projects, fetchProjects } = useCrmStore();
+
+  // Get installers (users with installer role)
+  const installers = users.filter(user => 
+    user.role === 'Monteur' || user.role === 'Administrator'
+  );
+
   useEffect(() => {
     fetchPlanningItems();
-  }, [fetchPlanningItems]);
+    fetchUsers();
+    fetchProjects();
+  }, [fetchPlanningItems, fetchUsers, fetchProjects]);
 
   const handleQuickPlanning = async (formData: FormData) => {
     try {
       const data = {
-        assigned_user_id: formData.get('assigned_user_id') as string,
-        project_id: formData.get('project_id') as string,
-        title: formData.get('title') as string,
+        assigned_user_id: formData.get('employee') as string,
+        project_id: formData.get('project') as string,
+        title: formData.get('description') as string,
         description: formData.get('description') as string,
-        start_date: formData.get('start_date') as string,
-        start_time: formData.get('start_time') as string,
-        end_time: formData.get('end_time') as string,
-        location: formData.get('location') as string,
-        status: formData.get('status') as string,
+        start_date: selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        start_time: selectedHour ? `${selectedHour}:00` : '09:00',
+        end_time: selectedHour ? `${selectedHour + 1}:00` : '10:00',
+        location: location,
+        status: 'Gepland',
       };
 
       await addPlanningItem({
@@ -65,6 +80,7 @@ export function PlanningManagement() {
         description: "De planning is succesvol toegevoegd.",
       });
       setShowQuickPlanning(false);
+      setLocation('');
     } catch (error) {
       console.error('Error adding planning:', error);
       toast({
@@ -78,15 +94,15 @@ export function PlanningManagement() {
   const handleNewPlanning = async (formData: FormData) => {
     try {
       const data = {
-        assigned_user_id: formData.get('assigned_user_id') as string,
-        project_id: formData.get('project_id') as string,
-        title: formData.get('title') as string,
+        assigned_user_id: formData.get('employee') as string,
+        project_id: formData.get('project') as string,
+        title: formData.get('description') as string,
         description: formData.get('description') as string,
-        start_date: formData.get('start_date') as string,
-        start_time: formData.get('start_time') as string,
-        end_time: formData.get('end_time') as string,
-        location: formData.get('location') as string,
-        status: formData.get('status') as string,
+        start_date: selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        start_time: formData.get('time') as string || '09:00',
+        end_time: formData.get('time') as string || '10:00',
+        location: location,
+        status: 'Gepland',
       };
 
       await addPlanningItem({
@@ -99,6 +115,7 @@ export function PlanningManagement() {
         description: "De planning is succesvol toegevoegd.",
       });
       setShowNewPlanning(false);
+      setLocation('');
     } catch (error) {
       console.error('Error adding planning:', error);
       toast({
@@ -112,15 +129,15 @@ export function PlanningManagement() {
   const handleMultiDayPlanning = async (formData: FormData) => {
     try {
       const data = {
-        assigned_user_id: formData.get('assigned_user_id') as string,
-        project_id: formData.get('project_id') as string,
-        title: formData.get('title') as string,
+        assigned_user_id: formData.get('employee') as string,
+        project_id: formData.get('project') as string,
+        title: formData.get('description') as string,
         description: formData.get('description') as string,
-        start_date: formData.get('start_date') as string,
-        start_time: formData.get('start_time') as string,
-        end_time: formData.get('end_time') as string,
-        location: formData.get('location') as string,
-        status: formData.get('status') as string,
+        start_date: startDate ? startDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        start_time: formData.get('time') as string || '09:00',
+        end_time: formData.get('time') as string || '10:00',
+        location: location,
+        status: 'Gepland',
       };
 
       await addPlanningItem({
@@ -133,6 +150,7 @@ export function PlanningManagement() {
         description: "De meerdaagse planning is succesvol toegevoegd.",
       });
       setShowMultiDayPlanning(false);
+      setLocation('');
     } catch (error) {
       console.error('Error adding multi-day planning:', error);
       toast({
@@ -186,6 +204,13 @@ export function PlanningManagement() {
     type: 'appointment' as const,
     description: item.description || ''
   }));
+
+  // Create quick planning data for the dialog
+  const quickPlanningData = selectedDate && selectedHour !== null ? {
+    date: selectedDate,
+    startHour: selectedHour,
+    endHour: selectedHour + 1
+  } : null;
 
   if (loading) {
     return (
@@ -368,20 +393,40 @@ export function PlanningManagement() {
         open={showQuickPlanning}
         onOpenChange={setShowQuickPlanning}
         onSubmit={handleQuickPlanning}
-        selectedDate={selectedDate}
-        selectedHour={selectedHour}
+        installers={installers}
+        projects={projects}
+        quickPlanningData={quickPlanningData}
+        location={location}
+        onLocationChange={setLocation}
+        onClose={() => {
+          setShowQuickPlanning(false);
+          setLocation('');
+        }}
       />
       
       <NewPlanningDialog
         open={showNewPlanning}
         onOpenChange={setShowNewPlanning}
         onSubmit={handleNewPlanning}
+        installers={installers}
+        projects={projects}
+        selectedDate={selectedDate}
+        location={location}
+        onLocationChange={setLocation}
       />
       
       <MultiDayPlanningDialog
         open={showMultiDayPlanning}
         onOpenChange={setShowMultiDayPlanning}
         onSubmit={handleMultiDayPlanning}
+        installers={installers}
+        projects={projects}
+        startDate={startDate}
+        onStartDateChange={setStartDate}
+        endDate={endDate}
+        onEndDateChange={setEndDate}
+        location={location}
+        onLocationChange={setLocation}
       />
     </div>
   );
