@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useCallback, useMemo } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -64,7 +65,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
 
   const watchedFields = form.watch();
 
-  const addBlock = () => {
+  const addBlock = useCallback(() => {
     const newBlock: QuoteBlock = {
       id: crypto.randomUUID(),
       title: `Blok ${blocks.length + 1}`,
@@ -73,40 +74,50 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       vat_amount: 0,
       order_index: blocks.length
     };
-    console.log('Adding new block:', newBlock);
-    setBlocks([...blocks, newBlock]);
-  };
+    console.log('MultiBlockQuoteForm: Adding new block:', newBlock);
+    setBlocks(prevBlocks => [...prevBlocks, newBlock]);
+  }, [blocks.length]);
 
-  const updateBlock = (index: number, updatedBlock: QuoteBlock) => {
-    console.log('Updating block at index', index, ':', updatedBlock);
-    const updatedBlocks = [...blocks];
-    updatedBlocks[index] = updatedBlock;
-    setBlocks(updatedBlocks);
-  };
+  const updateBlock = useCallback((index: number, updatedBlock: QuoteBlock) => {
+    console.log('MultiBlockQuoteForm: Updating block at index', index, ':', updatedBlock);
+    setBlocks(prevBlocks => {
+      const newBlocks = [...prevBlocks];
+      newBlocks[index] = updatedBlock;
+      console.log('MultiBlockQuoteForm: New blocks state:', newBlocks);
+      return newBlocks;
+    });
+  }, []);
 
-  const deleteBlock = (index: number) => {
+  const deleteBlock = useCallback((index: number) => {
     if (blocks.length > 1) {
-      const updatedBlocks = blocks.filter((_, i) => i !== index);
-      setBlocks(updatedBlocks);
+      console.log('MultiBlockQuoteForm: Deleting block at index:', index);
+      setBlocks(prevBlocks => prevBlocks.filter((_, i) => i !== index));
     }
-  };
+  }, [blocks.length]);
 
-  const calculateTotalAmount = (): number => {
-    return blocks.reduce((sum, block) => sum + block.subtotal, 0);
-  };
+  const totalAmount = useMemo(() => {
+    const total = blocks.reduce((sum, block) => sum + block.subtotal, 0);
+    console.log('MultiBlockQuoteForm: Calculated total amount:', total);
+    return total;
+  }, [blocks]);
 
-  const calculateTotalVAT = (): number => {
-    return blocks.reduce((sum, block) => sum + block.vat_amount, 0);
-  };
+  const totalVAT = useMemo(() => {
+    const vat = blocks.reduce((sum, block) => sum + block.vat_amount, 0);
+    console.log('MultiBlockQuoteForm: Calculated total VAT:', vat);
+    return vat;
+  }, [blocks]);
+
+  const grandTotal = useMemo(() => {
+    const grand = totalAmount + totalVAT;
+    console.log('MultiBlockQuoteForm: Calculated grand total:', grand);
+    return grand;
+  }, [totalAmount, totalVAT]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setSaving(true);
     try {
       const customer = customers.find(c => c.id === values.customer);
       const project = projects?.find(p => p.id === values.project);
-
-      const totalAmount = calculateTotalAmount();
-      const totalVAT = calculateTotalVAT();
 
       // Generate public token
       const { data: tokenData, error: tokenError } = await supabase
@@ -176,12 +187,8 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     project.customer === customers.find(c => c.id === watchedFields.customer)?.name
   ) || [];
 
-  const totalAmount = calculateTotalAmount();
-  const totalVAT = calculateTotalVAT();
-  const grandTotal = totalAmount + totalVAT;
-
   // Create preview quote object
-  const previewQuote: Quote = {
+  const previewQuote: Quote = useMemo(() => ({
     quote_number: watchedFields.quoteNumber || `OFF-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
     customer_name: customers.find(c => c.id === watchedFields.customer)?.name || '',
     customer_email: customers.find(c => c.id === watchedFields.customer)?.email || '',
@@ -194,7 +201,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     total_vat_amount: totalVAT,
     status: 'concept',
     admin_signature_data: adminSignature
-  };
+  }), [watchedFields, customers, projects, blocks, totalAmount, totalVAT, adminSignature]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[80vh] overflow-hidden">

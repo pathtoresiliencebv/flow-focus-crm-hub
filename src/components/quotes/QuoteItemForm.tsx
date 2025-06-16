@@ -25,6 +25,7 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
   });
 
   const resetForm = () => {
+    console.log('QuoteItemForm: Resetting form');
     setDescription('');
     setQuantity(1);
     setUnitPrice(0);
@@ -34,8 +35,17 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('QuoteItemForm: Form submitted with:', {
+      itemType,
+      description,
+      quantity,
+      unitPrice,
+      vatRate,
+      formatting
+    });
     
     if (!description.trim()) {
+      console.error('QuoteItemForm: Description is required');
       alert('Beschrijving is verplicht');
       return;
     }
@@ -54,8 +64,15 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
       })
     };
 
-    onAddItem(newItem);
-    resetForm();
+    console.log('QuoteItemForm: Creating new item:', newItem);
+    
+    if (typeof onAddItem === 'function') {
+      onAddItem(newItem);
+      resetForm();
+      console.log('QuoteItemForm: Item added successfully');
+    } else {
+      console.error('QuoteItemForm: onAddItem is not a function:', onAddItem);
+    }
   };
 
   const toggleFormatting = (type: 'bold' | 'italic' | 'underline') => {

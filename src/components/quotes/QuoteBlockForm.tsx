@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,17 +26,19 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(block.title);
 
-  const calculateBlockSubtotal = (items: QuoteItem[]): number => {
-    return items.reduce((sum, item) => {
+  const calculateBlockSubtotal = useCallback((items: QuoteItem[]): number => {
+    const subtotal = items.reduce((sum, item) => {
       if (item.type === 'product') {
         return sum + (item.total || 0);
       }
       return sum;
     }, 0);
-  };
+    console.log('QuoteBlockForm: Calculated subtotal:', subtotal, 'for items:', items);
+    return subtotal;
+  }, []);
 
-  const calculateBlockVAT = (items: QuoteItem[]): number => {
-    return items.reduce((sum, item) => {
+  const calculateBlockVAT = useCallback((items: QuoteItem[]): number => {
+    const vat = items.reduce((sum, item) => {
       if (item.type === 'product') {
         const itemTotal = item.total || 0;
         const vatRate = item.vat_rate || 0;
@@ -44,9 +46,13 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
       }
       return sum;
     }, 0);
-  };
+    console.log('QuoteBlockForm: Calculated VAT:', vat, 'for items:', items);
+    return vat;
+  }, []);
 
-  const handleAddItem = (newItem: Omit<QuoteItem, 'id'>) => {
+  const handleAddItem = useCallback((newItem: Omit<QuoteItem, 'id'>) => {
+    console.log('QuoteBlockForm: Adding item to block:', block.id, newItem);
+    
     const item: QuoteItem = {
       ...newItem,
       id: crypto.randomUUID()
@@ -56,37 +62,46 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
     const subtotal = calculateBlockSubtotal(updatedItems);
     const vatAmount = calculateBlockVAT(updatedItems);
 
-    const updatedBlock = {
+    const updatedBlock: QuoteBlock = {
       ...block,
       items: updatedItems,
       subtotal,
       vat_amount: vatAmount
     };
 
-    console.log('Adding item to block:', item);
-    console.log('Updated block:', updatedBlock);
+    console.log('QuoteBlockForm: Updated block:', updatedBlock);
     
-    onUpdateBlock(updatedBlock);
-  };
+    if (typeof onUpdateBlock === 'function') {
+      onUpdateBlock(updatedBlock);
+      console.log('QuoteBlockForm: Block update sent to parent');
+    } else {
+      console.error('QuoteBlockForm: onUpdateBlock is not a function:', onUpdateBlock);
+    }
+  }, [block, calculateBlockSubtotal, calculateBlockVAT, onUpdateBlock]);
 
-  const handleDeleteItem = (index: number) => {
+  const handleDeleteItem = useCallback((index: number) => {
+    console.log('QuoteBlockForm: Deleting item at index:', index);
     const updatedItems = block.items.filter((_, i) => i !== index);
     const subtotal = calculateBlockSubtotal(updatedItems);
     const vatAmount = calculateBlockVAT(updatedItems);
 
-    onUpdateBlock({
+    const updatedBlock: QuoteBlock = {
       ...block,
       items: updatedItems,
       subtotal,
       vat_amount: vatAmount
-    });
-  };
+    };
+
+    console.log('QuoteBlockForm: Updated block after deletion:', updatedBlock);
+    onUpdateBlock(updatedBlock);
+  }, [block, calculateBlockSubtotal, calculateBlockVAT, onUpdateBlock]);
 
   const handleTitleSave = () => {
-    onUpdateBlock({
+    const updatedBlock: QuoteBlock = {
       ...block,
       title: titleInput.trim() || 'Naamloos blok'
-    });
+    };
+    onUpdateBlock(updatedBlock);
     setIsEditingTitle(false);
   };
 
