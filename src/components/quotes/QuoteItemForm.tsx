@@ -33,11 +33,14 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
     setFormatting({ bold: false, italic: false, underline: false });
   }, []);
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleAddItem = useCallback((e?: React.MouseEvent) => {
+    // Prevent any event propagation that could cause navigation
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     
-    console.log('QuoteItemForm: Form submitted with:', {
+    console.log('QuoteItemForm: Add item button clicked with:', {
       itemType,
       description,
       quantity,
@@ -88,7 +91,8 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
     <div className="space-y-4 p-4 border rounded-lg bg-blue-50">
       <h4 className="font-medium text-gray-900">Nieuw item toevoegen</h4>
       
-      <form onSubmit={handleSubmit} className="space-y-4">
+      {/* Remove form wrapper entirely to prevent form submissions */}
+      <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="itemType">Type</Label>
@@ -129,7 +133,11 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
                   type="button"
                   variant={formatting.bold ? "default" : "outline"}
                   size="sm"
-                  onClick={() => toggleFormatting('bold')}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleFormatting('bold');
+                  }}
                 >
                   <strong>B</strong>
                 </Button>
@@ -137,7 +145,11 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
                   type="button"
                   variant={formatting.italic ? "default" : "outline"}
                   size="sm"
-                  onClick={() => toggleFormatting('italic')}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleFormatting('italic');
+                  }}
                   className="italic"
                 >
                   I
@@ -146,7 +158,11 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
                   type="button"
                   variant={formatting.underline ? "default" : "outline"}
                   size="sm"
-                  onClick={() => toggleFormatting('underline')}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleFormatting('underline');
+                  }}
                   className="underline"
                 >
                   U
@@ -156,7 +172,6 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Voer tekst in..."
-                required
                 className="min-h-[100px]"
               />
             </div>
@@ -165,7 +180,6 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Beschrijving van product of dienst"
-              required
             />
           )}
         </div>
@@ -180,7 +194,6 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
                 onChange={(e) => setQuantity(Number(e.target.value))}
                 min="0"
                 step="0.01"
-                required
               />
             </div>
             <div>
@@ -191,17 +204,24 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
                 onChange={(e) => setUnitPrice(Number(e.target.value))}
                 min="0"
                 step="0.01"
-                required
               />
             </div>
           </div>
         )}
 
-        <Button type="submit" className="w-full">
+        <Button 
+          type="button" 
+          onClick={handleAddItem} 
+          className="w-full"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+        >
           <Plus className="h-4 w-4 mr-2" />
           {itemType === 'product' ? 'Product toevoegen' : 'Tekstblok toevoegen'}
         </Button>
-      </form>
+      </div>
     </div>
   );
 };

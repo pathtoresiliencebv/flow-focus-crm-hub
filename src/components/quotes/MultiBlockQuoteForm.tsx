@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -50,6 +51,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   const [adminSignature, setAdminSignature] = useState('');
   const [saving, setSaving] = useState(false);
   const [updateCounter, setUpdateCounter] = useState(0);
+  const [previewKey, setPreviewKey] = useState(0);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -65,6 +67,12 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
 
   const watchedFields = form.watch();
 
+  const forcePreviewUpdate = useCallback(() => {
+    console.log('MultiBlockQuoteForm: Forcing preview update');
+    setUpdateCounter(prev => prev + 1);
+    setPreviewKey(prev => prev + 1);
+  }, []);
+
   const addBlock = useCallback(() => {
     const newBlock: QuoteBlock = {
       id: crypto.randomUUID(),
@@ -75,28 +83,36 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       order_index: blocks.length
     };
     console.log('MultiBlockQuoteForm: Adding new block:', newBlock);
-    setBlocks(prevBlocks => [...prevBlocks, newBlock]);
-    setUpdateCounter(prev => prev + 1);
-  }, [blocks.length]);
+    setBlocks(prevBlocks => {
+      const newBlocks = [...prevBlocks, newBlock];
+      console.log('MultiBlockQuoteForm: New blocks state:', newBlocks);
+      return newBlocks;
+    });
+    forcePreviewUpdate();
+  }, [blocks.length, forcePreviewUpdate]);
 
   const updateBlock = useCallback((index: number, updatedBlock: QuoteBlock) => {
     console.log('MultiBlockQuoteForm: Updating block at index', index, ':', updatedBlock);
     setBlocks(prevBlocks => {
       const newBlocks = [...prevBlocks];
-      newBlocks[index] = updatedBlock;
+      newBlocks[index] = { ...updatedBlock };
       console.log('MultiBlockQuoteForm: Updated blocks state:', newBlocks);
       return newBlocks;
     });
-    setUpdateCounter(prev => prev + 1);
-  }, []);
+    forcePreviewUpdate();
+  }, [forcePreviewUpdate]);
 
   const deleteBlock = useCallback((index: number) => {
     if (blocks.length > 1) {
       console.log('MultiBlockQuoteForm: Deleting block at index:', index);
-      setBlocks(prevBlocks => prevBlocks.filter((_, i) => i !== index));
-      setUpdateCounter(prev => prev + 1);
+      setBlocks(prevBlocks => {
+        const newBlocks = prevBlocks.filter((_, i) => i !== index);
+        console.log('MultiBlockQuoteForm: Blocks after deletion:', newBlocks);
+        return newBlocks;
+      });
+      forcePreviewUpdate();
     }
-  }, [blocks.length]);
+  }, [blocks.length, forcePreviewUpdate]);
 
   const totalAmount = useMemo(() => {
     const total = blocks.reduce((sum, block) => sum + (block.subtotal || 0), 0);
@@ -121,6 +137,13 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     console.log('MultiBlockQuoteForm: Blocks state changed:', blocks);
     console.log('MultiBlockQuoteForm: Total calculations - Amount:', totalAmount, 'VAT:', totalVAT, 'Grand:', grandTotal);
   }, [blocks, totalAmount, totalVAT, grandTotal]);
+
+  const handleFormSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('MultiBlockQuoteForm: Form submitted - this should only happen when saving the quote');
+    form.handleSubmit(onSubmit)();
+  }, [form]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setSaving(true);
@@ -196,7 +219,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     project.customer === customers.find(c => c.id === watchedFields.customer)?.name
   ) || [];
 
-  // Create preview quote object with update counter dependency
+  // Create preview quote object with forced re-renders
   const previewQuote: Quote = useMemo(() => {
     const quote = {
       quote_number: watchedFields.quoteNumber || `OFF-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
@@ -206,15 +229,15 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       quote_date: watchedFields.date || new Date().toISOString().split('T')[0],
       valid_until: watchedFields.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       message: watchedFields.message || '',
-      blocks: JSON.parse(JSON.stringify(blocks)), // Create deep copy to force re-render
+      blocks: JSON.parse(JSON.stringify(blocks)), // Deep copy to ensure re-render
       total_amount: totalAmount,
       total_vat_amount: totalVAT,
       status: 'concept' as const,
       admin_signature_data: adminSignature
     };
-    console.log('MultiBlockQuoteForm: Created preview quote with updateCounter:', updateCounter, quote);
+    console.log('MultiBlockQuoteForm: Created preview quote with updateCounter:', updateCounter, 'previewKey:', previewKey, quote);
     return quote;
-  }, [watchedFields, customers, projects, blocks, totalAmount, totalVAT, adminSignature, updateCounter]);
+  }, [watchedFields, customers, projects, blocks, totalAmount, totalVAT, adminSignature, updateCounter, previewKey]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[80vh] overflow-hidden">
@@ -225,7 +248,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleFormSubmit} className="space-y-6">
             {/* Basic Form Fields */}
             <Card>
               <CardHeader>
@@ -349,7 +372,15 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Offerte Blokken</CardTitle>
-                  <Button type="button" onClick={addBlock} size="sm">
+                  <Button 
+                    type="button" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      addBlock();
+                    }} 
+                    size="sm"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Blok toevoegen
                   </Button>
@@ -358,7 +389,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
               <CardContent className="space-y-6">
                 {blocks.map((block, index) => (
                   <QuoteBlockForm
-                    key={`${block.id}-${updateCounter}`}
+                    key={`${block.id}-${updateCounter}-${previewKey}`}
                     block={block}
                     onUpdateBlock={(updatedBlock) => updateBlock(index, updatedBlock)}
                     onDeleteBlock={() => deleteBlock(index)}
@@ -415,9 +446,9 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       <div className="overflow-y-auto pl-2">
         <div className="sticky top-0 bg-white z-10 pb-2 mb-4 border-b">
           <h4 className="font-medium text-gray-700">Live Preview</h4>
-          <p className="text-sm text-gray-500">Updates: {updateCounter}</p>
+          <p className="text-sm text-gray-500">Updates: {updateCounter} | Key: {previewKey}</p>
         </div>
-        <MultiBlockQuotePreview quote={previewQuote} />
+        <MultiBlockQuotePreview key={previewKey} quote={previewQuote} />
       </div>
     </div>
   );
