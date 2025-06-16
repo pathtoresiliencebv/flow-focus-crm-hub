@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,7 +34,7 @@ import { useCrmStore } from "@/hooks/useCrmStore";
 import { supabase } from "@/integrations/supabase/client";
 import { MultiBlockQuoteForm } from './quotes/MultiBlockQuoteForm';
 import { MultiBlockQuotePreview } from './quotes/MultiBlockQuotePreview';
-import { Quote } from '@/types/quote';
+import { Quote, QuoteBlock } from '@/types/quote';
 
 export function Quotes() {
   const { toast } = useToast();
@@ -64,12 +63,31 @@ export function Quotes() {
       }
 
       if (data) {
-        const quotesWithBlocks = data.map(quote => ({
-          ...quote,
-          blocks: Array.isArray(quote.items) ? quote.items : [],
-          // Ensure total_vat_amount exists for compatibility
-          total_vat_amount: quote.vat_amount || 0
-        }));
+        const quotesWithBlocks = data.map(quote => {
+          // Parse and validate blocks from JSON
+          let blocks: QuoteBlock[] = [];
+          try {
+            if (Array.isArray(quote.items)) {
+              blocks = quote.items.map((item: any) => ({
+                id: item.id || crypto.randomUUID(),
+                title: item.title || 'Untitled Block',
+                items: item.items || [],
+                subtotal: item.subtotal || 0,
+                vat_amount: item.vat_amount || 0,
+                order_index: item.order_index || 0
+              }));
+            }
+          } catch (e) {
+            console.error('Error parsing quote blocks:', e);
+            blocks = [];
+          }
+
+          return {
+            ...quote,
+            blocks,
+            total_vat_amount: quote.vat_amount || 0
+          } as Quote;
+        });
         setQuotes(quotesWithBlocks);
       }
     } catch (error) {
