@@ -3,10 +3,11 @@ import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { useUserStore } from "@/hooks/useUserStore";
 import { useCrmStore } from "@/hooks/useCrmStore";
-import { format, addDays, parseISO } from "date-fns";
+import { usePlanningStore } from "@/hooks/usePlanningStore";
+import { useAuth } from "@/hooks/useAuth";
+import { format, addDays } from "date-fns";
 import { nl } from "date-fns/locale";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PlanningItem } from './planning/types';
 import { PlanningHeader } from './planning/PlanningHeader';
 import { MultiDayPlanningDialog } from './planning/MultiDayPlanningDialog';
 import { NewPlanningDialog } from './planning/NewPlanningDialog';
@@ -32,92 +33,45 @@ export const PlanningManagement = () => {
     endHour: number;
   } | null>(null);
   
-  const [planningItems, setPlanningItems] = useState<PlanningItem[]>([
-    {
-      id: "1",
-      date: "2025-06-02",
-      time: "09:00",
-      employee: "Peter Bakker",
-      employeeId: 3,
-      project: "Kozijnen vervangen",
-      projectId: "1",
-      location: "Hoofdstraat 123, Amsterdam, Nederland",
-      description: "Installatie nieuwe kozijnen woonkamer",
-      status: "Gepland",
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: "2",
-      date: "2025-06-04",
-      time: "13:30",
-      employee: "Peter Bakker",
-      employeeId: 3,
-      project: "Nieuwe ramen installeren",
-      projectId: "2",
-      location: "Kerkstraat 45, Utrecht, Nederland",
-      description: "Opmeting en adviesgesprek",
-      status: "Bevestigd",
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: "3",
-      date: "2025-06-06",
-      time: "10:00",
-      employee: "Peter Bakker",
-      employeeId: 3,
-      project: "Kozijnen vervangen",
-      projectId: "1",
-      location: "Marktplein 12, Rotterdam, Nederland",
-      description: "Eindcontrole en oplevering",
-      status: "Gepland",
-      createdAt: new Date().toISOString()
-    }
-  ]);
-
   const { toast } = useToast();
   const { users } = useUserStore();
   const { projects } = useCrmStore();
+  const { user } = useAuth();
+  const { 
+    planningItems, 
+    loading, 
+    addPlanningItem, 
+    getCalendarEvents 
+  } = usePlanningStore();
 
   const installers = users.filter(user => user.role === "Installateur");
 
-  const calendarEvents = planningItems.map(item => ({
-    id: item.id,
-    title: `${item.project} - ${item.employee}`,
-    startTime: item.time,
-    endTime: format(addDays(parseISO(`${item.date}T${item.time}`), 0), 'HH:mm'),
-    date: item.date,
-    type: 'appointment' as const,
-    description: item.description
-  }));
-
-  const handleCreatePlanning = (formData: FormData) => {
+  const handleCreatePlanning = async (formData: FormData) => {
+    if (!user) return;
+    
     const selectedDateFormatted = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : new Date().toISOString().split('T')[0];
-    const newPlanning: PlanningItem = {
-      id: Date.now().toString(),
-      date: selectedDateFormatted,
-      time: formData.get('time') as string,
-      employee: users.find(u => u.id === parseInt(formData.get('employee') as string))?.name || '',
-      employeeId: parseInt(formData.get('employee') as string),
-      project: projects.find(p => p.id === formData.get('project') as string)?.title || '',
-      projectId: formData.get('project') as string,
-      location: locationValue,
+    
+    const newPlanning = {
+      assigned_user_id: formData.get('employee') as string,
+      project_id: formData.get('project') as string,
+      title: projects.find(p => p.id === formData.get('project') as string)?.title || 'Planning',
       description: formData.get('description') as string,
-      status: "Gepland",
-      createdAt: new Date().toISOString()
+      start_date: selectedDateFormatted,
+      start_time: formData.get('time') as string,
+      end_time: format(addDays(new Date(`2000-01-01T${formData.get('time') as string}`), 0), 'HH:mm'),
+      location: locationValue,
+      status: "Gepland"
     };
 
-    setPlanningItems([...planningItems, newPlanning]);
-    setNewPlanningDialogOpen(false);
-    setLocationValue("");
-    
-    toast({
-      title: "Planning aangemaakt",
-      description: `Planning voor ${newPlanning.employee} op ${format(selectedDate || new Date(), 'dd MMMM yyyy', { locale: nl })} is succesvol aangemaakt.`,
-    });
+    const result = await addPlanningItem(newPlanning);
+    if (result) {
+      setNewPlanningDialogOpen(false);
+      setLocationValue("");
+    }
   };
 
-  const handleCreateMultiDayPlanning = (formData: FormData) => {
-    if (!startDate || !endDate) {
+  const handleCreateMultiDayPlanning = async (formData: FormData) => {
+    if (!startDate || !endDate || !user) {
       toast({
         title: "Fout",
         description: "Selecteer een start- en einddatum.",
@@ -141,42 +95,43 @@ export const PlanningManagement = () => {
       return;
     }
 
-    const newPlannings: PlanningItem[] = [];
     let currentDate = new Date(startDate);
+    let successCount = 0;
 
     while (currentDate <= endDate) {
       const dayOfWeek = currentDate.getDay().toString();
       
       if (selectedDays.includes(dayOfWeek)) {
-        const newPlanning: PlanningItem = {
-          id: `${Date.now()}-${currentDate.getTime()}`,
-          date: format(currentDate, 'yyyy-MM-dd'),
-          time: time,
-          employee: selectedEmployee?.name || '',
-          employeeId: selectedEmployee?.id || 0,
-          project: selectedProject?.title || '',
-          projectId: selectedProject?.id || '',
-          location: multiDayLocationValue,
+        const planningData = {
+          assigned_user_id: selectedEmployee?.id.toString() || '',
+          project_id: selectedProject?.id || '',
+          title: selectedProject?.title || 'Planning',
           description: description,
-          status: "Gepland",
-          createdAt: new Date().toISOString()
+          start_date: format(currentDate, 'yyyy-MM-dd'),
+          start_time: time,
+          end_time: format(addDays(new Date(`2000-01-01T${time}`), 0), 'HH:mm'),
+          location: multiDayLocationValue,
+          status: "Gepland"
         };
-        newPlannings.push(newPlanning);
+        
+        const result = await addPlanningItem(planningData);
+        if (result) successCount++;
       }
       
       currentDate = addDays(currentDate, 1);
     }
 
-    setPlanningItems([...planningItems, ...newPlannings]);
-    setMultiDayPlanningDialogOpen(false);
-    setMultiDayLocationValue("");
-    setStartDate(new Date());
-    setEndDate(addDays(new Date(), 7));
-    
-    toast({
-      title: "Meerdaagse planning aangemaakt",
-      description: `${newPlannings.length} planning(en) succesvol aangemaakt voor ${selectedEmployee?.name}.`,
-    });
+    if (successCount > 0) {
+      setMultiDayPlanningDialogOpen(false);
+      setMultiDayLocationValue("");
+      setStartDate(new Date());
+      setEndDate(addDays(new Date(), 7));
+      
+      toast({
+        title: "Meerdaagse planning aangemaakt",
+        description: `${successCount} planning(en) succesvol aangemaakt.`,
+      });
+    }
   };
 
   const handleEventClick = (event: any) => {
@@ -197,33 +152,39 @@ export const PlanningManagement = () => {
     setQuickPlanningDialogOpen(true);
   };
 
-  const handleQuickPlanningCreate = (formData: FormData) => {
-    if (!quickPlanningData) return;
+  const handleQuickPlanningCreate = async (formData: FormData) => {
+    if (!quickPlanningData || !user) return;
 
-    const newPlanning: PlanningItem = {
-      id: Date.now().toString(),
-      date: format(quickPlanningData.date, 'yyyy-MM-dd'),
-      time: `${quickPlanningData.startHour.toString().padStart(2, '0')}:00`,
-      employee: users.find(u => u.id === parseInt(formData.get('employee') as string))?.name || '',
-      employeeId: parseInt(formData.get('employee') as string),
-      project: projects.find(p => p.id === formData.get('project') as string)?.title || '',
-      projectId: formData.get('project') as string,
-      location: quickLocationValue,
+    const planningData = {
+      assigned_user_id: formData.get('employee') as string,
+      project_id: formData.get('project') as string,
+      title: projects.find(p => p.id === formData.get('project') as string)?.title || 'Planning',
       description: formData.get('description') as string,
-      status: "Gepland",
-      createdAt: new Date().toISOString()
+      start_date: format(quickPlanningData.date, 'yyyy-MM-dd'),
+      start_time: `${quickPlanningData.startHour.toString().padStart(2, '0')}:00`,
+      end_time: `${quickPlanningData.endHour.toString().padStart(2, '0')}:00`,
+      location: quickLocationValue,
+      status: "Gepland"
     };
 
-    setPlanningItems([...planningItems, newPlanning]);
-    setQuickPlanningDialogOpen(false);
-    setQuickLocationValue("");
-    setQuickPlanningData(null);
-    
-    toast({
-      title: "Planning aangemaakt",
-      description: `Planning voor ${newPlanning.employee} op ${format(quickPlanningData.date, 'dd MMMM yyyy', { locale: nl })} van ${quickPlanningData.startHour}:00 tot ${quickPlanningData.endHour}:00 is succesvol aangemaakt.`,
-    });
+    const result = await addPlanningItem(planningData);
+    if (result) {
+      setQuickPlanningDialogOpen(false);
+      setQuickLocationValue("");
+      setQuickPlanningData(null);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-smans-primary mx-auto"></div>
+          <p className="mt-2 text-sm text-muted-foreground">Planning laden...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
@@ -288,7 +249,7 @@ export const PlanningManagement = () => {
           <PlanningCalendarView
             calendarView={calendarView}
             onCalendarViewChange={(value: "week" | "month") => setCalendarView(value)}
-            events={calendarEvents}
+            events={getCalendarEvents()}
             onEventClick={handleEventClick}
             onTimeSlotClick={handleTimeSlotClick}
             onEventCreate={handleEventCreate}

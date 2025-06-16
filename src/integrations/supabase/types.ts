@@ -188,6 +188,54 @@ export type Database = {
           },
         ]
       }
+      planning_items: {
+        Row: {
+          assigned_user_id: string
+          created_at: string
+          description: string | null
+          end_time: string
+          id: string
+          location: string | null
+          project_id: string | null
+          start_date: string
+          start_time: string
+          status: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_user_id: string
+          created_at?: string
+          description?: string | null
+          end_time: string
+          id?: string
+          location?: string | null
+          project_id?: string | null
+          start_date: string
+          start_time: string
+          status?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_user_id?: string
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          id?: string
+          location?: string | null
+          project_id?: string | null
+          start_date?: string
+          start_time?: string
+          status?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           full_name: string | null

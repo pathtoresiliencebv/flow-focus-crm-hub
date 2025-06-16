@@ -1,6 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { WeekCalendar } from "@/components/WeekCalendar";
+import { usePlanningStore } from "@/hooks/usePlanningStore";
 
 interface TimeCalendarViewProps {
   onEventClick: (event: any) => void;
@@ -9,6 +10,8 @@ interface TimeCalendarViewProps {
 }
 
 export const TimeCalendarView = ({ onEventClick, onTimeSlotClick, onEventCreate }: TimeCalendarViewProps) => {
+  const { getCalendarEvents } = usePlanningStore();
+
   return (
     <Card>
       <CardHeader>
@@ -23,6 +26,7 @@ export const TimeCalendarView = ({ onEventClick, onTimeSlotClick, onEventCreate 
       </CardHeader>
       <CardContent>
         <WeekCalendar
+          events={getCalendarEvents()}
           onEventClick={onEventClick}
           onTimeSlotClick={onTimeSlotClick}
           onEventCreate={onEventCreate}

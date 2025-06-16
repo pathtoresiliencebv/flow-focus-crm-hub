@@ -1,108 +1,21 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarDays } from "lucide-react";
 import { WeekCalendar } from "./WeekCalendar";
 import { useCrmStore, Customer, NewProject } from "@/hooks/useCrmStore";
+import { usePlanningStore } from "@/hooks/usePlanningStore";
 import { useToast } from "@/hooks/use-toast";
 import { addDays } from "date-fns";
 import { DashboardHeader } from "./dashboard/DashboardHeader";
 import { StatsGrid } from "./dashboard/StatsGrid";
 import { UpcomingAppointments } from "./dashboard/UpcomingAppointments";
 
-// Real planning interface to match PlanningManagement
-interface PlanningItem {
-  id: string;
-  date: string;
-  time: string;
-  employee: string;
-  employeeId: number;
-  project: string;
-  projectId: string;
-  location: string;
-  description: string;
-  status: "Gepland" | "Bevestigd" | "Afgerond" | "Geannuleerd";
-  createdAt: string;
-}
-
 export const Dashboard = () => {
   const [newProjectDialogOpen, setNewProjectDialogOpen] = useState(false);
   const { customers, projects, addProject } = useCrmStore();
+  const { planningItems, getCalendarEvents } = usePlanningStore();
   const { toast } = useToast();
-
-  // Real planning data that matches the PlanningManagement component
-  const [planningItems] = useState<PlanningItem[]>([
-    {
-      id: "1",
-      date: "2025-06-16", // This week
-      time: "09:00",
-      employee: "Peter Bakker",
-      employeeId: 3,
-      project: "Kozijnen vervangen",
-      projectId: "1",
-      location: "Hoofdstraat 123, Amsterdam, Nederland",
-      description: "Installatie nieuwe kozijnen woonkamer",
-      status: "Gepland",
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: "2",
-      date: "2025-06-17", // This week
-      time: "13:30",
-      employee: "Peter Bakker",
-      employeeId: 3,
-      project: "Nieuwe ramen installeren",
-      projectId: "2",
-      location: "Kerkstraat 45, Utrecht, Nederland",
-      description: "Opmeting en adviesgesprek",
-      status: "Bevestigd",
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: "3",
-      date: "2025-06-18", // This week
-      time: "10:00",
-      employee: "Peter Bakker",
-      employeeId: 3,
-      project: "Kozijnen vervangen",
-      projectId: "1",
-      location: "Marktplein 12, Rotterdam, Nederland",
-      description: "Eindcontrole en oplevering",
-      status: "Gepland",
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: "4",
-      date: "2025-06-19", // This week
-      time: "14:00",
-      employee: "Peter Bakker",
-      employeeId: 3,
-      project: "Nieuwe ramen installeren",
-      projectId: "2",
-      location: "Parkstraat 88, Den Haag, Nederland",
-      description: "Installatie aluminium ramen",
-      status: "Gepland",
-      createdAt: new Date().toISOString()
-    }
-  ]);
-
-  // Convert real planning items to calendar events with proper end times
-  const calendarEvents = planningItems.map(item => {
-    const startTime = item.time;
-    const [startHour, startMinute] = startTime.split(':').map(Number);
-    // Assume 2-hour duration for each appointment
-    const endHour = startHour + 2;
-    const endTime = `${endHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
-    
-    return {
-      id: item.id,
-      title: `${item.project} - ${item.employee}`,
-      startTime: startTime,
-      endTime: endTime,
-      date: item.date,
-      type: 'appointment' as const,
-      description: `${item.description} - ${item.location}`
-    };
-  });
 
   // Calculate statistics
   const totalCustomers = customers.length;
@@ -110,13 +23,28 @@ export const Dashboard = () => {
   const totalRevenue = projects.reduce((sum, project) => sum + (project.value || 0), 0);
   const completedProjects = projects.filter(p => p.status === "afgerond").length;
 
-  // Get upcoming planning items (next 7 days)
+  // Get upcoming planning items (next 7 days) from database
   const today = new Date();
   const nextWeek = addDays(today, 7);
-  const upcomingPlanning = planningItems.filter(item => {
-    const itemDate = new Date(item.date);
-    return itemDate >= today && itemDate <= nextWeek;
-  }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const upcomingPlanning = planningItems
+    .filter(item => {
+      const itemDate = new Date(item.start_date);
+      return itemDate >= today && itemDate <= nextWeek;
+    })
+    .sort((a, b) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())
+    .map(item => ({
+      id: item.id,
+      date: item.start_date,
+      time: item.start_time,
+      employee: 'Installateur', // We'll need to fetch this from user data
+      employeeId: parseInt(item.assigned_user_id),
+      project: item.title,
+      projectId: item.project_id || '',
+      location: item.location || '',
+      description: item.description || '',
+      status: item.status as "Gepland" | "Bevestigd" | "Afgerond" | "Geannuleerd",
+      createdAt: item.created_at
+    }));
 
   const handleCreateProject = (formData: FormData) => {
     const customerId = formData.get('customer') as string;
@@ -181,7 +109,7 @@ export const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <WeekCalendar 
-                events={calendarEvents}
+                events={getCalendarEvents()}
                 onEventClick={handleEventClick}
               />
             </CardContent>

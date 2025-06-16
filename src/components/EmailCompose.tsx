@@ -1,410 +1,196 @@
 
-import React, { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "@/hooks/use-toast";
-import { Send, Sparkles, FileText, X } from "lucide-react";
-
-interface EmailAccount {
-  id: string;
-  user_id: string;
-  email_address: string;
-  display_name: string;
-  is_active?: boolean;
-}
-
-interface EmailTemplate {
-  id: string;
-  name: string;
-  subject: string;
-  body_html: string;
-}
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { X, Send, Paperclip } from 'lucide-react';
 
 interface EmailComposeProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  replyTo?: any;
+  onClose: () => void;
+  replyTo?: {
+    to: string;
+    subject: string;
+    inReplyTo?: string;
+  };
 }
 
-export function EmailCompose({ open, onOpenChange, replyTo }: EmailComposeProps) {
+export const EmailCompose: React.FC<EmailComposeProps> = ({ onClose, replyTo }) => {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
-  const [showTemplates, setShowTemplates] = useState(false);
-  const [ccRecipients, setCcRecipients] = useState("");
-  const [bccRecipients, setBccRecipients] = useState("");
-  const [showCc, setShowCc] = useState(false);
-  const [showBcc, setShowBcc] = useState(false);
-
-  // Fetch email accounts
-  const { data: emailAccounts = [] } = useQuery<EmailAccount[]>({
-    queryKey: ['email-accounts', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      
-      const { data, error } = await supabase
-        .from('user_email_settings')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true);
-
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.id && open
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    to: replyTo?.to || '',
+    cc: '',
+    bcc: '',
+    subject: replyTo?.subject ? `Re: ${replyTo.subject}` : '',
+    body: ''
   });
+  const [isSending, setIsSending] = useState(false);
 
-  // Fetch email templates
-  const { data: templates = [] } = useQuery<EmailTemplate[]>({
-    queryKey: ['email-templates', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      
-      const { data, error } = await supabase
-        .from('email_templates')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true);
-
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.id && open
-  });
-
-  // Send email mutation
-  const sendEmailMutation = useMutation({
-    mutationFn: async (emailData: any) => {
-      const { error } = await supabase
-        .from('emails')
-        .insert({
-          user_id: user?.id,
-          email_settings_id: emailData.from_account,
-          subject: emailData.subject,
-          from_address: emailData.from_address,
-          from_name: emailData.from_name,
-          to_addresses: emailData.to_addresses.split(',').map((email: string) => email.trim()),
-          cc_addresses: emailData.cc_addresses ? emailData.cc_addresses.split(',').map((email: string) => email.trim()) : null,
-          bcc_addresses: emailData.bcc_addresses ? emailData.bcc_addresses.split(',').map((email: string) => email.trim()) : null,
-          body_html: emailData.body,
-          body_text: emailData.body.replace(/<[^>]*>/g, ''),
-          folder: 'sent',
-          is_sent: true,
-          sent_at: new Date().toISOString()
-        });
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['emails'] });
-      onOpenChange(false);
-      toast({
-        title: "E-mail verzonden",
-        description: "Uw e-mail is succesvol verzonden."
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Fout bij verzenden",
-        description: "Er is een fout opgetreden bij het verzenden van de e-mail.",
-        variant: "destructive"
-      });
-    }
-  });
-
-  // Generate AI response
-  const generateAIResponse = async (context: string) => {
-    setIsGeneratingAI(true);
-    try {
-      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer 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',
-        },
-        body: JSON.stringify({
-          model: 'deepseek/deepseek-chat-v3-0324:free',
-          messages: [
-            {
-              role: 'system',
-              content: 'Je bent een professionele e-mail assistent. Schrijf professionele, beleefde en zakelijke e-mails in het Nederlands.'
-            },
-            {
-              role: 'user',
-              content: context
-            }
-          ],
-          max_tokens: 500,
-          temperature: 0.7
-        })
-      });
-
-      if (!response.ok) throw new Error('AI response failed');
-
-      const data = await response.json();
-      const aiContent = data.choices?.[0]?.message?.content;
-      
-      if (aiContent) {
-        const bodyField = document.querySelector('textarea[name="body"]') as HTMLTextAreaElement;
-        if (bodyField) {
-          bodyField.value = aiContent;
-        }
-      }
-      
-      return aiContent;
-    } catch (error) {
-      toast({
-        title: "AI Fout",
-        description: "Er is een fout opgetreden bij het genereren van de AI response.",
-        variant: "destructive"
-      });
-      return null;
-    } finally {
-      setIsGeneratingAI(false);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    
-    const selectedAccount = emailAccounts.find(acc => acc.id === formData.get('from_account'));
-    if (!selectedAccount) {
+    if (!user) {
       toast({
-        title: "Account vereist",
-        description: "Selecteer een e-mail account om te verzenden.",
+        title: "Fout",
+        description: "U moet ingelogd zijn om e-mails te versturen.",
         variant: "destructive"
       });
       return;
     }
 
-    const emailData = {
-      from_account: formData.get('from_account') as string,
-      from_address: selectedAccount.email_address,
-      from_name: selectedAccount.display_name,
-      to_addresses: formData.get('to_addresses') as string,
-      cc_addresses: ccRecipients,
-      bcc_addresses: bccRecipients,
-      subject: formData.get('subject') as string,
-      body: formData.get('body') as string
-    };
+    setIsSending(true);
 
-    sendEmailMutation.mutate(emailData);
-  };
+    try {
+      // Get user's primary email settings
+      const { data: emailSettings } = await supabase
+        .from('user_email_settings')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .limit(1)
+        .single();
 
-  const applyTemplate = (template: any) => {
-    const subjectField = document.querySelector('input[name="subject"]') as HTMLInputElement;
-    const bodyField = document.querySelector('textarea[name="body"]') as HTMLTextAreaElement;
-    
-    if (subjectField) subjectField.value = template.subject;
-    if (bodyField) bodyField.value = template.body_html;
-    
-    setShowTemplates(false);
+      if (!emailSettings) {
+        toast({
+          title: "Geen e-mailaccount",
+          description: "Configureer eerst een e-mailaccount in de instellingen.",
+          variant: "destructive"
+        });
+        setIsSending(false);
+        return;
+      }
+
+      // Save email to database with correct user_id
+      const emailData = {
+        user_id: user.id, // Ensure this is set to current user
+        email_settings_id: emailSettings.id,
+        subject: formData.subject,
+        from_address: emailSettings.email_address,
+        from_name: emailSettings.display_name,
+        to_addresses: formData.to.split(',').map(email => email.trim()),
+        cc_addresses: formData.cc ? formData.cc.split(',').map(email => email.trim()) : null,
+        bcc_addresses: formData.bcc ? formData.bcc.split(',').map(email => email.trim()) : null,
+        body_text: formData.body,
+        body_html: formData.body.replace(/\n/g, '<br>'),
+        folder: 'sent',
+        is_sent: true,
+        sent_at: new Date().toISOString(),
+        in_reply_to: replyTo?.inReplyTo || null
+      };
+
+      const { error } = await supabase
+        .from('emails')
+        .insert(emailData);
+
+      if (error) {
+        console.error('Error saving email:', error);
+        throw error;
+      }
+
+      toast({
+        title: "E-mail verzonden",
+        description: "Uw e-mail is succesvol verzonden.",
+      });
+
+      onClose();
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast({
+        title: "Fout bij verzenden",
+        description: "Er ging iets mis bij het verzenden van de e-mail.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Send className="h-5 w-5" />
-            {replyTo ? 'Beantwoorden' : 'Nieuwe E-mail'}
-          </DialogTitle>
-        </DialogHeader>
-
+    <Card className="w-full max-w-4xl mx-auto">
+      <CardHeader className="flex flex-row items-center justify-between pb-4">
+        <CardTitle>Nieuwe E-mail</CardTitle>
+        <Button variant="ghost" size="sm" onClick={onClose}>
+          <X className="h-4 w-4" />
+        </Button>
+      </CardHeader>
+      <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="from_account">Van Account</Label>
-            <Select name="from_account" required>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecteer e-mail account" />
-              </SelectTrigger>
-              <SelectContent>
-                {emailAccounts.map((account) => (
-                  <SelectItem key={account.id} value={account.id}>
-                    {account.display_name} ({account.email_address})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label htmlFor="to_addresses">Aan</Label>
-            <Input
-              id="to_addresses"
-              name="to_addresses"
-              type="email"
-              defaultValue={replyTo?.from_address}
-              placeholder="ontvanger@example.com"
-              required
-            />
-          </div>
-
-          {showCc && (
+          <div className="grid grid-cols-1 gap-4">
             <div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="cc_recipients">CC</Label>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowCc(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
+              <label className="text-sm font-medium">Aan</label>
               <Input
-                id="cc_recipients"
-                value={ccRecipients}
-                onChange={(e) => setCcRecipients(e.target.value)}
-                placeholder="cc@example.com"
+                type="email"
+                value={formData.to}
+                onChange={(e) => setFormData({ ...formData, to: e.target.value })}
+                placeholder="ontvanger@voorbeeld.nl"
+                required
               />
             </div>
-          )}
-
-          {showBcc && (
-            <div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="bcc_recipients">BCC</Label>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowBcc(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">CC</label>
+                <Input
+                  type="email"
+                  value={formData.cc}
+                  onChange={(e) => setFormData({ ...formData, cc: e.target.value })}
+                  placeholder="cc@voorbeeld.nl"
+                />
               </div>
+              <div>
+                <label className="text-sm font-medium">BCC</label>
+                <Input
+                  type="email"
+                  value={formData.bcc}
+                  onChange={(e) => setFormData({ ...formData, bcc: e.target.value })}
+                  placeholder="bcc@voorbeeld.nl"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Onderwerp</label>
               <Input
-                id="bcc_recipients"
-                value={bccRecipients}
-                onChange={(e) => setBccRecipients(e.target.value)}
-                placeholder="bcc@example.com"
+                value={formData.subject}
+                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                placeholder="Onderwerp van de e-mail"
+                required
               />
             </div>
-          )}
 
-          {(!showCc || !showBcc) && (
-            <div className="flex gap-2">
-              {!showCc && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowCc(true)}
-                >
-                  CC toevoegen
-                </Button>
-              )}
-              {!showBcc && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowBcc(true)}
-                >
-                  BCC toevoegen
-                </Button>
-              )}
+            <div>
+              <label className="text-sm font-medium">Bericht</label>
+              <Textarea
+                value={formData.body}
+                onChange={(e) => setFormData({ ...formData, body: e.target.value })}
+                placeholder="Typ hier uw bericht..."
+                rows={12}
+                required
+              />
             </div>
-          )}
-
-          <div>
-            <Label htmlFor="subject">Onderwerp</Label>
-            <Input
-              id="subject"
-              name="subject"
-              defaultValue={replyTo ? `Re: ${replyTo.subject}` : ''}
-              placeholder="E-mail onderwerp"
-              required
-            />
           </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <Label htmlFor="body">Bericht</Label>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowTemplates(!showTemplates)}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Templates
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => generateAIResponse("Schrijf een professionele e-mail")}
-                  disabled={isGeneratingAI}
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  {isGeneratingAI ? 'AI genereert...' : 'AI Hulp'}
-                </Button>
-              </div>
-            </div>
+          <div className="flex justify-between items-center pt-4">
+            <Button type="button" variant="outline">
+              <Paperclip className="h-4 w-4 mr-2" />
+              Bijlage toevoegen
+            </Button>
             
-            {showTemplates && (
-              <div className="mb-4 p-4 border rounded-lg bg-gray-50">
-                <h4 className="font-medium mb-2">Templates</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {templates.map((template) => (
-                    <Button
-                      key={template.id}
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => applyTemplate(template)}
-                      className="justify-start"
-                    >
-                      {template.name}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            <Textarea
-              id="body"
-              name="body"
-              rows={12}
-              placeholder="Typ uw bericht hier..."
-              className="resize-none"
-              required
-            />
-          </div>
-
-          <div className="flex items-center justify-between pt-4">
             <div className="flex gap-2">
-              <Button
-                type="submit"
-                disabled={sendEmailMutation.isPending}
-                className="bg-smans-primary hover:bg-smans-primary/90"
-              >
-                <Send className="h-4 w-4 mr-2" />
-                {sendEmailMutation.isPending ? 'Verzenden...' : 'Verzenden'}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
+              <Button type="button" variant="outline" onClick={onClose}>
                 Annuleren
+              </Button>
+              <Button type="submit" disabled={isSending}>
+                <Send className="h-4 w-4 mr-2" />
+                {isSending ? 'Verzenden...' : 'Verzenden'}
               </Button>
             </div>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </CardContent>
+    </Card>
   );
-}
+};
