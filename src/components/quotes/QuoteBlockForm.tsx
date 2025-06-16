@@ -3,9 +3,9 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Trash2, GripVertical, Edit3 } from 'lucide-react';
+import { Trash2, GripVertical, Edit3 } from 'lucide-react';
 import { QuoteItemForm } from './QuoteItemForm';
-import { RichTextEditor } from './RichTextEditor';
+import { QuoteItemDisplay } from './QuoteItemDisplay';
 import { QuoteItem, QuoteBlock } from '@/types/quote';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -56,27 +56,17 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
     const subtotal = calculateBlockSubtotal(updatedItems);
     const vatAmount = calculateBlockVAT(updatedItems);
 
-    onUpdateBlock({
+    const updatedBlock = {
       ...block,
       items: updatedItems,
       subtotal,
       vat_amount: vatAmount
-    });
-  };
+    };
 
-  const handleUpdateItem = (index: number, updatedItem: QuoteItem) => {
-    const updatedItems = [...block.items];
-    updatedItems[index] = updatedItem;
+    console.log('Adding item to block:', item);
+    console.log('Updated block:', updatedBlock);
     
-    const subtotal = calculateBlockSubtotal(updatedItems);
-    const vatAmount = calculateBlockVAT(updatedItems);
-
-    onUpdateBlock({
-      ...block,
-      items: updatedItems,
-      subtotal,
-      vat_amount: vatAmount
-    });
+    onUpdateBlock(updatedBlock);
   };
 
   const handleDeleteItem = (index: number) => {
@@ -98,17 +88,6 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
       title: titleInput.trim() || 'Naamloos blok'
     });
     setIsEditingTitle(false);
-  };
-
-  const getItemStyle = (item: QuoteItem) => {
-    if (item.type === 'textblock' && item.formatting) {
-      let style: React.CSSProperties = {};
-      if (item.formatting.bold) style.fontWeight = 'bold';
-      if (item.formatting.italic) style.fontStyle = 'italic';
-      if (item.formatting.underline) style.textDecoration = 'underline';
-      return style;
-    }
-    return {};
   };
 
   return (
@@ -139,7 +118,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
               </div>
             ) : (
               <div className="flex items-center gap-2 flex-1">
-                <CardTitle className="text-lg">{block.title}</CardTitle>
+                <CardTitle className="text-lg font-bold">{block.title}</CardTitle>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -173,43 +152,13 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
         {/* Items List */}
         {block.items.length > 0 && (
           <div className="space-y-3">
+            <h5 className="font-medium text-gray-700">Items in dit blok:</h5>
             {block.items.map((item, index) => (
-              <div key={item.id} className="p-3 border rounded-lg bg-gray-50">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1">
-                    {item.type === 'product' ? (
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-sm">
-                        <div>
-                          <span className="font-medium">{item.description}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">
-                            {item.quantity} × €{item.unit_price?.toFixed(2)}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">{item.vat_rate}% BTW</span>
-                        </div>
-                        <div>
-                          <span className="font-medium">€{item.total?.toFixed(2)}</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-sm" style={getItemStyle(item)}>
-                        {item.description}
-                      </div>
-                    )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteItem(index)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+              <QuoteItemDisplay
+                key={item.id}
+                item={item}
+                onDelete={() => handleDeleteItem(index)}
+              />
             ))}
           </div>
         )}

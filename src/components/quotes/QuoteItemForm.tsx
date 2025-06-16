@@ -24,14 +24,25 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
     underline: false
   });
 
+  const resetForm = () => {
+    setDescription('');
+    setQuantity(1);
+    setUnitPrice(0);
+    setVatRate(21);
+    setFormatting({ bold: false, italic: false, underline: false });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!description.trim()) return;
+    if (!description.trim()) {
+      alert('Beschrijving is verplicht');
+      return;
+    }
 
     const newItem: Omit<QuoteItem, 'id'> = {
       type: itemType,
-      description,
+      description: description.trim(),
       vat_rate: vatRate,
       ...(itemType === 'product' && {
         quantity,
@@ -44,13 +55,7 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
     };
 
     onAddItem(newItem);
-    
-    // Reset form
-    setDescription('');
-    setQuantity(1);
-    setUnitPrice(0);
-    setVatRate(21);
-    setFormatting({ bold: false, italic: false, underline: false });
+    resetForm();
   };
 
   const toggleFormatting = (type: 'bold' | 'italic' | 'underline') => {
@@ -61,7 +66,9 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-lg bg-gray-50">
+    <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-lg bg-blue-50">
+      <h4 className="font-medium text-gray-900">Nieuw item toevoegen</h4>
+      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="itemType">Type</Label>
@@ -104,7 +111,7 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
                 size="sm"
                 onClick={() => toggleFormatting('bold')}
               >
-                B
+                <strong>B</strong>
               </Button>
               <Button
                 type="button"

@@ -52,7 +52,7 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
   };
 
   return (
-    <div className="bg-white border rounded-lg p-8 shadow-sm">
+    <div className="bg-white border rounded-lg p-8 shadow-sm max-h-[80vh] overflow-y-auto">
       {/* Header with logo and company info */}
       <div className="flex justify-between items-start mb-8">
         <div className="flex items-center">
@@ -104,7 +104,7 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
         </div>
         <div>
           <h4 className="font-medium text-gray-700">Status</h4>
-          <p className="text-sm text-gray-600">Concept</p>
+          <p className="text-sm text-gray-600 capitalize">{quote.status}</p>
         </div>
       </div>
 
@@ -112,60 +112,72 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
       {quote.message && (
         <div className="mb-8 p-4 bg-blue-50 rounded-lg">
           <h4 className="font-medium text-gray-700 mb-2">Bericht:</h4>
-          <p className="text-sm text-gray-600">{quote.message}</p>
+          <p className="text-sm text-gray-600 whitespace-pre-line">{quote.message}</p>
         </div>
       )}
 
       {/* Quote blocks */}
       <div className="space-y-8 mb-8">
-        {quote.blocks.map((block, blockIndex) => (
-          <div key={block.id} className="border-l-4 border-smans-primary pl-4">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">{block.title}</h3>
-            
-            {/* Block items */}
-            <div className="space-y-3 mb-4">
-              {block.items.map((item, itemIndex) => (
-                <div key={item.id}>
-                  {item.type === 'product' ? (
-                    <div className="grid grid-cols-12 gap-3 py-2 border-b border-gray-100">
-                      <div className="col-span-6 text-gray-800">{item.description}</div>
-                      <div className="col-span-2 text-center text-gray-800">{item.quantity}</div>
-                      <div className="col-span-2 text-right text-gray-800">€{item.unit_price?.toFixed(2)}</div>
-                      <div className="col-span-1 text-center text-gray-800">{item.vat_rate}%</div>
-                      <div className="col-span-1 text-right text-gray-800 font-medium">€{item.total?.toFixed(2)}</div>
+        {quote.blocks && quote.blocks.length > 0 ? (
+          quote.blocks.map((block, blockIndex) => (
+            <div key={block.id} className="border-l-4 border-smans-primary pl-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4 uppercase">{block.title}</h3>
+              
+              {/* Block items */}
+              {block.items && block.items.length > 0 ? (
+                <div className="space-y-3 mb-4">
+                  {block.items.map((item, itemIndex) => (
+                    <div key={item.id || itemIndex}>
+                      {item.type === 'product' ? (
+                        <div className="grid grid-cols-12 gap-3 py-2 border-b border-gray-100">
+                          <div className="col-span-6 text-gray-800">{item.description}</div>
+                          <div className="col-span-2 text-center text-gray-800">{item.quantity}</div>
+                          <div className="col-span-2 text-right text-gray-800">€{item.unit_price?.toFixed(2)}</div>
+                          <div className="col-span-1 text-center text-gray-800">{item.vat_rate}%</div>
+                          <div className="col-span-1 text-right text-gray-800 font-medium">€{item.total?.toFixed(2)}</div>
+                        </div>
+                      ) : (
+                        <div className="py-3 px-4 bg-gray-50 rounded-lg border-l-2 border-blue-300" style={getItemStyle(item)}>
+                          <div className="text-gray-700 whitespace-pre-line leading-relaxed">
+                            {item.description}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  ) : (
-                    <div className="py-2 px-3 bg-gray-50 rounded" style={getItemStyle(item)}>
-                      <p className="text-gray-700 whitespace-pre-line">{item.description}</p>
-                    </div>
-                  )}
+                  ))}
                 </div>
-              ))}
-            </div>
+              ) : (
+                <div className="text-gray-400 italic py-4">Geen items toegevoegd aan dit blok</div>
+              )}
 
-            {/* Block totals (only if block has products) */}
-            {block.items.some(item => item.type === 'product') && (
-              <div className="flex justify-end">
-                <div className="w-64 space-y-1 text-sm border-t pt-2">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Subtotaal {block.title}:</span>
-                    <span className="font-medium">€{block.subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">BTW:</span>
-                    <span className="font-medium">€{block.vat_amount.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-t">
-                    <span className="font-semibold">Totaal {block.title}:</span>
-                    <span className="font-semibold text-smans-primary">
-                      €{(block.subtotal + block.vat_amount).toFixed(2)}
-                    </span>
+              {/* Block totals (only if block has products) */}
+              {block.items && block.items.some(item => item.type === 'product') && (
+                <div className="flex justify-end">
+                  <div className="w-64 space-y-1 text-sm border-t pt-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Subtotaal {block.title}:</span>
+                      <span className="font-medium">€{block.subtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">BTW:</span>
+                      <span className="font-medium">€{block.vat_amount.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-t">
+                      <span className="font-semibold">Totaal {block.title}:</span>
+                      <span className="font-semibold text-smans-primary">
+                        €{(block.subtotal + block.vat_amount).toFixed(2)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+          ))
+        ) : (
+          <div className="text-gray-400 italic text-center py-8">
+            Geen blokken toegevoegd aan deze offerte
           </div>
-        ))}
+        )}
       </div>
 
       {/* Grand totals */}
@@ -173,16 +185,16 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
         <div className="w-64 space-y-2">
           <div className="flex justify-between py-1 text-lg">
             <span className="font-semibold text-gray-900">Totaal excl. BTW:</span>
-            <span className="font-semibold">€{quote.total_amount.toFixed(2)}</span>
+            <span className="font-semibold">€{quote.total_amount?.toFixed(2) || '0.00'}</span>
           </div>
           <div className="flex justify-between py-1 text-lg">
             <span className="font-semibold text-gray-900">Totaal BTW:</span>
-            <span className="font-semibold">€{quote.total_vat_amount.toFixed(2)}</span>
+            <span className="font-semibold">€{quote.total_vat_amount?.toFixed(2) || '0.00'}</span>
           </div>
           <div className="flex justify-between py-2 border-t-2 border-gray-200">
             <span className="font-bold text-xl">EINDTOTAAL:</span>
             <span className="font-bold text-xl text-smans-primary">
-              €{(quote.total_amount + quote.total_vat_amount).toFixed(2)}
+              €{((quote.total_amount || 0) + (quote.total_vat_amount || 0)).toFixed(2)}
             </span>
           </div>
         </div>

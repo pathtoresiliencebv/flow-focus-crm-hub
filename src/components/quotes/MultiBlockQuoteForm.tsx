@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -74,10 +73,12 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       vat_amount: 0,
       order_index: blocks.length
     };
+    console.log('Adding new block:', newBlock);
     setBlocks([...blocks, newBlock]);
   };
 
   const updateBlock = (index: number, updatedBlock: QuoteBlock) => {
+    console.log('Updating block at index', index, ':', updatedBlock);
     const updatedBlocks = [...blocks];
     updatedBlocks[index] = updatedBlock;
     setBlocks(updatedBlocks);
@@ -135,7 +136,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
           items: JSON.parse(JSON.stringify(blocks)), // Convert to JSON-compatible format
           subtotal: totalAmount,
           vat_amount: totalVAT,
-          total_amount: totalAmount + totalVAT,
+          total_amount: totalAmount,
           status: 'concept',
           public_token: tokenData,
           admin_signature_data: adminSignature || null
@@ -198,7 +199,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[80vh] overflow-hidden">
       {/* Left side - Form */}
-      <div className="space-y-6 overflow-y-auto">
+      <div className="space-y-6 overflow-y-auto pr-2">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium">Nieuwe offerte - Meerdere blokken</h3>
         </div>
@@ -391,7 +392,10 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       </div>
 
       {/* Right side - Live Preview */}
-      <div className="overflow-y-auto">
+      <div className="overflow-y-auto pl-2">
+        <div className="sticky top-0 bg-white z-10 pb-2 mb-4 border-b">
+          <h4 className="font-medium text-gray-700">Live Preview</h4>
+        </div>
         <MultiBlockQuotePreview quote={previewQuote} />
       </div>
     </div>
