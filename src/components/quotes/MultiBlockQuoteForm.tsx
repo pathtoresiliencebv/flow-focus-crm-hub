@@ -9,9 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Save, Eye } from "lucide-react";
+import { Plus, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { QuoteBlockForm } from './QuoteBlockForm';
+import { MultiBlockQuotePreview } from './MultiBlockQuotePreview';
 import { SignatureCanvas } from '../SignatureCanvas';
 import { QuoteBlock, Quote } from '@/types/quote';
 import { supabase } from "@/integrations/supabase/client";
@@ -27,14 +28,12 @@ const formSchema = z.object({
 
 interface MultiBlockQuoteFormProps {
   onClose: () => void;
-  onPreview: (quote: Quote) => void;
   customers: Array<{ id: number; name: string; email?: string }>;
   projects?: Array<{ id: number; title: string; value: string; customer: string }>;
 }
 
 export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   onClose,
-  onPreview,
   customers,
   projects
 }) => {
@@ -97,29 +96,6 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
 
   const calculateTotalVAT = (): number => {
     return blocks.reduce((sum, block) => sum + block.vat_amount, 0);
-  };
-
-  const handlePreview = () => {
-    const formData = form.getValues();
-    const customer = customers.find(c => c.id.toString() === formData.customer);
-    const project = projects?.find(p => p.id.toString() === formData.project);
-
-    const quote: Quote = {
-      quote_number: formData.quoteNumber,
-      customer_name: customer?.name || '',
-      customer_email: customer?.email || '',
-      project_title: project?.title || '',
-      quote_date: formData.date,
-      valid_until: formData.validUntil,
-      message: formData.message || '',
-      blocks,
-      total_amount: calculateTotalAmount(),
-      total_vat_amount: calculateTotalVAT(),
-      status: 'concept',
-      admin_signature_data: adminSignature
-    };
-
-    onPreview(quote);
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -203,203 +179,221 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   const totalVAT = calculateTotalVAT();
   const grandTotal = totalAmount + totalVAT;
 
+  // Create preview quote object
+  const previewQuote: Quote = {
+    quote_number: watchedFields.quoteNumber || `OFF-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
+    customer_name: customers.find(c => c.id.toString() === watchedFields.customer)?.name || '',
+    customer_email: customers.find(c => c.id.toString() === watchedFields.customer)?.email || '',
+    project_title: projects?.find(p => p.id.toString() === watchedFields.project)?.title || '',
+    quote_date: watchedFields.date || new Date().toISOString().split('T')[0],
+    valid_until: watchedFields.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    message: watchedFields.message || '',
+    blocks,
+    total_amount: totalAmount,
+    total_vat_amount: totalVAT,
+    status: 'concept',
+    admin_signature_data: adminSignature
+  };
+
   return (
-    <div className="space-y-6 max-h-[80vh] overflow-y-auto">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium">Nieuwe offerte - Meerdere blokken</h3>
-        <div className="flex gap-2">
-          <Button onClick={handlePreview} variant="outline">
-            <Eye className="h-4 w-4 mr-2" />
-            Preview
-          </Button>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[80vh] overflow-hidden">
+      {/* Left side - Form */}
+      <div className="space-y-6 overflow-y-auto">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-medium">Nieuwe offerte - Meerdere blokken</h3>
         </div>
-      </div>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* Basic Form Fields */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Offerte Gegevens</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="customer"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Klant *</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            {/* Basic Form Fields */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Offerte Gegevens</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="customer"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Klant *</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecteer klant" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {customers.map((customer) => (
+                              <SelectItem key={customer.id} value={customer.id.toString()}>
+                                {customer.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="project"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Project (optioneel)</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecteer project" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {filteredProjects.map((project) => (
+                              <SelectItem key={project.id} value={project.id.toString()}>
+                                {project.title}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="quoteNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Offertenummer *</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecteer klant" />
-                          </SelectTrigger>
+                          <Input {...field} />
                         </FormControl>
-                        <SelectContent>
-                          {customers.map((customer) => (
-                            <SelectItem key={customer.id} value={customer.id.toString()}>
-                              {customer.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="project"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Project (optioneel)</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormField
+                    control={form.control}
+                    name="date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Datum *</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecteer project" />
-                          </SelectTrigger>
+                          <Input type="date" {...field} />
                         </FormControl>
-                        <SelectContent>
-                          {filteredProjects.map((project) => (
-                            <SelectItem key={project.id} value={project.id.toString()}>
-                              {project.title}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <div className="grid grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="validUntil"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Geldig tot *</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 <FormField
                   control={form.control}
-                  name="quoteNumber"
+                  name="message"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Offertenummer *</FormLabel>
+                      <FormLabel>Bericht (optioneel)</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Textarea {...field} placeholder="Voeg een persoonlijk bericht toe..." />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+              </CardContent>
+            </Card>
 
-                <FormField
-                  control={form.control}
-                  name="date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Datum *</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+            {/* Quote Blocks */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Offerte Blokken</CardTitle>
+                  <Button type="button" onClick={addBlock} size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Blok toevoegen
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {blocks.map((block, index) => (
+                  <QuoteBlockForm
+                    key={block.id}
+                    block={block}
+                    onUpdateBlock={(updatedBlock) => updateBlock(index, updatedBlock)}
+                    onDeleteBlock={() => deleteBlock(index)}
+                    canDelete={blocks.length > 1}
+                  />
+                ))}
 
-                <FormField
-                  control={form.control}
-                  name="validUntil"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Geldig tot *</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="message"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Bericht (optioneel)</FormLabel>
-                    <FormControl>
-                      <Textarea {...field} placeholder="Voeg een persoonlijk bericht toe..." />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Quote Blocks */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Offerte Blokken</CardTitle>
-                <Button type="button" onClick={addBlock} size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Blok toevoegen
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {blocks.map((block, index) => (
-                <QuoteBlockForm
-                  key={block.id}
-                  block={block}
-                  onUpdateBlock={(updatedBlock) => updateBlock(index, updatedBlock)}
-                  onDeleteBlock={() => deleteBlock(index)}
-                  canDelete={blocks.length > 1}
-                />
-              ))}
-
-              {/* Grand Total */}
-              <Card className="bg-gray-50">
-                <CardContent className="p-4">
-                  <div className="flex justify-end">
-                    <div className="w-64 space-y-2">
-                      <div className="flex justify-between text-lg">
-                        <span className="font-medium">Totaal excl. BTW:</span>
-                        <span className="font-medium">€{totalAmount.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between text-lg">
-                        <span className="font-medium">Totaal BTW:</span>
-                        <span className="font-medium">€{totalVAT.toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between py-2 border-t-2 border-gray-300">
-                        <span className="font-bold text-xl">Eindtotaal:</span>
-                        <span className="font-bold text-xl text-smans-primary">
-                          €{grandTotal.toFixed(2)}
-                        </span>
+                {/* Grand Total */}
+                <Card className="bg-gray-50">
+                  <CardContent className="p-4">
+                    <div className="flex justify-end">
+                      <div className="w-64 space-y-2">
+                        <div className="flex justify-between text-lg">
+                          <span className="font-medium">Totaal excl. BTW:</span>
+                          <span className="font-medium">€{totalAmount.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-lg">
+                          <span className="font-medium">Totaal BTW:</span>
+                          <span className="font-medium">€{totalVAT.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between py-2 border-t-2 border-gray-300">
+                          <span className="font-bold text-xl">Eindtotaal:</span>
+                          <span className="font-bold text-xl text-smans-primary">
+                            €{grandTotal.toFixed(2)}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </CardContent>
-          </Card>
+                  </CardContent>
+                </Card>
+              </CardContent>
+            </Card>
 
-          {/* Admin Signature */}
-          <SignatureCanvas
-            title="Uw handtekening (SMANS BV)"
-            onSignature={setAdminSignature}
-          />
+            {/* Admin Signature */}
+            <SignatureCanvas
+              title="Uw handtekening (SMANS BV)"
+              onSignature={setAdminSignature}
+            />
 
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Annuleren
-            </Button>
-            <Button type="submit" disabled={saving}>
-              <Save className="h-4 w-4 mr-2" />
-              {saving ? "Bezig met opslaan..." : "Offerte opslaan"}
-            </Button>
-          </div>
-        </form>
-      </Form>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Annuleren
+              </Button>
+              <Button type="submit" disabled={saving}>
+                <Save className="h-4 w-4 mr-2" />
+                {saving ? "Bezig met opslaan..." : "Offerte opslaan"}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </div>
+
+      {/* Right side - Live Preview */}
+      <div className="overflow-y-auto">
+        <MultiBlockQuotePreview quote={previewQuote} />
+      </div>
     </div>
   );
 };

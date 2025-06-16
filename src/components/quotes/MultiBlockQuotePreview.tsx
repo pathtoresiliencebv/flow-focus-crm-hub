@@ -120,7 +120,7 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
       <div className="space-y-8 mb-8">
         {quote.blocks.map((block, blockIndex) => (
           <div key={block.id} className="border-l-4 border-smans-primary pl-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">{block.title}</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">{block.title}</h3>
             
             {/* Block items */}
             <div className="space-y-3 mb-4">

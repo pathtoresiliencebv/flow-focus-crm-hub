@@ -4,23 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { RichTextEditor } from './RichTextEditor';
+import { Textarea } from '@/components/ui/textarea';
 import { Plus } from 'lucide-react';
-
-interface QuoteItem {
-  id: string;
-  type: 'product' | 'textblock';
-  description: string;
-  quantity?: number;
-  unit_price?: number;
-  vat_rate: number;
-  total?: number;
-  formatting?: {
-    bold?: boolean;
-    italic?: boolean;
-    underline?: boolean;
-  };
-}
+import { QuoteItem } from '@/types/quote';
 
 interface QuoteItemFormProps {
   onAddItem: (item: Omit<QuoteItem, 'id'>) => void;
@@ -67,6 +53,13 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
     setFormatting({ bold: false, italic: false, underline: false });
   };
 
+  const toggleFormatting = (type: 'bold' | 'italic' | 'underline') => {
+    setFormatting(prev => ({
+      ...prev,
+      [type]: !prev[type]
+    }));
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-lg bg-gray-50">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -103,13 +96,43 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
           {itemType === 'product' ? 'Beschrijving' : 'Tekst'}
         </Label>
         {itemType === 'textblock' ? (
-          <RichTextEditor
-            value={description}
-            onChange={setDescription}
-            placeholder="Voer tekst in..."
-            formatting={formatting}
-            onFormattingChange={setFormatting}
-          />
+          <div className="space-y-2">
+            <div className="flex gap-2 mb-2">
+              <Button
+                type="button"
+                variant={formatting.bold ? "default" : "outline"}
+                size="sm"
+                onClick={() => toggleFormatting('bold')}
+              >
+                B
+              </Button>
+              <Button
+                type="button"
+                variant={formatting.italic ? "default" : "outline"}
+                size="sm"
+                onClick={() => toggleFormatting('italic')}
+                className="italic"
+              >
+                I
+              </Button>
+              <Button
+                type="button"
+                variant={formatting.underline ? "default" : "outline"}
+                size="sm"
+                onClick={() => toggleFormatting('underline')}
+                className="underline"
+              >
+                U
+              </Button>
+            </div>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Voer tekst in..."
+              required
+              className="min-h-[100px]"
+            />
+          </div>
         ) : (
           <Input
             value={description}
