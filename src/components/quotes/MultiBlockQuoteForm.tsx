@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -50,7 +49,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   ]);
   const [adminSignature, setAdminSignature] = useState('');
   const [saving, setSaving] = useState(false);
-  const [forcePreviewUpdate, setForcePreviewUpdate] = useState(0);
+  const [updateCounter, setUpdateCounter] = useState(0);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -76,11 +75,8 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       order_index: blocks.length
     };
     console.log('MultiBlockQuoteForm: Adding new block:', newBlock);
-    setBlocks(prevBlocks => {
-      const newBlocks = [...prevBlocks, newBlock];
-      console.log('MultiBlockQuoteForm: New blocks array:', newBlocks);
-      return newBlocks;
-    });
+    setBlocks(prevBlocks => [...prevBlocks, newBlock]);
+    setUpdateCounter(prev => prev + 1);
   }, [blocks.length]);
 
   const updateBlock = useCallback((index: number, updatedBlock: QuoteBlock) => {
@@ -89,22 +85,16 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       const newBlocks = [...prevBlocks];
       newBlocks[index] = updatedBlock;
       console.log('MultiBlockQuoteForm: Updated blocks state:', newBlocks);
-      
-      // Force preview update by incrementing counter
-      setForcePreviewUpdate(prev => prev + 1);
-      
       return newBlocks;
     });
+    setUpdateCounter(prev => prev + 1);
   }, []);
 
   const deleteBlock = useCallback((index: number) => {
     if (blocks.length > 1) {
       console.log('MultiBlockQuoteForm: Deleting block at index:', index);
-      setBlocks(prevBlocks => {
-        const newBlocks = prevBlocks.filter((_, i) => i !== index);
-        setForcePreviewUpdate(prev => prev + 1);
-        return newBlocks;
-      });
+      setBlocks(prevBlocks => prevBlocks.filter((_, i) => i !== index));
+      setUpdateCounter(prev => prev + 1);
     }
   }, [blocks.length]);
 
@@ -112,13 +102,13 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     const total = blocks.reduce((sum, block) => sum + (block.subtotal || 0), 0);
     console.log('MultiBlockQuoteForm: Calculated total amount:', total, 'from blocks:', blocks);
     return total;
-  }, [blocks, forcePreviewUpdate]); // Include forcePreviewUpdate to trigger recalculation
+  }, [blocks, updateCounter]);
 
   const totalVAT = useMemo(() => {
     const vat = blocks.reduce((sum, block) => sum + (block.vat_amount || 0), 0);
     console.log('MultiBlockQuoteForm: Calculated total VAT:', vat, 'from blocks:', blocks);
     return vat;
-  }, [blocks, forcePreviewUpdate]); // Include forcePreviewUpdate to trigger recalculation
+  }, [blocks, updateCounter]);
 
   const grandTotal = useMemo(() => {
     const grand = totalAmount + totalVAT;
@@ -206,7 +196,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     project.customer === customers.find(c => c.id === watchedFields.customer)?.name
   ) || [];
 
-  // Create preview quote object with force update dependency
+  // Create preview quote object with update counter dependency
   const previewQuote: Quote = useMemo(() => {
     const quote = {
       quote_number: watchedFields.quoteNumber || `OFF-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
@@ -216,15 +206,15 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       quote_date: watchedFields.date || new Date().toISOString().split('T')[0],
       valid_until: watchedFields.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       message: watchedFields.message || '',
-      blocks: [...blocks], // Create new array reference to force re-render
+      blocks: JSON.parse(JSON.stringify(blocks)), // Create deep copy to force re-render
       total_amount: totalAmount,
       total_vat_amount: totalVAT,
       status: 'concept' as const,
       admin_signature_data: adminSignature
     };
-    console.log('MultiBlockQuoteForm: Created preview quote:', quote);
+    console.log('MultiBlockQuoteForm: Created preview quote with updateCounter:', updateCounter, quote);
     return quote;
-  }, [watchedFields, customers, projects, blocks, totalAmount, totalVAT, adminSignature, forcePreviewUpdate]);
+  }, [watchedFields, customers, projects, blocks, totalAmount, totalVAT, adminSignature, updateCounter]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[80vh] overflow-hidden">
@@ -367,14 +357,13 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
               </CardHeader>
               <CardContent className="space-y-6">
                 {blocks.map((block, index) => (
-                  <div key={block.id} onClick={(e) => e.stopPropagation()}>
-                    <QuoteBlockForm
-                      block={block}
-                      onUpdateBlock={(updatedBlock) => updateBlock(index, updatedBlock)}
-                      onDeleteBlock={() => deleteBlock(index)}
-                      canDelete={blocks.length > 1}
-                    />
-                  </div>
+                  <QuoteBlockForm
+                    key={`${block.id}-${updateCounter}`}
+                    block={block}
+                    onUpdateBlock={(updatedBlock) => updateBlock(index, updatedBlock)}
+                    onDeleteBlock={() => deleteBlock(index)}
+                    canDelete={blocks.length > 1}
+                  />
                 ))}
 
                 {/* Grand Total */}
@@ -426,7 +415,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       <div className="overflow-y-auto pl-2">
         <div className="sticky top-0 bg-white z-10 pb-2 mb-4 border-b">
           <h4 className="font-medium text-gray-700">Live Preview</h4>
-          <p className="text-sm text-gray-500">Updates: {forcePreviewUpdate}</p>
+          <p className="text-sm text-gray-500">Updates: {updateCounter}</p>
         </div>
         <MultiBlockQuotePreview quote={previewQuote} />
       </div>

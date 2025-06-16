@@ -50,27 +50,6 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
     return vat;
   }, []);
 
-  const updateBlockWithCalculations = useCallback((updatedItems: QuoteItem[]) => {
-    const subtotal = calculateBlockSubtotal(updatedItems);
-    const vatAmount = calculateBlockVAT(updatedItems);
-
-    const updatedBlock: QuoteBlock = {
-      ...block,
-      items: updatedItems,
-      subtotal,
-      vat_amount: vatAmount
-    };
-
-    console.log('QuoteBlockForm: Updating block with calculations:', updatedBlock);
-    
-    // Force immediate update using setTimeout to ensure React processes the state change
-    setTimeout(() => {
-      onUpdateBlock(updatedBlock);
-    }, 0);
-    
-    return updatedBlock;
-  }, [block, calculateBlockSubtotal, calculateBlockVAT, onUpdateBlock]);
-
   const handleAddItem = useCallback((newItem: Omit<QuoteItem, 'id'>) => {
     console.log('QuoteBlockForm: Adding item to block:', block.id, newItem);
     
@@ -82,14 +61,36 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
     const updatedItems = [...block.items, item];
     console.log('QuoteBlockForm: Updated items array:', updatedItems);
     
-    updateBlockWithCalculations(updatedItems);
-  }, [block.id, block.items, updateBlockWithCalculations]);
+    const subtotal = calculateBlockSubtotal(updatedItems);
+    const vatAmount = calculateBlockVAT(updatedItems);
+
+    const updatedBlock: QuoteBlock = {
+      ...block,
+      items: updatedItems,
+      subtotal,
+      vat_amount: vatAmount
+    };
+
+    console.log('QuoteBlockForm: Updating block with new item:', updatedBlock);
+    onUpdateBlock(updatedBlock);
+  }, [block, calculateBlockSubtotal, calculateBlockVAT, onUpdateBlock]);
 
   const handleDeleteItem = useCallback((index: number) => {
     console.log('QuoteBlockForm: Deleting item at index:', index);
     const updatedItems = block.items.filter((_, i) => i !== index);
-    updateBlockWithCalculations(updatedItems);
-  }, [block.items, updateBlockWithCalculations]);
+    
+    const subtotal = calculateBlockSubtotal(updatedItems);
+    const vatAmount = calculateBlockVAT(updatedItems);
+
+    const updatedBlock: QuoteBlock = {
+      ...block,
+      items: updatedItems,
+      subtotal,
+      vat_amount: vatAmount
+    };
+
+    onUpdateBlock(updatedBlock);
+  }, [block, calculateBlockSubtotal, calculateBlockVAT, onUpdateBlock]);
 
   const handleTitleSave = useCallback(() => {
     const updatedBlock: QuoteBlock = {
@@ -178,10 +179,8 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
           </div>
         )}
 
-        {/* Add Item Form - Wrapped to prevent event bubbling */}
-        <div onClick={(e) => e.stopPropagation()}>
-          <QuoteItemForm onAddItem={handleAddItem} />
-        </div>
+        {/* Add Item Form */}
+        <QuoteItemForm onAddItem={handleAddItem} />
 
         {/* Block Totals */}
         {block.items.some(item => item.type === 'product') && (

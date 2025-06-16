@@ -34,7 +34,6 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
   }, []);
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
-    // Critical: Prevent all event propagation to avoid navigation issues
     e.preventDefault();
     e.stopPropagation();
     
@@ -70,13 +69,9 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
     console.log('QuoteItemForm: Creating new item:', newItem);
     
     try {
-      if (typeof onAddItem === 'function') {
-        onAddItem(newItem);
-        resetForm();
-        console.log('QuoteItemForm: Item added successfully, form reset');
-      } else {
-        console.error('QuoteItemForm: onAddItem is not a function:', onAddItem);
-      }
+      onAddItem(newItem);
+      resetForm();
+      console.log('QuoteItemForm: Item added successfully, form reset');
     } catch (error) {
       console.error('QuoteItemForm: Error adding item:', error);
     }
@@ -87,19 +82,6 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
       ...prev,
       [type]: !prev[type]
     }));
-  }, []);
-
-  const handleButtonClick = useCallback((e: React.MouseEvent) => {
-    // Prevent button clicks from triggering navigation
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // Manually trigger form submission
-    const form = e.currentTarget.closest('form');
-    if (form) {
-      const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
-      form.dispatchEvent(submitEvent);
-    }
   }, []);
 
   return (
@@ -215,7 +197,7 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
           </div>
         )}
 
-        <Button type="button" onClick={handleButtonClick} className="w-full">
+        <Button type="submit" className="w-full">
           <Plus className="h-4 w-4 mr-2" />
           {itemType === 'product' ? 'Product toevoegen' : 'Tekstblok toevoegen'}
         </Button>

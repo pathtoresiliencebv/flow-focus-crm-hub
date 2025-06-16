@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Quote } from '@/types/quote';
 import { supabase } from "@/integrations/supabase/client";
@@ -128,7 +127,7 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
           quote.blocks.map((block, blockIndex) => {
             console.log('MultiBlockQuotePreview: Rendering block:', block);
             return (
-              <div key={`${block.id}-${blockIndex}`} className="border-l-4 border-smans-primary pl-6">
+              <div key={`${block.id}-${blockIndex}`} className="border-l-2 border-gray-300 pl-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-4 uppercase">{block.title}</h3>
                 
                 {/* Block items */}
@@ -158,7 +157,7 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
                               <div className="col-span-1 text-right text-gray-800 font-medium">€{(item.total || 0).toFixed(2)}</div>
                             </div>
                           ) : (
-                            <div className="py-3 px-4 bg-gray-50 rounded-lg border-l-2 border-blue-300 mb-3" style={getItemStyle(item)}>
+                            <div className="py-3 px-4 bg-blue-50 rounded-lg border-l-2 border-blue-200 mb-3" style={getItemStyle(item)}>
                               <div className="text-gray-700 whitespace-pre-line leading-relaxed">
                                 {item.description || 'Geen tekst'}
                               </div>
