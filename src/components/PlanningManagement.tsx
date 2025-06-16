@@ -41,18 +41,20 @@ export function PlanningManagement() {
     fetchPlanningItems();
   }, [fetchPlanningItems]);
 
-  const handleQuickPlanning = async (data: {
-    assigned_user_id: string;
-    project_id: string;
-    title: string;
-    description: string;
-    start_date: string;
-    start_time: string;
-    end_time: string;
-    location: string;
-    status: string;
-  }) => {
+  const handleQuickPlanning = async (formData: FormData) => {
     try {
+      const data = {
+        assigned_user_id: formData.get('assigned_user_id') as string,
+        project_id: formData.get('project_id') as string,
+        title: formData.get('title') as string,
+        description: formData.get('description') as string,
+        start_date: formData.get('start_date') as string,
+        start_time: formData.get('start_time') as string,
+        end_time: formData.get('end_time') as string,
+        location: formData.get('location') as string,
+        status: formData.get('status') as string,
+      };
+
       await addPlanningItem({
         ...data,
         user_id: user?.id || ''
@@ -73,18 +75,20 @@ export function PlanningManagement() {
     }
   };
 
-  const handleNewPlanning = async (data: {
-    assigned_user_id: string;
-    project_id: string;
-    title: string;
-    description: string;
-    start_date: string;
-    start_time: string;
-    end_time: string;
-    location: string;
-    status: string;
-  }) => {
+  const handleNewPlanning = async (formData: FormData) => {
     try {
+      const data = {
+        assigned_user_id: formData.get('assigned_user_id') as string,
+        project_id: formData.get('project_id') as string,
+        title: formData.get('title') as string,
+        description: formData.get('description') as string,
+        start_date: formData.get('start_date') as string,
+        start_time: formData.get('start_time') as string,
+        end_time: formData.get('end_time') as string,
+        location: formData.get('location') as string,
+        status: formData.get('status') as string,
+      };
+
       await addPlanningItem({
         ...data,
         user_id: user?.id || ''
@@ -105,18 +109,20 @@ export function PlanningManagement() {
     }
   };
 
-  const handleMultiDayPlanning = async (data: {
-    assigned_user_id: string;
-    project_id: string;
-    title: string;
-    description: string;
-    start_date: string;
-    start_time: string;
-    end_time: string;
-    location: string;
-    status: string;
-  }) => {
+  const handleMultiDayPlanning = async (formData: FormData) => {
     try {
+      const data = {
+        assigned_user_id: formData.get('assigned_user_id') as string,
+        project_id: formData.get('project_id') as string,
+        title: formData.get('title') as string,
+        description: formData.get('description') as string,
+        start_date: formData.get('start_date') as string,
+        start_time: formData.get('start_time') as string,
+        end_time: formData.get('end_time') as string,
+        location: formData.get('location') as string,
+        status: formData.get('status') as string,
+      };
+
       await addPlanningItem({
         ...data,
         user_id: user?.id || ''
@@ -153,7 +159,7 @@ export function PlanningManagement() {
     console.log('Event created:', date, startHour, endHour);
   };
 
-  // Convert planning items to the format expected by calendar/list components
+  // Convert planning items to the format expected by list components (fix employeeId type)
   const convertedPlanningItems = planningItems.map(item => ({
     id: item.id,
     title: item.title,
@@ -161,10 +167,10 @@ export function PlanningManagement() {
     time: item.start_time,
     endTime: item.end_time,
     employee: item.assigned_user_id, // We'll need to map this to actual employee names
-    employeeId: item.assigned_user_id,
+    employeeId: parseInt(item.assigned_user_id) || 0, // Convert string to number
     project: item.project_id || 'Geen project',
     projectId: item.project_id || '',
-    status: item.status,
+    status: item.status as "Gepland" | "Bevestigd" | "Afgerond" | "Geannuleerd",
     description: item.description || '',
     location: item.location || '',
     createdAt: item.created_at
