@@ -22,30 +22,52 @@ export const useQuotes = () => {
       }
 
       if (data) {
+        console.log('Raw quotes data from database:', data);
+        
         const quotesWithBlocks = data.map(quote => {
           let blocks: QuoteBlock[] = [];
+          console.log('Processing quote:', quote.id, 'items:', quote.items);
+          
           try {
             if (Array.isArray(quote.items)) {
-              blocks = quote.items.map((item: any) => ({
-                id: item.id || crypto.randomUUID(),
-                title: item.title || 'Untitled Block',
-                items: item.items || [],
-                subtotal: item.subtotal || 0,
-                vat_amount: item.vat_amount || 0,
-                order_index: item.order_index || 0
-              }));
+              // Check if items contain blocks structure
+              if (quote.items.length > 0 && quote.items[0].items) {
+                // New blocks structure
+                blocks = quote.items.map((item: any) => ({
+                  id: item.id || crypto.randomUUID(),
+                  title: item.title || 'Untitled Block',
+                  items: item.items || [],
+                  subtotal: item.subtotal || 0,
+                  vat_amount: item.vat_amount || 0,
+                  order_index: item.order_index || 0
+                }));
+              } else {
+                // Old flat structure - convert to single block
+                blocks = [{
+                  id: crypto.randomUUID(),
+                  title: 'Items',
+                  items: quote.items,
+                  subtotal: quote.subtotal || 0,
+                  vat_amount: quote.vat_amount || 0,
+                  order_index: 0
+                }];
+              }
             }
           } catch (e) {
-            console.error('Error parsing quote blocks:', e);
+            console.error('Error parsing quote blocks for quote', quote.id, ':', e);
             blocks = [];
           }
 
-          return {
+          const processedQuote = {
             ...quote,
             blocks,
             total_vat_amount: quote.vat_amount || 0
           } as Quote;
+          
+          console.log('Processed quote:', processedQuote.id, 'with blocks:', processedQuote.blocks);
+          return processedQuote;
         });
+        
         setQuotes(quotesWithBlocks);
       }
     } catch (error) {

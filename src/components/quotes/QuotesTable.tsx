@@ -81,7 +81,7 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                     <ExternalLink className="h-4 w-4" />
                   </Button>
                 )}
-                {quote.status === 'verstuurd' && onApprove && (
+                {(quote.status === 'concept' || quote.status === 'verstuurd') && onApprove && (
                   <Button
                     variant="ghost"
                     size="sm"

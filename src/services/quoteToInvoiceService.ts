@@ -4,11 +4,19 @@ import { Quote } from '@/types/quote';
 
 export async function convertQuoteToInvoice(quote: Quote): Promise<string> {
   try {
+    console.log('Starting quote to invoice conversion for quote:', quote.id);
+    console.log('Quote data:', quote);
+
     // Generate unique invoice number
     const { data: invoiceNumber, error: numberError } = await supabase
       .rpc('generate_invoice_number');
 
-    if (numberError) throw numberError;
+    if (numberError) {
+      console.error('Error generating invoice number:', numberError);
+      throw numberError;
+    }
+
+    console.log('Generated invoice number:', invoiceNumber);
 
     // Calculate due date (30 days from today)
     const dueDate = new Date();
@@ -30,19 +38,31 @@ export async function convertQuoteToInvoice(quote: Quote): Promise<string> {
       source_quote_id: quote.id
     };
 
+    console.log('Creating invoice with data:', invoiceData);
+
     const { data: invoice, error: invoiceError } = await supabase
       .from('invoices')
       .insert([invoiceData])
       .select()
       .single();
 
-    if (invoiceError) throw invoiceError;
+    if (invoiceError) {
+      console.error('Error creating invoice:', invoiceError);
+      throw invoiceError;
+    }
 
-    // Convert quote blocks and items to invoice items
+    console.log('Created invoice:', invoice);
+
+    // Convert quote items to invoice items
     const invoiceItems: any[] = [];
     let orderIndex = 0;
 
-    if (quote.blocks) {
+    // Handle different quote data structures
+    let quoteItems: any[] = [];
+    
+    if (quote.blocks && quote.blocks.length > 0) {
+      // New blocks structure
+      console.log('Processing quote blocks:', quote.blocks);
       for (const block of quote.blocks) {
         // Add block title as a header item
         invoiceItems.push({
@@ -57,22 +77,71 @@ export async function convertQuoteToInvoice(quote: Quote): Promise<string> {
         });
 
         // Add block items
-        if (block.items) {
+        if (block.items && block.items.length > 0) {
           for (const item of block.items) {
             invoiceItems.push({
               invoice_id: invoice.id,
-              type: item.type,
+              type: item.type || 'product',
               description: item.description,
               quantity: item.quantity || null,
               unit_price: item.unit_price || null,
-              vat_rate: item.vat_rate,
+              vat_rate: item.vat_rate || 21,
               total: item.total || null,
               order_index: orderIndex++
             });
           }
         }
       }
+    } else if (quote.items && Array.isArray(quote.items)) {
+      // Handle items from database - could be old flat structure or blocks
+      console.log('Processing quote items from database:', quote.items);
+      
+      for (const item of quote.items) {
+        if (item.items && Array.isArray(item.items)) {
+          // This is a block structure
+          invoiceItems.push({
+            invoice_id: invoice.id,
+            type: 'textblock',
+            description: `=== ${item.title || 'Blok'} ===`,
+            quantity: null,
+            unit_price: null,
+            vat_rate: 0,
+            total: null,
+            order_index: orderIndex++
+          });
+
+          // Add block items
+          for (const blockItem of item.items) {
+            invoiceItems.push({
+              invoice_id: invoice.id,
+              type: blockItem.type || 'product',
+              description: blockItem.description,
+              quantity: blockItem.quantity || null,
+              unit_price: blockItem.unit_price || null,
+              vat_rate: blockItem.vat_rate || 21,
+              total: blockItem.total || null,
+              order_index: orderIndex++
+            });
+          }
+        } else {
+          // This is a direct item (old structure)
+          invoiceItems.push({
+            invoice_id: invoice.id,
+            type: item.type || 'product',
+            description: item.description,
+            quantity: item.quantity || null,
+            unit_price: item.unit_price || null,
+            vat_rate: item.vat_rate || 21,
+            total: item.total || null,
+            order_index: orderIndex++
+          });
+        }
+      }
+    } else {
+      console.warn('No quote items found to convert');
     }
+
+    console.log('Invoice items to insert:', invoiceItems);
 
     // Insert invoice items
     if (invoiceItems.length > 0) {
@@ -80,9 +149,17 @@ export async function convertQuoteToInvoice(quote: Quote): Promise<string> {
         .from('invoice_items')
         .insert(invoiceItems);
 
-      if (itemsError) throw itemsError;
+      if (itemsError) {
+        console.error('Error inserting invoice items:', itemsError);
+        throw itemsError;
+      }
+
+      console.log('Successfully inserted', invoiceItems.length, 'invoice items');
+    } else {
+      console.warn('No invoice items to insert');
     }
 
+    console.log('Quote to invoice conversion completed successfully');
     return invoice.id;
   } catch (error) {
     console.error('Error converting quote to invoice:', error);
