@@ -1,4 +1,5 @@
 
+
 import { useState } from 'react';
 import {
   Dialog,
@@ -128,12 +129,12 @@ export function Invoicing() {
 
   // Convert customers and projects to the format expected by InvoicingHeader
   const formCustomers = customers.map(customer => ({
-    id: customer.id,
+    id: parseInt(customer.id.slice(-8), 16), // Convert UUID to number
     name: customer.name
   }));
 
   const formProjects = projects.map(project => ({
-    id: project.id,
+    id: parseInt(project.id.slice(-8), 16), // Convert UUID to number
     title: project.title,
     value: project.value?.toString() || '0',
     customer: project.customer
@@ -190,3 +191,4 @@ export function Invoicing() {
     </div>
   );
 }
+
