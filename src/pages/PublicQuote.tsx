@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,32 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Check, FileText, Calendar, User } from "lucide-react";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
-
-interface QuoteData {
-  id: string;
-  quote_number: string;
-  customer_name: string;
-  customer_email: string;
-  project_title: string;
-  quote_date: string;
-  valid_until: string;
-  message: string;
-  items: Array<{
-    description: string;
-    quantity: number;
-    price: number;
-    vatRate: number;
-    total: number;
-  }>;
-  subtotal: number;
-  vat_amount: number;
-  total_amount: number;
-  status: string;
-  admin_signature_data: string;
-  client_signature_data: string;
-  client_signed_at: string;
-  client_name: string;
-}
+import { Quote, QuoteBlock, QuoteItem } from '@/types/quote';
 
 interface QuoteSettings {
   terms_and_conditions?: string;
@@ -52,7 +28,7 @@ interface QuoteSettings {
 export default function PublicQuote() {
   const { token } = useParams<{ token: string }>();
   const { toast } = useToast();
-  const [quote, setQuote] = useState<QuoteData | null>(null);
+  const [quote, setQuote] = useState<Quote | null>(null);
   const [settings, setSettings] = useState<QuoteSettings>({});
   const [loading, setLoading] = useState(true);
   const [signing, setSigning] = useState(false);
@@ -99,16 +75,28 @@ export default function PublicQuote() {
         return;
       }
 
-      // Type cast the items from Json to the expected array type
-      const typedQuote: QuoteData = {
+      // Convert the data to Quote format
+      let blocks: QuoteBlock[] = [];
+      try {
+        if (Array.isArray(data.items)) {
+          blocks = data.items.map((item: any) => ({
+            id: item.id || crypto.randomUUID(),
+            title: item.title || 'Untitled Block',
+            items: item.items || [],
+            subtotal: item.subtotal || 0,
+            vat_amount: item.vat_amount || 0,
+            order_index: item.order_index || 0
+          }));
+        }
+      } catch (e) {
+        console.error('Error parsing quote blocks:', e);
+        blocks = [];
+      }
+
+      const typedQuote: Quote = {
         ...data,
-        items: Array.isArray(data.items) ? data.items as Array<{
-          description: string;
-          quantity: number;
-          price: number;
-          vatRate: number;
-          total: number;
-        }> : []
+        blocks,
+        total_vat_amount: data.vat_amount || 0
       };
 
       setQuote(typedQuote);
@@ -188,6 +176,17 @@ export default function PublicQuote() {
       default:
         return <Badge className="bg-gray-100 text-gray-800">Concept</Badge>;
     }
+  };
+
+  const getItemStyle = (item: QuoteItem) => {
+    if (item.type === 'textblock' && item.formatting) {
+      let style: React.CSSProperties = {};
+      if (item.formatting.bold) style.fontWeight = 'bold';
+      if (item.formatting.italic) style.fontStyle = 'italic';
+      if (item.formatting.underline) style.textDecoration = 'underline';
+      return style;
+    }
+    return {};
   };
 
   if (loading) {
@@ -298,48 +297,105 @@ export default function PublicQuote() {
           )}
         </div>
 
-        {/* Quote Items */}
+        {/* Quote Blocks */}
         <div className="bg-white rounded-lg shadow-sm p-8 mb-6">
           <h3 className="text-lg font-semibold mb-4">Offerteregels</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b-2 border-gray-200">
-                  <th className="text-left py-3 font-semibold text-gray-900">Omschrijving</th>
-                  <th className="text-center py-3 font-semibold text-gray-900 w-16">Aantal</th>
-                  <th className="text-right py-3 font-semibold text-gray-900 w-20">Prijs</th>
-                  <th className="text-center py-3 font-semibold text-gray-900 w-16">BTW%</th>
-                  <th className="text-right py-3 font-semibold text-gray-900 w-24">Totaal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {quote.items.map((item, index) => (
-                  <tr key={index} className="border-b border-gray-100">
-                    <td className="py-3 text-gray-800">{item.description}</td>
-                    <td className="py-3 text-center text-gray-800">{item.quantity}</td>
-                    <td className="py-3 text-right text-gray-800">€{item.price.toFixed(2)}</td>
-                    <td className="py-3 text-center text-gray-800">{item.vatRate}%</td>
-                    <td className="py-3 text-right text-gray-800 font-medium">€{item.total.toFixed(2)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          
+          {quote.blocks && quote.blocks.length > 0 ? (
+            <div className="space-y-8">
+              {quote.blocks.map((block, blockIndex) => (
+                <div key={`${block.id}-${blockIndex}`} className="border-l-2 border-gray-300 pl-6">
+                  <h4 className="text-lg font-bold text-gray-900 mb-4 uppercase">{block.title}</h4>
+                  
+                  {block.items && block.items.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b-2 border-gray-200">
+                            <th className="text-left py-3 font-semibold text-gray-900">Omschrijving</th>
+                            <th className="text-center py-3 font-semibold text-gray-900 w-16">Aantal</th>
+                            <th className="text-right py-3 font-semibold text-gray-900 w-20">Prijs</th>
+                            <th className="text-center py-3 font-semibold text-gray-900 w-16">BTW%</th>
+                            <th className="text-right py-3 font-semibold text-gray-900 w-24">Totaal</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {block.items.map((item, itemIndex) => (
+                            <tr key={`${item.id || itemIndex}-${blockIndex}-${itemIndex}`} className="border-b border-gray-100">
+                              {item.type === 'product' ? (
+                                <>
+                                  <td className="py-3 text-gray-800">{item.description}</td>
+                                  <td className="py-3 text-center text-gray-800">{item.quantity}</td>
+                                  <td className="py-3 text-right text-gray-800">€{(item.unit_price || 0).toFixed(2)}</td>
+                                  <td className="py-3 text-center text-gray-800">{item.vat_rate}%</td>
+                                  <td className="py-3 text-right text-gray-800 font-medium">€{(item.total || 0).toFixed(2)}</td>
+                                </>
+                              ) : (
+                                <>
+                                  <td className="py-3 text-gray-800 whitespace-pre-line" style={getItemStyle(item)}>
+                                    {item.description}
+                                  </td>
+                                  <td className="py-3 text-center text-gray-400">-</td>
+                                  <td className="py-3 text-right text-gray-400">-</td>
+                                  <td className="py-3 text-center text-gray-800">{item.vat_rate}%</td>
+                                  <td className="py-3 text-right text-gray-400">-</td>
+                                </>
+                              )}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-gray-400 italic py-4">Geen items in dit blok</div>
+                  )}
 
-          {/* Totals */}
-          <div className="flex justify-end mt-6">
+                  {/* Block totals (only if block has products) */}
+                  {block.items && block.items.some(item => item.type === 'product') && (
+                    <div className="flex justify-end mt-4">
+                      <div className="w-64 space-y-1 text-sm border-t pt-2">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Subtotaal {block.title}:</span>
+                          <span className="font-medium">€{(block.subtotal || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">BTW:</span>
+                          <span className="font-medium">€{(block.vat_amount || 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between py-1 border-t">
+                          <span className="font-semibold">Totaal {block.title}:</span>
+                          <span className="font-semibold text-smans-primary">
+                            €{((block.subtotal || 0) + (block.vat_amount || 0)).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-gray-400 italic text-center py-8">
+              Geen items in deze offerte
+            </div>
+          )}
+
+          {/* Grand totals */}
+          <div className="flex justify-end border-t-2 border-gray-200 pt-4 mt-8">
             <div className="w-64 space-y-2">
-              <div className="flex justify-between py-1">
-                <span className="text-gray-600">Subtotaal:</span>
-                <span className="font-medium">€{quote.subtotal.toFixed(2)}</span>
+              <div className="flex justify-between py-1 text-lg">
+                <span className="font-semibold text-gray-900">Totaal excl. BTW:</span>
+                <span className="font-semibold">€{(quote.total_amount || 0).toFixed(2)}</span>
               </div>
-              <div className="flex justify-between py-1">
-                <span className="text-gray-600">BTW:</span>
-                <span className="font-medium">€{quote.vat_amount.toFixed(2)}</span>
+              <div className="flex justify-between py-1 text-lg">
+                <span className="font-semibold text-gray-900">Totaal BTW:</span>
+                <span className="font-semibold">€{(quote.total_vat_amount || 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between py-2 border-t-2 border-gray-200">
-                <span className="font-bold text-lg">Totaal:</span>
-                <span className="font-bold text-lg text-smans-primary">€{quote.total_amount.toFixed(2)}</span>
+                <span className="font-bold text-xl">EINDTOTAAL:</span>
+                <span className="font-bold text-xl text-smans-primary">
+                  €{((quote.total_amount || 0) + (quote.total_vat_amount || 0)).toFixed(2)}
+                </span>
               </div>
             </div>
           </div>
