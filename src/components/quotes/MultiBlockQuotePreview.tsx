@@ -219,7 +219,7 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
                   )}
                 </div>
               );
-            })
+            })}
           </>
         ) : (
           <div className="text-gray-400 italic text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
