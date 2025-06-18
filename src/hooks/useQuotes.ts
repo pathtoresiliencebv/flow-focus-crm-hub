@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,14 +28,33 @@ export const useQuotes = () => {
           console.log('Processing quote:', quote.id, 'items:', quote.items);
           
           try {
-            if (Array.isArray(quote.items)) {
+            // Parse the items from Json to actual objects
+            let parsedItems: any[] = [];
+            if (quote.items) {
+              if (typeof quote.items === 'string') {
+                parsedItems = JSON.parse(quote.items);
+              } else if (Array.isArray(quote.items)) {
+                parsedItems = quote.items as any[];
+              }
+            }
+
+            if (parsedItems.length > 0) {
               // Check if items contain blocks structure
-              if (quote.items.length > 0 && quote.items[0].items) {
+              if (parsedItems[0] && typeof parsedItems[0] === 'object' && parsedItems[0].items) {
                 // New blocks structure
-                blocks = quote.items.map((item: any) => ({
+                blocks = parsedItems.map((item: any) => ({
                   id: item.id || crypto.randomUUID(),
                   title: item.title || 'Untitled Block',
-                  items: item.items || [],
+                  items: (item.items || []).map((blockItem: any) => ({
+                    id: blockItem.id || crypto.randomUUID(),
+                    type: blockItem.type || 'product',
+                    description: blockItem.description || '',
+                    quantity: blockItem.quantity,
+                    unit_price: blockItem.unit_price,
+                    vat_rate: blockItem.vat_rate || 21,
+                    total: blockItem.total,
+                    formatting: blockItem.formatting
+                  })),
                   subtotal: item.subtotal || 0,
                   vat_amount: item.vat_amount || 0,
                   order_index: item.order_index || 0
@@ -46,7 +64,16 @@ export const useQuotes = () => {
                 blocks = [{
                   id: crypto.randomUUID(),
                   title: 'Items',
-                  items: quote.items,
+                  items: parsedItems.map((item: any) => ({
+                    id: item.id || crypto.randomUUID(),
+                    type: item.type || 'product',
+                    description: item.description || '',
+                    quantity: item.quantity,
+                    unit_price: item.unit_price,
+                    vat_rate: item.vat_rate || 21,
+                    total: item.total,
+                    formatting: item.formatting
+                  })),
                   subtotal: quote.subtotal || 0,
                   vat_amount: quote.vat_amount || 0,
                   order_index: 0
@@ -61,6 +88,7 @@ export const useQuotes = () => {
           const processedQuote = {
             ...quote,
             blocks,
+            items: quote.items, // Keep raw items for service compatibility
             total_vat_amount: quote.vat_amount || 0
           } as Quote;
           

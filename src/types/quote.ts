@@ -33,6 +33,7 @@ export interface Quote {
   valid_until: string;
   message?: string;
   blocks: QuoteBlock[];
+  items?: any; // Raw items from database for backward compatibility
   total_amount: number;
   total_vat_amount: number;
   status: string;

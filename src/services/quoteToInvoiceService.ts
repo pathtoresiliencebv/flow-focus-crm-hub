@@ -58,10 +58,12 @@ export async function convertQuoteToInvoice(quote: Quote): Promise<string> {
     let orderIndex = 0;
 
     // Handle different quote data structures
-    let quoteItems: any[] = [];
-    
+    console.log('Processing quote for invoice items...');
+    console.log('Quote blocks:', quote.blocks);
+    console.log('Quote raw items:', quote.items);
+
     if (quote.blocks && quote.blocks.length > 0) {
-      // New blocks structure
+      // Use processed blocks structure
       console.log('Processing quote blocks:', quote.blocks);
       for (const block of quote.blocks) {
         // Add block title as a header item
@@ -92,13 +94,25 @@ export async function convertQuoteToInvoice(quote: Quote): Promise<string> {
           }
         }
       }
-    } else if (quote.items && Array.isArray(quote.items)) {
-      // Handle items from database - could be old flat structure or blocks
-      console.log('Processing quote items from database:', quote.items);
+    } else if (quote.items) {
+      // Handle raw items from database
+      console.log('Processing quote raw items:', quote.items);
       
-      for (const item of quote.items) {
+      let parsedItems: any[] = [];
+      try {
+        if (typeof quote.items === 'string') {
+          parsedItems = JSON.parse(quote.items);
+        } else if (Array.isArray(quote.items)) {
+          parsedItems = quote.items as any[];
+        }
+      } catch (e) {
+        console.error('Error parsing quote items:', e);
+        parsedItems = [];
+      }
+
+      for (const item of parsedItems) {
         if (item.items && Array.isArray(item.items)) {
-          // This is a block structure
+          // This is a block structure from raw data
           invoiceItems.push({
             invoice_id: invoice.id,
             type: 'textblock',
