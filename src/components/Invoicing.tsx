@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import {
   Dialog,
@@ -7,48 +6,34 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { InvoiceDetails } from './InvoiceDetails';
 import { SendInvoiceDialog } from './SendInvoiceDialog';
-
-// Import mock data from central location
-import { mockInvoices, mockCustomers, mockProjects } from '@/data/mockData';
+import { useInvoices } from '@/hooks/useInvoices';
+import { useCrmStore } from "@/hooks/useCrmStore";
 import { InvoicingHeader } from './invoicing/InvoicingHeader';
 import { InvoiceFilters } from './invoicing/InvoiceFilters';
 import { InvoicesTable } from './invoicing/InvoicesTable';
 import { InvoicesSummary } from './invoicing/InvoicesSummary';
 
-// Mock invoice items for detail view
-export const mockInvoiceItems = [
-  { id: 1, invoiceId: 1, description: "Renovatie materialen", quantity: 1, price: "3,250.00", total: "3,250.00" },
-  { id: 2, invoiceId: 1, description: "Installatie", quantity: 1, price: "1,250.00", total: "1,250.00" },
-  { id: 3, invoiceId: 1, description: "Afwerking", quantity: 1, price: "945.00", total: "945.00" },
-  { id: 4, invoiceId: 2, description: "Kunststof kozijnen 120x180", quantity: 2, price: "980.00", total: "1,960.00" },
-  { id: 5, invoiceId: 2, description: "Montage", quantity: 1, price: "840.00", total: "840.00" },
-  { id: 6, invoiceId: 2, description: "Afwerking", quantity: 1, price: "588.00", total: "588.00" },
-  { id: 7, invoiceId: 3, description: "Voordeur hoogwaardig", quantity: 1, price: "950.00", total: "950.00" },
-  { id: 8, invoiceId: 3, description: "Plaatsing", quantity: 1, price: "420.00", total: "420.00" },
-  { id: 9, invoiceId: 3, description: "Afwerking", quantity: 1, price: "142.50", total: "142.50" },
-  { id: 10, invoiceId: 4, description: "HR++ Glas 90x120", quantity: 6, price: "520.00", total: "3,120.00" },
-  { id: 11, invoiceId: 4, description: "Installatie", quantity: 1, price: "1,236.00", total: "1,236.00" },
-  { id: 12, invoiceId: 5, description: "Kunststof kozijnen complete set", quantity: 1, price: "4,800.00", total: "4,800.00" },
-  { id: 13, invoiceId: 5, description: "Montage", quantity: 1, price: "1,200.00", total: "1,200.00" },
-  { id: 14, invoiceId: 5, description: "Afwerking en details", quantity: 1, price: "292.00", total: "292.00" },
-];
+// Import mock data from central location
+import { mockInvoices, mockCustomers, mockProjects } from '@/data/mockData';
 
 export function Invoicing() {
   const { toast } = useToast();
+  const { customers, projects } = useCrmStore();
+  const { invoices, loading, fetchInvoiceItems, updateInvoiceStatus } = useInvoices();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
-  const [selectedInvoice, setSelectedInvoice] = useState<number | null>(null);
-  const [invoices, setInvoices] = useState([...mockInvoices]);
+  const [selectedInvoice, setSelectedInvoice] = useState<string | null>(null);
   const [openDetailDialog, setOpenDetailDialog] = useState(false);
   const [showSendDialog, setShowSendDialog] = useState(false);
   const [invoiceToSend, setInvoiceToSend] = useState<any>(null);
+  const [invoiceItems, setInvoiceItems] = useState<any[]>([]);
 
   // Filter invoices based on search term and status filter
   const filteredInvoices = invoices.filter(invoice => {
     const matchesSearch = 
-      invoice.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.project.toLowerCase().includes(searchTerm.toLowerCase());
+      invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      invoice.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (invoice.project_title && invoice.project_title.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesStatus = filterStatus === null || invoice.status === filterStatus;
     
@@ -58,13 +43,13 @@ export function Invoicing() {
   // Function to get status badge color
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "Betaald":
+      case "betaald":
         return "bg-green-100 text-green-800";
-      case "Verzonden":
+      case "verzonden":
         return "bg-blue-100 text-blue-800";
-      case "Concept":
+      case "concept":
         return "bg-gray-100 text-gray-800";
-      case "Verlopen":
+      case "verlopen":
         return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -72,7 +57,7 @@ export function Invoicing() {
   };
 
   // Handler for sending invoice with popup
-  const handleSendInvoice = (invoiceId: number) => {
+  const handleSendInvoice = (invoiceId: string) => {
     const invoice = invoices.find(inv => inv.id === invoiceId);
     if (invoice) {
       setInvoiceToSend(invoice);
@@ -81,20 +66,14 @@ export function Invoicing() {
   };
 
   // Handler for confirming send
-  const handleSendConfirm = (emailData: { to: string; subject: string; message: string }) => {
+  const handleSendConfirm = async (emailData: { to: string; subject: string; message: string }) => {
     if (!invoiceToSend) return;
 
-    const updatedInvoices = invoices.map(inv => 
-      inv.id === invoiceToSend.id 
-        ? { ...inv, status: "Verzonden" } 
-        : inv
-    );
-    
-    setInvoices(updatedInvoices);
+    await updateInvoiceStatus(invoiceToSend.id, "verzonden");
     
     toast({
       title: "Factuur verzonden",
-      description: `Factuur ${invoiceToSend.number} is verzonden naar ${emailData.to}.`,
+      description: `Factuur ${invoiceToSend.invoice_number} is verzonden naar ${emailData.to}.`,
     });
     
     setInvoiceToSend(null);
@@ -102,18 +81,20 @@ export function Invoicing() {
   };
 
   // Handler for viewing invoice details
-  const handleViewInvoice = (invoiceId: number) => {
+  const handleViewInvoice = async (invoiceId: string) => {
     setSelectedInvoice(invoiceId);
+    const items = await fetchInvoiceItems(invoiceId);
+    setInvoiceItems(items);
     setOpenDetailDialog(true);
   };
 
   // Get invoice details
-  const getInvoiceDetail = (id: number) => {
+  const getInvoiceDetail = (id: string) => {
     return invoices.find(invoice => invoice.id === id);
   };
 
   // Get invoice items
-  const getInvoiceItems = (id: number) => {
+  const getInvoiceItems = (id: string) => {
     return mockInvoiceItems.filter(item => item.invoiceId === id);
   };
 
@@ -121,11 +102,16 @@ export function Invoicing() {
   const closeDetailDialog = () => {
     setOpenDetailDialog(false);
     setSelectedInvoice(null);
+    setInvoiceItems([]);
   };
+
+  if (loading) {
+    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+  }
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
-      <InvoicingHeader customers={mockCustomers} projects={mockProjects} />
+      <InvoicingHeader customers={customers} projects={projects} />
 
       <InvoiceFilters
         searchTerm={searchTerm}
@@ -149,7 +135,7 @@ export function Invoicing() {
           {selectedInvoice !== null && getInvoiceDetail(selectedInvoice) && (
             <InvoiceDetails 
               invoice={getInvoiceDetail(selectedInvoice)!}
-              items={getInvoiceItems(selectedInvoice)}
+              items={invoiceItems}
               onSend={handleSendInvoice}
               onClose={closeDetailDialog}
             />
@@ -162,9 +148,9 @@ export function Invoicing() {
         open={showSendDialog}
         onOpenChange={setShowSendDialog}
         onSend={handleSendConfirm}
-        invoiceNumber={invoiceToSend?.number || ''}
-        customerEmail="klant@example.com" // In echte app van klantgegevens
-        customerName={invoiceToSend?.customer || ''}
+        invoiceNumber={invoiceToSend?.invoice_number || ''}
+        customerEmail={invoiceToSend?.customer_email || "klant@example.com"}
+        customerName={invoiceToSend?.customer_name || ''}
         type="invoice"
       />
     </div>

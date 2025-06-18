@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye, ExternalLink, Trash2 } from "lucide-react";
+import { Eye, ExternalLink, Trash2, CheckCircle } from "lucide-react";
 import { Quote } from '@/types/quote';
 
 interface QuotesTableProps {
@@ -11,13 +11,15 @@ interface QuotesTableProps {
   onPreview: (quote: Quote) => void;
   onViewPublic: (publicToken: string) => void;
   onDelete: (quoteId: string) => void;
+  onApprove?: (quote: Quote) => void;
 }
 
 export const QuotesTable: React.FC<QuotesTableProps> = ({
   quotes,
   onPreview,
   onViewPublic,
-  onDelete
+  onDelete,
+  onApprove
 }) => {
   const getStatusBadge = (status: string) => {
     const statusColors = {
@@ -77,6 +79,17 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                     title="Bekijk publieke link"
                   >
                     <ExternalLink className="h-4 w-4" />
+                  </Button>
+                )}
+                {quote.status === 'verstuurd' && onApprove && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onApprove(quote)}
+                    title="Goedkeuren en omzetten naar factuur"
+                    className="text-green-600 hover:text-green-700"
+                  >
+                    <CheckCircle className="h-4 w-4" />
                   </Button>
                 )}
                 <Button

@@ -188,6 +188,115 @@ export type Database = {
           },
         ]
       }
+      invoice_items: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          invoice_id: string
+          order_index: number
+          quantity: number | null
+          total: number | null
+          type: string
+          unit_price: number | null
+          vat_rate: number
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          invoice_id: string
+          order_index?: number
+          quantity?: number | null
+          total?: number | null
+          type?: string
+          unit_price?: number | null
+          vat_rate?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          invoice_id?: string
+          order_index?: number
+          quantity?: number | null
+          total?: number | null
+          type?: string
+          unit_price?: number | null
+          vat_rate?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          created_at: string
+          customer_email: string | null
+          customer_name: string
+          due_date: string
+          id: string
+          invoice_date: string
+          invoice_number: string
+          message: string | null
+          project_title: string | null
+          source_quote_id: string | null
+          status: string
+          subtotal: number
+          total_amount: number
+          updated_at: string
+          vat_amount: number
+        }
+        Insert: {
+          created_at?: string
+          customer_email?: string | null
+          customer_name: string
+          due_date: string
+          id?: string
+          invoice_date?: string
+          invoice_number: string
+          message?: string | null
+          project_title?: string | null
+          source_quote_id?: string | null
+          status?: string
+          subtotal?: number
+          total_amount?: number
+          updated_at?: string
+          vat_amount?: number
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string
+          due_date?: string
+          id?: string
+          invoice_date?: string
+          invoice_number?: string
+          message?: string | null
+          project_title?: string | null
+          source_quote_id?: string | null
+          status?: string
+          subtotal?: number
+          total_amount?: number
+          updated_at?: string
+          vat_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_source_quote_id_fkey"
+            columns: ["source_quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       planning_items: {
         Row: {
           assigned_user_id: string
@@ -498,6 +607,10 @@ export type Database = {
       demote_other_admins: {
         Args: { p_user_id_to_keep: string }
         Returns: undefined
+      }
+      generate_invoice_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       generate_quote_public_token: {
         Args: Record<PropertyKey, never>
