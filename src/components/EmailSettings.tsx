@@ -37,7 +37,22 @@ export function EmailSettings() {
     if (id) {
       updateAccount({ id, ...updateData });
     } else {
-      addAccount(updateData);
+      // Ensure required fields are present for new accounts
+      if (updateData.display_name && updateData.email_address) {
+        addAccount({
+          display_name: updateData.display_name,
+          email_address: updateData.email_address,
+          smtp_host: updateData.smtp_host,
+          smtp_port: updateData.smtp_port,
+          smtp_username: updateData.smtp_username,
+          smtp_password: updateData.smtp_password,
+          imap_host: updateData.imap_host,
+          imap_port: updateData.imap_port,
+          imap_username: updateData.imap_username,
+          imap_password: updateData.imap_password,
+          is_active: updateData.is_active ?? true,
+        });
+      }
     }
     
     setFormOpen(false);
