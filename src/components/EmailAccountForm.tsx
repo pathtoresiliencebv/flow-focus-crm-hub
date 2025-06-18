@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,7 +13,6 @@ import {
   DialogFooter,
   DialogClose,
 } from '@/components/ui/dialog';
-import { UseMutationResult } from '@tanstack/react-query';
 
 const accountSchema = z.object({
   display_name: z.string().min(1, 'Weergavenaam is verplicht'),
@@ -48,12 +46,12 @@ interface EmailAccount {
 }
 
 interface EmailAccountFormProps {
-  mutation: UseMutationResult<void, Error, AccountFormData & { id?: string; }, unknown>;
+  onSubmit: (data: AccountFormData & { id?: string }) => void;
   editingAccount: EmailAccount | null;
   onClose: () => void;
 }
 
-export function EmailAccountForm({ mutation, editingAccount, onClose }: EmailAccountFormProps) {
+export function EmailAccountForm({ onSubmit, editingAccount, onClose }: EmailAccountFormProps) {
   const form = useForm<AccountFormData>({
     resolver: zodResolver(accountSchema),
   });
@@ -74,8 +72,8 @@ export function EmailAccountForm({ mutation, editingAccount, onClose }: EmailAcc
     });
   }, [editingAccount, form]);
 
-  const onSubmit = (values: AccountFormData) => {
-    mutation.mutate({ ...values, id: editingAccount?.id });
+  const handleSubmit = (values: AccountFormData) => {
+    onSubmit({ ...values, id: editingAccount?.id });
   };
 
   return (
@@ -83,7 +81,7 @@ export function EmailAccountForm({ mutation, editingAccount, onClose }: EmailAcc
       <DialogHeader>
         <DialogTitle>{editingAccount ? 'Account bewerken' : 'Account toevoegen'}</DialogTitle>
       </DialogHeader>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4 max-h-[80vh] overflow-y-auto px-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="grid gap-4 py-4 max-h-[80vh] overflow-y-auto px-6">
         <div>
           <Label htmlFor="display_name">Weergavenaam</Label>
           <Input id="display_name" {...form.register('display_name')} />
@@ -135,8 +133,8 @@ export function EmailAccountForm({ mutation, editingAccount, onClose }: EmailAcc
             <Label htmlFor="is_active">Actief</Label>
         </div>
         <DialogFooter>
-          <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? 'Opslaan...' : 'Opslaan'}
+          <Button type="submit">
+            Opslaan
           </Button>
           <DialogClose asChild>
             <Button type="button" variant="secondary" onClick={onClose}>

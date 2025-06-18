@@ -1,9 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { EmailList } from './EmailList';
 import { EmailCompose } from './EmailCompose';
 import { EmailSidebar } from './EmailSidebar';
 import { EmailToolbar } from './EmailToolbar';
+import { EmailSettings } from './EmailSettings';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -23,17 +27,49 @@ interface Email {
   attachments?: string[];
 }
 
+interface EmailAccount {
+  id: string;
+  display_name: string;
+  email_address: string;
+  is_active: boolean;
+}
+
 export function Email() {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [emails, setEmails] = useState<Email[]>([]);
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [currentFolder, setCurrentFolder] = useState('inbox');
   const [showCompose, setShowCompose] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [replyTo, setReplyTo] = useState<Email | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedAccountId, setSelectedAccountId] = useState<string | 'all'>('all');
+
+  // Fetch email accounts
+  const { data: emailAccounts = [], refetch: refetchAccounts } = useQuery<EmailAccount[]>({
+    queryKey: ['email-accounts', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('user_email_settings')
+        .select('id, display_name, email_address, is_active')
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error fetching email accounts:', error);
+        return [];
+      }
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+
+  const hasEmailAccounts = emailAccounts.length > 0;
 
   useEffect(() => {
-    // Mock data loading (replace with actual API call)
+    // Mock data loading (replace with actual API call when backend is ready)
     const mockEmails: Email[] = [
       {
         id: '1',
@@ -170,6 +206,15 @@ export function Email() {
     setShowCompose(true);
   };
 
+  const handleRefresh = () => {
+    refetchAccounts();
+    // TODO: Add email refresh logic when backend is ready
+  };
+
+  const handleNavigateToSettings = () => {
+    setShowSettings(true);
+  };
+
   const filteredEmails = emails.filter(email => {
     const searchTermLower = searchTerm.toLowerCase();
     const matchesSearch =
@@ -184,6 +229,22 @@ export function Email() {
   });
 
   const areAllSelected = filteredEmails.length > 0 && filteredEmails.every(email => selectedEmails.includes(email.id));
+
+  if (showSettings) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="p-4 border-b flex items-center justify-between">
+          <h2 className="text-xl font-semibold">E-mail Instellingen</h2>
+          <Button variant="outline" onClick={() => setShowSettings(false)}>
+            Terug naar inbox
+          </Button>
+        </div>
+        <div className="flex-1 p-4">
+          <EmailSettings />
+        </div>
+      </div>
+    );
+  }
 
   if (showCompose) {
     return (
@@ -216,19 +277,19 @@ export function Email() {
         activeFolder={currentFolder}
         setActiveFolder={setCurrentFolder}
         onComposeClick={() => setShowCompose(true)}
-        hasEmailAccounts={true}
-        onNavigateToSettings={() => {}}
+        hasEmailAccounts={hasEmailAccounts}
+        onNavigateToSettings={handleNavigateToSettings}
       />
       
       <div className="flex-1 flex flex-col">
         <EmailToolbar
           searchTerm={searchTerm}
           onSearchTermChange={setSearchTerm}
-          selectedAccountId="all"
-          onSelectedAccountIdChange={() => {}}
-          hasEmailAccounts={true}
-          emailAccounts={[]}
-          onRefresh={() => {}}
+          selectedAccountId={selectedAccountId}
+          onSelectedAccountIdChange={setSelectedAccountId}
+          hasEmailAccounts={hasEmailAccounts}
+          emailAccounts={emailAccounts}
+          onRefresh={handleRefresh}
           selectedEmailsCount={selectedEmails.length}
           onMarkAsRead={() => handleBulkAction('markAsRead')}
           onMarkAsUnread={() => handleBulkAction('markAsUnread')}

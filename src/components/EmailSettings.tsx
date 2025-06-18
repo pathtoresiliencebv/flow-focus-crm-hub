@@ -1,17 +1,14 @@
 
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { toast } from '@/hooks/use-toast';
 import { Plus } from 'lucide-react';
 import { AccountFormData, EmailAccountForm } from './EmailAccountForm';
 import { EmailAccountsTable } from './EmailAccountsTable';
+import { useEmailAccounts } from '@/hooks/useEmailAccounts';
 
 interface EmailAccount {
   id: string;
@@ -30,80 +27,22 @@ interface EmailAccount {
 }
 
 export function EmailSettings() {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const { accounts, addAccount, updateAccount, deleteAccount } = useEmailAccounts();
   const [isFormOpen, setFormOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<EmailAccount | null>(null);
 
-  const { data: accounts = [] } = useQuery<EmailAccount[]>({
-    queryKey: ['email-accounts', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      
-      const { data, error } = await supabase
-        .from('user_email_settings')
-        .select('*')
-        .eq('user_id', user.id);
-
-      if (error) {
-        toast({ title: "Fout bij ophalen accounts", description: error.message, variant: "destructive" });
-        return [];
-      }
-      return data || [];
-    },
-    enabled: !!user?.id,
-  });
-
-  const mutation = useMutation({
-    mutationFn: async (accountData: AccountFormData & { id?: string }) => {
-      const { id, ...updateData } = accountData;
-      const payload = { ...updateData, user_id: user!.id };
-
-      if (id) {
-        const { error } = await supabase.from('user_email_settings').update(payload).eq('id', id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('user_email_settings').insert({
-            user_id: user!.id,
-            display_name: accountData.display_name,
-            email_address: accountData.email_address,
-            imap_host: accountData.imap_host,
-            imap_port: accountData.imap_port,
-            imap_username: accountData.imap_username,
-            imap_password: accountData.imap_password,
-            smtp_host: accountData.smtp_host,
-            smtp_port: accountData.smtp_port,
-            smtp_username: accountData.smtp_username,
-            smtp_password: accountData.smtp_password,
-            is_active: accountData.is_active,
-        });
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['email-accounts', user?.id] });
-      setFormOpen(false);
-      setEditingAccount(null);
-      toast({ title: "Account opgeslagen", description: "E-mail account succesvol opgeslagen." });
-    },
-    onError: (error: any) => {
-      toast({ title: "Fout bij opslaan", description: error.message, variant: "destructive" });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('user_email_settings').delete().eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['email-accounts', user?.id] });
-      toast({ title: "Account verwijderd", description: "E-mail account succesvol verwijderd." });
-    },
-    onError: (error: any) => {
-      toast({ title: "Fout bij verwijderen", description: error.message, variant: "destructive" });
-    },
-  });
+  const handleSubmit = (accountData: AccountFormData & { id?: string }) => {
+    const { id, ...updateData } = accountData;
+    
+    if (id) {
+      updateAccount({ id, ...updateData });
+    } else {
+      addAccount(updateData);
+    }
+    
+    setFormOpen(false);
+    setEditingAccount(null);
+  };
 
   const handleEdit = (account: EmailAccount) => {
     setEditingAccount(account);
@@ -111,7 +50,7 @@ export function EmailSettings() {
   };
 
   const handleDelete = (id: string) => {
-    deleteMutation.mutate(id);
+    deleteAccount(id);
   };
 
   const handleAddNew = () => {
@@ -122,7 +61,7 @@ export function EmailSettings() {
   const handleCloseForm = () => {
     setFormOpen(false);
     setEditingAccount(null);
-  }
+  };
 
   return (
     <div>
@@ -138,7 +77,7 @@ export function EmailSettings() {
             </DialogTrigger>
             {isFormOpen && (
               <EmailAccountForm 
-                mutation={mutation}
+                onSubmit={handleSubmit}
                 editingAccount={editingAccount}
                 onClose={handleCloseForm}
               />
