@@ -5,10 +5,16 @@ import { Button } from "@/components/ui/button";
 import { ChatWindow } from "./ChatWindow";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { cn } from "@/lib/utils";
+import { useChat } from "@/hooks/useChat";
+import { useAuth } from "@/hooks/useAuth";
 
 export const ChatWidget = () => {
+  const { user } = useAuth();
+  const { channels } = useChat();
   const [isOpen, setIsOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(3); // Mock unread count
+  
+  // Calculate total unread count across all channels
+  const unreadCount = channels.reduce((total, channel) => total + (channel.unread_count || 0), 0);
 
   return (
     <>

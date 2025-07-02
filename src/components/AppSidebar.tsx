@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Permission } from "@/types/permissions";
-import { NotificationsMenu } from "./NotificationsMenu";
+import { NotificationCenter } from "./NotificationCenter";
 
 interface AppSidebarProps {
   activeTab: string;
@@ -114,6 +114,9 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
       activeTab={activeTab}
       setActiveTab={setActiveTab}
     >
+      <div className="fixed top-4 right-4 z-50">
+        <NotificationCenter />
+      </div>
       {children}
     </Sidebar>
   );

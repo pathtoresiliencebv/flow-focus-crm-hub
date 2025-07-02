@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Camera, Clock, CheckCircle, FileText, User, MapPin, Phone } from "lucide-react";
+import { Camera, Clock, CheckCircle, FileText, User, MapPin, Phone, MessageCircle } from "lucide-react";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
 import { useCrmStore } from "@/hooks/useCrmStore";
 import { useAuth } from "@/hooks/useAuth";
 import { MobileTimeRegistration } from './MobileTimeRegistration';
 import { MobilePhotoUpload } from './MobilePhotoUpload';
 import { MobileWorkOrder } from './MobileWorkOrder';
+import { MobileChatView } from './MobileChatView';
 
 interface MobileProjectViewProps {
   projectId: string;
@@ -76,7 +77,7 @@ export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId 
 
       {/* Mobile Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 m-4">
+        <TabsList className="grid w-full grid-cols-5 m-4">
           <TabsTrigger value="tasks" className="flex flex-col items-center gap-1 py-3">
             <CheckCircle className="h-4 w-4" />
             <span className="text-xs">Taken</span>
@@ -88,6 +89,10 @@ export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId 
           <TabsTrigger value="photos" className="flex flex-col items-center gap-1 py-3">
             <Camera className="h-4 w-4" />
             <span className="text-xs">Foto's</span>
+          </TabsTrigger>
+          <TabsTrigger value="chat" className="flex flex-col items-center gap-1 py-3">
+            <MessageCircle className="h-4 w-4" />
+            <span className="text-xs">Chat</span>
           </TabsTrigger>
           <TabsTrigger value="workorder" className="flex flex-col items-center gap-1 py-3">
             <FileText className="h-4 w-4" />
@@ -158,6 +163,10 @@ export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId 
 
           <TabsContent value="photos" className="mt-0">
             <MobilePhotoUpload projectId={projectId} />
+          </TabsContent>
+
+          <TabsContent value="chat" className="mt-0 h-[calc(100vh-300px)]">
+            <MobileChatView projectId={projectId} projectTitle={project.title} />
           </TabsContent>
 
           <TabsContent value="workorder" className="mt-0">

@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, FileText, Users, Clipboard, BarChart, Edit, Save, X, User } from "lucide-react";
+import { ArrowLeft, Calendar, FileText, Users, Clipboard, BarChart, Edit, Save, X, User, MessageCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { ProjectMaterials } from "./ProjectMaterials";
 import { ProjectPersonnel } from "./ProjectPersonnel";
 import { ProjectPlanning } from "./ProjectPlanning";
 import { ProjectTasks } from "./ProjectTasks";
+import { ProjectChat } from "./ProjectChat";
 
 const ProjectDetail = () => {
   const { projectId } = useParams();
@@ -312,6 +313,10 @@ const ProjectDetail = () => {
             <Users className="mr-2 h-4 w-4" />
             Personeel
           </TabsTrigger>
+          <TabsTrigger value="chat">
+            <MessageCircle className="mr-2 h-4 w-4" />
+            Chat
+          </TabsTrigger>
           <TabsTrigger value="reports">
             <BarChart className="mr-2 h-4 w-4" />
             Rapportages
@@ -378,6 +383,10 @@ const ProjectDetail = () => {
 
         <TabsContent value="personnel">
           <ProjectPersonnel projectId={project.id} />
+        </TabsContent>
+
+        <TabsContent value="chat">
+          <ProjectChat projectId={project.id} projectTitle={project.title} />
         </TabsContent>
 
         <TabsContent value="reports">
