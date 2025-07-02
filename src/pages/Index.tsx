@@ -22,6 +22,8 @@ import CustomerDetail from "@/components/CustomerDetail";
 import ProjectDetail from "@/components/ProjectDetail";
 import { Permission } from "@/types/permissions";
 import { ShieldAlert } from "lucide-react";
+import { MobileDashboard } from "@/components/mobile/MobileDashboard";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 
 const AccessDenied = () => (
@@ -33,9 +35,10 @@ const AccessDenied = () => (
 );
 
 const Index = () => {
-  const { isAuthenticated, isLoading, hasPermission } = useAuth();
+  const { isAuthenticated, isLoading, hasPermission, profile } = useAuth();
   const { customerId, projectId } = useParams();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const [activeTab, setActiveTab] = useState(() => {
     if (customerId) return "customers";
@@ -55,6 +58,11 @@ const Index = () => {
 
   if (!isAuthenticated) {
     return <LoginScreen />;
+  }
+
+  // Show mobile interface for mechanics on mobile devices
+  if (isMobile && profile?.role === 'Installateur' && !customerId && !projectId) {
+    return <MobileDashboard />;
   }
   
   const tabPermissions: Record<string, Permission | null> = {
