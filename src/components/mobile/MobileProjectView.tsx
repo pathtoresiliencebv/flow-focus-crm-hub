@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PullToRefresh } from "@/components/ui/pull-to-refresh";
 import { Camera, Clock, CheckCircle, FileText, User, MapPin, Phone, MessageCircle } from "lucide-react";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
 import { useCrmStore } from "@/hooks/useCrmStore";
 import { useAuth } from "@/hooks/useAuth";
+import { useNativeCapabilities } from "@/hooks/useNativeCapabilities";
 import { MobileTimeRegistration } from './MobileTimeRegistration';
 import { MobilePhotoUpload } from './MobilePhotoUpload';
 import { MobileWorkOrder } from './MobileWorkOrder';
@@ -21,6 +23,7 @@ export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId 
   const { profile } = useAuth();
   const { projects, customers } = useCrmStore();
   const { tasksByBlock, completionPercentage, updateTask, isLoading } = useProjectTasks(projectId);
+  const { hapticFeedback, networkStatus } = useNativeCapabilities();
   const [activeTab, setActiveTab] = useState("tasks");
 
   const project = projects.find(p => p.id === projectId);
@@ -35,7 +38,13 @@ export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId 
   }
 
   const handleTaskToggle = async (taskId: string, completed: boolean) => {
+    await hapticFeedback();
     await updateTask({ id: taskId, is_completed: completed });
+  };
+
+  const handleRefresh = async () => {
+    // Refresh functionality will be implemented with proper data fetching
+    window.location.reload();
   };
 
   const blockEntries = Object.entries(tasksByBlock);
@@ -102,6 +111,7 @@ export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId 
 
         <div className="px-4 pb-20">
           <TabsContent value="tasks" className="space-y-4 mt-0">
+            <PullToRefresh onRefresh={handleRefresh} disabled={!networkStatus?.connected}>
             {blockEntries.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 Geen taken beschikbaar voor dit project.
@@ -155,6 +165,7 @@ export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId 
                 </Card>
               ))
             )}
+            </PullToRefresh>
           </TabsContent>
 
           <TabsContent value="time" className="mt-0">

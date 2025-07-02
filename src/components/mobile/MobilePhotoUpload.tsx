@@ -7,6 +7,8 @@ import { Camera, Upload, X, Image } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useNativeCapabilities } from "@/hooks/useNativeCapabilities";
+import { CameraSource } from '@capacitor/camera';
 
 interface MobilePhotoUploadProps {
   projectId: string;
@@ -22,6 +24,7 @@ interface Photo {
 export const MobilePhotoUpload: React.FC<MobilePhotoUploadProps> = ({ projectId }) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { takePicture, isNativeApp, hapticFeedback } = useNativeCapabilities();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -34,9 +37,40 @@ export const MobilePhotoUpload: React.FC<MobilePhotoUploadProps> = ({ projectId 
     }
   };
 
-  const handleCameraCapture = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
+  const handleCameraCapture = async () => {
+    if (isNativeApp) {
+      // Use native camera
+      const result = await takePicture({ source: CameraSource.Camera });
+      if (result) {
+        // Convert to File for upload
+        const response = await fetch(result.dataUrl);
+        const blob = await response.blob();
+        const file = new File([blob], `photo_${Date.now()}.${result.format}`, { type: `image/${result.format}` });
+        await handlePhotoUpload(file);
+      }
+    } else {
+      // Fallback to web camera
+      if (fileInputRef.current) {
+        fileInputRef.current.click();
+      }
+    }
+  };
+
+  const handleGallerySelect = async () => {
+    if (isNativeApp) {
+      // Use native photo picker
+      const result = await takePicture({ source: CameraSource.Photos });
+      if (result) {
+        const response = await fetch(result.dataUrl);
+        const blob = await response.blob();
+        const file = new File([blob], `photo_${Date.now()}.${result.format}`, { type: `image/${result.format}` });
+        await handlePhotoUpload(file);
+      }
+    } else {
+      // Fallback to web file picker
+      if (fileInputRef.current) {
+        fileInputRef.current.click();
+      }
     }
   };
 
@@ -129,7 +163,10 @@ export const MobilePhotoUpload: React.FC<MobilePhotoUploadProps> = ({ projectId 
 
           <div className="grid grid-cols-2 gap-3">
             <Button 
-              onClick={handleCameraCapture}
+              onClick={async () => {
+                await hapticFeedback();
+                await handleCameraCapture();
+              }}
               disabled={isUploading}
               className="flex flex-col items-center gap-2 h-20"
             >
@@ -138,7 +175,10 @@ export const MobilePhotoUpload: React.FC<MobilePhotoUploadProps> = ({ projectId 
             </Button>
             
             <Button 
-              onClick={() => fileInputRef.current?.click()}
+              onClick={async () => {
+                await hapticFeedback();
+                await handleGallerySelect();
+              }}
               disabled={isUploading}
               variant="outline"
               className="flex flex-col items-center gap-2 h-20"
