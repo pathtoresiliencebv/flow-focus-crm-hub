@@ -1,86 +1,68 @@
-
 import { useState, useRef } from "react";
-import { X, Send, Paperclip, Mic, Image } from "lucide-react";
+import { X, Send, Paperclip, Mic, Image, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ChatMessage } from "./ChatMessage";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-
-interface ChatUser {
-  id: string;
-  name: string;
-  avatar?: string;
-  isOnline: boolean;
-  role: "admin" | "monteur";
-  language: string;
-}
-
-interface Message {
-  id: string;
-  senderId: string;
-  content: string;
-  translatedContent?: string;
-  timestamp: Date;
-  type: "text" | "image" | "file" | "voice";
-  fileUrl?: string;
-  fileName?: string;
-}
+import { useChat, ChatMessage as ChatMessageType } from "@/hooks/useChat";
+import { useAuth } from "@/hooks/useAuth";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { useUsers } from "@/hooks/useUsers";
+import { useToast } from "@/hooks/use-toast";
 
 interface ChatWindowProps {
   onClose: () => void;
 }
 
-const mockUsers: ChatUser[] = [
-  { id: "1", name: "Jan Kowalski", isOnline: true, role: "monteur", language: "pl" },
-  { id: "2", name: "Pavel Novak", isOnline: false, role: "monteur", language: "cs" },
-  { id: "3", name: "Admin User", isOnline: true, role: "admin", language: "nl" },
-];
-
-const mockMessages: Message[] = [
-  {
-    id: "1",
-    senderId: "1",
-    content: "Dzień dobry, projekt jest gotowy do przeglądu",
-    translatedContent: "Goedemorgen, het project is klaar voor beoordeling",
-    timestamp: new Date(Date.now() - 30000),
-    type: "text"
-  },
-  {
-    id: "2",
-    senderId: "3",
-    content: "Bedankt voor de update! Kunnen we de foto's bekijken?",
-    translatedContent: "Dziękuję za aktualizację! Czy możemy zobaczyć zdjęcia?",
-    timestamp: new Date(Date.now() - 15000),
-    type: "text"
-  }
-];
-
 export const ChatWindow = ({ onClose }: ChatWindowProps) => {
-  const [selectedUser, setSelectedUser] = useState<string | null>("1");
-  const [messages, setMessages] = useState<Message[]>(mockMessages);
+  const { user, profile } = useAuth();
+  const { users } = useUsers();
+  const { toast } = useToast();
+  const {
+    channels,
+    messages,
+    loading,
+    selectedChannelId,
+    setSelectedChannelId,
+    sendMessage,
+    createChannel,
+  } = useChat();
+  
   const [newMessage, setNewMessage] = useState("");
   const [isRecording, setIsRecording] = useState(false);
+  const [showCreateChannel, setShowCreateChannel] = useState(false);
+  const [newChannelName, setNewChannelName] = useState("");
+  const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const selectedUserData = mockUsers.find(u => u.id === selectedUser);
-  const currentUser = mockUsers.find(u => u.role === "admin"); // Current logged in user
+  const selectedChannel = channels.find(c => c.id === selectedChannelId);
 
-  const handleSendMessage = () => {
-    if (!newMessage.trim() || !selectedUser) return;
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !selectedChannelId) return;
 
-    const message: Message = {
-      id: Date.now().toString(),
-      senderId: currentUser?.id || "3",
-      content: newMessage,
-      timestamp: new Date(),
-      type: "text"
-    };
-
-    setMessages(prev => [...prev, message]);
+    await sendMessage(selectedChannelId, newMessage);
     setNewMessage("");
+  };
+
+  const handleCreateChannel = async () => {
+    if (!newChannelName.trim()) return;
+
+    const channelId = await createChannel(
+      newChannelName,
+      'general',
+      undefined,
+      selectedParticipants
+    );
+
+    if (channelId) {
+      setSelectedChannelId(channelId);
+      setShowCreateChannel(false);
+      setNewChannelName("");
+      setSelectedParticipants([]);
+    }
   };
 
   const handleFileUpload = () => {
@@ -94,77 +76,191 @@ export const ChatWindow = ({ onClose }: ChatWindowProps) => {
     }
   };
 
+  const formatTime = (dateString: string) => {
+    return new Date(dateString).toLocaleTimeString("nl-NL", { 
+      hour: "2-digit", 
+      minute: "2-digit" 
+    });
+  };
+
+  const getUserLanguage = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    return user?.role === 'Installateur' ? 'NL' : 'NL'; // Default to NL for now
+  };
+
+  if (loading) {
+    return (
+      <Card className="w-full h-full shadow-xl">
+        <CardContent className="flex items-center justify-center h-full">
+          <div>Laden...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="w-full h-full shadow-xl">
       {/* Header */}
       <CardHeader className="p-4 border-b flex flex-row items-center justify-between">
         <div className="flex items-center gap-3">
-          <h3 className="font-semibold">Monteur Chat</h3>
-          {selectedUserData && (
-            <Badge variant={selectedUserData.isOnline ? "default" : "secondary"}>
-              {selectedUserData.isOnline ? "Online" : "Offline"}
+          <h3 className="font-semibold">Team Chat</h3>
+          {selectedChannel && (
+            <Badge variant="default">
+              {selectedChannel.name}
             </Badge>
           )}
         </div>
-        <Button variant="ghost" size="sm" onClick={onClose}>
-          <X className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Dialog open={showCreateChannel} onOpenChange={setShowCreateChannel}>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Nieuw Kanaal Maken</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="channel-name">Kanaal Naam</Label>
+                  <Input
+                    id="channel-name"
+                    value={newChannelName}
+                    onChange={(e) => setNewChannelName(e.target.value)}
+                    placeholder="Bijv. Project Updates"
+                  />
+                </div>
+                <div>
+                  <Label>Deelnemers</Label>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {users
+                      .filter(u => u.id !== user?.id)
+                      .map((user) => (
+                        <label key={user.id} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedParticipants.includes(user.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedParticipants(prev => [...prev, user.id]);
+                              } else {
+                                setSelectedParticipants(prev => prev.filter(id => id !== user.id));
+                              }
+                            }}
+                          />
+                          <span className="text-sm">{user.full_name || user.email}</span>
+                        </label>
+                      ))}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button onClick={handleCreateChannel} disabled={!newChannelName.trim()}>
+                    Kanaal Maken
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowCreateChannel(false)}>
+                    Annuleren
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+          
+          <Button variant="ghost" size="sm" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </CardHeader>
 
       <CardContent className="p-0 flex h-[calc(100%-80px)]">
-        {/* User List */}
+        {/* Channel List */}
         <div className="w-1/3 border-r">
           <ScrollArea className="h-full">
             <div className="p-2">
-              {mockUsers
-                .filter(user => user.role === "monteur")
-                .map((user) => (
-                  <div
-                    key={user.id}
-                    className={`p-3 cursor-pointer rounded-lg hover:bg-gray-50 ${
-                      selectedUser === user.id ? "bg-blue-50" : ""
-                    }`}
-                    onClick={() => setSelectedUser(user.id)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="relative">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={user.avatar} />
-                          <AvatarFallback className="text-xs">
-                            {user.name.split(" ").map(n => n[0]).join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div
-                          className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
-                            user.isOnline ? "bg-green-500" : "bg-gray-400"
-                          }`}
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{user.name}</p>
-                        <p className="text-xs text-gray-500 uppercase">{user.language}</p>
-                      </div>
+              {channels.map((channel) => (
+                <div
+                  key={channel.id}
+                  className={`p-3 cursor-pointer rounded-lg hover:bg-gray-50 ${
+                    selectedChannelId === channel.id ? "bg-blue-50" : ""
+                  }`}
+                  onClick={() => setSelectedChannelId(channel.id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{channel.name}</p>
+                      <p className="text-xs text-gray-500 capitalize">{channel.type}</p>
                     </div>
+                    {(channel.unread_count || 0) > 0 && (
+                      <Badge variant="destructive" className="text-xs h-5 w-5 p-0 flex items-center justify-center">
+                        {channel.unread_count! > 9 ? '9+' : channel.unread_count}
+                      </Badge>
+                    )}
                   </div>
-                ))}
+                </div>
+              ))}
+              
+              {channels.length === 0 && (
+                <div className="p-4 text-center text-gray-500">
+                  <p className="text-sm">Geen kanalen beschikbaar</p>
+                  <p className="text-xs mt-1">Maak een nieuw kanaal aan</p>
+                </div>
+              )}
             </div>
           </ScrollArea>
         </div>
 
         {/* Chat Area */}
         <div className="flex-1 flex flex-col">
-          {selectedUser ? (
+          {selectedChannelId ? (
             <>
               {/* Messages */}
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-4">
                   {messages.map((message) => (
-                    <ChatMessage
-                      key={message.id}
-                      message={message}
-                      isOwnMessage={message.senderId === currentUser?.id}
-                      sender={mockUsers.find(u => u.id === message.senderId)}
-                    />
+                    <div key={message.id} className={`flex gap-3 ${message.sender_id === user?.id ? "flex-row-reverse" : ""}`}>
+                      {message.sender_id !== user?.id && (
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="text-xs">
+                            {message.sender?.full_name?.split(" ").map(n => n[0]).join("") || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                      
+                      <div className={`flex flex-col ${message.sender_id === user?.id ? "items-end" : "items-start"} max-w-xs`}>
+                        {message.sender_id !== user?.id && (
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-xs font-medium text-gray-700">
+                              {message.sender?.full_name || "Onbekende gebruiker"}
+                            </p>
+                            <Badge variant="secondary" className="text-xs">
+                              {getUserLanguage(message.sender_id)}
+                            </Badge>
+                          </div>
+                        )}
+                        
+                        <div className={`p-3 rounded-lg ${
+                          message.sender_id === user?.id 
+                            ? "bg-blue-500 text-white" 
+                            : "bg-white border"
+                        }`}>
+                          <p className="text-sm">{message.content}</p>
+                          {message.translated_content && Object.keys(message.translated_content).length > 0 && (
+                            <div className="border-t pt-1 mt-2">
+                              <Badge variant="outline" className="mb-1 text-xs">
+                                Vertaald
+                              </Badge>
+                              <p className="text-sm italic opacity-75">
+                                {Object.values(message.translated_content)[0]}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <p className="text-xs text-gray-500 mt-1">
+                          {formatTime(message.created_at)}
+                        </p>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </ScrollArea>
@@ -210,7 +306,10 @@ export const ChatWindow = ({ onClose }: ChatWindowProps) => {
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center text-gray-500">
-              Selecteer een monteur om te chatten
+              <div className="text-center">
+                <p>Selecteer een kanaal om te chatten</p>
+                <p className="text-sm mt-1">Of maak een nieuw kanaal aan</p>
+              </div>
             </div>
           )}
         </div>

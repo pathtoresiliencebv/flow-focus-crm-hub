@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Permission } from "@/types/permissions";
+import { NotificationsMenu } from "./NotificationsMenu";
 
 interface AppSidebarProps {
   activeTab: string;
