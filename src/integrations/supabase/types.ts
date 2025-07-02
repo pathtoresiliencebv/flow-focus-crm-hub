@@ -187,6 +187,71 @@ export type Database = {
         }
         Relationships: []
       }
+      email_queue: {
+        Row: {
+          attempts: number | null
+          body_html: string | null
+          body_text: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          last_attempt_at: string | null
+          recipient_email: string
+          recipient_name: string | null
+          scheduled_for: string | null
+          sent_at: string | null
+          status: string
+          subject: string
+          template_id: string | null
+          template_variables: Json | null
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number | null
+          body_html?: string | null
+          body_text?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          recipient_email: string
+          recipient_name?: string | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: string
+          subject: string
+          template_id?: string | null
+          template_variables?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number | null
+          body_html?: string | null
+          body_text?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          recipient_email?: string
+          recipient_name?: string | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          template_id?: string | null
+          template_variables?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_queue_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "notification_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_templates: {
         Row: {
           body_html: string
@@ -435,37 +500,139 @@ export type Database = {
       }
       notification_preferences: {
         Row: {
+          browser_notifications: boolean | null
           chat_notifications: boolean
           created_at: string
+          email_digest_frequency: string | null
           email_notifications: boolean
           id: string
+          marketing_emails: boolean | null
+          notification_sound: boolean | null
           project_notifications: boolean
           push_notifications: boolean
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
           quote_notifications: boolean
           updated_at: string
           user_id: string
+          weekend_notifications: boolean | null
         }
         Insert: {
+          browser_notifications?: boolean | null
           chat_notifications?: boolean
           created_at?: string
+          email_digest_frequency?: string | null
           email_notifications?: boolean
           id?: string
+          marketing_emails?: boolean | null
+          notification_sound?: boolean | null
           project_notifications?: boolean
           push_notifications?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
           quote_notifications?: boolean
           updated_at?: string
           user_id: string
+          weekend_notifications?: boolean | null
         }
         Update: {
+          browser_notifications?: boolean | null
           chat_notifications?: boolean
           created_at?: string
+          email_digest_frequency?: string | null
           email_notifications?: boolean
           id?: string
+          marketing_emails?: boolean | null
+          notification_sound?: boolean | null
           project_notifications?: boolean
           push_notifications?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
           quote_notifications?: boolean
           updated_at?: string
           user_id?: string
+          weekend_notifications?: boolean | null
+        }
+        Relationships: []
+      }
+      notification_rules: {
+        Row: {
+          actions: Json
+          conditions: Json
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          priority: number | null
+          rule_type: string
+          target_users: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          actions?: Json
+          conditions?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          priority?: number | null
+          rule_type: string
+          target_users?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          actions?: Json
+          conditions?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          priority?: number | null
+          rule_type?: string
+          target_users?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notification_templates: {
+        Row: {
+          body_template: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          subject_template: string | null
+          template_type: string
+          updated_at: string
+          variables: Json | null
+        }
+        Insert: {
+          body_template: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          subject_template?: string | null
+          template_type?: string
+          updated_at?: string
+          variables?: Json | null
+        }
+        Update: {
+          body_template?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          subject_template?: string | null
+          template_type?: string
+          updated_at?: string
+          variables?: Json | null
         }
         Relationships: []
       }

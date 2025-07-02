@@ -290,20 +290,71 @@ export const NotificationCenter: React.FC = () => {
                   
                   <Separator />
                   
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label className="text-sm font-medium">Offerte meldingen</Label>
-                      <p className="text-xs text-muted-foreground">
-                        Updates over offertes
-                      </p>
-                    </div>
-                    <Switch
-                      checked={preferences.quote_notifications}
-                      onCheckedChange={(checked) => 
-                        handlePreferenceChange('quote_notifications', checked)
-                      }
-                    />
-                  </div>
+                   <div className="flex items-center justify-between">
+                     <div className="space-y-0.5">
+                       <Label className="text-sm font-medium">Offerte meldingen</Label>
+                       <p className="text-xs text-muted-foreground">
+                         Updates over offertes
+                       </p>
+                     </div>
+                     <Switch
+                       checked={preferences.quote_notifications}
+                       onCheckedChange={(checked) => 
+                         handlePreferenceChange('quote_notifications', checked)
+                       }
+                     />
+                   </div>
+                   
+                   <Separator />
+                   
+                   <div className="flex items-center justify-between">
+                     <div className="space-y-0.5">
+                       <Label className="text-sm font-medium">Browser notificaties</Label>
+                       <p className="text-xs text-muted-foreground">
+                         Desktop notificaties in browser
+                       </p>
+                     </div>
+                     <Switch
+                       checked={preferences.browser_notifications}
+                       onCheckedChange={(checked) => 
+                         handlePreferenceChange('browser_notifications', checked)
+                       }
+                     />
+                   </div>
+                   
+                   <Separator />
+                   
+                   <div className="flex items-center justify-between">
+                     <div className="space-y-0.5">
+                       <Label className="text-sm font-medium">Geluidseffecten</Label>
+                       <p className="text-xs text-muted-foreground">
+                         Geluid bij nieuwe meldingen
+                       </p>
+                     </div>
+                     <Switch
+                       checked={preferences.notification_sound}
+                       onCheckedChange={(checked) => 
+                         handlePreferenceChange('notification_sound', checked)
+                       }
+                     />
+                   </div>
+                   
+                   <Separator />
+                   
+                   <div className="flex items-center justify-between">
+                     <div className="space-y-0.5">
+                       <Label className="text-sm font-medium">Weekend meldingen</Label>
+                       <p className="text-xs text-muted-foreground">
+                         Meldingen in het weekend ontvangen
+                       </p>
+                     </div>
+                     <Switch
+                       checked={preferences.weekend_notifications}
+                       onCheckedChange={(checked) => 
+                         handlePreferenceChange('weekend_notifications', checked)
+                       }
+                     />
+                   </div>
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">

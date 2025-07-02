@@ -23,6 +23,40 @@ export interface NotificationPreferences {
   chat_notifications: boolean;
   project_notifications: boolean;
   quote_notifications: boolean;
+  browser_notifications: boolean;
+  email_digest_frequency: 'immediate' | 'hourly' | 'daily' | 'weekly' | 'never';
+  quiet_hours_start: string;
+  quiet_hours_end: string;
+  weekend_notifications: boolean;
+  notification_sound: boolean;
+  marketing_emails: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  template_type: 'email' | 'push' | 'system';
+  subject_template?: string;
+  body_template: string;
+  variables: string[];
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationRule {
+  id: string;
+  name: string;
+  description?: string;
+  rule_type: string;
+  conditions: Record<string, any>;
+  actions: Record<string, any>;
+  target_users: string[];
+  is_active: boolean;
+  priority: number;
   created_at: string;
   updated_at: string;
 }
@@ -75,7 +109,7 @@ export const useNotifications = () => {
       if (error && error.code !== 'PGRST116') throw error;
 
       if (data) {
-        setPreferences(data);
+        setPreferences(data as NotificationPreferences);
       } else {
         // Create default preferences if they don't exist
         const { data: newPrefs, error: createError } = await supabase
@@ -92,7 +126,7 @@ export const useNotifications = () => {
           .single();
 
         if (createError) throw createError;
-        setPreferences(newPrefs);
+        setPreferences(newPrefs as NotificationPreferences);
       }
     } catch (error) {
       console.error('Error loading preferences:', error);
@@ -163,7 +197,7 @@ export const useNotifications = () => {
 
       if (error) throw error;
 
-      setPreferences(data);
+      setPreferences(data as NotificationPreferences);
       toast({
         title: "Voorkeuren opgeslagen",
         description: "Je notificatie voorkeuren zijn bijgewerkt",
