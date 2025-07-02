@@ -1,7 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.9619b9dbde5c42819df0edb1fcb07eea',
+  appId: 'com.flowfocus.crmhub',
   appName: 'flow-focus-crm-hub',
   webDir: 'dist',
   server: {
