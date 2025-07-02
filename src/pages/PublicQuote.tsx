@@ -144,9 +144,22 @@ export default function PublicQuote() {
         return;
       }
 
+      // Trigger the automation workflow
+      try {
+        const { error: automationError } = await supabase.functions.invoke('quote-approval-automation', {
+          body: { quote_id: quote?.id }
+        });
+
+        if (automationError) {
+          console.error('Automation error:', automationError);
+        }
+      } catch (automationError) {
+        console.error('Automation invocation error:', automationError);
+      }
+
       toast({
         title: "Offerte ondertekend!",
-        description: "De offerte is succesvol ondertekend. We nemen binnenkort contact met u op.",
+        description: "De offerte is succesvol ondertekend. We hebben automatisch een project aangemaakt.",
       });
 
       // Refresh quote data

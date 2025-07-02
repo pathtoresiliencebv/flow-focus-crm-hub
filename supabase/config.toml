@@ -1,6 +1,9 @@
 
 project_id = "pvesgvkyiaqmsudmmtkc"
 
+[functions.quote-approval-automation]
+verify_jwt = false
+
 [functions.auth-mobile]
 verify_jwt = false
 
