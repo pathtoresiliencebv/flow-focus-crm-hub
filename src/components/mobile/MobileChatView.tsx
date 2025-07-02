@@ -17,6 +17,8 @@ import {
 import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useOfflineChat } from "@/hooks/useOfflineChat";
+import { useVoiceToText } from "@/hooks/useVoiceToText";
 import { formatDistanceToNow } from "date-fns";
 import { nl } from "date-fns/locale";
 
@@ -42,6 +44,17 @@ export const MobileChatView: React.FC<MobileChatViewProps> = ({
     createChannel,
     loading
   } = useChat();
+  
+  const { 
+    isOnline, 
+    pendingSync, 
+    addOfflineMessage 
+  } = useOfflineChat();
+  
+  const { 
+    transcribeAudio, 
+    isTranscribing 
+  } = useVoiceToText();
 
   const [messageInput, setMessageInput] = useState('');
   const [isRecording, setIsRecording] = useState(false);
@@ -80,7 +93,15 @@ export const MobileChatView: React.FC<MobileChatViewProps> = ({
     if (!messageInput.trim() || !selectedChannelId) return;
 
     try {
-      await sendMessage(selectedChannelId, messageInput);
+      if (isOnline) {
+        await sendMessage(selectedChannelId, messageInput);
+      } else {
+        await addOfflineMessage(selectedChannelId, messageInput, 'text');
+        toast({
+          title: "Bericht opgeslagen",
+          description: "Bericht wordt verzonden zodra je online bent",
+        });
+      }
       setMessageInput('');
     } catch (error) {
       toast({
@@ -160,11 +181,19 @@ export const MobileChatView: React.FC<MobileChatViewProps> = ({
     if (!recordingBlob || !selectedChannelId) return;
 
     try {
-      await sendMessage(
-        selectedChannelId,
-        "🎤 Spraakbericht",
-        'voice'
-      );
+      // Try to transcribe audio to text
+      const transcribedText = await transcribeAudio(recordingBlob);
+      const content = transcribedText || "🎤 Spraakbericht";
+      
+      if (isOnline) {
+        await sendMessage(selectedChannelId, content, 'voice');
+      } else {
+        await addOfflineMessage(selectedChannelId, content, 'voice');
+        toast({
+          title: "Spraakbericht opgeslagen",
+          description: "Wordt verzonden zodra je online bent",
+        });
+      }
       
       setRecordingBlob(null);
       toast({
@@ -268,7 +297,15 @@ export const MobileChatView: React.FC<MobileChatViewProps> = ({
         )}
         
         <div className="flex-1">
-          <h2 className="font-semibold text-sm">Project Chat</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="font-semibold text-sm">Project Chat</h2>
+            {!isOnline && (
+              <div className="h-2 w-2 bg-yellow-500 rounded-full" title="Offline" />
+            )}
+            {pendingSync && (
+              <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" title="Synchronizing..." />
+            )}
+          </div>
           <p className="text-xs text-muted-foreground truncate">{projectTitle}</p>
         </div>
         
@@ -403,10 +440,10 @@ export const MobileChatView: React.FC<MobileChatViewProps> = ({
               onMouseDown={startRecording}
               onMouseUp={stopRecording}
               onMouseLeave={stopRecording}
-              disabled={!selectedChannelId}
+              disabled={!selectedChannelId || isTranscribing}
               className={`h-8 w-8 p-0 rounded-full ${isRecording ? 'bg-red-100 text-red-600' : ''}`}
             >
-              <Mic className="h-4 w-4" />
+              <Mic className={`h-4 w-4 ${isTranscribing ? 'animate-pulse' : ''}`} />
             </Button>
           )}
         </div>

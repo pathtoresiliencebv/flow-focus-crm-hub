@@ -212,13 +212,98 @@ self.addEventListener('sync', (event) => {
 // Sync functions
 async function syncMessages() {
   console.log('Syncing offline messages...');
-  // Implementation for syncing offline chat messages
-  // This would read from IndexedDB and send to server
+  
+  try {
+    // Open IndexedDB to get pending messages
+    const db = await openOfflineDB();
+    const transaction = db.transaction(['messages'], 'readonly');
+    const store = transaction.objectStore('messages');
+    const allMessages = await getAllFromStore(store);
+    const pendingMessages = allMessages.filter(msg => !msg.synced);
+    
+    if (pendingMessages.length === 0) {
+      console.log('No pending messages to sync');
+      return;
+    }
+    
+    console.log(`Found ${pendingMessages.length} pending messages to sync`);
+    
+    // Send to message-sync edge function
+    const response = await fetch('/functions/v1/message-sync', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${await getStoredAuthToken()}`
+      },
+      body: JSON.stringify({ messages: pendingMessages })
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      console.log(`Sync complete: ${result.synced_count} synced, ${result.failed_count} failed`);
+      
+      // Update local database
+      const updateTransaction = db.transaction(['messages'], 'readwrite');
+      const updateStore = updateTransaction.objectStore('messages');
+      
+      for (const syncResult of result.results) {
+        if (syncResult.success) {
+          const msg = pendingMessages.find(m => m.temp_id === syncResult.temp_id);
+          if (msg) {
+            msg.synced = true;
+            await putInStore(updateStore, msg);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error syncing messages:', error);
+  }
 }
 
 async function syncNotifications() {
   console.log('Syncing notifications...');
   // Implementation for syncing notifications
+}
+
+// Helper functions for IndexedDB
+function openOfflineDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('offline-chat', 1);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+  });
+}
+
+function getAllFromStore(store) {
+  return new Promise((resolve, reject) => {
+    const request = store.getAll();
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+  });
+}
+
+function putInStore(store, data) {
+  return new Promise((resolve, reject) => {
+    const request = store.put(data);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => resolve(request.result);
+  });
+}
+
+async function getStoredAuthToken() {
+  // Get auth token from localStorage or cache
+  const clients = await self.clients.matchAll();
+  if (clients.length > 0) {
+    return new Promise((resolve) => {
+      const channel = new MessageChannel();
+      channel.port1.onmessage = (event) => {
+        resolve(event.data.token);
+      };
+      clients[0].postMessage({ type: 'GET_AUTH_TOKEN' }, [channel.port2]);
+    });
+  }
+  return null;
 }
 
 // Message event - communication with main thread

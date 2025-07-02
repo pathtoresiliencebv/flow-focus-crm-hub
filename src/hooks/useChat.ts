@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
+import { useOfflineChat } from './useOfflineChat';
 
 export interface ChatChannel {
   id: string;
@@ -47,11 +48,13 @@ export interface ChatParticipant {
 export const useChat = () => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
+  const { isOnline, addOfflineMessage, getOfflineMessages } = useOfflineChat();
   const [channels, setChannels] = useState<ChatChannel[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [participants, setParticipants] = useState<ChatParticipant[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
+  const [typingUsers, setTypingUsers] = useState<Record<string, string[]>>({});
 
   // Load user's channels
   const loadChannels = useCallback(async () => {
@@ -122,43 +125,76 @@ export const useChat = () => {
     }
   }, [user, toast]);
 
-  // Load messages for a channel
+  // Load messages for a channel (including offline messages)
   const loadMessages = useCallback(async (channelId: string) => {
     if (!channelId) return;
 
     try {
-      const { data, error } = await supabase
-        .from('chat_messages')
-        .select(`
-          *,
-          sender:profiles!chat_messages_sender_id_fkey(id, full_name, role)
-        `)
-        .eq('channel_id', channelId)
-        .order('created_at', { ascending: true })
-        .limit(100);
+      // Load online messages
+      let onlineMessages: ChatMessage[] = [];
+      
+      if (isOnline) {
+        const { data, error } = await supabase
+          .from('chat_messages')
+          .select(`
+            *,
+            sender:profiles!chat_messages_sender_id_fkey(id, full_name, role)
+          `)
+          .eq('channel_id', channelId)
+          .order('created_at', { ascending: true })
+          .limit(100);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      const typedMessages: ChatMessage[] = (data || []).map(msg => ({
-        id: msg.id,
-        channel_id: msg.channel_id,
-        sender_id: msg.sender_id,
-        content: msg.content || undefined,
-        message_type: msg.message_type as 'text' | 'image' | 'file' | 'voice',
-        file_url: msg.file_url || undefined,
-        file_name: msg.file_name || undefined,
-        translated_content: msg.translated_content as Record<string, string> | undefined,
-        reply_to_id: msg.reply_to_id || undefined,
-        is_edited: msg.is_edited,
-        created_at: msg.created_at,
-        updated_at: msg.updated_at,
-        sender: Array.isArray(msg.sender) && msg.sender.length > 0 ? msg.sender[0] : undefined
-      }));
+        onlineMessages = (data || []).map(msg => ({
+          id: msg.id,
+          channel_id: msg.channel_id,
+          sender_id: msg.sender_id,
+          content: msg.content || undefined,
+          message_type: msg.message_type as 'text' | 'image' | 'file' | 'voice',
+          file_url: msg.file_url || undefined,
+          file_name: msg.file_name || undefined,
+          translated_content: msg.translated_content as Record<string, string> | undefined,
+          reply_to_id: msg.reply_to_id || undefined,
+          is_edited: msg.is_edited,
+          created_at: msg.created_at,
+          updated_at: msg.updated_at,
+          sender: Array.isArray(msg.sender) && msg.sender.length > 0 ? msg.sender[0] : undefined
+        }));
+      }
 
-      setMessages(typedMessages);
+      // Load offline messages
+      const offlineMessages = await getOfflineMessages(channelId);
+      const offlineMessagesChatFormat: ChatMessage[] = offlineMessages
+        .filter(msg => !msg.synced)
+        .map(msg => ({
+          id: msg.temp_id,
+          channel_id: msg.channel_id,
+          sender_id: user?.id || '',
+          content: msg.content || undefined,
+          message_type: msg.message_type,
+          file_url: msg.file_url,
+          file_name: msg.file_name,
+          is_edited: false,
+          created_at: msg.created_at,
+          updated_at: msg.created_at,
+          sender: {
+            id: user?.id || '',
+            full_name: profile?.full_name || 'You',
+            role: profile?.role || 'Bekijker'
+          }
+        }));
 
-      // Mark channel as read
-      await markChannelAsRead(channelId);
+      // Combine and sort all messages
+      const allMessages = [...onlineMessages, ...offlineMessagesChatFormat]
+        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+      setMessages(allMessages);
+
+      // Mark channel as read (only if online)
+      if (isOnline) {
+        await markChannelAsRead(channelId);
+      }
     } catch (error) {
       console.error('Error loading messages:', error);
       toast({
@@ -167,9 +203,9 @@ export const useChat = () => {
         variant: "destructive",
       });
     }
-  }, [toast]);
+  }, [toast, isOnline, getOfflineMessages, user, profile]);
 
-  // Send a message
+  // Send a message (with offline support)
   const sendMessage = useCallback(async (
     channelId: string,
     content: string,
@@ -180,25 +216,37 @@ export const useChat = () => {
     if (!user || !content.trim()) return;
 
     try {
-      const { error } = await supabase
-        .from('chat_messages')
-        .insert({
-          channel_id: channelId,
-          sender_id: user.id,
-          content: content.trim(),
-          message_type: messageType,
-          file_url: fileUrl,
-          file_name: fileName,
+      if (isOnline) {
+        const { error } = await supabase
+          .from('chat_messages')
+          .insert({
+            channel_id: channelId,
+            sender_id: user.id,
+            content: content.trim(),
+            message_type: messageType,
+            file_url: fileUrl,
+            file_name: fileName,
+          });
+
+        if (error) throw error;
+
+        // Update channel timestamp
+        await supabase
+          .from('chat_channels')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', channelId);
+      } else {
+        // Store offline
+        await addOfflineMessage(channelId, content.trim(), messageType, fileUrl, fileName);
+        
+        // Refresh messages to show the offline message
+        await loadMessages(channelId);
+        
+        toast({
+          title: "Bericht opgeslagen",
+          description: "Wordt verzonden zodra je online bent",
         });
-
-      if (error) throw error;
-
-      // Update channel timestamp
-      await supabase
-        .from('chat_channels')
-        .update({ updated_at: new Date().toISOString() })
-        .eq('id', channelId);
-
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -207,7 +255,7 @@ export const useChat = () => {
         variant: "destructive",
       });
     }
-  }, [user, toast]);
+  }, [user, toast, isOnline, addOfflineMessage, loadMessages]);
 
   // Mark channel as read
   const markChannelAsRead = useCallback(async (channelId: string) => {
@@ -371,5 +419,7 @@ export const useChat = () => {
     markChannelAsRead,
     loadChannels,
     loadMessages,
+    typingUsers,
+    isOnline
   };
 };

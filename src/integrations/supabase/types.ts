@@ -50,16 +50,50 @@ export type Database = {
           },
         ]
       }
+      chat_message_reactions: {
+        Row: {
+          created_at: string | null
+          emoji: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          emoji: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          emoji?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           channel_id: string
           content: string | null
           created_at: string
+          delivery_status: string | null
           file_name: string | null
           file_url: string | null
           id: string
           is_edited: boolean | null
           message_type: string
+          read_by: Json | null
           reply_to_id: string | null
           sender_id: string
           translated_content: Json | null
@@ -69,11 +103,13 @@ export type Database = {
           channel_id: string
           content?: string | null
           created_at?: string
+          delivery_status?: string | null
           file_name?: string | null
           file_url?: string | null
           id?: string
           is_edited?: boolean | null
           message_type?: string
+          read_by?: Json | null
           reply_to_id?: string | null
           sender_id: string
           translated_content?: Json | null
@@ -83,11 +119,13 @@ export type Database = {
           channel_id?: string
           content?: string | null
           created_at?: string
+          delivery_status?: string | null
           file_name?: string | null
           file_url?: string | null
           id?: string
           is_edited?: boolean | null
           message_type?: string
+          read_by?: Json | null
           reply_to_id?: string | null
           sender_id?: string
           translated_content?: Json | null
@@ -138,6 +176,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "chat_participants_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "chat_channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_typing_indicators: {
+        Row: {
+          channel_id: string
+          id: string
+          is_typing: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          channel_id: string
+          id?: string
+          is_typing?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          channel_id?: string
+          id?: string
+          is_typing?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_typing_indicators_channel_id_fkey"
             columns: ["channel_id"]
             isOneToOne: false
             referencedRelation: "chat_channels"
@@ -636,6 +706,48 @@ export type Database = {
         }
         Relationships: []
       }
+      offline_message_queue: {
+        Row: {
+          channel_id: string
+          content: string | null
+          created_at: string | null
+          file_name: string | null
+          file_url: string | null
+          id: string
+          is_synced: boolean | null
+          message_type: string | null
+          synced_at: string | null
+          temp_id: string | null
+          user_id: string
+        }
+        Insert: {
+          channel_id: string
+          content?: string | null
+          created_at?: string | null
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          is_synced?: boolean | null
+          message_type?: string | null
+          synced_at?: string | null
+          temp_id?: string | null
+          user_id: string
+        }
+        Update: {
+          channel_id?: string
+          content?: string | null
+          created_at?: string | null
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          is_synced?: boolean | null
+          message_type?: string | null
+          synced_at?: string | null
+          temp_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       planning_items: {
         Row: {
           assigned_user_id: string
@@ -688,6 +800,8 @@ export type Database = {
         Row: {
           full_name: string | null
           id: string
+          is_online: boolean | null
+          last_seen: string | null
           role: Database["public"]["Enums"]["user_role"] | null
           status: Database["public"]["Enums"]["user_status"] | null
           updated_at: string | null
@@ -695,6 +809,8 @@ export type Database = {
         Insert: {
           full_name?: string | null
           id: string
+          is_online?: boolean | null
+          last_seen?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
           status?: Database["public"]["Enums"]["user_status"] | null
           updated_at?: string | null
@@ -702,6 +818,8 @@ export type Database = {
         Update: {
           full_name?: string | null
           id?: string
+          is_online?: boolean | null
+          last_seen?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
           status?: Database["public"]["Enums"]["user_status"] | null
           updated_at?: string | null
@@ -1160,6 +1278,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_typing_indicators: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       demote_other_admins: {
         Args: { p_user_id_to_keep: string }
         Returns: undefined
@@ -1195,6 +1317,10 @@ export type Database = {
           p_role: Database["public"]["Enums"]["user_role"]
           p_permissions: Database["public"]["Enums"]["app_permission"][]
         }
+        Returns: undefined
+      }
+      update_user_online_status: {
+        Args: { p_user_id: string; p_is_online: boolean }
         Returns: undefined
       }
     }
