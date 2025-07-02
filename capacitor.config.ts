@@ -2,10 +2,10 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.flowfocus.crmhub',
-  appName: 'flow-focus-crm-hub',
+  appName: 'Smans CRM',
   webDir: 'dist',
   server: {
-    url: 'https://9619b9db-de5c-4281-9df0-edb1fcb07eea.lovableproject.com?forceHideBadge=true',
+    url: 'https://smanscrm.pathtoresilience.dev',
     cleartext: true
   },
   plugins: {

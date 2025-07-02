@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Smans CRM</string>
+    <string name="title_activity_main">Smans CRM</string>
+    <string name="package_name">com.flowfocus.crmhub</string>
+    <string name="custom_url_scheme">com.flowfocus.crmhub</string>
+</resources>
