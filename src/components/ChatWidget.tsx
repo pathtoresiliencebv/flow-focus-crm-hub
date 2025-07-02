@@ -15,12 +15,15 @@ export const ChatWidget = () => {
   
   // Calculate total unread count across all channels
   const unreadCount = channels.reduce((total, channel) => total + (channel.unread_count || 0), 0);
+  
+  // Don't show if user is not authenticated
+  if (!user) return null;
 
   return (
     <>
-      {/* Chat Window - Now resizable */}
+      {/* Chat Window - Fixed bottom right with scrolling */}
       {isOpen && (
-        <div className="fixed bottom-20 right-4 z-50 w-[50vw] h-[50vh] min-w-[300px] min-h-[300px] max-w-[80vw] max-h-[80vh]">
+        <div className="fixed bottom-20 right-4 z-50 w-[400px] h-[500px] max-w-[90vw] max-h-[80vh] shadow-2xl">
           <ResizablePanelGroup direction="horizontal" className="w-full h-full">
             <ResizablePanel defaultSize={100} minSize={30}>
               <ChatWindow onClose={() => setIsOpen(false)} />
@@ -29,25 +32,25 @@ export const ChatWidget = () => {
         </div>
       )}
 
-      {/* Chat Toggle Button - Fixed positioning for always visible */}
+      {/* Chat Toggle Button - Fixed bottom right, always visible and scrolls with page */}
       <div className="fixed bottom-4 right-4 z-50">
         <Button
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
             "h-14 w-14 rounded-full shadow-lg transition-all duration-200",
-            "bg-smans-primary hover:bg-smans-primary/90",
+            "bg-primary hover:bg-primary/90",
             "flex items-center justify-center relative",
-            "border-2 border-white"
+            "border-2 border-background"
           )}
         >
           {isOpen ? (
-            <X className="h-6 w-6 text-white" />
+            <X className="h-6 w-6 text-primary-foreground" />
           ) : (
             <>
-              <MessageCircle className="h-6 w-6 text-white" />
+              <MessageCircle className="h-6 w-6 text-primary-foreground" />
               {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
-                  {unreadCount}
+                  {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
             </>
