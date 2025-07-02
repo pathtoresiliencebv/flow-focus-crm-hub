@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, FileText, Users, Clipboard, BarChart, Edit, Save, X } from "lucide-react";
+import { ArrowLeft, Calendar, FileText, Users, Clipboard, BarChart, Edit, Save, X, User } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,14 +10,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useCrmStore, UpdateProject } from "@/hooks/useCrmStore";
+import { useUsers } from "@/hooks/useUsers";
 import { ProjectMaterials } from "./ProjectMaterials";
 import { ProjectPersonnel } from "./ProjectPersonnel";
 import { ProjectPlanning } from "./ProjectPlanning";
+import { ProjectTasks } from "./ProjectTasks";
 
 const ProjectDetail = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { projects, customers, updateProject } = useCrmStore();
+  const { monteurs } = useUsers();
   const [projectDetailTab, setProjectDetailTab] = useState("details");
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
@@ -27,6 +30,7 @@ const ProjectDetail = () => {
     value: "",
     status: "",
     description: "",
+    assignedUserId: "",
   });
 
   // Find the project from the CRM store
@@ -49,6 +53,7 @@ const ProjectDetail = () => {
 
   // Find customer details
   const customer = customers.find(c => c.id === project.customer_id);
+  const assignedMonteur = monteurs.find(m => m.id === project.assigned_user_id);
 
   const handleEditStart = () => {
     setEditData({
@@ -58,6 +63,7 @@ const ProjectDetail = () => {
       value: project.value?.toString() ?? '',
       status: project.status ?? 'te-plannen',
       description: project.description ?? '',
+      assignedUserId: project.assigned_user_id ?? '',
     });
     setIsEditing(true);
   };
@@ -71,6 +77,7 @@ const ProjectDetail = () => {
       value: "",
       status: "",
       description: "",
+      assignedUserId: "",
     });
   };
 
@@ -82,6 +89,7 @@ const ProjectDetail = () => {
       value: Number(editData.value) || null,
       status: editData.status as "te-plannen" | "gepland" | "herkeuring" | "afgerond",
       description: editData.description || null,
+      assigned_user_id: editData.assignedUserId || null,
     };
     updateProject(project.id, projectData);
     setIsEditing(false);
@@ -207,6 +215,22 @@ const ProjectDetail = () => {
                     className="mt-1"
                   />
                 </div>
+                <div>
+                  <Label htmlFor="edit-assigned-user" className="text-xs font-medium">Toegewezen monteur</Label>
+                  <Select value={editData.assignedUserId} onValueChange={(value) => handleInputChange("assignedUserId", value)}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Selecteer monteur" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Geen monteur toegewezen</SelectItem>
+                      {monteurs.map((monteur) => (
+                        <SelectItem key={monteur.id} value={monteur.id}>
+                          {monteur.full_name || monteur.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </>
             ) : (
               <div className="space-y-1">
@@ -221,6 +245,9 @@ const ProjectDetail = () => {
                   "Onbekend"
                 }</p>
                 <p className="text-sm"><span className="font-medium">Waarde:</span> €{project.value}</p>
+                <p className="text-sm"><span className="font-medium">Monteur:</span> {
+                  assignedMonteur ? (assignedMonteur.full_name || assignedMonteur.email) : "Niet toegewezen"
+                }</p>
               </div>
             )}
           </CardContent>
@@ -292,49 +319,53 @@ const ProjectDetail = () => {
         </TabsList>
 
         <TabsContent value="details">
-          <Card>
-            <CardHeader>
-              <CardTitle>Projectdetails</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h3 className="font-semibold mb-2">Beschrijving</h3>
-                {isEditing ? (
-                  <Textarea
-                    value={editData.description}
-                    onChange={(e) => handleInputChange("description", e.target.value)}
-                    placeholder="Beschrijf het project..."
-                    rows={4}
-                  />
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    {project.description || "Nog geen beschrijving toegevoegd voor dit project."}
-                  </p>
-                )}
-              </div>
-              <div>
-                <h3 className="font-semibold mb-2">Project specificaties</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium">Type project</p>
-                    <p className="text-sm text-muted-foreground">{project.title.includes("kozijn") ? "Kozijnwerk" : "Glaswerk"}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Locatie</p>
-                    <p className="text-sm text-muted-foreground">Nog niet gespecificeerd</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Omvang werk</p>
-                    <p className="text-sm text-muted-foreground">Standaard installatie</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Verwachte doorlooptijd</p>
-                    <p className="text-sm text-muted-foreground">3-5 werkdagen</p>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Projectdetails</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <h3 className="font-semibold mb-2">Beschrijving</h3>
+                  {isEditing ? (
+                    <Textarea
+                      value={editData.description}
+                      onChange={(e) => handleInputChange("description", e.target.value)}
+                      placeholder="Beschrijf het project..."
+                      rows={4}
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      {project.description || "Nog geen beschrijving toegevoegd voor dit project."}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-2">Project specificaties</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium">Type project</p>
+                      <p className="text-sm text-muted-foreground">{project.title.includes("kozijn") ? "Kozijnwerk" : "Glaswerk"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Locatie</p>
+                      <p className="text-sm text-muted-foreground">Nog niet gespecificeerd</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Omvang werk</p>
+                      <p className="text-sm text-muted-foreground">Standaard installatie</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Verwachte doorlooptijd</p>
+                      <p className="text-sm text-muted-foreground">3-5 werkdagen</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            <ProjectTasks projectId={project.id} />
+          </div>
         </TabsContent>
 
         <TabsContent value="planning">

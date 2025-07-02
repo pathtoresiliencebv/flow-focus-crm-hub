@@ -2,11 +2,15 @@ import React, { useState } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Eye, Edit, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Plus, Eye, Edit, Trash2, User, CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ProjectForm } from './ProjectForm';
 import { useCrmStore, ProjectWithCustomerName as Project, UpdateProject } from "@/hooks/useCrmStore";
+import { useUsers } from "@/hooks/useUsers";
+import { useProjectTasks } from "@/hooks/useProjectTasks";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 type ProjectStatus = "te-plannen" | "gepland" | "in-uitvoering" | "herkeuring" | "afgerond";
@@ -50,7 +54,11 @@ const statusDisplayMap: Record<ProjectStatus, string> = {
 const ProjectCard = ({ project, index }: { project: Project, index: number }) => {
   const navigate = useNavigate();
   const { deleteProject } = useCrmStore();
+  const { monteurs } = useUsers();
+  const { completionPercentage, tasks } = useProjectTasks(project.id);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  
+  const assignedMonteur = monteurs.find(m => m.id === project.assigned_user_id);
   
   const handleViewDetails = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -76,7 +84,7 @@ const ProjectCard = ({ project, index }: { project: Project, index: number }) =>
           >
             <Card className="hover:shadow-md transition-shadow cursor-pointer">
               <CardContent className="p-4">
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="flex justify-between items-start">
                     <h4 className="font-semibold text-sm">{project.title}</h4>
                     <DropdownMenu>
@@ -107,11 +115,35 @@ const ProjectCard = ({ project, index }: { project: Project, index: number }) =>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
+                  
                   <p className="text-xs text-muted-foreground">Klant: {project.customer}</p>
+                  
                   <div className="flex justify-between text-xs">
                     <span>€{project.value}</span>
                     <span>{project.date}</span>
                   </div>
+
+                  {assignedMonteur && (
+                    <div className="flex items-center gap-1">
+                      <User className="h-3 w-3 text-blue-500" />
+                      <span className="text-xs text-blue-600 truncate">
+                        {assignedMonteur.full_name || assignedMonteur.email}
+                      </span>
+                    </div>
+                  )}
+
+                  {tasks.length > 0 && (
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-muted-foreground">Voortgang</span>
+                        <Badge variant="outline" className="text-xs">
+                          {completionPercentage}%
+                        </Badge>
+                      </div>
+                      <Progress value={completionPercentage} className="h-1" />
+                    </div>
+                  )}
+
                   {project.description && (
                     <p className="text-xs text-gray-600 truncate">{project.description}</p>
                   )}
