@@ -101,6 +101,11 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
     setIsEditingTitle(false);
   }, [block, titleInput, onUpdateBlock]);
 
+  const handleTitleCancel = useCallback(() => {
+    setTitleInput(block.title);
+    setIsEditingTitle(false);
+  }, [block.title]);
+
   // Debug effect to monitor block changes
   useEffect(() => {
     console.log('QuoteBlockForm: Block updated:', block);
@@ -120,16 +125,17 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                   onChange={(e) => setTitleInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') handleTitleSave();
-                    if (e.key === 'Escape') {
-                      setTitleInput(block.title);
-                      setIsEditingTitle(false);
-                    }
+                    if (e.key === 'Escape') handleTitleCancel();
                   }}
+                  onBlur={handleTitleSave}
                   className="text-lg font-semibold"
                   autoFocus
                 />
                 <Button size="sm" onClick={handleTitleSave}>
                   Opslaan
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleTitleCancel}>
+                  Annuleren
                 </Button>
               </div>
             ) : (

@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { QuoteBlockForm } from './QuoteBlockForm';
 import { MultiBlockQuotePreview } from './MultiBlockQuotePreview';
 import { SignatureCanvas } from '../SignatureCanvas';
+import { CustomerQuickAdd } from '../CustomerQuickAdd';
 import { QuoteBlock, Quote } from '@/types/quote';
 import { supabase } from "@/integrations/supabase/client";
 
@@ -52,6 +53,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   const [saving, setSaving] = useState(false);
   const [updateCounter, setUpdateCounter] = useState(0);
   const [previewKey, setPreviewKey] = useState(0);
+  const [showCustomerAdd, setShowCustomerAdd] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -215,9 +217,15 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     }
   };
 
-  const filteredProjects = projects?.filter(project => 
-    project.customer === customers.find(c => c.id === watchedFields.customer)?.name
-  ) || [];
+  const filteredProjects = projects?.filter(project => {
+    const selectedCustomer = customers.find(c => c.id === watchedFields.customer);
+    return selectedCustomer && project.customer === selectedCustomer.name;
+  }) || [];
+
+  const handleCustomerAdded = (customerId: string) => {
+    form.setValue('customer', customerId);
+    setShowCustomerAdd(false);
+  };
 
   // Create preview quote object with forced re-renders
   const previewQuote: Quote = useMemo(() => {
@@ -262,24 +270,42 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Klant *</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecteer klant" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {customers.map((customer) => (
-                              <SelectItem key={customer.id} value={customer.id}>
-                                {customer.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <div className="flex gap-2">
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecteer klant" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {customers.map((customer) => (
+                                <SelectItem key={customer.id} value={customer.id}>
+                                  {customer.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowCustomerAdd(true)}
+                            className="shrink-0"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+
+                  {showCustomerAdd && (
+                    <CustomerQuickAdd
+                      onCustomerAdded={handleCustomerAdded}
+                      onCancel={() => setShowCustomerAdd(false)}
+                    />
+                  )}
 
                   <FormField
                     control={form.control}
