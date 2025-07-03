@@ -23,6 +23,9 @@ import ProjectDetail from "@/components/ProjectDetail";
 import { Permission } from "@/types/permissions";
 import { ShieldAlert } from "lucide-react";
 import { MobileDashboard } from "@/components/mobile/MobileDashboard";
+import { MobileBottomNavigation } from "@/components/mobile/MobileBottomNavigation";
+import { MobileHeader } from "@/components/mobile/MobileHeader";
+import { FloatingChat } from "@/components/FloatingChat";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 
@@ -131,9 +134,26 @@ const Index = () => {
     }
   };
 
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-background pb-16">
+        <MobileHeader 
+          title={customerId ? "Klantdossier" : projectId ? "Project Details" : undefined}
+          showBack={!!(customerId || projectId)}
+        />
+        <div className="px-4 py-4">
+          {renderContent()}
+        </div>
+        <MobileBottomNavigation activeTab={activeTab} onTabChange={handleSetActiveTab} />
+        <FloatingChat />
+      </div>
+    );
+  }
+
   return (
     <AppSidebar activeTab={activeTab} setActiveTab={handleSetActiveTab}>
       {renderContent()}
+      <FloatingChat />
     </AppSidebar>
   );
 };

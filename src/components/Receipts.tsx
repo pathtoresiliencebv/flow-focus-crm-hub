@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Upload, FileText, Settings, Mail, Download, Eye, Trash2, Check, X, Clock } from "lucide-react";
 import { toast } from '@/hooks/use-toast';
 import { ImageUpload } from './ImageUpload';
+import { MobileReceiptCard } from './mobile/MobileReceiptCard';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Receipt {
   id: string;
@@ -83,6 +85,7 @@ export const Receipts = () => {
     description: '',
     category: ''
   });
+  const isMobile = useIsMobile();
 
   // Load settings and receipts from localStorage
   useEffect(() => {
@@ -253,10 +256,10 @@ export const Receipts = () => {
   const processedReceipts = receipts.filter(r => r.status !== 'pending');
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Bonnetjes</h2>
-        <div className="flex gap-2">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <h2 className="text-xl sm:text-2xl font-bold">Bonnetjes</h2>
+        <div className="flex flex-col sm:flex-row gap-2">
           {/* Settings Dialog */}
           <Dialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen}>
             <DialogTrigger asChild>
@@ -301,7 +304,7 @@ export const Receipts = () => {
                 Bonnetje Uploaden
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Nieuw bonnetje uploaden</DialogTitle>
                 <DialogDescription>
@@ -418,9 +421,22 @@ export const Receipts = () => {
             </CardHeader>
             <CardContent className="p-0">
               {pendingReceipts.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
-                  <FileText className="mx-auto h-12 w-12 mb-4 text-gray-300" />
+                <div className="p-8 text-center text-muted-foreground">
+                  <FileText className="mx-auto h-12 w-12 mb-4 opacity-50" />
                   <p>Geen bonnetjes in afwachting van goedkeuring.</p>
+                </div>
+              ) : isMobile ? (
+                <div className="p-4 space-y-3">
+                  {pendingReceipts.map((receipt) => (
+                    <MobileReceiptCard
+                      key={receipt.id}
+                      receipt={receipt}
+                      onView={viewReceipt}
+                      onApprove={() => handleApprovalAction(receipt.id, 'approve')}
+                      onReject={() => handleApprovalAction(receipt.id, 'reject')}
+                      showActions={true}
+                    />
+                  ))}
                 </div>
               ) : (
                 <Table>
@@ -490,9 +506,21 @@ export const Receipts = () => {
             </CardHeader>
             <CardContent className="p-0">
               {processedReceipts.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
-                  <FileText className="mx-auto h-12 w-12 mb-4 text-gray-300" />
+                <div className="p-8 text-center text-muted-foreground">
+                  <FileText className="mx-auto h-12 w-12 mb-4 opacity-50" />
                   <p>Nog geen verwerkte bonnetjes.</p>
+                </div>
+              ) : isMobile ? (
+                <div className="p-4 space-y-3">
+                  {processedReceipts.map((receipt) => (
+                    <MobileReceiptCard
+                      key={receipt.id}
+                      receipt={receipt}
+                      onView={viewReceipt}
+                      onDelete={deleteReceipt}
+                      showActions={true}
+                    />
+                  ))}
                 </div>
               ) : (
                 <Table>
@@ -519,7 +547,7 @@ export const Receipts = () => {
                           {receipt.amount ? `€${receipt.amount}` : '-'}
                         </TableCell>
                         <TableCell>{getStatusBadge(receipt.status)}</TableCell>
-                        <TableCell className="text-xs text-gray-500">
+                        <TableCell className="text-xs text-muted-foreground">
                           {receipt.status === 'approved' && receipt.approvedBy && (
                             <div>Goedgekeurd door: {receipt.approvedBy}</div>
                           )}
