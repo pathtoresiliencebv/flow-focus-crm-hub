@@ -95,15 +95,20 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   }, [blocks.length, forcePreviewUpdate]);
 
   const updateBlock = useCallback((index: number, updatedBlock: QuoteBlock) => {
-    console.log('MultiBlockQuoteForm: Updating block at index', index, ':', updatedBlock);
+    console.log('MultiBlockQuoteForm: Updating block at index', index, 'with block:', updatedBlock);
+    console.log('MultiBlockQuoteForm: Current blocks before update:', blocks);
+    console.log('MultiBlockQuoteForm: Updated block items:', updatedBlock.items);
+    
     setBlocks(prevBlocks => {
+      console.log('MultiBlockQuoteForm: Previous blocks in state:', prevBlocks);
       const newBlocks = [...prevBlocks];
       newBlocks[index] = { ...updatedBlock };
-      console.log('MultiBlockQuoteForm: Updated blocks state:', newBlocks);
+      console.log('MultiBlockQuoteForm: New blocks state after update:', newBlocks);
+      console.log('MultiBlockQuoteForm: New block items at index', index, ':', newBlocks[index].items);
       return newBlocks;
     });
     forcePreviewUpdate();
-  }, [forcePreviewUpdate]);
+  }, [forcePreviewUpdate, blocks]);
 
   const deleteBlock = useCallback((index: number) => {
     if (blocks.length > 1) {
