@@ -113,8 +113,8 @@ export const useAuth = () => {
     }
   };
   
-  const signUp = async (email: string, password: string, fullName: string) => {
-    const { error } = await supabase.auth.signUp({
+  const signUp = async (email: string, password: string, fullName: string, role: UserRole = 'Bekijker') => {
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -132,12 +132,37 @@ export const useAuth = () => {
         description: error.message,
         variant: "destructive"
       });
-    } else {
-      toast({
-        title: "Registratie succesvol",
-        description: "Controleer uw e-mail om uw account te verifiëren.",
-      });
+      return;
     }
+
+    // If user was created and a specific role was requested (not default), update the role
+    if (data.user && role !== 'Bekijker') {
+      try {
+        // Wait a moment for the profile to be created by the trigger
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const { error: roleError } = await supabase
+          .from('profiles')
+          .update({ role })
+          .eq('id', data.user.id);
+
+        if (roleError) {
+          console.error("Error setting role:", roleError);
+          toast({
+            title: "Gebruiker aangemaakt, rol niet ingesteld",
+            description: `De gebruiker is aangemaakt maar de rol kon niet worden ingesteld: ${roleError.message}`,
+            variant: "destructive"
+          });
+        }
+      } catch (roleError) {
+        console.error("Error setting role:", roleError);
+      }
+    }
+
+    toast({
+      title: "Registratie succesvol",
+      description: "Controleer uw e-mail om uw account te verifiëren.",
+    });
   };
 
   const logout = async () => {

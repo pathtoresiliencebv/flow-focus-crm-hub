@@ -12,9 +12,11 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
+import { UserRole } from '@/types/permissions';
 
 interface CreateUserDialogProps {
   open: boolean;
@@ -27,6 +29,7 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState<UserRole>('Bekijker');
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreate = async () => {
@@ -36,7 +39,7 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
     }
     setIsCreating(true);
     // De signUp functie van useAuth toont zelf de toast-berichten
-    await signUp(email, password, fullName);
+    await signUp(email, password, fullName, role);
     setIsCreating(false);
     queryClient.invalidateQueries({ queryKey: ['users'] });
     onOpenChange(false);
@@ -44,6 +47,7 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
     setFullName('');
     setEmail('');
     setPassword('');
+    setRole('Bekijker');
   };
 
   return (
@@ -52,7 +56,7 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
         <DialogHeader>
           <DialogTitle>Nieuwe Gebruiker Aanmaken</DialogTitle>
           <DialogDescription>
-            De gebruiker ontvangt een bevestigingsmail. Na bevestiging is het account actief met de rol 'Bekijker'. U kunt de rol daarna aanpassen.
+            Vul de gegevens in voor de nieuwe gebruiker. De gebruiker ontvangt een bevestigingsmail.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
@@ -67,6 +71,21 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
           <div>
             <Label htmlFor="password">Wachtwoord</Label>
             <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          </div>
+          <div>
+            <Label htmlFor="role">Rol</Label>
+            <Select value={role} onValueChange={(value: UserRole) => setRole(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Bekijker">Bekijker</SelectItem>
+                <SelectItem value="Verkoper">Verkoper</SelectItem>
+                <SelectItem value="Installateur">Installateur</SelectItem>
+                <SelectItem value="Administratie">Administratie</SelectItem>
+                <SelectItem value="Administrator">Administrator</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <DialogFooter>
