@@ -11,7 +11,7 @@ export const ChatWidget = () => {
   const { user } = useAuth();
   const { channels } = useChat();
   const [isOpen, setIsOpen] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(true); // Start fullscreen on desktop by default
   
   // Calculate total unread count across all channels
   const unreadCount = channels.reduce((total, channel) => total + (channel.unread_count || 0), 0);
