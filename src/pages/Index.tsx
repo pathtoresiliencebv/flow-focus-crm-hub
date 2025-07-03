@@ -49,6 +49,8 @@ const Index = () => {
     return "dashboard";
   });
   
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  
   const handleSetActiveTab = (tab: string) => {
     if (customerId) navigate('/');
     if (projectId) navigate('/');
@@ -140,7 +142,23 @@ const Index = () => {
         <MobileHeader 
           title={customerId ? "Klantdossier" : projectId ? "Project Details" : undefined}
           showBack={!!(customerId || projectId)}
+          onMenuClick={() => setIsSidebarOpen(true)}
         />
+        
+        {/* Mobile Sidebar Overlay */}
+        {isSidebarOpen && (
+          <div className="fixed inset-0 z-50 bg-black/50" onClick={() => setIsSidebarOpen(false)}>
+            <div className="absolute left-0 top-0 h-full w-80 bg-background shadow-xl" onClick={e => e.stopPropagation()}>
+              <AppSidebar activeTab={activeTab} setActiveTab={(tab) => {
+                handleSetActiveTab(tab);
+                setIsSidebarOpen(false);
+              }}>
+                <div></div>
+              </AppSidebar>
+            </div>
+          </div>
+        )}
+        
         <div className="px-4 py-4">
           {renderContent()}
         </div>

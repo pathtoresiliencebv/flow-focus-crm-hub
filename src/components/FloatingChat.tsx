@@ -58,14 +58,14 @@ export const FloatingChat: React.FC<FloatingChatProps> = ({
 
       {/* Chat Toggle Button - Fixed bottom right */}
       <div className={cn(
-        "fixed z-50",
-        isMobile ? "bottom-4 right-4" : "bottom-6 right-6"
+        "fixed z-40",
+        isMobile ? "bottom-20 right-4" : "bottom-6 right-6"
       )}>
         <Button
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
             "rounded-full shadow-lg transition-all duration-200",
-            "bg-primary hover:bg-primary/90",
+            "bg-red-500 hover:bg-red-600",
             "flex items-center justify-center relative",
             "border-2 border-background",
             isMobile ? "h-12 w-12" : "h-14 w-14"
