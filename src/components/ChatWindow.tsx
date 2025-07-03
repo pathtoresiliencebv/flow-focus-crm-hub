@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { X, Send, Paperclip, Mic, Image, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,16 @@ export const ChatWindow = ({ onClose }: ChatWindowProps) => {
     sendMessage,
     createChannel,
   } = useChat();
+
+  // Auto-create AI Assistant channel if it doesn't exist
+  useEffect(() => {
+    if (!loading && user && channels.length > 0) {
+      const aiChannel = channels.find(c => c.name.toLowerCase().includes('ai assistant'));
+      if (!aiChannel) {
+        createChannel('AI Assistant', 'general', undefined, []);
+      }
+    }
+  }, [loading, user, channels, createChannel]);
   
   const [newMessage, setNewMessage] = useState("");
   const [isRecording, setIsRecording] = useState(false);

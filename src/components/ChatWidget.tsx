@@ -23,7 +23,7 @@ export const ChatWidget = () => {
     <>
       {/* Chat Window - Fixed bottom right with scrolling */}
       {isOpen && (
-        <div className="fixed bottom-20 md:bottom-20 right-4 z-60 w-[400px] h-[500px] max-w-[90vw] max-h-[80vh] shadow-2xl">
+        <div className="fixed bottom-20 md:bottom-20 right-4 z-60 w-[400px] md:w-[800px] h-[500px] md:h-[700px] max-w-[90vw] max-h-[80vh] shadow-2xl">
           <ResizablePanelGroup direction="horizontal" className="w-full h-full">
             <ResizablePanel defaultSize={100} minSize={30}>
               <ChatWindow onClose={() => setIsOpen(false)} />
