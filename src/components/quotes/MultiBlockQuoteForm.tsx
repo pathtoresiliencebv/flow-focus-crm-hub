@@ -67,7 +67,8 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     },
   });
 
-  const watchedFields = form.watch();
+  // Remove automatic watching to prevent false impression of auto-save
+  // const watchedFields = form.watch();
 
   const forcePreviewUpdate = useCallback(() => {
     console.log('MultiBlockQuoteForm: Forcing preview update');
@@ -217,8 +218,11 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     }
   };
 
+  // Get current form values only when needed
+  const currentFormValues = form.getValues();
+  
   const filteredProjects = projects?.filter(project => {
-    const selectedCustomer = customers.find(c => c.id === watchedFields.customer);
+    const selectedCustomer = customers.find(c => c.id === currentFormValues.customer);
     return selectedCustomer && project.customer === selectedCustomer.name;
   }) || [];
 
@@ -227,16 +231,17 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     setShowCustomerAdd(false);
   };
 
-  // Create preview quote object with forced re-renders
+  // Create preview quote object - only update when blocks change, not on every form field change
   const previewQuote: Quote = useMemo(() => {
+    const formValues = form.getValues();
     const quote = {
-      quote_number: watchedFields.quoteNumber || `OFF-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
-      customer_name: customers.find(c => c.id === watchedFields.customer)?.name || '',
-      customer_email: customers.find(c => c.id === watchedFields.customer)?.email || '',
-      project_title: projects?.find(p => p.id === watchedFields.project)?.title || '',
-      quote_date: watchedFields.date || new Date().toISOString().split('T')[0],
-      valid_until: watchedFields.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      message: watchedFields.message || '',
+      quote_number: formValues.quoteNumber || `OFF-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
+      customer_name: customers.find(c => c.id === formValues.customer)?.name || '',
+      customer_email: customers.find(c => c.id === formValues.customer)?.email || '',
+      project_title: projects?.find(p => p.id === formValues.project)?.title || '',
+      quote_date: formValues.date || new Date().toISOString().split('T')[0],
+      valid_until: formValues.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      message: formValues.message || '',
       blocks: JSON.parse(JSON.stringify(blocks)), // Deep copy to ensure re-render
       total_amount: totalAmount,
       total_vat_amount: totalVAT,
@@ -245,7 +250,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     };
     console.log('MultiBlockQuoteForm: Created preview quote with updateCounter:', updateCounter, 'previewKey:', previewKey, quote);
     return quote;
-  }, [watchedFields, customers, projects, blocks, totalAmount, totalVAT, adminSignature, updateCounter, previewKey]);
+  }, [customers, projects, blocks, totalAmount, totalVAT, adminSignature, updateCounter, previewKey]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[80vh] overflow-hidden">
@@ -253,6 +258,9 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       <div className="space-y-6 overflow-y-auto pr-2">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium">Nieuwe offerte - Meerdere blokken</h3>
+          <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-lg text-sm font-medium">
+            ⚠️ Concept - Niet opgeslagen
+          </div>
         </div>
 
         <Form {...form}>
@@ -472,7 +480,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       <div className="overflow-y-auto pl-2">
         <div className="sticky top-0 bg-white z-10 pb-2 mb-4 border-b">
           <h4 className="font-medium text-gray-700">Live Preview</h4>
-          <p className="text-sm text-gray-500">Updates: {updateCounter} | Key: {previewKey}</p>
+          <p className="text-xs text-yellow-600 font-medium">⚠️ Dit is alleen een preview - offerte wordt pas opgeslagen bij 'Offerte Opslaan'</p>
         </div>
         <MultiBlockQuotePreview key={previewKey} quote={previewQuote} />
       </div>
