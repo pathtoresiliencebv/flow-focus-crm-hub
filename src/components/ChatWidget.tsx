@@ -42,7 +42,7 @@ export const ChatWidget = () => {
         <div className={cn(
           "fixed z-60 shadow-2xl rounded-lg overflow-hidden bg-background border transition-all duration-300",
           isFullscreen 
-            ? "inset-4" // Fullscreen with small margin
+            ? "inset-0" // True fullscreen
             : "bottom-20 md:bottom-20 right-4 w-[400px] md:w-[800px] h-[500px] md:h-[700px] max-w-[90vw] max-h-[80vh]" // Normal mode
         )}>
           <div className="relative w-full h-full">
