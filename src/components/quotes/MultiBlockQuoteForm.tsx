@@ -183,7 +183,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
           items: JSON.parse(JSON.stringify(blocks)) as any, // Convert blocks to JSON-compatible format
           subtotal: totalAmount,
           vat_amount: totalVAT,
-          total_amount: totalAmount,
+          total_amount: grandTotal,
           status: 'concept',
           public_token: tokenData,
           admin_signature_data: adminSignature || null
