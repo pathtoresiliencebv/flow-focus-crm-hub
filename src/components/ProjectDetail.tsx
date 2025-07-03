@@ -16,14 +16,20 @@ import { ProjectPersonnel } from "./ProjectPersonnel";
 import { ProjectPlanning } from "./ProjectPlanning";
 import { ProjectTasks } from "./ProjectTasks";
 import { ProjectChat } from "./ProjectChat";
+import { useProjectDelivery } from "@/hooks/useProjectDelivery";
+import { ProjectDeliveryDialog } from "./dashboard/ProjectDeliveryDialog";
+import { useAuth } from "@/hooks/useAuth";
 
 const ProjectDetail = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { projects, customers, updateProject } = useCrmStore();
   const { monteurs } = useUsers();
+  const { profile, user } = useAuth();
+  const { startProject, completeProject, isStarting, isCompleting } = useProjectDelivery();
   const [projectDetailTab, setProjectDetailTab] = useState("details");
   const [isEditing, setIsEditing] = useState(false);
+  const [showDelivery, setShowDelivery] = useState(false);
   const [editData, setEditData] = useState({
     title: "",
     customerId: "",
@@ -103,6 +109,16 @@ const ProjectDetail = () => {
     }));
   };
 
+  const handleStartProject = async () => {
+    await startProject(project.id);
+  };
+
+  const handleCompleteProject = () => {
+    setShowDelivery(true);
+  };
+
+  const canManageProject = profile?.role === 'Installateur' && project.assigned_user_id === user?.id;
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -149,6 +165,31 @@ const ProjectDetail = () => {
             </>
           )}
         </div>
+
+        {/* Project Action Buttons for Installateurs */}
+        {canManageProject && (
+          <div className="flex gap-2">
+            {project.status === 'gepland' && (
+              <Button 
+                onClick={handleStartProject}
+                disabled={isStarting}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                {isStarting ? 'Project starten...' : 'Project Starten'}
+              </Button>
+            )}
+            
+            {project.status === 'in-uitvoering' && (
+              <Button 
+                onClick={handleCompleteProject}
+                disabled={isCompleting}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Project Opleveren
+              </Button>
+            )}
+          </div>
+        )}
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -430,6 +471,20 @@ const ProjectDetail = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Project Delivery Dialog */}
+      {showDelivery && (
+        <ProjectDeliveryDialog
+          project={project}
+          isOpen={showDelivery}
+          onClose={() => setShowDelivery(false)}
+          onComplete={() => {
+            setShowDelivery(false);
+            // Refresh to show updated status
+            window.location.reload();
+          }}
+        />
+      )}
     </div>
   );
 };
