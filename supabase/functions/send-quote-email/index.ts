@@ -1,0 +1,180 @@
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { Resend } from "npm:resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
+
+interface SendQuoteEmailRequest {
+  quoteId: string;
+  recipientEmail: string;
+  recipientName: string;
+  subject?: string;
+  message?: string;
+}
+
+const handler = async (req: Request): Promise<Response> => {
+  // Handle CORS preflight requests
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { quoteId, recipientEmail, recipientName, subject, message }: SendQuoteEmailRequest = await req.json();
+    
+    console.log('Sending quote email for ID:', quoteId, 'to:', recipientEmail);
+
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Get quote details
+    const { data: quote, error: quoteError } = await supabase
+      .from('quotes')
+      .select('*')
+      .eq('id', quoteId)
+      .single();
+
+    if (quoteError || !quote) {
+      console.error('Error fetching quote:', quoteError);
+      return new Response(
+        JSON.stringify({ error: 'Quote not found' }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Generate public link for the quote
+    const publicUrl = `${Deno.env.get('SUPABASE_URL')?.replace('/supabase.co', '.lovable.app')}/quote/${quote.public_token}`;
+    
+    // Create email HTML content
+    const emailHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Offerte ${quote.quote_number}</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background-color: #2563eb; color: white; padding: 20px; text-align: center; }
+          .content { padding: 20px; background-color: #f9f9f9; }
+          .button { 
+            display: inline-block; 
+            background-color: #2563eb; 
+            color: white; 
+            padding: 12px 24px; 
+            text-decoration: none; 
+            border-radius: 5px; 
+            margin: 20px 0;
+          }
+          .quote-details { background-color: white; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>SMANS BV</h1>
+            <h2>Offerte ${quote.quote_number}</h2>
+          </div>
+          
+          <div class="content">
+            <p>Beste ${recipientName},</p>
+            
+            <p>${message || 'Hierbij ontvangt u onze offerte. U kunt de offerte bekijken en digitaal goedkeuren via onderstaande link.'}</p>
+            
+            <div class="quote-details">
+              <h3>Offerte Details:</h3>
+              <p><strong>Offertenummer:</strong> ${quote.quote_number}</p>
+              <p><strong>Datum:</strong> ${new Date(quote.quote_date).toLocaleDateString('nl-NL')}</p>
+              <p><strong>Geldig tot:</strong> ${new Date(quote.valid_until).toLocaleDateString('nl-NL')}</p>
+              <p><strong>Project:</strong> ${quote.project_title || 'Niet gespecificeerd'}</p>
+              <p><strong>Totaalbedrag:</strong> €${quote.total_amount.toFixed(2)}</p>
+            </div>
+            
+            <div style="text-align: center;">
+              <a href="${publicUrl}" class="button">📄 Bekijk en Goedkeur Offerte</a>
+            </div>
+            
+            <p><strong>Let op:</strong> Deze offerte is geldig tot ${new Date(quote.valid_until).toLocaleDateString('nl-NL')}. Na deze datum vervalt de offerte automatisch.</p>
+            
+            <p>Voor vragen over deze offerte kunt u contact met ons opnemen.</p>
+            
+            <p>Met vriendelijke groet,<br>
+            <strong>SMANS BV</strong><br>
+            Team Verkoop</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Send email via Resend
+    const emailResponse = await resend.emails.send({
+      from: "SMANS BV <offerte@smanscrm.nl>",
+      to: [recipientEmail],
+      subject: subject || `Offerte ${quote.quote_number} - SMANS BV`,
+      html: emailHtml,
+    });
+
+    if (emailResponse.error) {
+      console.error("Error sending email:", emailResponse.error);
+      return new Response(
+        JSON.stringify({ error: emailResponse.error.message }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    // Update quote status to 'verstuurd'
+    const { error: updateError } = await supabase
+      .from('quotes')
+      .update({ 
+        status: 'verstuurd',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', quoteId);
+
+    if (updateError) {
+      console.error('Error updating quote status:', updateError);
+    }
+
+    console.log("Quote email sent successfully:", emailResponse);
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        emailId: emailResponse.data?.id,
+        publicUrl: publicUrl 
+      }), 
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      }
+    );
+  } catch (error: any) {
+    console.error("Error in send-quote-email function:", error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
+  }
+};
+
+serve(handler);

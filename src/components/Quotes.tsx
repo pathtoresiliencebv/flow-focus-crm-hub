@@ -8,6 +8,7 @@ import { QuotesHeader } from './quotes/QuotesHeader';
 import { QuotesSearch } from './quotes/QuotesSearch';
 import { QuotesTable } from './quotes/QuotesTable';
 import { QuotesPreviewDialog } from './quotes/QuotesPreviewDialog';
+import { SendQuoteDialog } from './quotes/SendQuoteDialog';
 import { Quote } from '@/types/quote';
 import { convertQuoteToInvoice } from '@/services/quoteToInvoiceService';
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +21,7 @@ export function Quotes() {
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [showNewQuote, setShowNewQuote] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const [showSendEmail, setShowSendEmail] = useState(false);
   const [converting, setConverting] = useState(false);
 
   const filteredQuotes = quotes.filter(quote =>
@@ -36,6 +38,16 @@ export function Quotes() {
   const handleViewPublic = (publicToken: string) => {
     const url = `${window.location.origin}/quote/${publicToken}`;
     window.open(url, '_blank');
+  };
+
+  const handleSendEmail = (quote: Quote) => {
+    setSelectedQuote(quote);
+    setShowSendEmail(true);
+  };
+
+  const handleEmailSent = async () => {
+    // Refresh quotes to update status
+    await fetchQuotes();
   };
 
   const handleApproveQuote = async (quote: Quote) => {
@@ -123,6 +135,7 @@ export function Quotes() {
             onViewPublic={handleViewPublic}
             onDelete={deleteQuote}
             onApprove={handleApproveQuote}
+            onSendEmail={handleSendEmail}
           />
         </CardContent>
       </Card>
@@ -131,6 +144,13 @@ export function Quotes() {
         open={showPreview}
         onOpenChange={setShowPreview}
         quote={selectedQuote}
+      />
+
+      <SendQuoteDialog
+        isOpen={showSendEmail}
+        onClose={() => setShowSendEmail(false)}
+        quote={selectedQuote}
+        onSent={handleEmailSent}
       />
     </div>
   );
