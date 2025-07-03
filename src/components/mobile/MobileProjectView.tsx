@@ -10,10 +10,12 @@ import { useProjectTasks } from "@/hooks/useProjectTasks";
 import { useCrmStore } from "@/hooks/useCrmStore";
 import { useAuth } from "@/hooks/useAuth";
 import { useNativeCapabilities } from "@/hooks/useNativeCapabilities";
+import { useProjectDelivery } from "@/hooks/useProjectDelivery";
 import { MobileTimeRegistration } from './MobileTimeRegistration';
 import { MobilePhotoUpload } from './MobilePhotoUpload';
 import { MobileWorkOrder } from './MobileWorkOrder';
 import { MobileChatView } from './MobileChatView';
+import { MobileProjectDelivery } from './MobileProjectDelivery';
 
 interface MobileProjectViewProps {
   projectId: string;
@@ -24,7 +26,9 @@ export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId 
   const { projects, customers } = useCrmStore();
   const { tasksByBlock, completionPercentage, updateTask, isLoading } = useProjectTasks(projectId);
   const { hapticFeedback, networkStatus } = useNativeCapabilities();
+  const { startProject, isStarting } = useProjectDelivery();
   const [activeTab, setActiveTab] = useState("tasks");
+  const [showDelivery, setShowDelivery] = useState(false);
 
   const project = projects.find(p => p.id === projectId);
   const customer = customers.find(c => c.id === project?.customer_id);
@@ -47,7 +51,33 @@ export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId 
     window.location.reload();
   };
 
+  const handleStartProject = async () => {
+    await hapticFeedback();
+    await startProject(projectId);
+  };
+
+  const handleCompleteProject = () => {
+    setShowDelivery(true);
+  };
+
+  const handleDeliveryComplete = () => {
+    setShowDelivery(false);
+    // Refresh to show updated status
+    window.location.reload();
+  };
+
   const blockEntries = Object.entries(tasksByBlock);
+
+  // Show delivery flow if active
+  if (showDelivery && project) {
+    return (
+      <MobileProjectDelivery
+        project={project}
+        onBack={() => setShowDelivery(false)}
+        onComplete={handleDeliveryComplete}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -83,6 +113,39 @@ export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId 
           </div>
         )}
       </div>
+
+      {/* Project Action Buttons */}
+      {project && (
+        <div className="px-4 pb-4 space-y-2">
+          {project.status === 'gepland' && (
+            <Button 
+              onClick={handleStartProject}
+              disabled={isStarting}
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              size="lg"
+            >
+              {isStarting ? 'Project starten...' : 'Project Starten'}
+            </Button>
+          )}
+          
+          {project.status === 'in-uitvoering' && (
+            <Button 
+              onClick={handleCompleteProject}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              size="lg"
+            >
+              Project Opleveren
+            </Button>
+          )}
+          
+          {project.status === 'afgerond' && (
+            <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
+              <p className="text-green-700 font-medium">✅ Project Afgerond</p>
+              <p className="text-sm text-green-600">Dit project is succesvol opgeleverd</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Mobile Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

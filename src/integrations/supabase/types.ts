@@ -832,6 +832,59 @@ export type Database = {
         }
         Relationships: []
       }
+      project_deliveries: {
+        Row: {
+          client_name: string
+          client_signature_data: string | null
+          created_at: string | null
+          delivered_at: string | null
+          delivered_by: string
+          delivery_photos: Json | null
+          delivery_summary: string
+          id: string
+          monteur_signature_data: string | null
+          project_id: string
+          updated_at: string | null
+          work_report_generated: boolean | null
+        }
+        Insert: {
+          client_name: string
+          client_signature_data?: string | null
+          created_at?: string | null
+          delivered_at?: string | null
+          delivered_by: string
+          delivery_photos?: Json | null
+          delivery_summary: string
+          id?: string
+          monteur_signature_data?: string | null
+          project_id: string
+          updated_at?: string | null
+          work_report_generated?: boolean | null
+        }
+        Update: {
+          client_name?: string
+          client_signature_data?: string | null
+          created_at?: string | null
+          delivered_at?: string | null
+          delivered_by?: string
+          delivery_photos?: Json | null
+          delivery_summary?: string
+          id?: string
+          monteur_signature_data?: string | null
+          project_id?: string
+          updated_at?: string | null
+          work_report_generated?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_deliveries_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_registrations: {
         Row: {
           approved_at: string | null
@@ -955,7 +1008,11 @@ export type Database = {
           client_name: string | null
           client_signature_data: string | null
           created_at: string | null
+          delivery_id: string | null
+          delivery_photos: Json | null
           id: string
+          is_delivery_complete: boolean | null
+          monteur_signature_data: string | null
           project_id: string
           signed_at: string | null
           summary_text: string | null
@@ -967,7 +1024,11 @@ export type Database = {
           client_name?: string | null
           client_signature_data?: string | null
           created_at?: string | null
+          delivery_id?: string | null
+          delivery_photos?: Json | null
           id?: string
+          is_delivery_complete?: boolean | null
+          monteur_signature_data?: string | null
           project_id: string
           signed_at?: string | null
           summary_text?: string | null
@@ -979,7 +1040,11 @@ export type Database = {
           client_name?: string | null
           client_signature_data?: string | null
           created_at?: string | null
+          delivery_id?: string | null
+          delivery_photos?: Json | null
           id?: string
+          is_delivery_complete?: boolean | null
+          monteur_signature_data?: string | null
           project_id?: string
           signed_at?: string | null
           summary_text?: string | null
@@ -988,6 +1053,13 @@ export type Database = {
           work_photos?: Json | null
         }
         Relationships: [
+          {
+            foreignKeyName: "project_work_orders_delivery_id_fkey"
+            columns: ["delivery_id"]
+            isOneToOne: false
+            referencedRelation: "project_deliveries"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "project_work_orders_project_id_fkey"
             columns: ["project_id"]
@@ -1336,6 +1408,10 @@ export type Database = {
       get_user_role: {
         Args: { p_user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      start_project: {
+        Args: { p_project_id: string; p_user_id: string }
+        Returns: undefined
       }
       update_role_permissions: {
         Args: {
