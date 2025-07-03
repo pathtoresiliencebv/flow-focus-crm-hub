@@ -191,8 +191,11 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
                       })}
                     </div>
                   ) : (
-                    <div className="text-gray-400 italic py-8 text-center bg-white rounded-lg border-2 border-dashed border-gray-200">
-                      Geen items toegevoegd aan dit blok
+                    <div className="text-center py-8 bg-yellow-50 rounded-lg border-2 border-dashed border-yellow-300">
+                      <div className="text-yellow-800 font-medium mb-2">⚠️ Geen items toegevoegd</div>
+                      <div className="text-yellow-700 text-sm">
+                        Dit blok is leeg. Voeg producten of diensten toe om ze hier te zien in de offerte.
+                      </div>
                     </div>
                   )}
 
