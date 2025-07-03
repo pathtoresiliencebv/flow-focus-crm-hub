@@ -173,90 +173,114 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     console.log('MultiBlockQuoteForm: Total calculations - Amount:', totalAmount, 'VAT:', totalVAT, 'Grand:', grandTotal);
   }, [blocks, totalAmount, totalVAT, grandTotal]);
 
+  const onSubmit = useCallback(async (values: z.infer<typeof formSchema>) => {
+    setSaving(true);
+    
+    // Get the current blocks state at the time of submission
+    setBlocks(currentBlocks => {
+      console.log('MultiBlockQuoteForm: Current blocks at submit time:', JSON.stringify(currentBlocks, null, 2));
+      
+      // Continue with submission using current blocks
+      (async () => {
+        try {
+          const customer = customers.find(c => c.id === values.customer);
+          const project = projects?.find(p => p.id === values.project);
+
+          // Generate public token
+          const { data: tokenData, error: tokenError } = await supabase
+            .rpc('generate_quote_public_token');
+
+          if (tokenError) {
+            console.error('Error generating token:', tokenError);
+            toast({
+              title: "Fout",
+              description: "Kon geen publieke link genereren.",
+              variant: "destructive",
+            });
+            setSaving(false);
+            return;
+          }
+
+          // Get the current quote number if empty
+          let quoteNumber = values.quoteNumber;
+          if (!quoteNumber) {
+            const { data: generatedNumber } = await supabase.rpc('generate_quote_number');
+            quoteNumber = generatedNumber || `OFF-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`;
+          }
+
+          // Calculate totals from current blocks
+          const currentTotalAmount = currentBlocks.reduce((sum, block) => sum + (block.subtotal || 0), 0);
+          const currentTotalVAT = currentBlocks.reduce((sum, block) => sum + (block.vat_amount || 0), 0);
+          const currentGrandTotal = currentTotalAmount + currentTotalVAT;
+
+          console.log('MultiBlockQuoteForm: Saving blocks to database:', {
+            blocks: currentBlocks,
+            totalAmount: currentTotalAmount,
+            totalVAT: currentTotalVAT,
+            grandTotal: currentGrandTotal
+          });
+
+          // Save quote to database with current block structure
+          const { data, error } = await supabase
+            .from('quotes')
+            .insert({
+              quote_number: quoteNumber,
+              customer_name: customer?.name || '',
+              customer_email: customer?.email || '',
+              project_title: project?.title || '',
+              quote_date: values.date,
+              valid_until: values.validUntil,
+              message: values.message || '',
+              items: JSON.parse(JSON.stringify(currentBlocks)) as any, // Save blocks as JSON
+              subtotal: currentTotalAmount,
+              vat_amount: currentTotalVAT,
+              total_amount: currentGrandTotal,
+              status: 'concept',
+              public_token: tokenData,
+              admin_signature_data: adminSignature || null
+            })
+            .select()
+            .single();
+
+          if (error) {
+            console.error('Error saving quote:', error);
+            toast({
+              title: "Fout bij opslaan",
+              description: "De offerte kon niet worden opgeslagen.",
+              variant: "destructive",
+            });
+            setSaving(false);
+            return;
+          }
+
+          toast({
+            title: "Offerte opgeslagen",
+            description: `Offerte ${quoteNumber} is succesvol opgeslagen.`,
+          });
+
+          onClose();
+        } catch (error) {
+          console.error('Error:', error);
+          toast({
+            title: "Fout",
+            description: "Er is een onverwachte fout opgetreden.",
+            variant: "destructive",
+          });
+        } finally {
+          setSaving(false);
+        }
+      })();
+
+      return currentBlocks; // Return the same blocks, no change needed
+    });
+  }, [customers, projects, adminSignature, toast, onClose]);
+
   const handleFormSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
     console.log('MultiBlockQuoteForm: Form submitted - this should only happen when saving the quote');
     form.handleSubmit(onSubmit)();
-  }, [form]);
-
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    setSaving(true);
-    try {
-      const customer = customers.find(c => c.id === values.customer);
-      const project = projects?.find(p => p.id === values.project);
-
-      // Generate public token
-      const { data: tokenData, error: tokenError } = await supabase
-        .rpc('generate_quote_public_token');
-
-      if (tokenError) {
-        console.error('Error generating token:', tokenError);
-        toast({
-          title: "Fout",
-          description: "Kon geen publieke link genereren.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Get the current quote number if empty
-      let quoteNumber = values.quoteNumber;
-      if (!quoteNumber) {
-        const { data: generatedNumber } = await supabase.rpc('generate_quote_number');
-        quoteNumber = generatedNumber || `OFF-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`;
-      }
-
-      // Save quote to database with new block structure
-      console.log('Saving blocks to database:', JSON.stringify(blocks, null, 2));
-      const { data, error } = await supabase
-        .from('quotes')
-        .insert({
-          quote_number: quoteNumber,
-          customer_name: customer?.name || '',
-          customer_email: customer?.email || '',
-          project_title: project?.title || '',
-          quote_date: values.date,
-          valid_until: values.validUntil,
-          message: values.message || '',
-          items: JSON.parse(JSON.stringify(blocks)) as any, // Save blocks as JSON
-          subtotal: totalAmount,
-          vat_amount: totalVAT,
-          total_amount: grandTotal,
-          status: 'concept',
-          public_token: tokenData,
-          admin_signature_data: adminSignature || null
-        })
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Error saving quote:', error);
-        toast({
-          title: "Fout bij opslaan",
-          description: "De offerte kon niet worden opgeslagen.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      toast({
-        title: "Offerte opgeslagen",
-        description: `Offerte ${quoteNumber} is succesvol opgeslagen.`,
-      });
-
-      onClose();
-    } catch (error) {
-      console.error('Error:', error);
-      toast({
-        title: "Fout",
-        description: "Er is een onverwachte fout opgetreden.",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
+  }, [form, onSubmit]);
 
   // Get current form values only when needed
   const currentFormValues = form.getValues();
