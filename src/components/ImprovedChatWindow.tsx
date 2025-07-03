@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { useUsers } from "@/hooks/useUsers";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAI } from "@/hooks/useAI";
 
 interface ImprovedChatWindowProps {
   onClose: () => void;
@@ -23,6 +24,7 @@ export const ImprovedChatWindow = ({ onClose }: ImprovedChatWindowProps) => {
   const { user, profile } = useAuth();
   const { users } = useUsers();
   const { toast } = useToast();
+  const { generateAI } = useAI();
   const {
     channels,
     messages,
@@ -34,6 +36,18 @@ export const ImprovedChatWindow = ({ onClose }: ImprovedChatWindowProps) => {
     createDirectChannel,
     availableUsers,
   } = useChat();
+
+  // Auto-create AI Assistant channel if it doesn't exist and set AI channel ID
+  useEffect(() => {
+    if (!loading && user && channels.length > 0) {
+      const aiChannel = channels.find(c => c.name.toLowerCase().includes('ai assistant'));
+      if (!aiChannel) {
+        createChannel('AI Assistant', 'general', undefined, []);
+      } else {
+        setAiChannelId(aiChannel.id);
+      }
+    }
+  }, [loading, user, channels, createChannel]);
   
   const [newMessage, setNewMessage] = useState("");
   const [isRecording, setIsRecording] = useState(false);
@@ -41,6 +55,7 @@ export const ImprovedChatWindow = ({ onClose }: ImprovedChatWindowProps) => {
   const [newChannelName, setNewChannelName] = useState("");
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("channels");
+  const [aiChannelId, setAiChannelId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectedChannel = channels.find(c => c.id === selectedChannelId);
@@ -53,7 +68,23 @@ export const ImprovedChatWindow = ({ onClose }: ImprovedChatWindowProps) => {
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedChannelId) return;
 
-    await sendMessage(selectedChannelId, newMessage);
+    // Check if this is a message to AI
+    if (selectedChannelId === aiChannelId && newMessage.startsWith('/ai ')) {
+      const aiPrompt = newMessage.slice(4); // Remove '/ai ' prefix
+      const aiResponse = await generateAI(aiPrompt, 'chat');
+      
+      if (aiResponse) {
+        // Send user message first
+        await sendMessage(selectedChannelId, newMessage);
+        // Then send AI response
+        setTimeout(async () => {
+          await sendMessage(selectedChannelId, `🤖 AI Assistant: ${aiResponse}`);
+        }, 500);
+      }
+    } else {
+      await sendMessage(selectedChannelId, newMessage);
+    }
+    
     setNewMessage("");
   };
 
@@ -72,6 +103,11 @@ export const ImprovedChatWindow = ({ onClose }: ImprovedChatWindowProps) => {
       setShowCreateChannel(false);
       setNewChannelName("");
       setSelectedParticipants([]);
+      
+      // Check if this is an AI channel
+      if (newChannelName.toLowerCase().includes('ai assistant')) {
+        setAiChannelId(channelId);
+      }
     }
   };
 
@@ -421,7 +457,7 @@ export const ImprovedChatWindow = ({ onClose }: ImprovedChatWindowProps) => {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="Type je bericht..."
+                    placeholder={selectedChannelId === aiChannelId ? "Type '/ai' gevolgd door je vraag voor AI assistance..." : "Type je bericht..."}
                     className="flex-1"
                   />
                   <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>

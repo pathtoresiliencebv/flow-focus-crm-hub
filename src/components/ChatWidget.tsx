@@ -1,9 +1,8 @@
 
-import { useState } from "react";
-import { MessageCircle, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { MessageCircle, X, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ChatWindow } from "./ChatWindow";
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { ImprovedChatWindow } from "./ImprovedChatWindow";
 import { cn } from "@/lib/utils";
 import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,23 +11,59 @@ export const ChatWidget = () => {
   const { user } = useAuth();
   const { channels } = useChat();
   const [isOpen, setIsOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   // Calculate total unread count across all channels
   const unreadCount = channels.reduce((total, channel) => total + (channel.unread_count || 0), 0);
   
+  // Handle ESC key to close fullscreen
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, isFullscreen]);
+
   // Don't show if user is not authenticated
   if (!user) return null;
 
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
+
   return (
     <>
-      {/* Chat Window - Fixed bottom right with scrolling */}
+      {/* Chat Window - Fullscreen or normal mode */}
       {isOpen && (
-        <div className="fixed bottom-20 md:bottom-20 right-4 z-60 w-[400px] md:w-[800px] h-[500px] md:h-[700px] max-w-[90vw] max-h-[80vh] shadow-2xl">
-          <ResizablePanelGroup direction="horizontal" className="w-full h-full">
-            <ResizablePanel defaultSize={100} minSize={30}>
-              <ChatWindow onClose={() => setIsOpen(false)} />
-            </ResizablePanel>
-          </ResizablePanelGroup>
+        <div className={cn(
+          "fixed z-60 shadow-2xl rounded-lg overflow-hidden bg-background border transition-all duration-300",
+          isFullscreen 
+            ? "inset-4" // Fullscreen with small margin
+            : "bottom-20 md:bottom-20 right-4 w-[400px] md:w-[800px] h-[500px] md:h-[700px] max-w-[90vw] max-h-[80vh]" // Normal mode
+        )}>
+          <div className="relative w-full h-full">
+            {/* Fullscreen toggle button - only on desktop */}
+            <div className="absolute top-2 right-14 z-10 hidden md:block">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleFullscreen}
+                className="h-8 w-8 p-0 hover:bg-accent"
+              >
+                {isFullscreen ? (
+                  <Minimize2 className="h-4 w-4" />
+                ) : (
+                  <Maximize2 className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            
+            <ImprovedChatWindow onClose={() => setIsOpen(false)} />
+          </div>
         </div>
       )}
 
