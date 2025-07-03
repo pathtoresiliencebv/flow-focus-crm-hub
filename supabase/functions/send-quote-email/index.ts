@@ -119,7 +119,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email via Resend
     const emailResponse = await resend.emails.send({
-      from: "SMANS BV <offerte@smanscrm.nl>",
+      from: "SMANS BV <onboarding@resend.dev>",
       to: [recipientEmail],
       subject: subject || `Offerte ${quote.quote_number} - SMANS BV`,
       html: emailHtml,
