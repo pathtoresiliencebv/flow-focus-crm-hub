@@ -272,35 +272,40 @@ export function Email() {
   }
 
   return (
-    <div className="h-full flex">
-      <EmailSidebar
-        activeFolder={currentFolder}
-        setActiveFolder={setCurrentFolder}
-        onComposeClick={() => setShowCompose(true)}
-        hasEmailAccounts={hasEmailAccounts}
-        onNavigateToSettings={handleNavigateToSettings}
-      />
+    <div className="h-full flex flex-col md:flex-row">
+      {/* Mobile sidebar toggle could go here */}
+      <div className="hidden md:block">
+        <EmailSidebar
+          activeFolder={currentFolder}
+          setActiveFolder={setCurrentFolder}
+          onComposeClick={() => setShowCompose(true)}
+          hasEmailAccounts={hasEmailAccounts}
+          onNavigateToSettings={handleNavigateToSettings}
+        />
+      </div>
       
       <div className="flex-1 flex flex-col">
-        <EmailToolbar
-          searchTerm={searchTerm}
-          onSearchTermChange={setSearchTerm}
-          selectedAccountId={selectedAccountId}
-          onSelectedAccountIdChange={setSelectedAccountId}
-          hasEmailAccounts={hasEmailAccounts}
-          emailAccounts={emailAccounts}
-          onRefresh={handleRefresh}
-          selectedEmailsCount={selectedEmails.length}
-          onMarkAsRead={() => handleBulkAction('markAsRead')}
-          onMarkAsUnread={() => handleBulkAction('markAsUnread')}
-          onStar={() => {}}
-          onUnstar={() => {}}
-          onDelete={() => handleBulkAction('delete')}
-          onArchive={() => handleBulkAction('archive')}
-        />
+        <div className="hidden md:block">
+          <EmailToolbar
+            searchTerm={searchTerm}
+            onSearchTermChange={setSearchTerm}
+            selectedAccountId={selectedAccountId}
+            onSelectedAccountIdChange={setSelectedAccountId}
+            hasEmailAccounts={hasEmailAccounts}
+            emailAccounts={emailAccounts}
+            onRefresh={handleRefresh}
+            selectedEmailsCount={selectedEmails.length}
+            onMarkAsRead={() => handleBulkAction('markAsRead')}
+            onMarkAsUnread={() => handleBulkAction('markAsUnread')}
+            onStar={() => {}}
+            onUnstar={() => {}}
+            onDelete={() => handleBulkAction('delete')}
+            onArchive={() => handleBulkAction('archive')}
+          />
+        </div>
 
-        <div className="p-4 border-b">
-          <div className="flex gap-4 items-center">
+        <div className="p-3 sm:p-4 border-b">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
@@ -310,9 +315,10 @@ export function Email() {
                 className="pl-10"
               />
             </div>
-            <Button onClick={() => setShowCompose(true)}>
+            <Button onClick={() => setShowCompose(true)} className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
-              Nieuwe e-mail
+              <span className="hidden sm:inline">Nieuwe e-mail</span>
+              <span className="sm:hidden">Nieuw</span>
             </Button>
           </div>
         </div>

@@ -11,7 +11,7 @@ interface StatsGridProps {
 
 export const StatsGrid = ({ totalCustomers, activeProjects, totalRevenue, completedProjects }: StatsGridProps) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-6">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
       <StatCard title="Totaal Klanten" value={totalCustomers} icon={Users} iconColorClass="text-blue-600">
         <p className="text-xs text-green-600 font-medium">
           <TrendingUp className="inline h-3 w-3 mr-1" />

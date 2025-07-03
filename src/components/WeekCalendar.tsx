@@ -238,9 +238,9 @@ export const WeekCalendar = ({
   };
 
   return (
-    <div className="w-full bg-white rounded-lg border select-none overflow-hidden">
+    <div className="w-full bg-white select-none overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between p-3 sm:p-4 border-b bg-gray-50">
+      <div className="flex items-center justify-between p-2 sm:p-4 border-b bg-gray-50">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={goToPreviousWeek} className="h-8 w-8 p-0">
             <ChevronLeft className="h-4 w-4" />

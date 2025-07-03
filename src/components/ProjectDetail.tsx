@@ -104,43 +104,45 @@ const ProjectDetail = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={() => navigate(-1)}>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+          <Button variant="outline" onClick={() => navigate(-1)} className="w-fit">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Terug
           </Button>
-          <h2 className="text-2xl font-bold">Project: {project.title}</h2>
-          <span className={`px-2 py-1 rounded-full text-xs ${
-            project.status === "gepland" ? "bg-orange-100 text-orange-800" :
-            project.status === "afgerond" ? "bg-green-100 text-green-800" :
-            project.status === "herkeuring" ? "bg-gray-100 text-gray-800" :
-            project.status === 'in-uitvoering' ? 'bg-blue-100 text-blue-800' :
-            "bg-red-100 text-red-800"
-          }`}>
-            {project.status === "te-plannen" ? "Te plannen" :
-             project.status === "gepland" ? "Gepland" :
-             project.status === "in-uitvoering" ? "In uitvoering" :
-             project.status === "herkeuring" ? "Herkeuring" :
-             project.status === "afgerond" ? "Afgerond" :
-             "Onbekend"}
-          </span>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <h2 className="text-xl sm:text-2xl font-bold">{project.title}</h2>
+            <span className={`px-2 py-1 rounded-full text-xs w-fit ${
+              project.status === "gepland" ? "bg-orange-100 text-orange-800" :
+              project.status === "afgerond" ? "bg-green-100 text-green-800" :
+              project.status === "herkeuring" ? "bg-gray-100 text-gray-800" :
+              project.status === 'in-uitvoering' ? 'bg-blue-100 text-blue-800' :
+              "bg-red-100 text-red-800"
+            }`}>
+              {project.status === "te-plannen" ? "Te plannen" :
+               project.status === "gepland" ? "Gepland" :
+               project.status === "in-uitvoering" ? "In uitvoering" :
+               project.status === "herkeuring" ? "Herkeuring" :
+               project.status === "afgerond" ? "Afgerond" :
+               "Onbekend"}
+            </span>
+          </div>
         </div>
         
         <div className="flex gap-2">
           {!isEditing ? (
-            <Button onClick={handleEditStart}>
+            <Button onClick={handleEditStart} size="sm" className="w-full sm:w-auto">
               <Edit className="mr-2 h-4 w-4" />
               Bewerken
             </Button>
           ) : (
             <>
-              <Button variant="outline" onClick={handleEditCancel}>
+              <Button variant="outline" onClick={handleEditCancel} size="sm" className="flex-1 sm:flex-none">
                 <X className="mr-2 h-4 w-4" />
                 Annuleren
               </Button>
-              <Button onClick={handleEditSave}>
+              <Button onClick={handleEditSave} size="sm" className="flex-1 sm:flex-none">
                 <Save className="mr-2 h-4 w-4" />
                 Opslaan
               </Button>
@@ -149,7 +151,7 @@ const ProjectDetail = () => {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Projectgegevens</CardTitle>
@@ -296,30 +298,30 @@ const ProjectDetail = () => {
       </div>
 
       <Tabs value={projectDetailTab} onValueChange={setProjectDetailTab} className="w-full">
-        <TabsList className="mb-4 w-full sm:w-auto">
-          <TabsTrigger value="details" className="flex-col sm:flex-row gap-1 sm:gap-2">
+        <TabsList className="mb-4 grid w-full grid-cols-3 lg:grid-cols-6 h-auto">
+          <TabsTrigger value="details" className="flex flex-col gap-1 py-2 text-xs">
             <Clipboard className="h-4 w-4" />
-            <span className="text-xs sm:text-sm">Details</span>
+            <span>Details</span>
           </TabsTrigger>
-          <TabsTrigger value="planning" className="flex-col sm:flex-row gap-1 sm:gap-2">
+          <TabsTrigger value="planning" className="flex flex-col gap-1 py-2 text-xs">
             <Calendar className="h-4 w-4" />
-            <span className="text-xs sm:text-sm">Planning</span>
+            <span>Planning</span>
           </TabsTrigger>
-          <TabsTrigger value="materials" className="flex-col sm:flex-row gap-1 sm:gap-2">
+          <TabsTrigger value="materials" className="flex flex-col gap-1 py-2 text-xs">
             <FileText className="h-4 w-4" />
-            <span className="text-xs sm:text-sm">Materialen</span>
+            <span>Materialen</span>
           </TabsTrigger>
-          <TabsTrigger value="personnel" className="flex-col sm:flex-row gap-1 sm:gap-2">
+          <TabsTrigger value="personnel" className="flex flex-col gap-1 py-2 text-xs">
             <Users className="h-4 w-4" />
-            <span className="text-xs sm:text-sm">Personeel</span>
+            <span>Personeel</span>
           </TabsTrigger>
-          <TabsTrigger value="chat" className="flex-col sm:flex-row gap-1 sm:gap-2">
+          <TabsTrigger value="chat" className="flex flex-col gap-1 py-2 text-xs">
             <MessageCircle className="h-4 w-4" />
-            <span className="text-xs sm:text-sm">Chat</span>
+            <span>Chat</span>
           </TabsTrigger>
-          <TabsTrigger value="reports" className="flex-col sm:flex-row gap-1 sm:gap-2">
+          <TabsTrigger value="reports" className="flex flex-col gap-1 py-2 text-xs">
             <BarChart className="h-4 w-4" />
-            <span className="text-xs sm:text-sm">Rapportages</span>
+            <span>Rapporten</span>
           </TabsTrigger>
         </TabsList>
 
@@ -347,7 +349,7 @@ const ProjectDetail = () => {
                 </div>
                 <div>
                   <h3 className="font-semibold mb-2">Project specificaties</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm font-medium">Type project</p>
                       <p className="text-sm text-muted-foreground">{project.title.includes("kozijn") ? "Kozijnwerk" : "Glaswerk"}</p>

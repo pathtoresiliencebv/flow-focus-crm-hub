@@ -107,7 +107,7 @@ export const Dashboard = () => {
                 Overzicht van alle geplande activiteiten deze week
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               <WeekCalendar 
                 events={getCalendarEvents()}
                 onEventClick={handleEventClick}

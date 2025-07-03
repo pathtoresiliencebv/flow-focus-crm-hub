@@ -256,7 +256,7 @@ export const Receipts = () => {
   const processedReceipts = receipts.filter(r => r.status !== 'pending');
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 max-w-full overflow-x-hidden">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <h2 className="text-xl sm:text-2xl font-bold">Bonnetjes</h2>
         <div className="flex flex-col sm:flex-row gap-2">
@@ -439,18 +439,19 @@ export const Receipts = () => {
                   ))}
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Datum</TableHead>
-                      <TableHead>Omschrijving</TableHead>
-                      <TableHead>Categorie</TableHead>
-                      <TableHead>Bedrag</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Acties</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[100px]">Datum</TableHead>
+                        <TableHead className="min-w-[150px]">Omschrijving</TableHead>
+                        <TableHead className="min-w-[100px]">Categorie</TableHead>
+                        <TableHead className="min-w-[80px]">Bedrag</TableHead>
+                        <TableHead className="min-w-[120px]">Status</TableHead>
+                        <TableHead className="min-w-[200px]">Acties</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                     {pendingReceipts.map((receipt) => (
                       <TableRow key={receipt.id}>
                         <TableCell>{receipt.uploadDate}</TableCell>
@@ -490,7 +491,8 @@ export const Receipts = () => {
                       </TableRow>
                     ))}
                   </TableBody>
-                </Table>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>

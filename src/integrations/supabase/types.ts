@@ -1327,6 +1327,12 @@ export type Database = {
         Args: { user1_id: string; user2_id: string }
         Returns: string
       }
+      get_user_channels: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          channel_id: string
+        }[]
+      }
       get_user_role: {
         Args: { p_user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
@@ -1341,6 +1347,10 @@ export type Database = {
       update_user_online_status: {
         Args: { p_user_id: string; p_is_online: boolean }
         Returns: undefined
+      }
+      user_can_access_channel: {
+        Args: { channel_uuid: string }
+        Returns: boolean
       }
     }
     Enums: {

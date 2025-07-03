@@ -154,29 +154,64 @@ export const useChat = () => {
           .from('chat_messages')
           .select(`
             *,
-            sender:profiles!chat_messages_sender_id_fkey(id, full_name, role)
+            sender:profiles!inner(id, full_name, role)
           `)
           .eq('channel_id', channelId)
           .order('created_at', { ascending: true })
           .limit(100);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error loading messages:', error);
+          // Try without profile join for backwards compatibility
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('chat_messages')
+            .select('*')
+            .eq('channel_id', channelId)
+            .order('created_at', { ascending: true })
+            .limit(100);
 
-        onlineMessages = (data || []).map(msg => ({
-          id: msg.id,
-          channel_id: msg.channel_id,
-          sender_id: msg.sender_id,
-          content: msg.content || undefined,
-          message_type: msg.message_type as 'text' | 'image' | 'file' | 'voice',
-          file_url: msg.file_url || undefined,
-          file_name: msg.file_name || undefined,
-          translated_content: msg.translated_content as Record<string, string> | undefined,
-          reply_to_id: msg.reply_to_id || undefined,
-          is_edited: msg.is_edited,
-          created_at: msg.created_at,
-          updated_at: msg.updated_at,
-          sender: Array.isArray(msg.sender) && msg.sender.length > 0 ? msg.sender[0] : undefined
-        }));
+          if (fallbackError) throw fallbackError;
+
+          onlineMessages = (fallbackData || []).map(msg => ({
+            id: msg.id,
+            channel_id: msg.channel_id,
+            sender_id: msg.sender_id,
+            content: msg.content || undefined,
+            message_type: msg.message_type as 'text' | 'image' | 'file' | 'voice',
+            file_url: msg.file_url || undefined,
+            file_name: msg.file_name || undefined,
+            translated_content: msg.translated_content as Record<string, string> | undefined,
+            reply_to_id: msg.reply_to_id || undefined,
+            is_edited: msg.is_edited,
+            created_at: msg.created_at,
+            updated_at: msg.updated_at,
+            sender: {
+              id: msg.sender_id,
+              full_name: 'Unknown User',
+              role: 'Bekijker'
+            }
+          }));
+        } else {
+          onlineMessages = (data || []).map(msg => ({
+            id: msg.id,
+            channel_id: msg.channel_id,
+            sender_id: msg.sender_id,
+            content: msg.content || undefined,
+            message_type: msg.message_type as 'text' | 'image' | 'file' | 'voice',
+            file_url: msg.file_url || undefined,
+            file_name: msg.file_name || undefined,
+            translated_content: msg.translated_content as Record<string, string> | undefined,
+            reply_to_id: msg.reply_to_id || undefined,
+            is_edited: msg.is_edited,
+            created_at: msg.created_at,
+            updated_at: msg.updated_at,
+            sender: (Array.isArray(msg.sender) && msg.sender.length > 0) ? msg.sender[0] : {
+              id: msg.sender_id,
+              full_name: 'Unknown User',
+              role: 'Bekijker'
+            }
+          }));
+        }
       }
 
       // Load offline messages

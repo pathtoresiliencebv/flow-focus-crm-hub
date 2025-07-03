@@ -229,7 +229,7 @@ export function PlanningManagement() {
           <p className="text-muted-foreground">Beheer afspraken en werkplanning</p>
         </div>
         
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-2">
           <Button 
             onClick={() => setShowQuickPlanning(true)}
             size="sm"
@@ -259,7 +259,7 @@ export function PlanningManagement() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
@@ -325,11 +325,12 @@ export function PlanningManagement() {
           />
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             variant={filterStatus === null ? "default" : "outline"}
             size="sm"
             onClick={() => setFilterStatus(null)}
+            className="text-xs sm:text-sm"
           >
             Alle
           </Button>
@@ -337,6 +338,7 @@ export function PlanningManagement() {
             variant={filterStatus === "Gepland" ? "default" : "outline"}
             size="sm"
             onClick={() => setFilterStatus("Gepland")}
+            className="text-xs sm:text-sm"
           >
             Gepland
           </Button>
@@ -344,6 +346,7 @@ export function PlanningManagement() {
             variant={filterStatus === "In uitvoering" ? "default" : "outline"}
             size="sm"
             onClick={() => setFilterStatus("In uitvoering")}
+            className="text-xs sm:text-sm"
           >
             Actief
           </Button>
@@ -351,6 +354,7 @@ export function PlanningManagement() {
             variant={filterStatus === "Afgerond" ? "default" : "outline"}
             size="sm"
             onClick={() => setFilterStatus("Afgerond")}
+            className="text-xs sm:text-sm"
           >
             Afgerond
           </Button>
