@@ -68,70 +68,73 @@ export function Email() {
 
   const hasEmailAccounts = emailAccounts.length > 0;
 
-  useEffect(() => {
-    // Mock data loading (replace with actual API call when backend is ready)
-    const mockEmails: Email[] = [
-      {
-        id: '1',
-        from: 'klant@example.com',
-        to: 'jij@smans.nl',
-        subject: 'Offerte aanvraag',
-        body: 'Beste,\n\nWij zouden graag een offerte ontvangen voor...',
-        date: new Date().toISOString(),
-        isRead: false,
-        isStarred: true,
-        folder: 'inbox',
-        attachments: ['offerte_aanvraag.pdf']
-      },
-      {
-        id: '2',
-        from: 'support@github.com',
-        to: 'jij@smans.nl',
-        subject: 'Nieuwe repository gemaakt',
-        body: 'Je hebt een nieuwe repository aangemaakt...',
-        date: new Date(Date.now() - 86400000).toISOString(),
-        isRead: true,
-        isStarred: false,
-        folder: 'inbox'
-      },
-      {
-        id: '3',
-        from: 'noreply@linkedin.com',
-        to: 'jij@smans.nl',
-        subject: 'Iemand heeft je profiel bekeken',
-        body: 'Bekijk wie je profiel heeft bekeken...',
-        date: new Date(Date.now() - 172800000).toISOString(),
-        isRead: true,
-        isStarred: false,
-        folder: 'inbox'
-      },
-      {
-        id: '4',
-        from: 'jij@smans.nl',
-        to: 'klant@example.com',
-        subject: 'Offerte verzonden',
-        body: 'Beste,\n\nZoals afgesproken stuur ik u hierbij de offerte...',
-        date: new Date(Date.now() - 259200000).toISOString(),
-        isRead: true,
-        isStarred: false,
-        folder: 'sent'
-      },
-      {
-        id: '5',
-        from: 'jij@smans.nl',
-        to: 'manager@example.com',
-        subject: 'Concept factuur',
-        body: 'Hierbij een concept factuur die nog nagekeken moet worden...',
-        date: new Date(Date.now() - 345600000).toISOString(),
-        isRead: true,
-        isStarred: false,
-        folder: 'drafts'
-      }
-    ];
-    setEmails(mockEmails);
-  }, []);
+  // Fetch emails from database
+  const { data: fetchedEmails = [], refetch: refetchEmails } = useQuery<Email[]>({
+    queryKey: ['emails', user?.id, selectedAccountId],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
+      let query = supabase
+        .from('emails')
+        .select(`
+          id,
+          subject,
+          from_address,
+          from_name,
+          to_addresses,
+          cc_addresses,
+          bcc_addresses,
+          body_text,
+          body_html,
+          folder,
+          is_read,
+          is_starred,
+          is_draft,
+          is_sent,
+          created_at,
+          sent_at,
+          received_at,
+          attachments
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-  const handleSelectEmail = (id: string) => {
+      if (selectedAccountId !== 'all') {
+        query = query.eq('email_settings_id', selectedAccountId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error fetching emails:', error);
+        return [];
+      }
+
+      // Transform database emails to component Email interface
+      return (data || []).map((email): Email => ({
+        id: email.id,
+        from: email.from_name ? `${email.from_name} <${email.from_address}>` : email.from_address,
+        to: Array.isArray(email.to_addresses) ? email.to_addresses.join(', ') : email.to_addresses?.[0] || '',
+        subject: email.subject,
+        body: email.body_html || email.body_text || '',
+        date: email.sent_at || email.received_at || email.created_at,
+        isRead: email.is_read || false,
+        isStarred: email.is_starred || false,
+        folder: email.folder || 'inbox',
+        attachments: Array.isArray(email.attachments) ? email.attachments.map((att: any) => att.filename || att.name) : undefined
+      }));
+    },
+    enabled: !!user?.id,
+  });
+
+  // Update local emails state when data changes
+  useEffect(() => {
+    if (fetchedEmails.length > 0) {
+      setEmails(fetchedEmails);
+    }
+  }, [fetchedEmails]);
+
+  const handleSelectEmail = async (id: string) => {
     setSelectedEmails(prev => {
       if (prev.includes(id)) {
         return prev.filter(emailId => emailId !== id);
@@ -141,9 +144,22 @@ export function Email() {
     });
 
     // Mark as read when selected
-    setEmails(prev => prev.map(email =>
-      email.id === id ? { ...email, isRead: true } : email
-    ));
+    const emailToUpdate = emails.find(email => email.id === id);
+    if (emailToUpdate && !emailToUpdate.isRead) {
+      try {
+        await supabase
+          .from('emails')
+          .update({ is_read: true })
+          .eq('id', id)
+          .eq('user_id', user?.id);
+        
+        setEmails(prev => prev.map(email =>
+          email.id === id ? { ...email, isRead: true } : email
+        ));
+      } catch (error) {
+        console.error('Error marking email as read:', error);
+      }
+    }
   };
 
   const handleSelectAll = () => {
@@ -154,10 +170,20 @@ export function Email() {
     }
   };
 
-  const handleToggleStar = (id: string, isStarred: boolean) => {
-    setEmails(prev => prev.map(email =>
-      email.id === id ? { ...email, isStarred } : email
-    ));
+  const handleToggleStar = async (id: string, isStarred: boolean) => {
+    try {
+      await supabase
+        .from('emails')
+        .update({ is_starred: isStarred })
+        .eq('id', id)
+        .eq('user_id', user?.id);
+      
+      setEmails(prev => prev.map(email =>
+        email.id === id ? { ...email, isStarred } : email
+      ));
+    } catch (error) {
+      console.error('Error updating email star status:', error);
+    }
   };
 
   const handleArchive = (id: string) => {
@@ -208,7 +234,7 @@ export function Email() {
 
   const handleRefresh = () => {
     refetchAccounts();
-    // TODO: Add email refresh logic when backend is ready
+    refetchEmails();
   };
 
   const handleNavigateToSettings = () => {

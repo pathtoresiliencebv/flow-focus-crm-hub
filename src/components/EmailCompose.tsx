@@ -63,31 +63,26 @@ export const EmailCompose: React.FC<EmailComposeProps> = ({ onClose, replyTo }) 
         return;
       }
 
-      // Save email to database with correct user_id
-      const emailData = {
-        user_id: user.id, // Ensure this is set to current user
-        email_settings_id: emailSettings.id,
-        subject: formData.subject,
-        from_address: emailSettings.email_address,
-        from_name: emailSettings.display_name,
-        to_addresses: formData.to.split(',').map(email => email.trim()),
-        cc_addresses: formData.cc ? formData.cc.split(',').map(email => email.trim()) : null,
-        bcc_addresses: formData.bcc ? formData.bcc.split(',').map(email => email.trim()) : null,
-        body_text: formData.body,
-        body_html: formData.body.replace(/\n/g, '<br>'),
-        folder: 'sent',
-        is_sent: true,
-        sent_at: new Date().toISOString(),
-        in_reply_to: replyTo?.inReplyTo || null
-      };
-
-      const { error } = await supabase
-        .from('emails')
-        .insert(emailData);
+      // Send email via edge function
+      const { data, error } = await supabase.functions.invoke('send-email', {
+        body: {
+          to: formData.to.split(',').map(email => email.trim()),
+          cc: formData.cc ? formData.cc.split(',').map(email => email.trim()) : undefined,
+          bcc: formData.bcc ? formData.bcc.split(',').map(email => email.trim()) : undefined,
+          subject: formData.subject,
+          body_text: formData.body,
+          body_html: formData.body.replace(/\n/g, '<br>'),
+          email_settings_id: emailSettings.id,
+          in_reply_to: replyTo?.inReplyTo || undefined,
+        }
+      });
 
       if (error) {
-        console.error('Error saving email:', error);
         throw error;
+      }
+
+      if (!data?.success) {
+        throw new Error('E-mail verzending gefaald');
       }
 
       toast({
