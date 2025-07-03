@@ -1380,6 +1380,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      generate_quote_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       generate_quote_public_token: {
         Args: Record<PropertyKey, never>
         Returns: string
