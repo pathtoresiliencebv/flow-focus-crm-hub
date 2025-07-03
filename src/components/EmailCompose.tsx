@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { X, Send, Paperclip } from 'lucide-react';
+import { AIInput } from '@/components/ui/ai-input';
 
 interface EmailComposeProps {
   onClose: () => void;
@@ -148,22 +149,26 @@ export const EmailCompose: React.FC<EmailComposeProps> = ({ onClose, replyTo }) 
 
             <div>
               <label className="text-sm font-medium">Onderwerp</label>
-              <Input
+              <AIInput
                 value={formData.subject}
-                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, subject: value })}
                 placeholder="Onderwerp van de e-mail"
-                required
+                type="email"
+                context={`E-mail naar: ${formData.to}`}
+                aiPrompt="Genereer een professioneel onderwerp voor deze e-mail"
               />
             </div>
 
             <div>
               <label className="text-sm font-medium">Bericht</label>
-              <Textarea
+              <AIInput
                 value={formData.body}
-                onChange={(e) => setFormData({ ...formData, body: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, body: value })}
                 placeholder="Typ hier uw bericht..."
-                rows={12}
-                required
+                type="email"
+                context={`E-mail naar: ${formData.to}, Onderwerp: ${formData.subject}`}
+                multiline
+                aiPrompt="Schrijf een professionele e-mail"
               />
             </div>
           </div>
