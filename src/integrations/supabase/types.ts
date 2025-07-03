@@ -1457,6 +1457,8 @@ export type Database = {
         | "users_delete"
         | "reports_view"
         | "settings_edit"
+        | "projects_create"
+        | "planning_create"
       customer_status: "Actief" | "In behandeling" | "Inactief"
       project_status:
         | "te-plannen"
@@ -1601,6 +1603,8 @@ export const Constants = {
         "users_delete",
         "reports_view",
         "settings_edit",
+        "projects_create",
+        "planning_create",
       ],
       customer_status: ["Actief", "In behandeling", "Inactief"],
       project_status: [
