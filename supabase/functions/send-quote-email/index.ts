@@ -53,7 +53,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Generate public link for the quote
-    const publicUrl = `${Deno.env.get('SUPABASE_URL')?.replace('pvesgvkyiaqmsudmmtkc.supabase.co', '9619b9db-de5c-4281-9df0-edb1fcb07eea.lovableproject.com')}/quote/${quote.public_token}`;
+    const publicUrl = `https://smanscrm.nl/quote/${quote.public_token}`;
     
     // Create email HTML content
     const emailHtml = `
