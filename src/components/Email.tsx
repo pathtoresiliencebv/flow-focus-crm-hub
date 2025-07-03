@@ -8,6 +8,7 @@ import { EmailCompose } from './EmailCompose';
 import { EmailSidebar } from './EmailSidebar';
 import { EmailToolbar } from './EmailToolbar';
 import { EmailSettings } from './EmailSettings';
+import { EmailDetailView } from './EmailDetailView';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -42,6 +43,8 @@ export function Email() {
   const [currentFolder, setCurrentFolder] = useState('inbox');
   const [showCompose, setShowCompose] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showDetailView, setShowDetailView] = useState(false);
+  const [selectedEmailForView, setSelectedEmailForView] = useState<Email | null>(null);
   const [replyTo, setReplyTo] = useState<Email | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAccountId, setSelectedAccountId] = useState<string | 'all'>('all');
@@ -162,6 +165,28 @@ export function Email() {
     }
   };
 
+  const handleViewEmail = async (email: Email) => {
+    setSelectedEmailForView(email);
+    setShowDetailView(true);
+    
+    // Mark as read when viewed
+    if (!email.isRead) {
+      try {
+        await supabase
+          .from('emails')
+          .update({ is_read: true })
+          .eq('id', email.id)
+          .eq('user_id', user?.id);
+        
+        setEmails(prev => prev.map(e =>
+          e.id === email.id ? { ...e, isRead: true } : e
+        ));
+      } catch (error) {
+        console.error('Error marking email as read:', error);
+      }
+    }
+  };
+
   const handleSelectAll = () => {
     if (areAllSelected) {
       setSelectedEmails([]);
@@ -229,7 +254,14 @@ export function Email() {
 
   const handleReply = (email: Email) => {
     setReplyTo(email);
+    setShowDetailView(false);
+    setSelectedEmailForView(null);
     setShowCompose(true);
+  };
+
+  const handleBackToList = () => {
+    setShowDetailView(false);
+    setSelectedEmailForView(null);
   };
 
   const handleRefresh = () => {
@@ -269,6 +301,19 @@ export function Email() {
           <EmailSettings />
         </div>
       </div>
+    );
+  }
+
+  if (showDetailView && selectedEmailForView) {
+    return (
+      <EmailDetailView
+        email={selectedEmailForView}
+        onBack={handleBackToList}
+        onReply={handleReply}
+        onToggleStar={handleToggleStar}
+        onArchive={handleArchive}
+        onDelete={handleDelete}
+      />
     );
   }
 
@@ -355,6 +400,7 @@ export function Email() {
             filteredEmails={filteredEmails}
             selectedEmails={selectedEmails}
             onSelectEmail={handleSelectEmail}
+            onViewEmail={handleViewEmail}
             areAllSelected={areAllSelected}
             onSelectAll={handleSelectAll}
             onReply={handleReply}

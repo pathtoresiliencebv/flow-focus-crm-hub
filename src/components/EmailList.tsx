@@ -24,6 +24,7 @@ interface EmailListProps {
   filteredEmails: Email[];
   selectedEmails: string[];
   onSelectEmail: (id: string) => void;
+  onViewEmail: (email: Email) => void;
   areAllSelected: boolean;
   onSelectAll: () => void;
   onReply: (email: Email) => void;
@@ -37,6 +38,7 @@ export function EmailList({
   filteredEmails,
   selectedEmails,
   onSelectEmail,
+  onViewEmail,
   areAllSelected,
   onSelectAll,
   onReply,
@@ -100,20 +102,26 @@ export function EmailList({
               {filteredEmails.map((email) => (
                 <div
                   key={email.id}
-                  className={`p-4 hover:bg-gray-50 transition-colors ${
+                  className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
                     selectedEmails.includes(email.id) ? 'bg-blue-50' : ''
                   } ${!email.isRead ? 'bg-blue-25 border-l-4 border-l-blue-500' : ''}`}
+                  onClick={() => onViewEmail(email)}
                 >
                   <div className="flex items-start gap-3">
-                    <Checkbox
-                      checked={selectedEmails.includes(email.id)}
-                      onCheckedChange={() => onSelectEmail(email.id)}
-                    />
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedEmails.includes(email.id)}
+                        onCheckedChange={() => onSelectEmail(email.id)}
+                      />
+                    </div>
                     
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => onToggleStar(email.id, !email.isStarred)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleStar(email.id, !email.isStarred);
+                      }}
                       className="p-1 h-auto"
                     >
                       <Star
@@ -151,7 +159,10 @@ export function EmailList({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => onReply(email)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onReply(email);
+                        }}
                         className="p-1 h-auto"
                         title="Beantwoorden"
                       >
@@ -162,7 +173,10 @@ export function EmailList({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => onArchive(email.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onArchive(email.id);
+                          }}
                           className="p-1 h-auto"
                           title="Archiveren"
                         >
@@ -173,7 +187,10 @@ export function EmailList({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => onDelete(email.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(email.id);
+                        }}
                         className="p-1 h-auto text-red-600 hover:text-red-700"
                         title="Verwijderen"
                       >
