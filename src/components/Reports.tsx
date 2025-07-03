@@ -28,11 +28,11 @@ export const Reports = () => {
       />
 
       <Tabs defaultValue="sales" className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="sales">Verkoopcijfers</TabsTrigger>
-          <TabsTrigger value="projects">Projectoverzicht</TabsTrigger>
-          <TabsTrigger value="finance">Financiële resultaten</TabsTrigger>
-          <TabsTrigger value="inventory">Voorraadanalyse</TabsTrigger>
+        <TabsList className="mb-4 w-full sm:w-auto">
+          <TabsTrigger value="sales" className="text-xs sm:text-sm">Verkoopcijfers</TabsTrigger>
+          <TabsTrigger value="projects" className="text-xs sm:text-sm">Projectoverzicht</TabsTrigger>
+          <TabsTrigger value="finance" className="text-xs sm:text-sm">Financiële resultaten</TabsTrigger>
+          <TabsTrigger value="inventory" className="text-xs sm:text-sm">Voorraadanalyse</TabsTrigger>
         </TabsList>
 
         <TabsContent value="sales">

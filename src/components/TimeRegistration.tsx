@@ -61,11 +61,11 @@ export const TimeRegistration = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="overview">Overzicht</TabsTrigger>
-          <TabsTrigger value="calendar">Weekkalender</TabsTrigger>
-          <TabsTrigger value="register">Registreren</TabsTrigger>
-          <TabsTrigger value="reports">Rapporten</TabsTrigger>
+        <TabsList className="mb-4 w-full sm:w-auto">
+          <TabsTrigger value="overview" className="text-xs sm:text-sm">Overzicht</TabsTrigger>
+          <TabsTrigger value="calendar" className="text-xs sm:text-sm">Weekkalender</TabsTrigger>
+          <TabsTrigger value="register" className="text-xs sm:text-sm">Registreren</TabsTrigger>
+          <TabsTrigger value="reports" className="text-xs sm:text-sm">Rapporten</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">

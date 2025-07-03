@@ -107,22 +107,22 @@ const CustomerDetail = () => {
       </div>
 
       <Tabs value={customerDetailTab} onValueChange={setCustomerDetailTab} className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="projects">
-            <Clock className="mr-2 h-4 w-4" />
-            Projecten
+        <TabsList className="mb-4 w-full sm:w-auto">
+          <TabsTrigger value="projects" className="flex-col sm:flex-row gap-1 sm:gap-2">
+            <Clock className="h-4 w-4" />
+            <span className="text-xs sm:text-sm">Projecten</span>
           </TabsTrigger>
-          <TabsTrigger value="invoices">
-            <Receipt className="mr-2 h-4 w-4" />
-            Facturen
+          <TabsTrigger value="invoices" className="flex-col sm:flex-row gap-1 sm:gap-2">
+            <Receipt className="h-4 w-4" />
+            <span className="text-xs sm:text-sm">Facturen</span>
           </TabsTrigger>
-          <TabsTrigger value="quotes">
-            <File className="mr-2 h-4 w-4" />
-            Offertes
+          <TabsTrigger value="quotes" className="flex-col sm:flex-row gap-1 sm:gap-2">
+            <File className="h-4 w-4" />
+            <span className="text-xs sm:text-sm">Offertes</span>
           </TabsTrigger>
-          <TabsTrigger value="reports">
-            <CheckCircle className="mr-2 h-4 w-4" />
-            Rapportages
+          <TabsTrigger value="reports" className="flex-col sm:flex-row gap-1 sm:gap-2">
+            <CheckCircle className="h-4 w-4" />
+            <span className="text-xs sm:text-sm">Rapportages</span>
           </TabsTrigger>
         </TabsList>
 

@@ -296,30 +296,30 @@ const ProjectDetail = () => {
       </div>
 
       <Tabs value={projectDetailTab} onValueChange={setProjectDetailTab} className="w-full">
-        <TabsList className="mb-4">
-          <TabsTrigger value="details">
-            <Clipboard className="mr-2 h-4 w-4" />
-            Details
+        <TabsList className="mb-4 w-full sm:w-auto">
+          <TabsTrigger value="details" className="flex-col sm:flex-row gap-1 sm:gap-2">
+            <Clipboard className="h-4 w-4" />
+            <span className="text-xs sm:text-sm">Details</span>
           </TabsTrigger>
-          <TabsTrigger value="planning">
-            <Calendar className="mr-2 h-4 w-4" />
-            Planning
+          <TabsTrigger value="planning" className="flex-col sm:flex-row gap-1 sm:gap-2">
+            <Calendar className="h-4 w-4" />
+            <span className="text-xs sm:text-sm">Planning</span>
           </TabsTrigger>
-          <TabsTrigger value="materials">
-            <FileText className="mr-2 h-4 w-4" />
-            Materialen
+          <TabsTrigger value="materials" className="flex-col sm:flex-row gap-1 sm:gap-2">
+            <FileText className="h-4 w-4" />
+            <span className="text-xs sm:text-sm">Materialen</span>
           </TabsTrigger>
-          <TabsTrigger value="personnel">
-            <Users className="mr-2 h-4 w-4" />
-            Personeel
+          <TabsTrigger value="personnel" className="flex-col sm:flex-row gap-1 sm:gap-2">
+            <Users className="h-4 w-4" />
+            <span className="text-xs sm:text-sm">Personeel</span>
           </TabsTrigger>
-          <TabsTrigger value="chat">
-            <MessageCircle className="mr-2 h-4 w-4" />
-            Chat
+          <TabsTrigger value="chat" className="flex-col sm:flex-row gap-1 sm:gap-2">
+            <MessageCircle className="h-4 w-4" />
+            <span className="text-xs sm:text-sm">Chat</span>
           </TabsTrigger>
-          <TabsTrigger value="reports">
-            <BarChart className="mr-2 h-4 w-4" />
-            Rapportages
+          <TabsTrigger value="reports" className="flex-col sm:flex-row gap-1 sm:gap-2">
+            <BarChart className="h-4 w-4" />
+            <span className="text-xs sm:text-sm">Rapportages</span>
           </TabsTrigger>
         </TabsList>
 
