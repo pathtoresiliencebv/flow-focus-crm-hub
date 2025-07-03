@@ -117,12 +117,52 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
+    // Generate PDF attachment
+    let attachments = [];
+    try {
+      const pdfResponse = await supabase.functions.invoke('generate-quote-pdf', {
+        body: { quoteId: quoteId }
+      });
+      
+      if (pdfResponse.data && pdfResponse.data.success) {
+        const baseFilename = `offerte-${quote.quote_number}`;
+        
+        // Add main quote PDF
+        attachments.push({
+          filename: pdfResponse.data.filename || `${baseFilename}.pdf`,
+          content: pdfResponse.data.pdfData,
+          type: pdfResponse.data.contentType
+        });
+        
+        // If quote is signed, also add signed version
+        if (quote.client_signature_data && quote.client_signed_at) {
+          const signedPdfResponse = await supabase.functions.invoke('generate-quote-pdf', {
+            body: { quoteId: quoteId, includeSigned: true }
+          });
+          
+          if (signedPdfResponse.data && signedPdfResponse.data.success) {
+            attachments.push({
+              filename: `${baseFilename}-ondertekend.pdf`,
+              content: signedPdfResponse.data.pdfData,
+              type: signedPdfResponse.data.contentType
+            });
+          }
+        }
+        
+        console.log('PDF attachment(s) generated successfully:', attachments.length, 'files');
+      }
+    } catch (pdfError) {
+      console.error('Failed to generate PDF attachment:', pdfError);
+      // Continue without attachment
+    }
+
     // Send email via Resend
     const emailResponse = await resend.emails.send({
       from: "SMANS BV <offerte@smanscrm.nl>",
       to: [recipientEmail],
       subject: subject || `Offerte ${quote.quote_number} - SMANS BV`,
       html: emailHtml,
+      attachments: attachments
     });
 
     if (emailResponse.error) {

@@ -169,6 +169,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       }
 
       // Save quote to database with new block structure
+      console.log('Saving blocks to database:', JSON.stringify(blocks, null, 2));
       const { data, error } = await supabase
         .from('quotes')
         .insert({
@@ -179,7 +180,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
           quote_date: values.date,
           valid_until: values.validUntil,
           message: values.message || '',
-          items: JSON.parse(JSON.stringify(blocks)), // Convert to JSON-compatible format
+          items: JSON.parse(JSON.stringify(blocks)) as any, // Convert blocks to JSON-compatible format
           subtotal: totalAmount,
           vat_amount: totalVAT,
           total_amount: totalAmount,
