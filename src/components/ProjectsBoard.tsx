@@ -13,6 +13,7 @@ import { useUsers } from "@/hooks/useUsers";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
 import { useAuth } from "@/hooks/useAuth";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { InstallateurProjectList } from './InstallateurProjectList';
 
 type ProjectStatus = "te-plannen" | "gepland" | "in-uitvoering" | "herkeuring" | "afgerond";
 
@@ -175,9 +176,14 @@ const ProjectCard = ({ project, index }: { project: Project, index: number }) =>
 
 export const ProjectsBoard: React.FC = () => {
   const { projects, updateProject } = useCrmStore();
-  const { hasPermission } = useAuth();
+  const { hasPermission, profile } = useAuth();
   const [newProjectDialogOpen, setNewProjectDialogOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<ProjectStatus>("te-plannen");
+
+  // If user is Installateur, show simplified view
+  if (profile?.role === 'Installateur') {
+    return <InstallateurProjectList />;
+  }
 
   const handleDragEnd = (result: DropResult) => {
     const { destination, source, draggableId } = result;
