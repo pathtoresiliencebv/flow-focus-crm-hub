@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, FileText, Users, Clipboard, BarChart, Edit, Save, X, User, MessageCircle } from "lucide-react";
+import { ArrowLeft, Calendar, FileText, Users, Clipboard, BarChart, Edit, Save, X, User, MessageCircle, Pencil } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -118,6 +118,7 @@ const ProjectDetail = () => {
   };
 
   const canManageProject = profile?.role === 'Installateur' && project.assigned_user_id === user?.id;
+  const canEditTabs = profile?.role === 'Administrator' || profile?.role === 'Administratie';
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -192,7 +193,7 @@ const ProjectDetail = () => {
         )}
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className={`grid grid-cols-1 ${profile?.role === 'Installateur' ? 'lg:grid-cols-2' : 'lg:grid-cols-3'} gap-4 sm:gap-6`}>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Projectgegevens</CardTitle>
@@ -324,18 +325,20 @@ const ProjectDetail = () => {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Financieel overzicht</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-1">
-              <p className="text-sm"><span className="font-medium">Project waarde:</span> €{project.value}</p>
-              <p className="text-sm"><span className="font-medium">Gefactureerd:</span> €0.00</p>
-              <p className="text-sm"><span className="font-medium">Aantal facturen:</span> 0</p>
-            </div>
-          </CardContent>
-        </Card>
+        {profile?.role !== 'Installateur' && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Financieel overzicht</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-1">
+                <p className="text-sm"><span className="font-medium">Project waarde:</span> €{project.value}</p>
+                <p className="text-sm"><span className="font-medium">Gefactureerd:</span> €0.00</p>
+                <p className="text-sm"><span className="font-medium">Aantal facturen:</span> 0</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <Tabs value={projectDetailTab} onValueChange={setProjectDetailTab} className="w-full">
@@ -354,7 +357,10 @@ const ProjectDetail = () => {
               className="flex flex-col gap-1 py-3 text-xs min-h-[60px] data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg touch-manipulation transition-all"
               style={{ WebkitTapHighlightColor: 'transparent' }}
             >
-              <Calendar className="h-5 w-5" />
+              <div className="flex items-center gap-1">
+                <Calendar className="h-5 w-5" />
+                {canEditTabs && <Pencil className="h-3 w-3 opacity-50" />}
+              </div>
               <span className="font-medium">Planning</span>
             </TabsTrigger>
             <TabsTrigger 
@@ -362,7 +368,10 @@ const ProjectDetail = () => {
               className="flex flex-col gap-1 py-3 text-xs min-h-[60px] data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg touch-manipulation transition-all"
               style={{ WebkitTapHighlightColor: 'transparent' }}
             >
-              <FileText className="h-5 w-5" />
+              <div className="flex items-center gap-1">
+                <FileText className="h-5 w-5" />
+                {canEditTabs && <Pencil className="h-3 w-3 opacity-50" />}
+              </div>
               <span className="font-medium">Materialen</span>
             </TabsTrigger>
             <TabsTrigger 
@@ -370,7 +379,10 @@ const ProjectDetail = () => {
               className="flex flex-col gap-1 py-3 text-xs min-h-[60px] data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg touch-manipulation transition-all"
               style={{ WebkitTapHighlightColor: 'transparent' }}
             >
-              <Users className="h-5 w-5" />
+              <div className="flex items-center gap-1">
+                <Users className="h-5 w-5" />
+                {canEditTabs && <Pencil className="h-3 w-3 opacity-50" />}
+              </div>
               <span className="font-medium">Personeel</span>
             </TabsTrigger>
             <TabsTrigger 
@@ -381,14 +393,16 @@ const ProjectDetail = () => {
               <MessageCircle className="h-5 w-5" />
               <span className="font-medium">Chat</span>
             </TabsTrigger>
-            <TabsTrigger 
-              value="reports" 
-              className="flex flex-col gap-1 py-3 text-xs min-h-[60px] data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg touch-manipulation transition-all"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            >
-              <BarChart className="h-5 w-5" />
-              <span className="font-medium">Rapporten</span>
-            </TabsTrigger>
+            {profile?.role !== 'Installateur' && (
+              <TabsTrigger 
+                value="reports" 
+                className="flex flex-col gap-1 py-3 text-xs min-h-[60px] data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg touch-manipulation transition-all"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+              >
+                <BarChart className="h-5 w-5" />
+                <span className="font-medium">Rapporten</span>
+              </TabsTrigger>
+            )}
           </div>
         </TabsList>
 

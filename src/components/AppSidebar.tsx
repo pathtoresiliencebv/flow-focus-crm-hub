@@ -51,7 +51,7 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
       label: "Planning",
       icon: <Calendar className="h-5 w-5" />,
       key: "calendar",
-      permission: "projects_view",
+      permission: "planning_create",
     },
     {
       label: "Tijdregistratie",

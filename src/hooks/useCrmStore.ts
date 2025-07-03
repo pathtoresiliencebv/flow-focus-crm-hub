@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Database } from '@/integrations/supabase/types';
+import { useAuth } from '@/hooks/useAuth';
 
 // --- Types based on Supabase schema ---
 export type Customer = Database['public']['Tables']['customers']['Row'];
@@ -42,17 +43,40 @@ const fetchProjects = async () => {
 // --- Main hook ---
 export const useCrmStore = () => {
   const queryClient = useQueryClient();
+  const { profile, user } = useAuth();
 
   // --- QUERIES ---
-  const { data: customers = [], isLoading: isLoadingCustomers } = useQuery<Customer[]>({
+  const { data: allCustomers = [], isLoading: isLoadingCustomers } = useQuery<Customer[]>({
     queryKey: ['customers'],
     queryFn: fetchCustomers,
   });
 
-  const { data: projects = [], isLoading: isLoadingProjects } = useQuery<ProjectWithCustomerName[]>({
+  const { data: allProjects = [], isLoading: isLoadingProjects } = useQuery<ProjectWithCustomerName[]>({
     queryKey: ['projects'],
     queryFn: fetchProjects,
   });
+
+  // Filter data based on user role
+  const filteredProjects = useMemo(() => {
+    if (profile?.role === 'Installateur') {
+      // Installateurs only see projects assigned to them
+      return allProjects.filter(p => p.assigned_user_id === user?.id);
+    }
+    return allProjects;
+  }, [allProjects, profile?.role, user?.id]);
+
+  const filteredCustomers = useMemo(() => {
+    if (profile?.role === 'Installateur') {
+      // Installateurs only see customers from their assigned projects
+      const assignedProjectCustomerIds = filteredProjects.map(p => p.customer_id);
+      return allCustomers.filter(c => assignedProjectCustomerIds.includes(c.id));
+    }
+    return allCustomers;
+  }, [allCustomers, filteredProjects, profile?.role]);
+
+  // Expose filtered data
+  const customers = filteredCustomers;
+  const projects = filteredProjects;
 
   // --- MUTATIONS ---
   const addCustomerMutation = useMutation({
