@@ -15,7 +15,9 @@ export type Database = {
           created_by: string
           id: string
           is_active: boolean
+          is_direct_message: boolean | null
           name: string
+          participants: Json | null
           project_id: string | null
           type: string
           updated_at: string
@@ -25,7 +27,9 @@ export type Database = {
           created_by: string
           id?: string
           is_active?: boolean
+          is_direct_message?: boolean | null
           name: string
+          participants?: Json | null
           project_id?: string | null
           type?: string
           updated_at?: string
@@ -35,7 +39,9 @@ export type Database = {
           created_by?: string
           id?: string
           is_active?: boolean
+          is_direct_message?: boolean | null
           name?: string
+          participants?: Json | null
           project_id?: string | null
           type?: string
           updated_at?: string
@@ -1307,6 +1313,19 @@ export type Database = {
           status: Database["public"]["Enums"]["user_status"]
           email: string
         }[]
+      }
+      get_available_chat_users: {
+        Args: { current_user_id: string }
+        Returns: {
+          id: string
+          full_name: string
+          role: Database["public"]["Enums"]["user_role"]
+          is_online: boolean
+        }[]
+      }
+      get_or_create_direct_channel: {
+        Args: { user1_id: string; user2_id: string }
+        Returns: string
       }
       get_user_role: {
         Args: { p_user_id: string }

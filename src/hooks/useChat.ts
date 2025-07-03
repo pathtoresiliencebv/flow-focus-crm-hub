@@ -14,6 +14,15 @@ export interface ChatChannel {
   created_at: string;
   updated_at: string;
   unread_count?: number;
+  is_direct_message?: boolean;
+  participants?: string[];
+}
+
+export interface ChatUser {
+  id: string;
+  full_name?: string;
+  role?: string;
+  is_online?: boolean;
 }
 
 export interface ChatMessage {
@@ -55,6 +64,7 @@ export const useChat = () => {
   const [loading, setLoading] = useState(true);
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
   const [typingUsers, setTypingUsers] = useState<Record<string, string[]>>({});
+  const [availableUsers, setAvailableUsers] = useState<ChatUser[]>([]);
 
   // Load user's channels
   const loadChannels = useCallback(async () => {
@@ -95,7 +105,10 @@ export const useChat = () => {
             return { 
               ...channel, 
               type: channel.type as 'general' | 'project' | 'direct',
-              unread_count: count || 0 
+              unread_count: count || 0,
+              is_direct_message: channel.is_direct_message || false,
+              participants: Array.isArray(channel.participants) ? channel.participants : 
+                           typeof channel.participants === 'string' ? JSON.parse(channel.participants) : []
             };
           }
 
@@ -109,7 +122,10 @@ export const useChat = () => {
           return { 
             ...channel, 
             type: channel.type as 'general' | 'project' | 'direct',
-            unread_count: count || 0 
+            unread_count: count || 0,
+            is_direct_message: channel.is_direct_message || false,
+            participants: Array.isArray(channel.participants) ? channel.participants : 
+                         typeof channel.participants === 'string' ? JSON.parse(channel.participants) : []
           };
         })
       );
@@ -281,6 +297,53 @@ export const useChat = () => {
     }
   }, [user]);
 
+  // Load available users for chat based on role
+  const loadAvailableUsers = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .rpc('get_available_chat_users', { current_user_id: user.id });
+
+      if (error) throw error;
+
+      setAvailableUsers(data || []);
+    } catch (error) {
+      console.error('Error loading available users:', error);
+      toast({
+        title: "Fout",
+        description: "Kon gebruikers niet laden",
+        variant: "destructive",
+      });
+    }
+  }, [user, toast]);
+
+  // Create or get direct message channel
+  const createDirectChannel = useCallback(async (otherUserId: string) => {
+    if (!user) return null;
+
+    try {
+      const { data: channelId, error } = await supabase
+        .rpc('get_or_create_direct_channel', { 
+          user1_id: user.id, 
+          user2_id: otherUserId 
+        });
+
+      if (error) throw error;
+
+      await loadChannels();
+      return channelId;
+    } catch (error) {
+      console.error('Error creating direct channel:', error);
+      toast({
+        title: "Fout",
+        description: "Kon directe chat niet aanmaken",
+        variant: "destructive",
+      });
+      return null;
+    }
+  }, [user, toast, loadChannels]);
+
   // Create a new channel
   const createChannel = useCallback(async (
     name: string,
@@ -397,8 +460,9 @@ export const useChat = () => {
   useEffect(() => {
     if (user) {
       loadChannels().finally(() => setLoading(false));
+      loadAvailableUsers();
     }
-  }, [user, loadChannels]);
+  }, [user, loadChannels, loadAvailableUsers]);
 
   // Load messages when channel is selected
   useEffect(() => {
@@ -416,9 +480,12 @@ export const useChat = () => {
     setSelectedChannelId,
     sendMessage,
     createChannel,
+    createDirectChannel,
     markChannelAsRead,
     loadChannels,
     loadMessages,
+    availableUsers,
+    loadAvailableUsers,
     typingUsers,
     isOnline
   };

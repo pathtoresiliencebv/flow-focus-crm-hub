@@ -5,8 +5,8 @@ import { cn } from "@/lib/utils";
 import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { MobileChatView } from "./mobile/MobileChatView";
-import { ChatWindow } from "./ChatWindow";
+import { MobileImprovedChatView } from "./mobile/MobileImprovedChatView";
+import { ImprovedChatWindow } from "./ImprovedChatWindow";
 
 interface FloatingChatProps {
   currentProjectId?: string;
@@ -39,19 +39,9 @@ export const FloatingChat: React.FC<FloatingChatProps> = ({
             : "bottom-20 right-4 w-[400px] h-[500px] max-w-[90vw] max-h-[80vh]" // Bottom right on desktop
         )}>
           {isMobile ? (
-            currentProjectId && currentProjectTitle ? (
-              <MobileChatView 
-                projectId={currentProjectId}
-                projectTitle={currentProjectTitle}
-                onBack={() => setIsOpen(false)}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <p className="text-muted-foreground">Selecteer een project voor chat</p>
-              </div>
-            )
+            <MobileImprovedChatView onBack={() => setIsOpen(false)} />
           ) : (
-            <ChatWindow onClose={() => setIsOpen(false)} />
+            <ImprovedChatWindow onClose={() => setIsOpen(false)} />
           )}
         </div>
       )}
