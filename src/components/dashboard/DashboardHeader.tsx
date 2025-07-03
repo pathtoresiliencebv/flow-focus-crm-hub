@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus } from "lucide-react";
 import { Customer } from "@/hooks/useCrmStore";
+import { useAuth } from "@/hooks/useAuth";
 
 interface DashboardHeaderProps {
   customers: Customer[];
@@ -14,19 +15,22 @@ interface DashboardHeaderProps {
 }
 
 export const DashboardHeader = ({ customers, handleCreateProject, newProjectDialogOpen, setNewProjectDialogOpen }: DashboardHeaderProps) => {
+  const { hasPermission } = useAuth();
+  
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-gray-600 mt-1 text-sm sm:text-base">Welkom terug! Hier is een overzicht van je bedrijf.</p>
       </div>
-      <Dialog open={newProjectDialogOpen} onOpenChange={setNewProjectDialogOpen}>
-        <DialogTrigger asChild>
-          <Button className="bg-smans-primary hover:bg-smans-primary/90 text-white shadow-lg hover:shadow-xl transition-all w-full sm:w-auto">
-            <Plus className="mr-2 h-4 w-4" />
-            Nieuw Project
-          </Button>
-        </DialogTrigger>
+      {hasPermission("projects_create") && (
+        <Dialog open={newProjectDialogOpen} onOpenChange={setNewProjectDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-smans-primary hover:bg-smans-primary/90 text-white shadow-lg hover:shadow-xl transition-all w-full sm:w-auto">
+              <Plus className="mr-2 h-4 w-4" />
+              Nieuw Project
+            </Button>
+          </DialogTrigger>
         <DialogContent className="max-w-2xl w-[95vw] sm:w-full">
           <DialogHeader>
             <DialogTitle>Nieuw project aanmaken</DialogTitle>
@@ -83,6 +87,7 @@ export const DashboardHeader = ({ customers, handleCreateProject, newProjectDial
           </form>
         </DialogContent>
       </Dialog>
+      )}
     </div>
   );
 };

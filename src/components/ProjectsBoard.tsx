@@ -11,6 +11,7 @@ import { ProjectForm } from './ProjectForm';
 import { useCrmStore, ProjectWithCustomerName as Project, UpdateProject } from "@/hooks/useCrmStore";
 import { useUsers } from "@/hooks/useUsers";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
+import { useAuth } from "@/hooks/useAuth";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 type ProjectStatus = "te-plannen" | "gepland" | "in-uitvoering" | "herkeuring" | "afgerond";
@@ -174,6 +175,7 @@ const ProjectCard = ({ project, index }: { project: Project, index: number }) =>
 
 export const ProjectsBoard: React.FC = () => {
   const { projects, updateProject } = useCrmStore();
+  const { hasPermission } = useAuth();
   const [newProjectDialogOpen, setNewProjectDialogOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<ProjectStatus>("te-plannen");
 
@@ -275,21 +277,23 @@ export const ProjectsBoard: React.FC = () => {
                 )}
               </Droppable>
               
-              <Button 
-                size="sm" 
-                variant="ghost" 
-                className={`w-full mt-3 text-xs ${
-                  column.id === "te-plannen" ? "hover:bg-red-100" :
-                  column.id === "gepland" ? "hover:bg-orange-100" :
-                  column.id === "in-uitvoering" ? "hover:bg-blue-100" :
-                  column.id === "herkeuring" ? "hover:bg-gray-100" :
-                  "hover:bg-green-100"
-                }`}
-                onClick={() => handleAddProjectClick(column.id as ProjectStatus)}
-              >
-                <Plus className="h-3 w-3 mr-1" />
-                Project toevoegen
-              </Button>
+              {hasPermission("projects_create") && (
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className={`w-full mt-3 text-xs ${
+                    column.id === "te-plannen" ? "hover:bg-red-100" :
+                    column.id === "gepland" ? "hover:bg-orange-100" :
+                    column.id === "in-uitvoering" ? "hover:bg-blue-100" :
+                    column.id === "herkeuring" ? "hover:bg-gray-100" :
+                    "hover:bg-green-100"
+                  }`}
+                  onClick={() => handleAddProjectClick(column.id as ProjectStatus)}
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Project toevoegen
+                </Button>
+              )}
             </div>
           ))}
         </div>

@@ -3,10 +3,10 @@ export type UserRole = "Administrator" | "Verkoper" | "Installateur" | "Administ
 
 export type Permission = 
   | "customers_view" | "customers_edit" | "customers_delete"
-  | "projects_view" | "projects_edit" | "projects_delete" 
+  | "projects_view" | "projects_edit" | "projects_delete" | "projects_create"
   | "invoices_view" | "invoices_edit" | "invoices_delete"
   | "users_view" | "users_edit" | "users_delete"
-  | "reports_view" | "settings_edit";
+  | "reports_view" | "settings_edit" | "planning_create";
 
 export const permissionLabels: Record<Permission, string> = {
   "customers_view": "Klanten bekijken",
@@ -15,6 +15,7 @@ export const permissionLabels: Record<Permission, string> = {
   "projects_view": "Projecten bekijken",
   "projects_edit": "Projecten bewerken",
   "projects_delete": "Projecten verwijderen",
+  "projects_create": "Projecten aanmaken",
   "invoices_view": "Facturen bekijken",
   "invoices_edit": "Facturen bewerken",
   "invoices_delete": "Facturen verwijderen",
@@ -22,15 +23,16 @@ export const permissionLabels: Record<Permission, string> = {
   "users_edit": "Gebruikers bewerken",
   "users_delete": "Gebruikers verwijderen",
   "reports_view": "Rapporten bekijken",
-  "settings_edit": "Instellingen bewerken"
+  "settings_edit": "Instellingen bewerken",
+  "planning_create": "Planning aanmaken"
 };
 
 export const permissionCategories = {
   "Klanten": ["customers_view", "customers_edit", "customers_delete"] as Permission[],
-  "Projecten": ["projects_view", "projects_edit", "projects_delete"] as Permission[],
+  "Projecten": ["projects_view", "projects_edit", "projects_delete", "projects_create"] as Permission[],
   "Facturen": ["invoices_view", "invoices_edit", "invoices_delete"] as Permission[],
   "Gebruikers": ["users_view", "users_edit", "users_delete"] as Permission[],
-  "Overig": ["reports_view", "settings_edit"] as Permission[]
+  "Overig": ["reports_view", "settings_edit", "planning_create"] as Permission[]
 };
 
 export interface RoleDescription {

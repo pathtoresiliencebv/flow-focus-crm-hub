@@ -20,7 +20,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 export function PlanningManagement() {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, hasPermission } = useAuth();
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
   const [showNewPlanning, setShowNewPlanning] = useState(false);
   const [showQuickPlanning, setShowQuickPlanning] = useState(false);
@@ -229,38 +229,40 @@ export function PlanningManagement() {
           <p className="text-sm sm:text-base text-muted-foreground">Beheer afspraken en werkplanning</p>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-          <Button 
-            onClick={() => setShowQuickPlanning(true)}
-            size="sm"
-            className="bg-green-600 hover:bg-green-700 touch-manipulation active:scale-95 transition-transform h-12 sm:h-auto"
-            style={{ WebkitTapHighlightColor: 'transparent' }}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Snelle Planning
-          </Button>
-          
-          <Button 
-            onClick={() => setShowNewPlanning(true)}
-            size="sm"
-            className="touch-manipulation active:scale-95 transition-transform h-12 sm:h-auto"
-            style={{ WebkitTapHighlightColor: 'transparent' }}
-          >
-            <Calendar className="h-4 w-4 mr-2" />
-            Nieuwe Planning
-          </Button>
-          
-          <Button 
-            onClick={() => setShowMultiDayPlanning(true)}
-            size="sm"
-            variant="outline"
-            className="touch-manipulation active:scale-95 transition-transform h-12 sm:h-auto"
-            style={{ WebkitTapHighlightColor: 'transparent' }}
-          >
-            <Clock className="h-4 w-4 mr-2" />
-            Meerdaagse Planning
-          </Button>
-        </div>
+        {hasPermission("planning_create") && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+            <Button 
+              onClick={() => setShowQuickPlanning(true)}
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 touch-manipulation active:scale-95 transition-transform h-12 sm:h-auto"
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Snelle Planning
+            </Button>
+            
+            <Button 
+              onClick={() => setShowNewPlanning(true)}
+              size="sm"
+              className="touch-manipulation active:scale-95 transition-transform h-12 sm:h-auto"
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Nieuwe Planning
+            </Button>
+            
+            <Button 
+              onClick={() => setShowMultiDayPlanning(true)}
+              size="sm"
+              variant="outline"
+              className="touch-manipulation active:scale-95 transition-transform h-12 sm:h-auto"
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+            >
+              <Clock className="h-4 w-4 mr-2" />
+              Meerdaagse Planning
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Stats Cards */}
