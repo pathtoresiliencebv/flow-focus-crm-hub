@@ -147,9 +147,9 @@ export const Sidebar = ({ links, user, profile, logout, activeTab, setActiveTab,
   };
 
   const renderLink = (link, isCollapsible = false) => {
-    const commonClasses = `flex gap-2 font-medium text-sm items-center w-full py-2 px-4 rounded-xl`;
+    const commonClasses = `flex gap-2 font-medium text-sm items-center w-full py-3 px-4 rounded-xl min-h-[44px]`;
     const activeClasses = activeTab === link.key ? 'bg-smans-primary text-smans-primary-foreground' : 'hover:bg-smans-primary hover:text-smans-primary-foreground';
-    const collapsibleClasses = isCollapsible ? 'text-left p-2' : '';
+    const collapsibleClasses = isCollapsible ? 'text-left p-3' : '';
     return (
       <li key={link.key} className={!isCollapsible ? "mb-2" : ""}>
         <button
@@ -219,7 +219,19 @@ export const Sidebar = ({ links, user, profile, logout, activeTab, setActiveTab,
             transition={{ duration: 0.3 }}
             className="md:hidden fixed inset-0 z-[100] bg-white text-black flex flex-col h-full"
           >
-            <SidebarContent />
+            <div className="flex justify-between items-center p-4 border-b border-gray-200">
+              <img src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="SMANS Logo" className="h-8 w-auto" />
+              <button
+                onClick={toggleSidebar}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label="Menu sluiten"
+              >
+                <XIcon />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <SidebarContent />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -229,10 +241,10 @@ export const Sidebar = ({ links, user, profile, logout, activeTab, setActiveTab,
       </div>
 
       <div className="flex-1 ml-0 md:ml-64 transition-all duration-300 flex flex-col">
-        <div className="p-4 bg-white border-b border-gray-200 md:hidden flex justify-between items-center sticky top-0 z-50">
-          <img src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="SMANS Logo" className="h-8 w-auto" />
-          <AnimatedMenuToggle toggle={toggleSidebar} isOpen={isOpen} />
-        </div>
+      <div className="p-4 bg-white border-b border-gray-200 md:hidden flex justify-between items-center sticky top-0 z-50">
+        <img src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="SMANS Logo" className="h-8 w-auto" />
+        <AnimatedMenuToggle toggle={toggleSidebar} isOpen={isOpen} />
+      </div>
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>

@@ -12,11 +12,14 @@ import { useNavigate } from "react-router-dom";
 import { useCrmStore, Customer } from "@/hooks/useCrmStore";
 import { CustomerForm } from './CustomerForm';
 import { useAuth } from '@/hooks/useAuth';
+import { MobileCustomerCard } from './customers/MobileCustomerCard';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export const Customers = () => {
   const navigate = useNavigate();
   const { customers, deleteCustomer } = useCrmStore();
   const { hasPermission } = useAuth();
+  const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState('');
   const [newCustomerDialogOpen, setNewCustomerDialogOpen] = useState(false);
   const [editCustomerDialogOpen, setEditCustomerDialogOpen] = useState(false);
@@ -101,84 +104,106 @@ export const Customers = () => {
         </CardContent>
       </Card>
 
-      {/* Customers Table */}
+      {/* Customers List/Table */}
       <Card>
         <CardHeader>
           <CardTitle>Klantoverzicht ({filteredCustomers.length})</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Naam</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Telefoon</TableHead>
-                  <TableHead>Stad</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Aangemaakt</TableHead>
-                  <TableHead className="text-right">Acties</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredCustomers.length === 0 ? (
+        <CardContent className={isMobile ? "p-4" : "p-0"}>
+          {isMobile ? (
+            <div className="space-y-4">
+              {filteredCustomers.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  {searchTerm ? 'Geen klanten gevonden die voldoen aan je zoekopdracht.' : 'Nog geen klanten toegevoegd.'}
+                </div>
+              ) : (
+                filteredCustomers.map((customer) => (
+                  <MobileCustomerCard
+                    key={customer.id}
+                    customer={customer}
+                    onView={handleViewCustomer}
+                    onEdit={handleEditCustomer}
+                    onDelete={handleDeleteCustomer}
+                    hasEditPermission={hasPermission('customers_edit')}
+                    hasDeletePermission={hasPermission('customers_delete')}
+                  />
+                ))
+              )}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                      {searchTerm ? 'Geen klanten gevonden die voldoen aan je zoekopdracht.' : 'Nog geen klanten toegevoegd.'}
-                    </TableCell>
+                    <TableHead>Naam</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Telefoon</TableHead>
+                    <TableHead>Stad</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Aangemaakt</TableHead>
+                    <TableHead className="text-right">Acties</TableHead>
                   </TableRow>
-                ) : (
-                  filteredCustomers.map((customer) => (
-                    <TableRow key={customer.id} className="hover:bg-gray-50">
-                      <TableCell className="font-medium">{customer.name}</TableCell>
-                      <TableCell>{customer.email}</TableCell>
-                      <TableCell>{customer.phone}</TableCell>
-                      <TableCell>{customer.city}</TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant="secondary" 
-                          className={getStatusColor(customer.status ?? '')}
-                        >
-                          {customer.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{new Date(customer.created_at).toLocaleDateString('nl-NL')}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleViewCustomer(customer.id)}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              Bekijken
-                            </DropdownMenuItem>
-                            {hasPermission('customers_edit') && (
-                              <DropdownMenuItem onClick={() => handleEditCustomer(customer)}>
-                                <Edit className="mr-2 h-4 w-4" />
-                                Bewerken
-                              </DropdownMenuItem>
-                            )}
-                            {hasPermission('customers_delete') && (
-                              <DropdownMenuItem 
-                                onClick={() => handleDeleteCustomer(customer.id, customer.name)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Verwijderen
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                </TableHeader>
+                <TableBody>
+                  {filteredCustomers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                        {searchTerm ? 'Geen klanten gevonden die voldoen aan je zoekopdracht.' : 'Nog geen klanten toegevoegd.'}
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                  ) : (
+                    filteredCustomers.map((customer) => (
+                      <TableRow key={customer.id} className="hover:bg-gray-50">
+                        <TableCell className="font-medium">{customer.name}</TableCell>
+                        <TableCell>{customer.email}</TableCell>
+                        <TableCell>{customer.phone}</TableCell>
+                        <TableCell>{customer.city}</TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant="secondary" 
+                            className={getStatusColor(customer.status ?? '')}
+                          >
+                            {customer.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{new Date(customer.created_at).toLocaleDateString('nl-NL')}</TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-background border shadow-md">
+                              <DropdownMenuItem onClick={() => handleViewCustomer(customer.id)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                Bekijken
+                              </DropdownMenuItem>
+                              {hasPermission('customers_edit') && (
+                                <DropdownMenuItem onClick={() => handleEditCustomer(customer)}>
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Bewerken
+                                </DropdownMenuItem>
+                              )}
+                              {hasPermission('customers_delete') && (
+                                <DropdownMenuItem 
+                                  onClick={() => handleDeleteCustomer(customer.id, customer.name)}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Verwijderen
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
 

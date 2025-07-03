@@ -95,9 +95,9 @@ export const Dashboard = () => {
         />
 
         {/* Main Content Area */}
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 sm:gap-6">
-          {/* Full Width Calendar */}
-          <Card className="xl:col-span-4 shadow-lg border-0 bg-white/80 backdrop-blur-sm">
+        <div className="space-y-4 sm:space-y-6">
+          {/* Calendar Card */}
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                 <CalendarDays className="h-5 w-5 text-blue-600" />
