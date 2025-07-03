@@ -262,43 +262,56 @@ export const Receipts = () => {
           <h2 className="text-xl sm:text-2xl font-bold">Bonnetjes</h2>
           <p className="text-sm sm:text-base text-muted-foreground">Upload en beheer bonnetjes en facturen</p>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:gap-2">
+        <div className="flex flex-col gap-3 sm:flex-row">
           {/* Settings Dialog */}
           <Dialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen}>
             <DialogTrigger asChild>
               <Button 
                 variant="outline" 
-                className="h-12 sm:h-auto touch-manipulation active:scale-95 transition-transform"
+                className="h-14 text-base font-medium touch-manipulation active:scale-95 transition-all duration-200 min-h-[56px]"
                 style={{ WebkitTapHighlightColor: 'transparent' }}
               >
-                <Settings className="mr-2 h-4 w-4" />
+                <Settings className="mr-2 h-5 w-5" />
                 Instellingen
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="mx-4 max-w-[calc(100vw-2rem)] sm:max-w-md rounded-lg">
               <DialogHeader>
-                <DialogTitle>Bonnetjes Instellingen</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="text-lg">Bonnetjes Instellingen</DialogTitle>
+                <DialogDescription className="text-sm">
                   Configureer het e-mailadres waar bonnetjes naartoe gestuurd kunnen worden.
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="receipt-email">E-mailadres voor bonnetjes</Label>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="receipt-email" className="text-sm font-medium">E-mailadres voor bonnetjes</Label>
                   <Input
                     id="receipt-email"
                     type="email"
                     value={receiptEmail}
                     onChange={(e) => setReceiptEmail(e.target.value)}
                     placeholder="bonnetjes@smans.nl"
+                    className="h-12 text-base"
                   />
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground">
                     Stuur bonnetjes naar dit adres en ze worden automatisch verwerkt in het systeem.
                   </p>
                 </div>
               </div>
-              <DialogFooter>
-                <Button onClick={saveEmailSettings}>Opslaan</Button>
+              <DialogFooter className="flex-col gap-2 sm:flex-row">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setSettingsDialogOpen(false)}
+                  className="h-12 touch-manipulation active:scale-95 transition-transform"
+                >
+                  Annuleren
+                </Button>
+                <Button 
+                  onClick={saveEmailSettings}
+                  className="h-12 touch-manipulation active:scale-95 transition-transform"
+                >
+                  Opslaan
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -307,31 +320,31 @@ export const Receipts = () => {
           <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
             <DialogTrigger asChild>
               <Button 
-                className="bg-smans-primary hover:bg-smans-primary text-white h-12 sm:h-auto touch-manipulation active:scale-95 transition-transform"
+                className="bg-smans-primary hover:bg-smans-primary/90 text-white h-14 text-base font-medium touch-manipulation active:scale-95 transition-all duration-200 min-h-[56px]"
                 style={{ WebkitTapHighlightColor: 'transparent' }}
               >
-                <Upload className="mr-2 h-4 w-4" />
+                <Upload className="mr-2 h-5 w-5" />
                 Bonnetje Uploaden
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogContent className="mx-4 max-w-[calc(100vw-2rem)] sm:max-w-md max-h-[90vh] overflow-y-auto rounded-lg">
               <DialogHeader>
-                <DialogTitle>Nieuw bonnetje uploaden</DialogTitle>
-                <DialogDescription>
+                <DialogTitle className="text-lg">Nieuw bonnetje uploaden</DialogTitle>
+                <DialogDescription className="text-sm">
                   Upload een foto of scan van het bonnetje en vul de details in.
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label>Bonnetje bestand</Label>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Bonnetje bestand</Label>
                   <ImageUpload
                     value={newReceipt.file}
                     onChange={handleFileUpload}
-                    className="h-32"
+                    className="h-40 rounded-lg border-2 border-dashed"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="amount">Bedrag (optioneel)</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="amount" className="text-sm font-medium">Bedrag (optioneel)</Label>
                   <Input
                     id="amount"
                     type="number"
@@ -339,32 +352,44 @@ export const Receipts = () => {
                     value={newReceipt.amount}
                     onChange={(e) => setNewReceipt(prev => ({ ...prev, amount: e.target.value }))}
                     placeholder="0.00"
+                    className="h-12 text-base"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="description">Omschrijving (optioneel)</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="description" className="text-sm font-medium">Omschrijving (optioneel)</Label>
                   <Input
                     id="description"
                     value={newReceipt.description}
                     onChange={(e) => setNewReceipt(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Bijv. kantoorbenodigdheden"
+                    className="h-12 text-base"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="category">Categorie (optioneel)</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="category" className="text-sm font-medium">Categorie (optioneel)</Label>
                   <Input
                     id="category"
                     value={newReceipt.category}
                     onChange={(e) => setNewReceipt(prev => ({ ...prev, category: e.target.value }))}
                     placeholder="Bijv. kantoor, transport, materiaal"
+                    className="h-12 text-base"
                   />
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setUploadDialogOpen(false)}>
+              <DialogFooter className="flex-col gap-2 sm:flex-row">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setUploadDialogOpen(false)}
+                  className="h-12 touch-manipulation active:scale-95 transition-transform"
+                >
                   Annuleren
                 </Button>
-                <Button onClick={saveReceipt}>Opslaan</Button>
+                <Button 
+                  onClick={saveReceipt}
+                  className="h-12 touch-manipulation active:scale-95 transition-transform"
+                >
+                  Opslaan
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -373,12 +398,12 @@ export const Receipts = () => {
 
       {/* Confirmation Dialog */}
       <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
-        <DialogContent>
+        <DialogContent className="mx-4 max-w-[calc(100vw-2rem)] sm:max-w-md rounded-lg">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="text-lg">
               {pendingAction?.action === 'approve' ? 'Bonnetje goedkeuren' : 'Bonnetje afkeuren'}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-sm">
               {pendingAction?.action === 'approve' 
                 ? 'Weet je zeker dat je dit bonnetje wilt goedkeuren?'
                 : 'Weet je zeker dat je dit bonnetje wilt afkeuren?'
@@ -386,23 +411,32 @@ export const Receipts = () => {
             </DialogDescription>
           </DialogHeader>
           {pendingAction?.action === 'reject' && (
-            <div className="space-y-2">
-              <Label htmlFor="rejection-reason">Reden voor afkeuring (optioneel)</Label>
+            <div className="space-y-2 py-4">
+              <Label htmlFor="rejection-reason" className="text-sm font-medium">Reden voor afkeuring (optioneel)</Label>
               <Input
                 id="rejection-reason"
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
                 placeholder="Bijv. niet zakelijk gerelateerd"
+                className="h-12 text-base"
               />
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmDialogOpen(false)}>
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            <Button 
+              variant="outline" 
+              onClick={() => setConfirmDialogOpen(false)}
+              className="h-12 touch-manipulation active:scale-95 transition-transform"
+            >
               Annuleren
             </Button>
             <Button 
               onClick={confirmAction}
-              className={pendingAction?.action === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+              className={`h-12 touch-manipulation active:scale-95 transition-transform ${
+                pendingAction?.action === 'approve' 
+                  ? 'bg-green-600 hover:bg-green-700 text-white' 
+                  : 'bg-red-600 hover:bg-red-700 text-white'
+              }`}
             >
               {pendingAction?.action === 'approve' ? 'Goedkeuren' : 'Afkeuren'}
             </Button>
@@ -411,14 +445,37 @@ export const Receipts = () => {
       </Dialog>
 
       <Tabs defaultValue="pending" className="w-full">
-        <TabsList>
-          <TabsTrigger value="pending">
-            Te beoordelen ({pendingReceipts.length})
+        <TabsList className="grid w-full grid-cols-3 gap-1 h-auto p-1 bg-muted/50 rounded-lg">
+          <TabsTrigger 
+            value="pending" 
+            className="h-12 text-sm font-medium rounded-md touch-manipulation active:scale-95 transition-all duration-200 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
+          >
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-xs">Te beoordelen</span>
+              <span className="text-xs font-bold">({pendingReceipts.length})</span>
+            </div>
           </TabsTrigger>
-          <TabsTrigger value="processed">
-            Verwerkt ({processedReceipts.length})
+          <TabsTrigger 
+            value="processed"
+            className="h-12 text-sm font-medium rounded-md touch-manipulation active:scale-95 transition-all duration-200 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
+          >
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-xs">Verwerkt</span>
+              <span className="text-xs font-bold">({processedReceipts.length})</span>
+            </div>
           </TabsTrigger>
-          <TabsTrigger value="email-info">E-mail Instructies</TabsTrigger>
+          <TabsTrigger 
+            value="email-info"
+            className="h-12 text-sm font-medium rounded-md touch-manipulation active:scale-95 transition-all duration-200 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
+          >
+            <div className="flex flex-col items-center gap-1">
+              <Mail className="h-3 w-3" />
+              <span className="text-xs">E-mail</span>
+            </div>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="pending" className="mt-6">
@@ -596,45 +653,64 @@ export const Receipts = () => {
         </TabsContent>
 
         <TabsContent value="email-info" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                <Mail className="inline mr-2 h-5 w-5" />
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Mail className="h-5 w-5 text-primary" />
                 Bonnetjes per E-mail
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 Stuur bonnetjes direct naar het systeem via e-mail.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Hoe werkt het?</h4>
-                  <ol className="text-sm space-y-1 text-gray-600">
-                    <li>1. Configureer het e-mailadres in de instellingen</li>
-                    <li>2. Stuur bonnetjes als bijlage naar: <strong>{receiptEmail || 'bonnetjes@smans.nl'}</strong></li>
-                    <li>3. Bonnetjes worden automatisch verwerkt in het systeem</li>
-                  </ol>
-                </div>
-                
-                <div className="bg-yellow-50 p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Tips voor het e-mailen van bonnetjes:</h4>
-                  <ul className="text-sm space-y-1 text-gray-600">
-                    <li>• Gebruik heldere foto's of scans</li>
-                    <li>• Voeg een omschrijving toe in de e-mail onderwerp</li>
-                    <li>• Ondersteunde formaten: JPG, PNG, PDF</li>
-                    <li>• Maximum bestandsgrootte: 10MB</li>
-                  </ul>
-                </div>
-
-                {!receiptEmail && (
-                  <div className="bg-red-50 p-4 rounded-lg">
-                    <p className="text-sm text-red-700">
-                      <strong>Let op:</strong> Configureer eerst het e-mailadres in de instellingen om bonnetjes per e-mail te kunnen ontvangen.
-                    </p>
-                  </div>
-                )}
+            <CardContent className="space-y-4">
+              <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                <h4 className="font-semibold mb-3 text-blue-900">Hoe werkt het?</h4>
+                <ol className="text-sm space-y-2 text-blue-800">
+                  <li className="flex items-start gap-2">
+                    <span className="inline-flex items-center justify-center w-5 h-5 bg-blue-200 text-blue-900 rounded-full text-xs font-bold flex-shrink-0 mt-0.5">1</span>
+                    <span>Configureer het e-mailadres in de instellingen</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="inline-flex items-center justify-center w-5 h-5 bg-blue-200 text-blue-900 rounded-full text-xs font-bold flex-shrink-0 mt-0.5">2</span>
+                    <span>Stuur bonnetjes als bijlage naar: <strong className="break-all">{receiptEmail || 'bonnetjes@smans.nl'}</strong></span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="inline-flex items-center justify-center w-5 h-5 bg-blue-200 text-blue-900 rounded-full text-xs font-bold flex-shrink-0 mt-0.5">3</span>
+                    <span>Bonnetjes worden automatisch verwerkt in het systeem</span>
+                  </li>
+                </ol>
               </div>
+              
+              <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100">
+                <h4 className="font-semibold mb-3 text-yellow-900">Tips voor het e-mailen van bonnetjes:</h4>
+                <ul className="text-sm space-y-2 text-yellow-800">
+                  <li className="flex items-start gap-2">
+                    <span className="text-yellow-600 mt-1">•</span>
+                    <span>Gebruik heldere foto's of scans</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-yellow-600 mt-1">•</span>
+                    <span>Voeg een omschrijving toe in de e-mail onderwerp</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-yellow-600 mt-1">•</span>
+                    <span>Ondersteunde formaten: JPG, PNG, PDF</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-yellow-600 mt-1">•</span>
+                    <span>Maximum bestandsgrootte: 10MB</span>
+                  </li>
+                </ul>
+              </div>
+
+              {!receiptEmail && (
+                <div className="bg-red-50 p-4 rounded-xl border border-red-100">
+                  <p className="text-sm text-red-700">
+                    <strong>Let op:</strong> Configureer eerst het e-mailadres in de instellingen om bonnetjes per e-mail te kunnen ontvangen.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

@@ -39,21 +39,21 @@ export const MobileReceiptCard = ({
     switch (status) {
       case 'pending':
         return (
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
             <Clock className="h-3 w-3 mr-1" />
             In afwachting
           </span>
         );
       case 'approved':
         return (
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
             <Check className="h-3 w-3 mr-1" />
             Goedgekeurd
           </span>
         );
       case 'rejected':
         return (
-          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
             <X className="h-3 w-3 mr-1" />
             Afgekeurd
           </span>
@@ -62,71 +62,74 @@ export const MobileReceiptCard = ({
   };
 
   return (
-    <Card className="mb-3">
-      <CardContent className="p-4">
-        <div className="flex justify-between items-start mb-3">
-          <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-sm truncate">
+    <Card className="mb-4 shadow-sm hover:shadow-md transition-shadow duration-200 border-0 bg-white">
+      <CardContent className="p-5">
+        <div className="flex justify-between items-start mb-4">
+          <div className="flex-1 min-w-0 pr-3">
+            <h3 className="font-semibold text-base truncate text-foreground mb-1">
               {receipt.description || receipt.fileName}
             </h3>
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground">
               {receipt.uploadDate}
             </p>
           </div>
-          <div className="ml-2">
+          <div className="flex-shrink-0">
             {getStatusBadge(receipt.status)}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 text-xs mb-3">
-          <div>
-            <span className="text-muted-foreground">Categorie:</span>
-            <p className="font-medium">{receipt.category || '-'}</p>
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="space-y-1">
+            <span className="text-sm text-muted-foreground block">Categorie:</span>
+            <p className="font-medium text-base">{receipt.category || '-'}</p>
           </div>
-          <div>
-            <span className="text-muted-foreground">Bedrag:</span>
-            <p className="font-medium">{receipt.amount ? `€${receipt.amount}` : '-'}</p>
+          <div className="space-y-1">
+            <span className="text-sm text-muted-foreground block">Bedrag:</span>
+            <p className="font-medium text-base">{receipt.amount ? `€${receipt.amount}` : '-'}</p>
           </div>
         </div>
 
         {receipt.status === 'approved' && receipt.approvedBy && (
-          <div className="text-xs text-muted-foreground mb-3">
-            Goedgekeurd door: {receipt.approvedBy}
+          <div className="text-sm text-muted-foreground mb-4 p-3 bg-green-50 rounded-lg">
+            <strong>Goedgekeurd door:</strong> {receipt.approvedBy}
           </div>
         )}
 
         {receipt.status === 'rejected' && receipt.rejectionReason && (
-          <div className="text-xs text-red-600 mb-3">
-            Reden: {receipt.rejectionReason}
+          <div className="text-sm text-red-600 mb-4 p-3 bg-red-50 rounded-lg">
+            <strong>Reden:</strong> {receipt.rejectionReason}
           </div>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <Button
             variant="outline"
-            size="sm"
+            size="lg"
             onClick={() => onView(receipt)}
-            className="flex-1"
+            className="flex-1 h-12 text-base font-medium touch-manipulation active:scale-95 transition-all duration-200"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
           >
-            <Eye className="h-4 w-4 mr-1" />
+            <Eye className="h-5 w-5 mr-2" />
             Bekijk
           </Button>
 
           {showActions && receipt.status === 'pending' && (
             <>
               <Button
-                size="sm"
+                size="lg"
                 onClick={() => onApprove?.(receipt.id)}
-                className="bg-green-600 hover:bg-green-700 text-white"
+                className="h-12 w-12 bg-green-600 hover:bg-green-700 text-white touch-manipulation active:scale-95 transition-all duration-200 p-0"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
               >
-                <Check className="h-4 w-4" />
+                <Check className="h-5 w-5" />
               </Button>
               <Button
-                size="sm"
+                size="lg"
                 onClick={() => onReject?.(receipt.id)}
-                className="bg-red-600 hover:bg-red-700 text-white"
+                className="h-12 w-12 bg-red-600 hover:bg-red-700 text-white touch-manipulation active:scale-95 transition-all duration-200 p-0"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </Button>
             </>
           )}
@@ -134,11 +137,12 @@ export const MobileReceiptCard = ({
           {showActions && receipt.status !== 'pending' && onDelete && (
             <Button
               variant="outline"
-              size="sm"
+              size="lg"
               onClick={() => onDelete(receipt.id)}
-              className="text-red-600 hover:text-red-700"
+              className="h-12 w-12 text-red-600 hover:text-red-700 hover:bg-red-50 touch-manipulation active:scale-95 transition-all duration-200 p-0"
+              style={{ WebkitTapHighlightColor: 'transparent' }}
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-5 w-5" />
             </Button>
           )}
         </div>
