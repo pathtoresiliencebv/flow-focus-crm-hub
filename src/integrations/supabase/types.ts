@@ -336,9 +336,13 @@ export type Database = {
           created_at: string | null
           id: string
           is_active: boolean | null
+          is_system_template: boolean | null
+          last_used_at: string | null
           name: string
           subject: string
+          template_type: string | null
           updated_at: string | null
+          usage_count: number | null
           user_id: string
           variables: Json | null
         }
@@ -349,9 +353,13 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          is_system_template?: boolean | null
+          last_used_at?: string | null
           name: string
           subject: string
+          template_type?: string | null
           updated_at?: string | null
+          usage_count?: number | null
           user_id: string
           variables?: Json | null
         }
@@ -362,9 +370,13 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_active?: boolean | null
+          is_system_template?: boolean | null
+          last_used_at?: string | null
           name?: string
           subject?: string
+          template_type?: string | null
           updated_at?: string | null
+          usage_count?: number | null
           user_id?: string
           variables?: Json | null
         }

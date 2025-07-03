@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { X, Send, Paperclip } from 'lucide-react';
-import { AIInput } from '@/components/ui/ai-input';
+import { EmailTemplateSelector } from './EmailTemplateSelector';
 
 interface EmailComposeProps {
   onClose: () => void;
@@ -149,29 +149,37 @@ export const EmailCompose: React.FC<EmailComposeProps> = ({ onClose, replyTo }) 
 
             <div>
               <label className="text-sm font-medium">Onderwerp</label>
-              <AIInput
+              <Input
                 value={formData.subject}
-                onChange={(value) => setFormData({ ...formData, subject: value })}
+                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                 placeholder="Onderwerp van de e-mail"
-                type="email"
-                context={`E-mail naar: ${formData.to}`}
-                aiPrompt="Genereer een professioneel onderwerp voor deze e-mail"
+                required
               />
             </div>
 
             <div>
               <label className="text-sm font-medium">Bericht</label>
-              <AIInput
+              <Textarea
                 value={formData.body}
-                onChange={(value) => setFormData({ ...formData, body: value })}
+                onChange={(e) => setFormData({ ...formData, body: e.target.value })}
                 placeholder="Typ hier uw bericht..."
-                type="email"
-                context={`E-mail naar: ${formData.to}, Onderwerp: ${formData.subject}`}
-                multiline
-                aiPrompt="Schrijf een professionele e-mail"
+                rows={6}
+                required
               />
             </div>
           </div>
+
+          {/* Email Template Selector */}
+          <EmailTemplateSelector
+            onTemplateSelect={(template) => {
+              setFormData({
+                ...formData,
+                subject: template.subject,
+                body: template.body
+              });
+            }}
+            disabled={isSending}
+          />
 
           <div className="flex justify-between items-center pt-4">
             <Button type="button" variant="outline">

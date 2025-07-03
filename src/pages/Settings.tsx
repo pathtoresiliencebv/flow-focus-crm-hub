@@ -2,8 +2,9 @@
 import React from 'react';
 import { QuoteSettingsForm } from '@/components/QuoteSettingsForm';
 import { InvoiceSettingsForm } from '@/components/InvoiceSettingsForm';
+import { EmailTemplateManager } from '@/components/EmailTemplateManager';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, FileText, CreditCard, Mail } from "lucide-react";
+import { Settings as SettingsIcon, FileText, CreditCard, Mail, MessageSquareText } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmailSettings } from '@/components/EmailSettings';
 
@@ -19,7 +20,7 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="quotes" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="quotes" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Offerte Instellingen
@@ -31,6 +32,10 @@ export default function Settings() {
           <TabsTrigger value="email" className="flex items-center gap-2">
             <Mail className="h-4 w-4" />
             E-mail Instellingen
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="flex items-center gap-2">
+            <MessageSquareText className="h-4 w-4" />
+            Email Templates
           </TabsTrigger>
         </TabsList>
 
@@ -44,6 +49,10 @@ export default function Settings() {
 
         <TabsContent value="email" className="space-y-6">
           <EmailSettings />
+        </TabsContent>
+
+        <TabsContent value="templates" className="space-y-6">
+          <EmailTemplateManager />
         </TabsContent>
       </Tabs>
     </div>
