@@ -256,14 +256,21 @@ export const Receipts = () => {
   const processedReceipts = receipts.filter(r => r.status !== 'pending');
 
   return (
-    <div className="space-y-4 sm:space-y-6 max-w-full overflow-x-hidden">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <h2 className="text-xl sm:text-2xl font-bold">Bonnetjes</h2>
-        <div className="flex flex-col sm:flex-row gap-2">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-full overflow-x-hidden">
+      <div className="flex flex-col gap-4">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold">Bonnetjes</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">Upload en beheer bonnetjes en facturen</p>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-row sm:gap-2">
           {/* Settings Dialog */}
           <Dialog open={settingsDialogOpen} onOpenChange={setSettingsDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline">
+              <Button 
+                variant="outline" 
+                className="h-12 sm:h-auto touch-manipulation active:scale-95 transition-transform"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+              >
                 <Settings className="mr-2 h-4 w-4" />
                 Instellingen
               </Button>
@@ -299,7 +306,10 @@ export const Receipts = () => {
           {/* Upload Dialog */}
           <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-smans-primary hover:bg-smans-primary text-white">
+              <Button 
+                className="bg-smans-primary hover:bg-smans-primary text-white h-12 sm:h-auto touch-manipulation active:scale-95 transition-transform"
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+              >
                 <Upload className="mr-2 h-4 w-4" />
                 Bonnetje Uploaden
               </Button>

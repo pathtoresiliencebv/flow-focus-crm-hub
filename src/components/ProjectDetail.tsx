@@ -151,7 +151,7 @@ const ProjectDetail = () => {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Projectgegevens</CardTitle>
@@ -298,31 +298,57 @@ const ProjectDetail = () => {
       </div>
 
       <Tabs value={projectDetailTab} onValueChange={setProjectDetailTab} className="w-full">
-        <TabsList className="mb-4 grid w-full grid-cols-3 lg:grid-cols-6 h-auto">
-          <TabsTrigger value="details" className="flex flex-col gap-1 py-2 text-xs">
-            <Clipboard className="h-4 w-4" />
-            <span>Details</span>
-          </TabsTrigger>
-          <TabsTrigger value="planning" className="flex flex-col gap-1 py-2 text-xs">
-            <Calendar className="h-4 w-4" />
-            <span>Planning</span>
-          </TabsTrigger>
-          <TabsTrigger value="materials" className="flex flex-col gap-1 py-2 text-xs">
-            <FileText className="h-4 w-4" />
-            <span>Materialen</span>
-          </TabsTrigger>
-          <TabsTrigger value="personnel" className="flex flex-col gap-1 py-2 text-xs">
-            <Users className="h-4 w-4" />
-            <span>Personeel</span>
-          </TabsTrigger>
-          <TabsTrigger value="chat" className="flex flex-col gap-1 py-2 text-xs">
-            <MessageCircle className="h-4 w-4" />
-            <span>Chat</span>
-          </TabsTrigger>
-          <TabsTrigger value="reports" className="flex flex-col gap-1 py-2 text-xs">
-            <BarChart className="h-4 w-4" />
-            <span>Rapporten</span>
-          </TabsTrigger>
+        <TabsList className="mb-4 grid w-full h-auto bg-muted/50 p-1 rounded-xl">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 w-full">
+            <TabsTrigger 
+              value="details" 
+              className="flex flex-col gap-1 py-3 text-xs min-h-[60px] data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg touch-manipulation transition-all"
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+            >
+              <Clipboard className="h-5 w-5" />
+              <span className="font-medium">Details</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="planning" 
+              className="flex flex-col gap-1 py-3 text-xs min-h-[60px] data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg touch-manipulation transition-all"
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+            >
+              <Calendar className="h-5 w-5" />
+              <span className="font-medium">Planning</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="materials" 
+              className="flex flex-col gap-1 py-3 text-xs min-h-[60px] data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg touch-manipulation transition-all"
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+            >
+              <FileText className="h-5 w-5" />
+              <span className="font-medium">Materialen</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="personnel" 
+              className="flex flex-col gap-1 py-3 text-xs min-h-[60px] data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg touch-manipulation transition-all"
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+            >
+              <Users className="h-5 w-5" />
+              <span className="font-medium">Personeel</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="chat" 
+              className="flex flex-col gap-1 py-3 text-xs min-h-[60px] data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg touch-manipulation transition-all"
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+            >
+              <MessageCircle className="h-5 w-5" />
+              <span className="font-medium">Chat</span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="reports" 
+              className="flex flex-col gap-1 py-3 text-xs min-h-[60px] data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg touch-manipulation transition-all"
+              style={{ WebkitTapHighlightColor: 'transparent' }}
+            >
+              <BarChart className="h-5 w-5" />
+              <span className="font-medium">Rapporten</span>
+            </TabsTrigger>
+          </div>
         </TabsList>
 
         <TabsContent value="details">

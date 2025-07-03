@@ -138,17 +138,25 @@ const Index = () => {
 
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-background pb-16">
+      <div className="min-h-screen bg-background pb-20" style={{ paddingBottom: 'calc(5rem + env(safe-area-inset-bottom))' }}>
         <MobileHeader 
           title={customerId ? "Klantdossier" : projectId ? "Project Details" : undefined}
           showBack={!!(customerId || projectId)}
           onMenuClick={() => setIsSidebarOpen(true)}
         />
         
-        {/* Mobile Sidebar Overlay */}
+        {/* Mobile Sidebar Overlay - Enhanced */}
         {isSidebarOpen && (
-          <div className="fixed inset-0 z-50 bg-black/50" onClick={() => setIsSidebarOpen(false)}>
-            <div className="absolute left-0 top-0 h-full w-80 bg-background shadow-xl" onClick={e => e.stopPropagation()}>
+          <div 
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" 
+            onClick={() => setIsSidebarOpen(false)}
+            style={{ paddingTop: 'env(safe-area-inset-top)' }}
+          >
+            <div 
+              className="absolute left-0 top-0 h-full w-80 max-w-[85vw] bg-background shadow-2xl border-r border-border transform transition-transform duration-300"
+              onClick={e => e.stopPropagation()}
+              style={{ transform: isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)' }}
+            >
               <AppSidebar activeTab={activeTab} setActiveTab={(tab) => {
                 handleSetActiveTab(tab);
                 setIsSidebarOpen(false);
@@ -159,7 +167,8 @@ const Index = () => {
           </div>
         )}
         
-        <div className="px-4 py-4">
+        {/* Main Content - Mobile optimized */}
+        <div className="px-4 py-6 max-w-full overflow-x-hidden">
           {renderContent()}
         </div>
         <MobileBottomNavigation activeTab={activeTab} onTabChange={handleSetActiveTab} />

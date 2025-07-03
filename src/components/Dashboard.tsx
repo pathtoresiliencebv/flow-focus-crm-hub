@@ -78,8 +78,8 @@ export const Dashboard = () => {
   };
 
   return (
-    <div className="h-full bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="p-4 sm:p-6 space-y-6">
+    <div className="h-full bg-gradient-to-br from-slate-50 to-blue-50 overflow-x-hidden">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
         <DashboardHeader
           customers={customers}
           handleCreateProject={handleCreateProject}
@@ -94,20 +94,20 @@ export const Dashboard = () => {
           completedProjects={completedProjects}
         />
 
-        {/* Main Content Area */}
+        {/* Main Content Area - Mobile optimized */}
         <div className="space-y-4 sm:space-y-6">
-          {/* Calendar Card */}
-          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm">
-            <CardHeader className="pb-4">
+          {/* Calendar Card - Mobile responsive */}
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm mx-1 sm:mx-0">
+            <CardHeader className="pb-3 sm:pb-4 px-3 sm:px-6 pt-4 sm:pt-6">
               <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                <CalendarDays className="h-5 w-5 text-blue-600" />
-                Weekplanning
+                <CalendarDays className="h-5 w-5 text-primary" />
+                <span className="text-base sm:text-xl">Weekplanning</span>
               </CardTitle>
-              <CardDescription className="text-gray-600 text-sm sm:text-base">
+              <CardDescription className="text-muted-foreground text-sm">
                 Overzicht van alle geplande activiteiten deze week
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="p-0 overflow-hidden">
               <WeekCalendar 
                 events={getCalendarEvents()}
                 onEventClick={handleEventClick}

@@ -221,19 +221,20 @@ export function PlanningManagement() {
   }
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 overflow-x-hidden">
+      {/* Header - Mobile optimized */}
+      <div className="flex flex-col gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Planning Beheer</h2>
-          <p className="text-muted-foreground">Beheer afspraken en werkplanning</p>
+          <h2 className="text-xl sm:text-2xl font-bold">Planning Beheer</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">Beheer afspraken en werkplanning</p>
         </div>
         
-        <div className="flex flex-col sm:flex-row flex-wrap gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
           <Button 
             onClick={() => setShowQuickPlanning(true)}
             size="sm"
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-green-600 hover:bg-green-700 touch-manipulation active:scale-95 transition-transform h-12 sm:h-auto"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             <Plus className="h-4 w-4 mr-2" />
             Snelle Planning
@@ -242,6 +243,8 @@ export function PlanningManagement() {
           <Button 
             onClick={() => setShowNewPlanning(true)}
             size="sm"
+            className="touch-manipulation active:scale-95 transition-transform h-12 sm:h-auto"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             <Calendar className="h-4 w-4 mr-2" />
             Nieuwe Planning
@@ -251,6 +254,8 @@ export function PlanningManagement() {
             onClick={() => setShowMultiDayPlanning(true)}
             size="sm"
             variant="outline"
+            className="touch-manipulation active:scale-95 transition-transform h-12 sm:h-auto"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             <Clock className="h-4 w-4 mr-2" />
             Meerdaagse Planning
@@ -315,22 +320,24 @@ export function PlanningManagement() {
         </Card>
       </div>
 
-      {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      {/* Search and Filters - Mobile optimized */}
+      <div className="space-y-3 sm:space-y-0 sm:flex sm:flex-row sm:gap-4">
         <div className="flex-1">
           <Input
             placeholder="Zoek planning..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            className="h-12 sm:h-auto text-base sm:text-sm"
           />
         </div>
         
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-4 gap-2 sm:flex sm:flex-wrap">
           <Button
             variant={filterStatus === null ? "default" : "outline"}
             size="sm"
             onClick={() => setFilterStatus(null)}
-            className="text-xs sm:text-sm"
+            className="text-xs sm:text-sm h-10 touch-manipulation active:scale-95 transition-transform"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             Alle
           </Button>
@@ -338,7 +345,8 @@ export function PlanningManagement() {
             variant={filterStatus === "Gepland" ? "default" : "outline"}
             size="sm"
             onClick={() => setFilterStatus("Gepland")}
-            className="text-xs sm:text-sm"
+            className="text-xs sm:text-sm h-10 touch-manipulation active:scale-95 transition-transform"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             Gepland
           </Button>
@@ -346,7 +354,8 @@ export function PlanningManagement() {
             variant={filterStatus === "In uitvoering" ? "default" : "outline"}
             size="sm"
             onClick={() => setFilterStatus("In uitvoering")}
-            className="text-xs sm:text-sm"
+            className="text-xs sm:text-sm h-10 touch-manipulation active:scale-95 transition-transform"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             Actief
           </Button>
@@ -354,7 +363,8 @@ export function PlanningManagement() {
             variant={filterStatus === "Afgerond" ? "default" : "outline"}
             size="sm"
             onClick={() => setFilterStatus("Afgerond")}
-            className="text-xs sm:text-sm"
+            className="text-xs sm:text-sm h-10 touch-manipulation active:scale-95 transition-transform"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
           >
             Afgerond
           </Button>

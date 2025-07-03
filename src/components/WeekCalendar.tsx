@@ -262,55 +262,62 @@ export const WeekCalendar = ({
         </div>
       </div>
 
-      {/* Mobile View - Improved responsiveness */}
+      {/* Mobile View - Fully responsive and touch-optimized */}
       <div className="block sm:hidden">
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-border/50">
           {weekDays.map((day, dayIndex) => {
             const dayEvents = getEventsForDay(day);
             const isToday = isSameDay(day, new Date());
             
             return (
-              <div key={day.toISOString()} className="p-3">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="text-xs text-gray-600 font-medium min-w-[20px]">
+              <div key={day.toISOString()} className="p-4 touch-manipulation">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm text-muted-foreground font-medium min-w-[24px]">
                       {dayNames[dayIndex]}
                     </div>
-                    <div className={`text-lg font-bold flex items-center justify-center ${
-                      isToday ? 'bg-blue-500 text-white rounded-full w-8 h-8' : 'w-8 h-8'
+                    <div className={`text-xl font-bold flex items-center justify-center transition-all ${
+                      isToday 
+                        ? 'bg-primary text-primary-foreground rounded-full w-10 h-10 shadow-md' 
+                        : 'w-10 h-10 text-foreground'
                     }`}>
                       {format(day, 'd')}
                     </div>
                   </div>
                   <Button 
-                    variant="ghost" 
+                    variant="outline" 
                     size="sm"
                     onClick={() => handleAddPlanning(day)}
-                    className="text-xs h-7 px-2"
+                    className="text-sm h-9 px-3 touch-manipulation active:scale-95 transition-transform"
+                    style={{ WebkitTapHighlightColor: 'transparent' }}
                   >
-                    <Plus className="h-3 w-3 mr-1" />
-                    <span className="hidden xs:inline">Planning</span>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Planning
                   </Button>
                 </div>
                 
                 {dayEvents.length === 0 ? (
-                  <div className="text-xs text-gray-400 py-2 pl-2">
-                    Geen afspraken
+                  <div className="text-sm text-muted-foreground py-4 px-3 bg-muted/30 rounded-lg border border-dashed border-muted-foreground/30">
+                    Geen afspraken gepland
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {dayEvents.map(event => (
                       <div
                         key={event.id}
-                        className={`text-xs p-2 rounded cursor-pointer ${eventColors[event.type]} transition-opacity hover:opacity-80`}
+                        className={`p-4 rounded-xl cursor-pointer ${eventColors[event.type]} shadow-sm border border-white/20 touch-manipulation active:scale-98 transition-all duration-200`}
                         onClick={(e) => {
                           e.stopPropagation();
                           onEventClick?.(event);
                         }}
+                        style={{ WebkitTapHighlightColor: 'transparent' }}
                       >
-                        <div className="font-medium truncate">{event.title}</div>
-                        <div className="opacity-90 text-xs mt-1">
-                          {event.startTime} - {event.endTime}
+                        <div className="font-semibold text-sm leading-tight mb-2">{event.title}</div>
+                        <div className="text-xs opacity-90 flex items-center gap-2">
+                          <span className="font-medium">{event.startTime} - {event.endTime}</span>
+                          {event.description && (
+                            <span className="text-xs opacity-75 truncate">• {event.description}</span>
+                          )}
                         </div>
                       </div>
                     ))}
