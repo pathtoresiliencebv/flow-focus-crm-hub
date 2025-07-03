@@ -24,7 +24,7 @@ const ProjectDetail = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
   const { projects, customers, updateProject } = useCrmStore();
-  const { monteurs } = useUsers();
+  const { monteurs, isLoading: isLoadingUsers } = useUsers();
   const { profile, user } = useAuth();
   const { startProject, completeProject, isStarting, isCompleting } = useProjectDelivery();
   const [projectDetailTab, setProjectDetailTab] = useState("details");
@@ -266,13 +266,19 @@ const ProjectDetail = () => {
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Selecteer monteur" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background border shadow-md z-50">
                       <SelectItem value="">Geen monteur toegewezen</SelectItem>
-                      {monteurs.map((monteur) => (
-                        <SelectItem key={monteur.id} value={monteur.id}>
-                          {monteur.full_name || monteur.email}
-                        </SelectItem>
-                      ))}
+                      {isLoadingUsers ? (
+                        <SelectItem value="" disabled>Monteurs laden...</SelectItem>
+                      ) : monteurs.length === 0 ? (
+                        <SelectItem value="" disabled>Geen monteurs beschikbaar</SelectItem>
+                      ) : (
+                        monteurs.map((monteur) => (
+                          <SelectItem key={monteur.id} value={monteur.id}>
+                            {monteur.full_name || monteur.email}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
