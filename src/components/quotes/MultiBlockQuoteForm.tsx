@@ -96,7 +96,6 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
 
   const updateBlock = useCallback((index: number, updatedBlock: QuoteBlock) => {
     console.log('MultiBlockQuoteForm: Updating block at index', index, 'with block:', updatedBlock);
-    console.log('MultiBlockQuoteForm: Current blocks before update:', blocks);
     console.log('MultiBlockQuoteForm: Updated block items:', updatedBlock.items);
     
     setBlocks(prevBlocks => {
@@ -108,7 +107,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       return newBlocks;
     });
     forcePreviewUpdate();
-  }, [forcePreviewUpdate, blocks]);
+  }, [forcePreviewUpdate]);
 
   const deleteBlock = useCallback((index: number) => {
     if (blocks.length > 1) {
