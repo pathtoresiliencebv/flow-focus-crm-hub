@@ -139,15 +139,18 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                 </Button>
               </div>
             ) : (
-              <div className="flex items-center gap-2 flex-1">
-                <CardTitle className="text-lg font-bold">{block.title}</CardTitle>
+              <div className="flex items-center gap-2 flex-1 cursor-pointer group" onClick={() => setIsEditingTitle(true)}>
+                <CardTitle className="text-lg font-bold group-hover:text-primary transition-colors">{block.title}</CardTitle>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setIsEditingTitle(true)}
+                  className="opacity-50 group-hover:opacity-100 transition-opacity"
                 >
                   <Edit3 className="h-4 w-4" />
                 </Button>
+                <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                  Klik om te bewerken
+                </span>
               </div>
             )}
           </div>
