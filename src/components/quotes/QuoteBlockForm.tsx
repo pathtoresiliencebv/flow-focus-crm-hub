@@ -207,9 +207,16 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-xs">
-              {block.items.length} item{block.items.length !== 1 ? 's' : ''}
-            </Badge>
+            {block.type === 'product' && (
+              <Badge variant="secondary" className="text-xs">
+                {block.items.length} item{block.items.length !== 1 ? 's' : ''}
+              </Badge>
+            )}
+            {block.type === 'textblock' && (
+              <Badge variant="outline" className="text-xs">
+                Tekstblok
+              </Badge>
+            )}
             {canDelete && (
               <Button
                 variant="outline"
