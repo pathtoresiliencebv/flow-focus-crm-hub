@@ -22,41 +22,34 @@ export const QuoteItemDisplay: React.FC<QuoteItemDisplayProps> = ({ item, onDele
   };
 
   return (
-    <div className="p-3 border rounded-lg bg-gray-50">
+    <div className={`p-4 border rounded-lg ${item.type === 'product' ? 'bg-background border-border' : 'bg-muted/30 border-muted-foreground/20'}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
           {item.type === 'product' ? (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-sm">
-              <div>
-                <span className="font-medium">{item.description}</span>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
+              <div className="col-span-1">
+                <span className="font-semibold text-foreground">{item.description}</span>
               </div>
-              <div>
-                <span className="text-gray-600">
+              <div className="text-center">
+                <span className="text-muted-foreground">
                   {item.quantity} × €{item.unit_price?.toFixed(2)}
                 </span>
               </div>
-              <div>
-                <span className="text-gray-600">{item.vat_rate}% BTW</span>
+              <div className="text-center">
+                <span className="text-muted-foreground">{item.vat_rate}% BTW</span>
               </div>
-              <div>
-                <span className="font-medium">€{item.total?.toFixed(2)}</span>
+              <div className="text-right">
+                <span className="font-bold text-primary">€{item.total?.toFixed(2)}</span>
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 text-sm">
-              <div>
-                <span className="text-gray-700 whitespace-pre-line" style={getItemStyle(item)}>
-                  {item.description}
-                </span>
-              </div>
-              <div>
-                <span className="text-gray-400">-</span>
-              </div>
-              <div>
-                <span className="text-gray-600">{item.vat_rate}% BTW</span>
-              </div>
-              <div>
-                <span className="text-gray-400">-</span>
+            <div className="py-2">
+              <div className="text-sm text-muted-foreground italic mb-1">Tekstblok:</div>
+              <div 
+                className="text-foreground leading-relaxed whitespace-pre-line border-l-4 border-primary/30 pl-4" 
+                style={getItemStyle(item)}
+              >
+                {item.description}
               </div>
             </div>
           )}
@@ -65,7 +58,7 @@ export const QuoteItemDisplay: React.FC<QuoteItemDisplayProps> = ({ item, onDele
           variant="ghost"
           size="sm"
           onClick={onDelete}
-          className="text-red-600 hover:text-red-700"
+          className="text-destructive hover:text-destructive/80"
         >
           <Trash2 className="h-4 w-4" />
         </Button>
