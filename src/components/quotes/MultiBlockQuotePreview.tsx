@@ -289,15 +289,6 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
         </div>
       )}
 
-      {/* Terms and Conditions */}
-      {settings.terms_and_conditions && (
-        <div className="mt-12 pt-8 border-t border-gray-200">
-          <h4 className="font-medium text-gray-900 mb-4">Algemene Voorwaarden</h4>
-          <div className="text-sm text-gray-600 whitespace-pre-line">
-            {settings.terms_and_conditions}
-          </div>
-        </div>
-      )}
 
       {/* Footer */}
       <div className="mt-12 pt-8 border-t border-gray-200">
@@ -307,10 +298,15 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
           <p>Prijzen zijn inclusief BTW tenzij anders vermeld. Bij aanvaarding van deze offerte zijn onze algemene voorwaarden van toepassing.</p>
         </div>
         
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
           <h4 className="font-medium text-gray-900 mb-2">Akkoord verklaring:</h4>
           <p className="text-sm text-gray-600">
             Door digitaal te ondertekenen gaat u akkoord met de voorwaarden en prijzen zoals vermeld in deze offerte.
+          </p>
+          <p className="text-xs text-gray-500 mt-2">
+            <a href="/algemene-voorwaarden" className="underline hover:text-gray-700">
+              Lees onze algemene voorwaarden
+            </a>
           </p>
         </div>
       </div>

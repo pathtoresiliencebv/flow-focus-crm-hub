@@ -897,6 +897,87 @@ export type Database = {
           },
         ]
       }
+      project_materials: {
+        Row: {
+          added_by: string
+          created_at: string
+          id: string
+          material_name: string
+          project_id: string
+          quantity: number | null
+          receipt_photo_url: string | null
+          supplier: string | null
+          total_cost: number | null
+          unit_price: number | null
+          updated_at: string
+        }
+        Insert: {
+          added_by: string
+          created_at?: string
+          id?: string
+          material_name: string
+          project_id: string
+          quantity?: number | null
+          receipt_photo_url?: string | null
+          supplier?: string | null
+          total_cost?: number | null
+          unit_price?: number | null
+          updated_at?: string
+        }
+        Update: {
+          added_by?: string
+          created_at?: string
+          id?: string
+          material_name?: string
+          project_id?: string
+          quantity?: number | null
+          receipt_photo_url?: string | null
+          supplier?: string | null
+          total_cost?: number | null
+          unit_price?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      project_receipts: {
+        Row: {
+          added_by: string
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          project_id: string
+          receipt_date: string | null
+          receipt_photo_url: string
+          supplier: string | null
+          total_amount: number | null
+        }
+        Insert: {
+          added_by: string
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          project_id: string
+          receipt_date?: string | null
+          receipt_photo_url: string
+          supplier?: string | null
+          total_amount?: number | null
+        }
+        Update: {
+          added_by?: string
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          project_id?: string
+          receipt_date?: string | null
+          receipt_photo_url?: string
+          supplier?: string | null
+          total_amount?: number | null
+        }
+        Relationships: []
+      }
       project_registrations: {
         Row: {
           approved_at: string | null
@@ -975,6 +1056,8 @@ export type Database = {
           is_info_block: boolean | null
           order_index: number | null
           project_id: string
+          quote_item_type: string | null
+          source_quote_block_id: string | null
           source_quote_item_id: string | null
           task_description: string | null
           updated_at: string | null
@@ -988,6 +1071,8 @@ export type Database = {
           is_info_block?: boolean | null
           order_index?: number | null
           project_id: string
+          quote_item_type?: string | null
+          source_quote_block_id?: string | null
           source_quote_item_id?: string | null
           task_description?: string | null
           updated_at?: string | null
@@ -1001,6 +1086,8 @@ export type Database = {
           is_info_block?: boolean | null
           order_index?: number | null
           project_id?: string
+          quote_item_type?: string | null
+          source_quote_block_id?: string | null
           source_quote_item_id?: string | null
           task_description?: string | null
           updated_at?: string | null
@@ -1379,6 +1466,10 @@ export type Database = {
       generate_invoice_number: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      generate_project_tasks_from_quote: {
+        Args: { p_project_id: string; p_quote_id: string }
+        Returns: undefined
       }
       generate_quote_number: {
         Args: Record<PropertyKey, never>

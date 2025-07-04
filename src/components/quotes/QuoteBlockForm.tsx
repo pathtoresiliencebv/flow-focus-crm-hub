@@ -10,6 +10,7 @@ import { QuoteItemDisplay } from './QuoteItemDisplay';
 import { QuoteItem, QuoteBlock } from '@/types/quote';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { AIEnhanceButton } from '@/components/ui/ai-enhance-button';
 
 interface QuoteBlockFormProps {
   block: QuoteBlock;
@@ -183,12 +184,21 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
             </Button>
           )}
         </div>
-        <Textarea
-          value={blockContent}
-          onChange={(e) => handleContentChange(e.target.value)}
-          placeholder="Voer uw tekst in..."
-          className="min-h-[80px] text-sm border-dashed"
-        />
+        <div className="relative">
+          <Textarea
+            value={blockContent}
+            onChange={(e) => handleContentChange(e.target.value)}
+            placeholder="Voer uw tekst in..."
+            className="min-h-[60px] text-sm border-dashed pr-12"
+          />
+          <div className="absolute top-2 right-2">
+            <AIEnhanceButton
+              text={blockContent}
+              onEnhanced={(enhanced) => handleContentChange(enhanced)}
+              context="textblock"
+            />
+          </div>
+        </div>
       </div>
     );
   }
