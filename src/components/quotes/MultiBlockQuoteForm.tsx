@@ -44,6 +44,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     {
       id: crypto.randomUUID(),
       title: 'Hoofdwerkzaamheden',
+      type: 'product',
       items: [],
       subtotal: 0,
       vat_amount: 0,
@@ -98,6 +99,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     const newBlock: QuoteBlock = {
       id: crypto.randomUUID(),
       title: `Blok ${blocks.length + 1}`,
+      type: 'product',
       items: [],
       subtotal: 0,
       vat_amount: 0,
@@ -106,6 +108,26 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     console.log('MultiBlockQuoteForm: Adding new block:', newBlock);
     setBlocks(prevBlocks => {
       const newBlocks = [...prevBlocks, newBlock];
+      console.log('MultiBlockQuoteForm: New blocks state:', newBlocks);
+      return newBlocks;
+    });
+    forcePreviewUpdate();
+  }, [blocks.length, forcePreviewUpdate]);
+
+  const addTextBlock = useCallback(() => {
+    const newTextBlock: QuoteBlock = {
+      id: crypto.randomUUID(),
+      title: 'Tekstblok',
+      type: 'textblock',
+      items: [],
+      subtotal: 0,
+      vat_amount: 0,
+      order_index: blocks.length,
+      content: ''
+    };
+    console.log('MultiBlockQuoteForm: Adding new text block:', newTextBlock);
+    setBlocks(prevBlocks => {
+      const newBlocks = [...prevBlocks, newTextBlock];
       console.log('MultiBlockQuoteForm: New blocks state:', newBlocks);
       return newBlocks;
     });
@@ -498,18 +520,33 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Offerte Blokken</CardTitle>
-                  <Button 
-                    type="button" 
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      addBlock();
-                    }} 
-                    size="sm"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Blok toevoegen
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      type="button" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        addBlock();
+                      }} 
+                      size="sm"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Blok toevoegen
+                    </Button>
+                    <Button 
+                      type="button" 
+                      onClick={(e) => {
+                        e.preventDefault();  
+                        e.stopPropagation();
+                        addTextBlock();
+                      }} 
+                      size="sm"
+                      variant="outline"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Tekstblok toevoegen
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">

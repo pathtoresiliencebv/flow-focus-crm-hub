@@ -36,6 +36,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
     italic: false,
     underline: false
   });
+  const [blockContent, setBlockContent] = useState(block.content || '');
 
   const toggleTextFormatting = useCallback((type: 'bold' | 'italic' | 'underline') => {
     setTextFormatting(prev => ({
@@ -145,6 +146,15 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
     setIsEditingTitle(false);
   }, [block.title]);
 
+  const handleContentChange = useCallback((content: string) => {
+    setBlockContent(content);
+    const updatedBlock: QuoteBlock = {
+      ...block,
+      content
+    };
+    onUpdateBlock(updatedBlock);
+  }, [block, onUpdateBlock]);
+
   // Debug effect to monitor block changes
   useEffect(() => {
     console.log('QuoteBlockForm: Block updated:', block);
@@ -215,137 +225,152 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
       </CardHeader>
 
       <CardContent className="space-y-3">
-        {/* Items List */}
-        {block.items.length > 0 && (
+        {block.type === 'textblock' ? (
+          /* Text Block Content */
           <div className="space-y-2">
-            <h5 className="font-medium text-gray-700 text-sm">Items in dit blok:</h5>
-            {block.items.map((item, index) => (
-              <QuoteItemDisplay
-                key={item.id || `item-${index}`}
-                item={item}
-                onDelete={() => handleDeleteItem(index)}
-              />
-            ))}
+            <Textarea
+              value={blockContent}
+              onChange={(e) => handleContentChange(e.target.value)}
+              placeholder="Voer uw tekst in..."
+              className="min-h-[100px] text-sm"
+            />
           </div>
-        )}
-
-        {/* Add Item Options */}
-        <div className="space-y-3">
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowProductForm(!showProductForm)}
-              className="flex-1 h-8 text-sm"
-            >
-              <Plus className="h-3 w-3 mr-2" />
-              Product/Dienst toevoegen
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowTextForm(!showTextForm)}
-              className="flex-1 h-8 text-sm"
-            >
-              <Plus className="h-3 w-3 mr-2" />
-              Tekstblok toevoegen
-            </Button>
-          </div>
-
-          {/* Product Form */}
-          {showProductForm && (
-            <QuoteItemForm onAddItem={handleAddItem} />
-          )}
-
-          {/* Quick Text Block Form */}
-          {showTextForm && (
-            <div className="space-y-3 p-3 border rounded-lg bg-green-50">
-              <h4 className="font-medium text-gray-900 text-sm">Tekstblok toevoegen</h4>
-              <div className="space-y-2">
-                <div className="flex gap-1">
-                  <Button
-                    type="button"
-                    variant={textFormatting.bold ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => toggleTextFormatting('bold')}
-                    className="h-7 w-7 p-0"
-                  >
-                    <strong>B</strong>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={textFormatting.italic ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => toggleTextFormatting('italic')}
-                    className="italic h-7 w-7 p-0"
-                  >
-                    I
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={textFormatting.underline ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => toggleTextFormatting('underline')}
-                    className="underline h-7 w-7 p-0"
-                  >
-                    U
-                  </Button>
-                </div>
-                <Textarea
-                  value={textBlockContent}
-                  onChange={(e) => setTextBlockContent(e.target.value)}
-                  placeholder="Voer tekst in..."
-                  className="min-h-[80px] text-sm"
-                />
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    onClick={handleAddTextBlock}
-                    className="flex-1 h-8 text-sm"
-                  >
-                    <Plus className="h-3 w-3 mr-2" />
-                    Tekstblok toevoegen
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setShowTextForm(false);
-                      setTextBlockContent('');
-                      setTextFormatting({ bold: false, italic: false, underline: false });
-                    }}
-                    className="h-8 text-sm"
-                  >
-                    Annuleren
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Block Totals */}
-        {block.items.some(item => item.type === 'product') && (
+        ) : (
+          /* Product Block Content */
           <>
-            <Separator />
-            <div className="flex justify-end">
-              <div className="w-64 space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotaal blok:</span>
-                  <span className="font-medium">€{(block.subtotal || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">BTW:</span>
-                  <span className="font-medium">€{(block.vat_amount || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between py-1 border-t">
-                  <span className="font-semibold">Totaal blok:</span>
-                  <span className="font-semibold text-smans-primary">
-                    €{((block.subtotal || 0) + (block.vat_amount || 0)).toFixed(2)}
-                  </span>
-                </div>
+            {/* Items List */}
+            {block.items.length > 0 && (
+              <div className="space-y-2">
+                <h5 className="font-medium text-gray-700 text-sm">Items in dit blok:</h5>
+                {block.items.map((item, index) => (
+                  <QuoteItemDisplay
+                    key={item.id || `item-${index}`}
+                    item={item}
+                    onDelete={() => handleDeleteItem(index)}
+                  />
+                ))}
               </div>
+            )}
+
+            {/* Add Item Options */}
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowProductForm(!showProductForm)}
+                  className="flex-1 h-8 text-sm"
+                >
+                  <Plus className="h-3 w-3 mr-2" />
+                  Product/Dienst toevoegen
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowTextForm(!showTextForm)}
+                  className="flex-1 h-8 text-sm"
+                >
+                  <Plus className="h-3 w-3 mr-2" />
+                  Tekstblok toevoegen
+                </Button>
+              </div>
+
+              {/* Product Form */}
+              {showProductForm && (
+                <QuoteItemForm onAddItem={handleAddItem} />
+              )}
+
+              {/* Quick Text Block Form */}
+              {showTextForm && (
+                <div className="space-y-3 p-3 border rounded-lg bg-green-50">
+                  <h4 className="font-medium text-gray-900 text-sm">Tekstblok toevoegen</h4>
+                  <div className="space-y-2">
+                    <div className="flex gap-1">
+                      <Button
+                        type="button"
+                        variant={textFormatting.bold ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => toggleTextFormatting('bold')}
+                        className="h-7 w-7 p-0"
+                      >
+                        <strong>B</strong>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={textFormatting.italic ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => toggleTextFormatting('italic')}
+                        className="italic h-7 w-7 p-0"
+                      >
+                        I
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={textFormatting.underline ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => toggleTextFormatting('underline')}
+                        className="underline h-7 w-7 p-0"
+                      >
+                        U
+                      </Button>
+                    </div>
+                    <Textarea
+                      value={textBlockContent}
+                      onChange={(e) => setTextBlockContent(e.target.value)}
+                      placeholder="Voer tekst in..."
+                      className="min-h-[80px] text-sm"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        onClick={handleAddTextBlock}
+                        className="flex-1 h-8 text-sm"
+                      >
+                        <Plus className="h-3 w-3 mr-2" />
+                        Tekstblok toevoegen
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setShowTextForm(false);
+                          setTextBlockContent('');
+                          setTextFormatting({ bold: false, italic: false, underline: false });
+                        }}
+                        className="h-8 text-sm"
+                      >
+                        Annuleren
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* Block Totals */}
+            {block.items.some(item => item.type === 'product') && (
+              <>
+                <Separator />
+                <div className="flex justify-end">
+                  <div className="w-64 space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Subtotaal blok:</span>
+                      <span className="font-medium">€{(block.subtotal || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">BTW:</span>
+                      <span className="font-medium">€{(block.vat_amount || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-t">
+                      <span className="font-semibold">Totaal blok:</span>
+                      <span className="font-semibold text-smans-primary">
+                        €{((block.subtotal || 0) + (block.vat_amount || 0)).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </>
         )}
       </CardContent>

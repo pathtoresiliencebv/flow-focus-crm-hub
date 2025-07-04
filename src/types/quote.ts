@@ -17,10 +17,12 @@ export interface QuoteItem {
 export interface QuoteBlock {
   id: string;
   title: string;
+  type: 'product' | 'textblock';
   items: QuoteItem[];
   subtotal: number;
   vat_amount: number;
   order_index: number;
+  content?: string; // For text-only blocks
 }
 
 export interface Quote {

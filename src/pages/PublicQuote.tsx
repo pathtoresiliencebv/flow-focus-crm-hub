@@ -82,10 +82,12 @@ export default function PublicQuote() {
           blocks = data.items.map((item: any) => ({
             id: item.id || crypto.randomUUID(),
             title: item.title || 'Untitled Block',
+            type: item.type || 'product',
             items: item.items || [],
             subtotal: item.subtotal || 0,
             vat_amount: item.vat_amount || 0,
-            order_index: item.order_index || 0
+            order_index: item.order_index || 0,
+            content: item.content
           }));
         }
       } catch (e) {
@@ -317,71 +319,83 @@ export default function PublicQuote() {
           {quote.blocks && quote.blocks.length > 0 ? (
             <div className="space-y-8">
               {quote.blocks.map((block, blockIndex) => (
-                <div key={`${block.id}-${blockIndex}`} className="border-l-2 border-gray-300 pl-6">
-                  <h4 className="text-lg font-bold text-gray-900 mb-4 uppercase">{block.title}</h4>
-                  
-                  {block.items && block.items.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b-2 border-gray-200">
-                            <th className="text-left py-3 font-semibold text-gray-900">Omschrijving</th>
-                            <th className="text-center py-3 font-semibold text-gray-900 w-16">Aantal</th>
-                            <th className="text-right py-3 font-semibold text-gray-900 w-20">Prijs</th>
-                            <th className="text-center py-3 font-semibold text-gray-900 w-16">BTW%</th>
-                            <th className="text-right py-3 font-semibold text-gray-900 w-24">Totaal</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {block.items.map((item, itemIndex) => (
-                            <tr key={`${item.id || itemIndex}-${blockIndex}-${itemIndex}`} className="border-b border-gray-100">
-                              {item.type === 'product' ? (
-                                <>
-                                  <td className="py-3 text-gray-800">{item.description}</td>
-                                  <td className="py-3 text-center text-gray-800">{item.quantity}</td>
-                                  <td className="py-3 text-right text-gray-800">€{(item.unit_price || 0).toFixed(2)}</td>
-                                  <td className="py-3 text-center text-gray-800">{item.vat_rate}%</td>
-                                  <td className="py-3 text-right text-gray-800 font-medium">€{(item.total || 0).toFixed(2)}</td>
-                                </>
-                              ) : (
-                                <>
-                                  <td className="py-3 text-gray-800 whitespace-pre-line" style={getItemStyle(item)}>
-                                    {item.description}
-                                  </td>
-                                  <td className="py-3 text-center text-gray-400">-</td>
-                                  <td className="py-3 text-right text-gray-400">-</td>
-                                  <td className="py-3 text-center text-gray-800">{item.vat_rate}%</td>
-                                  <td className="py-3 text-right text-gray-400">-</td>
-                                </>
-                              )}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                <div key={`${block.id}-${blockIndex}`}>
+                  {block.type === 'textblock' ? (
+                    /* Text Block Rendering */
+                    <div className="mb-8">
+                      <div className="text-gray-700 whitespace-pre-wrap leading-relaxed text-sm p-4 bg-gray-50 rounded-lg">
+                        {block.content || 'Geen tekst ingevoerd'}
+                      </div>
                     </div>
                   ) : (
-                    <div className="text-gray-400 italic py-4">Geen items in dit blok</div>
-                  )}
+                    /* Product Block Rendering */
+                    <div className="border-l-2 border-gray-300 pl-6">
+                      <h4 className="text-lg font-bold text-gray-900 mb-4 uppercase">{block.title}</h4>
+                      
+                      {block.items && block.items.length > 0 ? (
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="border-b-2 border-gray-200">
+                                <th className="text-left py-3 font-semibold text-gray-900">Omschrijving</th>
+                                <th className="text-center py-3 font-semibold text-gray-900 w-16">Aantal</th>
+                                <th className="text-right py-3 font-semibold text-gray-900 w-20">Prijs</th>
+                                <th className="text-center py-3 font-semibold text-gray-900 w-16">BTW%</th>
+                                <th className="text-right py-3 font-semibold text-gray-900 w-24">Totaal</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {block.items.map((item, itemIndex) => (
+                                <tr key={`${item.id || itemIndex}-${blockIndex}-${itemIndex}`} className="border-b border-gray-100">
+                                  {item.type === 'product' ? (
+                                    <>
+                                      <td className="py-3 text-gray-800">{item.description}</td>
+                                      <td className="py-3 text-center text-gray-800">{item.quantity}</td>
+                                      <td className="py-3 text-right text-gray-800">€{(item.unit_price || 0).toFixed(2)}</td>
+                                      <td className="py-3 text-center text-gray-800">{item.vat_rate}%</td>
+                                      <td className="py-3 text-right text-gray-800 font-medium">€{(item.total || 0).toFixed(2)}</td>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <td className="py-3 text-gray-800 whitespace-pre-line" style={getItemStyle(item)}>
+                                        {item.description}
+                                      </td>
+                                      <td className="py-3 text-center text-gray-400">-</td>
+                                      <td className="py-3 text-right text-gray-400">-</td>
+                                      <td className="py-3 text-center text-gray-800">{item.vat_rate}%</td>
+                                      <td className="py-3 text-right text-gray-400">-</td>
+                                    </>
+                                  )}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div className="text-gray-400 italic py-4">Geen items in dit blok</div>
+                      )}
 
-                  {/* Block totals (only if block has products) */}
-                  {block.items && block.items.some(item => item.type === 'product') && (
-                    <div className="flex justify-end mt-4">
-                      <div className="w-64 space-y-1 text-sm border-t pt-2">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Subtotaal {block.title}:</span>
-                          <span className="font-medium">€{(block.subtotal || 0).toFixed(2)}</span>
+                      {/* Block totals (only if block has products) */}
+                      {block.items && block.items.some(item => item.type === 'product') && (
+                        <div className="flex justify-end mt-4">
+                          <div className="w-64 space-y-1 text-sm border-t pt-2">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Subtotaal {block.title}:</span>
+                              <span className="font-medium">€{(block.subtotal || 0).toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">BTW:</span>
+                              <span className="font-medium">€{(block.vat_amount || 0).toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between py-1 border-t">
+                              <span className="font-semibold">Totaal {block.title}:</span>
+                              <span className="font-semibold text-smans-primary">
+                                €{((block.subtotal || 0) + (block.vat_amount || 0)).toFixed(2)}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">BTW:</span>
-                          <span className="font-medium">€{(block.vat_amount || 0).toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-t">
-                          <span className="font-semibold">Totaal {block.title}:</span>
-                          <span className="font-semibold text-smans-primary">
-                            €{((block.subtotal || 0) + (block.vat_amount || 0)).toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   )}
                 </div>

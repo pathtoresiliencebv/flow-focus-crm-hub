@@ -45,6 +45,7 @@ export const useQuotes = () => {
                 blocks = parsedItems.map((item: any) => ({
                   id: item.id || crypto.randomUUID(),
                   title: item.title || 'Untitled Block',
+                  type: item.type || 'product',
                   items: (item.items || []).map((blockItem: any) => ({
                     id: blockItem.id || crypto.randomUUID(),
                     type: blockItem.type || 'product',
@@ -57,13 +58,15 @@ export const useQuotes = () => {
                   })),
                   subtotal: item.subtotal || 0,
                   vat_amount: item.vat_amount || 0,
-                  order_index: item.order_index || 0
+                  order_index: item.order_index || 0,
+                  content: item.content
                 }));
               } else {
                 // Old flat structure - convert to single block
                 blocks = [{
                   id: crypto.randomUUID(),
                   title: 'Items',
+                  type: 'product',
                   items: parsedItems.map((item: any) => ({
                     id: item.id || crypto.randomUUID(),
                     type: item.type || 'product',
