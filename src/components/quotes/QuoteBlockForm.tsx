@@ -38,6 +38,11 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
   });
   const [blockContent, setBlockContent] = useState(block.content || '');
 
+  // Synchronize blockContent with block.content prop
+  useEffect(() => {
+    setBlockContent(block.content || '');
+  }, [block.content]);
+
   const toggleTextFormatting = useCallback((type: 'bold' | 'italic' | 'underline') => {
     setTextFormatting(prev => ({
       ...prev,
