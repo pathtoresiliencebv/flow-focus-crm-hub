@@ -140,62 +140,76 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
               console.log('MultiBlockQuotePreview: Rendering block:', block);
               return (
                 <div key={`${block.id}-${blockIndex}`} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm mb-4">
-                  {/* Compact Block Title */}
+                  {/* Block Title - conditional for type */}
                   <div className="mb-4 pb-2 border-b border-gray-200">
                     <h3 className="text-lg font-semibold text-gray-900 mb-1">
                       {block.title}
                     </h3>
-                    <div className="text-sm text-gray-500">
-                      Onderdeel {blockIndex + 1} van {quote.blocks.length}
-                    </div>
+                    {block.type === 'product' && (
+                      <div className="text-sm text-gray-500">
+                        Onderdeel {blockIndex + 1} van {quote.blocks.length}
+                      </div>
+                    )}
                   </div>
                   
-                  {/* Block items - Products and text blocks in natural order */}
-                  {block.items && block.items.length > 0 ? (
-                     <div className="mb-4">
-                       {/* Table with mixed content */}
-                       <div className="bg-gray-50 rounded border">
-                         {/* Table header (only show if there are products) */}
-                         {block.items.some(item => item.type === 'product') && (
-                           <div className="grid grid-cols-12 gap-4 py-2 px-4 bg-gray-100 border-b font-medium text-gray-700 text-xs">
-                             <div className="col-span-6">Beschrijving</div>
-                             <div className="col-span-2 text-center">Aantal</div>
-                             <div className="col-span-2 text-right">Prijs</div>
-                             <div className="col-span-1 text-center">BTW%</div>
-                             <div className="col-span-1 text-right">Totaal</div>
-                           </div>
-                         )}
-                         
-                         {/* All items in original order */}
-                         {block.items.map((item, itemIndex) => (
-                           item.type === 'product' ? (
-                             <div key={`product-${item.id || itemIndex}`} className="grid grid-cols-12 gap-4 py-2 px-4 border-b border-gray-100 text-xs">
-                               <div className="col-span-6 text-gray-800">{item.description || 'Geen beschrijving'}</div>
-                               <div className="col-span-2 text-center text-gray-800">{item.quantity || 0}</div>
-                               <div className="col-span-2 text-right text-gray-800">€{(item.unit_price || 0).toFixed(2)}</div>
-                               <div className="col-span-1 text-center text-gray-800">{item.vat_rate || 0}%</div>
-                               <div className="col-span-1 text-right text-gray-800 font-medium">€{(item.total || 0).toFixed(2)}</div>
-                             </div>
-                           ) : (
-                             <div key={`text-${item.id || itemIndex}`} className="col-span-12 px-4 py-3 border-b border-gray-100">
-                               <div 
-                                 className="text-gray-700 whitespace-pre-line text-sm italic" 
-                                 style={getItemStyle(item)}
-                               >
-                                 {item.description || 'Geen tekst'}
-                               </div>
-                             </div>
-                           )
-                         ))}
-                       </div>
-                     </div>
-                  ) : (
-                    <div className="text-center py-12 bg-yellow-50 rounded-lg border-2 border-dashed border-yellow-300">
-                      <div className="text-yellow-800 font-medium mb-2 text-lg">⚠️ Geen items toegevoegd</div>
-                      <div className="text-yellow-700">
-                        Dit blok is leeg. Voeg producten of diensten toe om ze hier te zien in de offerte.
+                  {/* Render based on block type */}
+                  {block.type === 'textblock' ? (
+                    /* Text Block Content */
+                    <div className="mb-4">
+                      <div className="text-gray-700 whitespace-pre-line text-sm p-4 bg-gray-50 rounded-lg leading-relaxed">
+                        {block.content || 'Geen tekst ingevoerd'}
                       </div>
                     </div>
+                  ) : (
+                    /* Product Block Content */
+                    <>
+                      {block.items && block.items.length > 0 ? (
+                         <div className="mb-4">
+                           {/* Table with mixed content */}
+                           <div className="bg-gray-50 rounded border">
+                             {/* Table header (only show if there are products) */}
+                             {block.items.some(item => item.type === 'product') && (
+                               <div className="grid grid-cols-12 gap-4 py-2 px-4 bg-gray-100 border-b font-medium text-gray-700 text-xs">
+                                 <div className="col-span-6">Beschrijving</div>
+                                 <div className="col-span-2 text-center">Aantal</div>
+                                 <div className="col-span-2 text-right">Prijs</div>
+                                 <div className="col-span-1 text-center">BTW%</div>
+                                 <div className="col-span-1 text-right">Totaal</div>
+                               </div>
+                             )}
+                             
+                             {/* All items in original order */}
+                             {block.items.map((item, itemIndex) => (
+                               item.type === 'product' ? (
+                                 <div key={`product-${item.id || itemIndex}`} className="grid grid-cols-12 gap-4 py-2 px-4 border-b border-gray-100 text-xs">
+                                   <div className="col-span-6 text-gray-800">{item.description || 'Geen beschrijving'}</div>
+                                   <div className="col-span-2 text-center text-gray-800">{item.quantity || 0}</div>
+                                   <div className="col-span-2 text-right text-gray-800">€{(item.unit_price || 0).toFixed(2)}</div>
+                                   <div className="col-span-1 text-center text-gray-800">{item.vat_rate || 0}%</div>
+                                   <div className="col-span-1 text-right text-gray-800 font-medium">€{(item.total || 0).toFixed(2)}</div>
+                                 </div>
+                               ) : (
+                                 <div key={`text-${item.id || itemIndex}`} className="col-span-12 px-4 py-3 border-b border-gray-100">
+                                   <div 
+                                     className="text-gray-700 whitespace-pre-line text-sm italic" 
+                                     style={getItemStyle(item)}
+                                   >
+                                     {item.description || 'Geen tekst'}
+                                   </div>
+                                 </div>
+                               )
+                             ))}
+                           </div>
+                         </div>
+                      ) : (
+                        <div className="text-center py-12 bg-yellow-50 rounded-lg border-2 border-dashed border-yellow-300">
+                          <div className="text-yellow-800 font-medium mb-2 text-lg">⚠️ Geen items toegevoegd</div>
+                          <div className="text-yellow-700">
+                            Dit blok is leeg. Voeg producten of diensten toe om ze hier te zien in de offerte.
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
 
                    {/* Block totals (only if block has products) */}
