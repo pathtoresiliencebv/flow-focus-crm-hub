@@ -3,6 +3,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -148,6 +149,33 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       forcePreviewUpdate();
     }
   }, [blocks.length, forcePreviewUpdate]);
+
+  const handleDragEnd = useCallback((result: DropResult) => {
+    if (!result.destination) {
+      return;
+    }
+
+    const sourceIndex = result.source.index;
+    const destinationIndex = result.destination.index;
+
+    if (sourceIndex === destinationIndex) {
+      return;
+    }
+
+    setBlocks(prevBlocks => {
+      const newBlocks = Array.from(prevBlocks);
+      const [reorderedBlock] = newBlocks.splice(sourceIndex, 1);
+      newBlocks.splice(destinationIndex, 0, reorderedBlock);
+      
+      // Update order indices
+      return newBlocks.map((block, index) => ({
+        ...block,
+        order_index: index
+      }));
+    });
+    
+    forcePreviewUpdate();
+  }, [forcePreviewUpdate]);
 
   const totalAmount = useMemo(() => {
     const total = blocks.reduce((sum, block) => sum + (block.subtotal || 0), 0);
@@ -319,7 +347,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[80vh] overflow-hidden">
       {/* Left side - Form */}
-      <div className="space-y-6 overflow-y-auto pr-2">
+      <div className="space-y-4 overflow-y-auto pr-2">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium">Nieuwe offerte - Meerdere blokken</h3>
           <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-lg text-sm font-medium">
@@ -328,13 +356,13 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         </div>
 
         <Form {...form}>
-          <form onSubmit={handleFormSubmit} className="space-y-6">
+          <form onSubmit={handleFormSubmit} className="space-y-4">
             {/* Basic Form Fields */}
             <Card>
-              <CardHeader>
-                <CardTitle>Offerte Gegevens</CardTitle>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Offerte Gegevens</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3">
                 <div className="grid grid-cols-1 gap-4">
                   <FormField
                     control={form.control}
@@ -484,33 +512,57 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {blocks.map((block, index) => (
-                  <QuoteBlockForm
-                    key={`${block.id}-${updateCounter}-${previewKey}`}
-                    block={block}
-                    onUpdateBlock={(updatedBlock) => updateBlock(index, updatedBlock)}
-                    onDeleteBlock={() => deleteBlock(index)}
-                    canDelete={blocks.length > 1}
-                  />
-                ))}
+              <CardContent className="space-y-3">
+                <DragDropContext onDragEnd={handleDragEnd}>
+                  <Droppable droppableId="quote-blocks">
+                    {(provided) => (
+                      <div 
+                        {...provided.droppableProps}
+                        ref={provided.innerRef}
+                        className="space-y-3"
+                      >
+                        {blocks.map((block, index) => (
+                          <Draggable key={block.id} draggableId={block.id} index={index}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={`${snapshot.isDragging ? 'opacity-50' : ''}`}
+                              >
+                                <QuoteBlockForm
+                                  key={`${block.id}-${updateCounter}-${previewKey}`}
+                                  block={block}
+                                  onUpdateBlock={(updatedBlock) => updateBlock(index, updatedBlock)}
+                                  onDeleteBlock={() => deleteBlock(index)}
+                                  canDelete={blocks.length > 1}
+                                  dragHandleProps={provided.dragHandleProps}
+                                />
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
 
                 {/* Grand Total */}
                 <Card className="bg-gray-50">
-                  <CardContent className="p-4">
+                  <CardContent className="p-3">
                     <div className="flex justify-end">
-                      <div className="w-64 space-y-2">
-                        <div className="flex justify-between text-lg">
+                      <div className="w-64 space-y-1">
+                        <div className="flex justify-between">
                           <span className="font-medium">Totaal excl. BTW:</span>
                           <span className="font-medium">€{totalAmount.toFixed(2)}</span>
                         </div>
-                        <div className="flex justify-between text-lg">
+                        <div className="flex justify-between">
                           <span className="font-medium">Totaal BTW:</span>
                           <span className="font-medium">€{totalVAT.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between py-2 border-t-2 border-gray-300">
-                          <span className="font-bold text-xl">Eindtotaal:</span>
-                          <span className="font-bold text-xl text-smans-primary">
+                          <span className="font-bold text-lg">Eindtotaal:</span>
+                          <span className="font-bold text-lg text-smans-primary">
                             €{grandTotal.toFixed(2)}
                           </span>
                         </div>

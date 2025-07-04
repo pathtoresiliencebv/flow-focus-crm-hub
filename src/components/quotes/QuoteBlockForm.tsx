@@ -16,13 +16,15 @@ interface QuoteBlockFormProps {
   onUpdateBlock: (block: QuoteBlock) => void;
   onDeleteBlock: () => void;
   canDelete: boolean;
+  dragHandleProps?: any;
 }
 
 export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
   block,
   onUpdateBlock,
   onDeleteBlock,
-  canDelete
+  canDelete,
+  dragHandleProps
 }) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(block.title);
@@ -150,10 +152,12 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
 
   return (
     <Card className="w-full">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 flex-1">
-            <GripVertical className="h-5 w-5 text-gray-400 cursor-grab" />
+          <div className="flex items-center gap-2 flex-1">
+            <div {...dragHandleProps}>
+              <GripVertical className="h-4 w-4 text-gray-400 cursor-grab hover:text-gray-600 transition-colors" />
+            </div>
             
             {isEditingTitle ? (
               <div className="flex items-center gap-2 flex-1">
@@ -165,7 +169,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                     if (e.key === 'Escape') handleTitleCancel();
                   }}
                   onBlur={handleTitleSave}
-                  className="text-lg font-semibold"
+                  className="text-base font-semibold"
                   autoFocus
                 />
                 <Button size="sm" onClick={handleTitleSave}>
@@ -177,13 +181,13 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
               </div>
             ) : (
               <div className="flex items-center gap-2 flex-1 cursor-pointer group" onClick={() => setIsEditingTitle(true)}>
-                <CardTitle className="text-lg font-bold group-hover:text-primary transition-colors">{block.title}</CardTitle>
+                <CardTitle className="text-base font-bold group-hover:text-primary transition-colors">{block.title}</CardTitle>
                 <Button
                   variant="ghost"
                   size="sm"
                   className="opacity-50 group-hover:opacity-100 transition-opacity"
                 >
-                  <Edit3 className="h-4 w-4" />
+                  <Edit3 className="h-3 w-3" />
                 </Button>
                 <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
                   Klik om te bewerken
@@ -193,7 +197,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <Badge variant="secondary">
+            <Badge variant="secondary" className="text-xs">
               {block.items.length} item{block.items.length !== 1 ? 's' : ''}
             </Badge>
             {canDelete && (
@@ -201,20 +205,20 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={onDeleteBlock}
-                className="text-red-600 hover:text-red-700"
+                className="text-red-600 hover:text-red-700 h-7 w-7 p-0"
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-3 w-3" />
               </Button>
             )}
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         {/* Items List */}
         {block.items.length > 0 && (
-          <div className="space-y-3">
-            <h5 className="font-medium text-gray-700">Items in dit blok:</h5>
+          <div className="space-y-2">
+            <h5 className="font-medium text-gray-700 text-sm">Items in dit blok:</h5>
             {block.items.map((item, index) => (
               <QuoteItemDisplay
                 key={item.id || `item-${index}`}
@@ -226,24 +230,24 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
         )}
 
         {/* Add Item Options */}
-        <div className="space-y-4">
-          <div className="flex gap-3">
+        <div className="space-y-3">
+          <div className="flex gap-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => setShowProductForm(!showProductForm)}
-              className="flex-1"
+              className="flex-1 h-8 text-sm"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-3 w-3 mr-2" />
               Product/Dienst toevoegen
             </Button>
             <Button
               type="button"
               variant="outline"
               onClick={() => setShowTextForm(!showTextForm)}
-              className="flex-1"
+              className="flex-1 h-8 text-sm"
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-3 w-3 mr-2" />
               Tekstblok toevoegen
             </Button>
           </div>
@@ -255,15 +259,16 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
 
           {/* Quick Text Block Form */}
           {showTextForm && (
-            <div className="space-y-4 p-4 border rounded-lg bg-green-50">
-              <h4 className="font-medium text-gray-900">Tekstblok toevoegen</h4>
-              <div className="space-y-3">
-                <div className="flex gap-2">
+            <div className="space-y-3 p-3 border rounded-lg bg-green-50">
+              <h4 className="font-medium text-gray-900 text-sm">Tekstblok toevoegen</h4>
+              <div className="space-y-2">
+                <div className="flex gap-1">
                   <Button
                     type="button"
                     variant={textFormatting.bold ? "default" : "outline"}
                     size="sm"
                     onClick={() => toggleTextFormatting('bold')}
+                    className="h-7 w-7 p-0"
                   >
                     <strong>B</strong>
                   </Button>
@@ -272,7 +277,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                     variant={textFormatting.italic ? "default" : "outline"}
                     size="sm"
                     onClick={() => toggleTextFormatting('italic')}
-                    className="italic"
+                    className="italic h-7 w-7 p-0"
                   >
                     I
                   </Button>
@@ -281,7 +286,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                     variant={textFormatting.underline ? "default" : "outline"}
                     size="sm"
                     onClick={() => toggleTextFormatting('underline')}
-                    className="underline"
+                    className="underline h-7 w-7 p-0"
                   >
                     U
                   </Button>
@@ -290,15 +295,15 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                   value={textBlockContent}
                   onChange={(e) => setTextBlockContent(e.target.value)}
                   placeholder="Voer tekst in..."
-                  className="min-h-[100px]"
+                  className="min-h-[80px] text-sm"
                 />
                 <div className="flex gap-2">
                   <Button
                     type="button"
                     onClick={handleAddTextBlock}
-                    className="flex-1"
+                    className="flex-1 h-8 text-sm"
                   >
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="h-3 w-3 mr-2" />
                     Tekstblok toevoegen
                   </Button>
                   <Button
@@ -309,6 +314,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                       setTextBlockContent('');
                       setTextFormatting({ bold: false, italic: false, underline: false });
                     }}
+                    className="h-8 text-sm"
                   >
                     Annuleren
                   </Button>
@@ -323,7 +329,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
           <>
             <Separator />
             <div className="flex justify-end">
-              <div className="w-64 space-y-2 text-sm">
+              <div className="w-64 space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotaal blok:</span>
                   <span className="font-medium">€{(block.subtotal || 0).toFixed(2)}</span>

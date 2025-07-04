@@ -67,16 +67,16 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
   }, [description, quantity, unitPrice, vatRate, onAddItem, resetForm]);
 
   return (
-    <div className="space-y-4 p-4 border rounded-lg bg-blue-50">
-      <h4 className="font-medium text-gray-900">Product/Dienst toevoegen</h4>
+    <div className="space-y-3 p-3 border rounded-lg bg-blue-50">
+      <h4 className="font-medium text-gray-900 text-sm">Product/Dienst toevoegen</h4>
       
       {/* Remove form wrapper entirely to prevent form submissions */}
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
+      <div className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-3">
           <div>
-            <Label htmlFor="vatRate">BTW %</Label>
+            <Label htmlFor="vatRate" className="text-sm">BTW %</Label>
             <Select value={vatRate.toString()} onValueChange={(value) => setVatRate(Number(value))}>
-              <SelectTrigger>
+              <SelectTrigger className="h-8">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -89,33 +89,36 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
         </div>
 
         <div>
-          <Label htmlFor="description">Beschrijving</Label>
+          <Label htmlFor="description" className="text-sm">Beschrijving</Label>
           <Input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Beschrijving van product of dienst"
+            className="h-8 text-sm"
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <div>
-            <Label htmlFor="quantity">Aantal</Label>
+            <Label htmlFor="quantity" className="text-sm">Aantal</Label>
             <Input
               type="number"
               value={quantity}
               onChange={(e) => setQuantity(Number(e.target.value))}
               min="0"
               step="0.01"
+              className="h-8 text-sm"
             />
           </div>
           <div>
-            <Label htmlFor="unitPrice">Prijs per stuk (€)</Label>
+            <Label htmlFor="unitPrice" className="text-sm">Prijs per stuk (€)</Label>
             <Input
               type="number"
               value={unitPrice}
               onChange={(e) => setUnitPrice(Number(e.target.value))}
               min="0"
               step="0.01"
+              className="h-8 text-sm"
             />
           </div>
         </div>
@@ -123,13 +126,13 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
         <Button 
           type="button" 
           onClick={handleAddItem} 
-          className="w-full"
+          className="w-full h-8 text-sm"
           onMouseDown={(e) => {
             e.preventDefault();
             e.stopPropagation();
           }}
         >
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-3 w-3 mr-2" />
           Product toevoegen
         </Button>
       </div>
