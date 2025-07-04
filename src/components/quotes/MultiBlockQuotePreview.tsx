@@ -150,13 +150,13 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
                     </div>
                   </div>
                   
-                  {/* Block items - Mixed products and text blocks */}
+                  {/* Block items - Products and text blocks in natural order */}
                   {block.items && block.items.length > 0 ? (
-                     <div className="space-y-3 mb-4">
-                       {/* Show products in table format */}
-                       {block.items.some(item => item.type === 'product') && (
-                         <div className="bg-gray-50 rounded border">
-                           {/* Table header */}
+                     <div className="mb-4">
+                       {/* Table with mixed content */}
+                       <div className="bg-gray-50 rounded border">
+                         {/* Table header (only show if there are products) */}
+                         {block.items.some(item => item.type === 'product') && (
                            <div className="grid grid-cols-12 gap-4 py-2 px-4 bg-gray-100 border-b font-medium text-gray-700 text-xs">
                              <div className="col-span-6">Beschrijving</div>
                              <div className="col-span-2 text-center">Aantal</div>
@@ -164,9 +164,11 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
                              <div className="col-span-1 text-center">BTW%</div>
                              <div className="col-span-1 text-right">Totaal</div>
                            </div>
-                           
-                           {/* Product rows */}
-                           {block.items.filter(item => item.type === 'product').map((item, itemIndex) => (
+                         )}
+                         
+                         {/* All items in original order */}
+                         {block.items.map((item, itemIndex) => (
+                           item.type === 'product' ? (
                              <div key={`product-${item.id || itemIndex}`} className="grid grid-cols-12 gap-4 py-2 px-4 border-b border-gray-100 text-xs">
                                <div className="col-span-6 text-gray-800">{item.description || 'Geen beschrijving'}</div>
                                <div className="col-span-2 text-center text-gray-800">{item.quantity || 0}</div>
@@ -174,21 +176,18 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
                                <div className="col-span-1 text-center text-gray-800">{item.vat_rate || 0}%</div>
                                <div className="col-span-1 text-right text-gray-800 font-medium">€{(item.total || 0).toFixed(2)}</div>
                              </div>
-                           ))}
-                         </div>
-                       )}
-                       
-                       {/* Show text blocks separately */}
-                       {block.items.filter(item => item.type === 'textblock').map((item, itemIndex) => (
-                         <div key={`text-${item.id || itemIndex}`} className="my-2 p-3 bg-blue-50 border-l-2 border-blue-300 rounded-r text-sm">
-                           <div 
-                             className="text-gray-700 whitespace-pre-line" 
-                             style={getItemStyle(item)}
-                           >
-                             {item.description || 'Geen tekst'}
-                           </div>
-                         </div>
-                       ))}
+                           ) : (
+                             <div key={`text-${item.id || itemIndex}`} className="col-span-12 px-4 py-3 border-b border-gray-100">
+                               <div 
+                                 className="text-gray-700 whitespace-pre-line text-sm italic" 
+                                 style={getItemStyle(item)}
+                               >
+                                 {item.description || 'Geen tekst'}
+                               </div>
+                             </div>
+                           )
+                         ))}
+                       </div>
                      </div>
                   ) : (
                     <div className="text-center py-12 bg-yellow-50 rounded-lg border-2 border-dashed border-yellow-300">
