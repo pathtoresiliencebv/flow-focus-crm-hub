@@ -129,41 +129,47 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
       )}
 
       {/* Quote blocks - ENHANCED VISIBILITY */}
-      <div className="space-y-8 mb-8">
+      <div className="space-y-2 mb-8">
         {quote.blocks && quote.blocks.length > 0 ? (
           <>
-            <div className="mb-8">
+            <div className="mb-6">
               <h3 className="text-2xl font-bold text-gray-900 mb-4">OFFERTEONDERDELEN</h3>
               <div className="w-full h-1 bg-gradient-to-r from-smans-primary to-transparent rounded"></div>
             </div>
-            {quote.blocks.map((block, blockIndex) => {
-              console.log('MultiBlockQuotePreview: Rendering block:', block);
-              return (
-                <div key={`${block.id}-${blockIndex}`} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm mb-4">
-                  {/* Block Title - conditional for type */}
-                  <div className="mb-4 pb-2 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                      {block.title}
-                    </h3>
-                    {block.type === 'product' && (
-                      <div className="text-sm text-gray-500">
-                        Onderdeel {blockIndex + 1} van {quote.blocks.length}
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Render based on block type */}
-                  {block.type === 'textblock' ? (
-                    /* Text Block Content */
-                    <div className="mb-4">
-                      <div className="text-gray-700 whitespace-pre-line text-sm p-4 bg-gray-50 rounded-lg leading-relaxed">
+            {(() => {
+              const productBlocks = quote.blocks.filter(b => b.type === 'product');
+              let productBlockIndex = 0;
+              
+              return quote.blocks.map((block, blockIndex) => {
+                console.log('MultiBlockQuotePreview: Rendering block:', block);
+                
+                if (block.type === 'textblock') {
+                  // Simple text block - no borders, no padding, just text
+                  return (
+                    <div key={`${block.id}-${blockIndex}`} className="my-4">
+                      <div className="text-gray-700 whitespace-pre-line text-sm leading-relaxed">
                         {block.content || 'Geen tekst ingevoerd'}
                       </div>
                     </div>
-                  ) : (
-                    /* Product Block Content */
-                    <>
-                      {block.items && block.items.length > 0 ? (
+                  );
+                }
+                
+                // Product block with borders and structure
+                productBlockIndex++;
+                return (
+                  <div key={`${block.id}-${blockIndex}`} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm mb-4">
+                    {/* Block Title - only for product blocks */}
+                    <div className="mb-4 pb-2 border-b border-gray-200">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                        {block.title}
+                      </h3>
+                      <div className="text-sm text-gray-500">
+                        Onderdeel {productBlockIndex} van {productBlocks.length}
+                      </div>
+                    </div>
+                    
+                    {/* Product Block Content */}
+                    {block.items && block.items.length > 0 ? (
                          <div className="mb-4">
                            {/* Table with mixed content */}
                            <div className="bg-gray-50 rounded border">
@@ -201,45 +207,44 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
                              ))}
                            </div>
                          </div>
-                      ) : (
-                        <div className="text-center py-12 bg-yellow-50 rounded-lg border-2 border-dashed border-yellow-300">
-                          <div className="text-yellow-800 font-medium mb-2 text-lg">⚠️ Geen items toegevoegd</div>
-                          <div className="text-yellow-700">
-                            Dit blok is leeg. Voeg producten of diensten toe om ze hier te zien in de offerte.
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                   {/* Block totals (only if block has products) */}
-                   {block.items && block.items.some(item => item.type === 'product') && (
-                     <div className="flex justify-end mt-3">
-                       <div className="w-64 bg-gray-50 rounded border p-3">
-                         <div className="space-y-2 text-sm">
-                           <div className="flex justify-between">
-                             <span className="text-gray-600">Subtotaal {block.title}:</span>
-                             <span className="font-medium">€{(block.subtotal || 0).toFixed(2)}</span>
-                           </div>
-                           <div className="flex justify-between">
-                             <span className="text-gray-600">BTW ({block.items.find(item => item.type === 'product')?.vat_rate || 21}%):</span>
-                             <span className="font-medium">€{(block.vat_amount || 0).toFixed(2)}</span>
-                           </div>
-                           <div className="border-t border-gray-200 pt-2">
-                             <div className="flex justify-between">
-                               <span className="font-semibold text-gray-900">Totaal {block.title}:</span>
-                               <span className="font-semibold text-gray-900">
-                                 €{((block.subtotal || 0) + (block.vat_amount || 0)).toFixed(2)}
-                               </span>
-                             </div>
-                           </div>
+                     ) : (
+                       <div className="text-center py-12 bg-yellow-50 rounded-lg border-2 border-dashed border-yellow-300">
+                         <div className="text-yellow-800 font-medium mb-2 text-lg">⚠️ Geen items toegevoegd</div>
+                         <div className="text-yellow-700">
+                           Dit blok is leeg. Voeg producten of diensten toe om ze hier te zien in de offerte.
                          </div>
                        </div>
-                     </div>
-                   )}
-                </div>
-              );
-            })}
+                     )}
+
+                    {/* Block totals (only if block has products) */}
+                    {block.items && block.items.some(item => item.type === 'product') && (
+                      <div className="flex justify-end mt-3">
+                        <div className="w-64 bg-gray-50 rounded border p-3">
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Subtotaal {block.title}:</span>
+                              <span className="font-medium">€{(block.subtotal || 0).toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">BTW ({block.items.find(item => item.type === 'product')?.vat_rate || 21}%):</span>
+                              <span className="font-medium">€{(block.vat_amount || 0).toFixed(2)}</span>
+                            </div>
+                            <div className="border-t border-gray-200 pt-2">
+                              <div className="flex justify-between">
+                                <span className="font-semibold text-gray-900">Totaal {block.title}:</span>
+                                <span className="font-semibold text-gray-900">
+                                  €{((block.subtotal || 0) + (block.vat_amount || 0)).toFixed(2)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              });
+            })()}
           </>
         ) : (
           <div className="text-gray-400 italic text-center py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
