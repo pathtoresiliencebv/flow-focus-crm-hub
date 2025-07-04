@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus } from 'lucide-react';
 import { QuoteItem } from '@/types/quote';
+import { AIEnhanceButton } from '@/components/ui/ai-enhance-button';
 
 interface QuoteItemFormProps {
   onAddItem: (item: Omit<QuoteItem, 'id'>) => void;
@@ -89,7 +90,16 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
         </div>
 
         <div>
-          <Label htmlFor="description" className="text-sm">Beschrijving</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="description" className="text-sm">Beschrijving</Label>
+            <AIEnhanceButton 
+              text={description}
+              onEnhanced={setDescription}
+              context="product"
+              size="sm"
+              variant="ghost"
+            />
+          </div>
           <Input
             value={description}
             onChange={(e) => setDescription(e.target.value)}

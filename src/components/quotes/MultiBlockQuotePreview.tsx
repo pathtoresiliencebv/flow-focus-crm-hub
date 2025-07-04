@@ -64,9 +64,9 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
   console.log('MultiBlockQuotePreview: Rendering with quote:', quote);
 
   return (
-    <div className="bg-white border rounded-lg p-8 shadow-sm max-h-[80vh] overflow-y-auto">
+    <div className="bg-white border rounded-lg p-4 shadow-sm max-h-[80vh] overflow-y-auto">
       {/* Header with logo and company info */}
-      <div className="flex justify-between items-start mb-8">
+      <div className="flex justify-between items-start mb-4">
         <div className="flex items-center">
           <img 
             src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" 
@@ -75,13 +75,13 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
           />
         </div>
         <div className="text-right">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">OFFERTE</h2>
-          <p className="text-lg font-medium text-smans-primary">{quote.quote_number}</p>
+          <h2 className="text-xl font-bold text-gray-900 mb-1">OFFERTE</h2>
+          <p className="text-base font-medium text-smans-primary">{quote.quote_number}</p>
         </div>
       </div>
 
       {/* Company and customer info */}
-      <div className="grid grid-cols-2 gap-8 mb-8">
+      <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
           <h3 className="font-semibold text-gray-900 mb-2">Van:</h3>
           <div className="text-sm text-gray-600">
@@ -105,7 +105,7 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
       </div>
 
       {/* Quote details */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-3 gap-4 mb-4">
         <div>
           <h4 className="font-medium text-gray-700">Offertedatum</h4>
           <p className="text-sm text-gray-600">{new Date(quote.quote_date).toLocaleDateString('nl-NL')}</p>
@@ -122,18 +122,18 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
 
       {/* Message */}
       {quote.message && (
-        <div className="mb-8 p-4 bg-blue-50 rounded-lg">
+        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
           <h4 className="font-medium text-gray-700 mb-2">Bericht:</h4>
           <p className="text-sm text-gray-600 whitespace-pre-line">{quote.message}</p>
         </div>
       )}
 
       {/* Quote blocks - ENHANCED VISIBILITY */}
-      <div className="space-y-2 mb-8">
+      <div className="space-y-1 mb-4">
         {quote.blocks && quote.blocks.length > 0 ? (
           <>
-            <div className="mb-6">
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">OFFERTEONDERDELEN</h3>
+            <div className="mb-3">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">OFFERTEONDERDELEN</h3>
               <div className="w-full h-1 bg-gradient-to-r from-smans-primary to-transparent rounded"></div>
             </div>
             {(() => {
@@ -157,25 +157,25 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
                 // Product block with borders and structure
                 productBlockIndex++;
                 return (
-                  <div key={`${block.id}-${blockIndex}`} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm mb-4">
+                  <div key={`${block.id}-${blockIndex}`} className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm mb-2">
                     {/* Block Title - only for product blocks */}
-                    <div className="mb-4 pb-2 border-b border-gray-200">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    <div className="mb-2 pb-1 border-b border-gray-200">
+                      <h3 className="text-base font-semibold text-gray-900 mb-1">
                         {block.title}
                       </h3>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-xs text-gray-500">
                         Onderdeel {productBlockIndex} van {productBlocks.length}
                       </div>
                     </div>
                     
-                    {/* Product Block Content */}
+                     {/* Product Block Content */}
                     {block.items && block.items.length > 0 ? (
-                         <div className="mb-4">
+                         <div className="mb-2">
                            {/* Table with mixed content */}
                            <div className="bg-gray-50 rounded border">
-                             {/* Table header (only show if there are products) */}
-                             {block.items.some(item => item.type === 'product') && (
-                               <div className="grid grid-cols-12 gap-4 py-2 px-4 bg-gray-100 border-b font-medium text-gray-700 text-xs">
+                              {/* Table header (only show if there are products) */}
+                              {block.items.some(item => item.type === 'product') && (
+                                <div className="grid grid-cols-12 gap-4 py-1 px-3 bg-gray-100 border-b font-medium text-gray-700 text-xs">
                                  <div className="col-span-6">Beschrijving</div>
                                  <div className="col-span-2 text-center">Aantal</div>
                                  <div className="col-span-2 text-right">Prijs</div>
@@ -184,10 +184,10 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
                                </div>
                              )}
                              
-                             {/* All items in original order */}
-                             {block.items.map((item, itemIndex) => (
-                               item.type === 'product' ? (
-                                 <div key={`product-${item.id || itemIndex}`} className="grid grid-cols-12 gap-4 py-2 px-4 border-b border-gray-100 text-xs">
+                              {/* All items in original order */}
+                              {block.items.map((item, itemIndex) => (
+                                item.type === 'product' ? (
+                                  <div key={`product-${item.id || itemIndex}`} className="grid grid-cols-12 gap-4 py-1 px-3 border-b border-gray-100 text-xs">
                                    <div className="col-span-6 text-gray-800">{item.description || 'Geen beschrijving'}</div>
                                    <div className="col-span-2 text-center text-gray-800">{item.quantity || 0}</div>
                                    <div className="col-span-2 text-right text-gray-800">€{(item.unit_price || 0).toFixed(2)}</div>
@@ -195,7 +195,7 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
                                    <div className="col-span-1 text-right text-gray-800 font-medium">€{(item.total || 0).toFixed(2)}</div>
                                  </div>
                                ) : (
-                                 <div key={`text-${item.id || itemIndex}`} className="col-span-12 px-4 py-3 border-b border-gray-100">
+                                 <div key={`text-${item.id || itemIndex}`} className="col-span-12 px-3 py-2 border-b border-gray-100">
                                    <div 
                                      className="text-gray-700 whitespace-pre-line text-sm italic" 
                                      style={getItemStyle(item)}
@@ -218,9 +218,9 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
 
                     {/* Block totals (only if block has products) */}
                     {block.items && block.items.some(item => item.type === 'product') && (
-                      <div className="flex justify-end mt-3">
-                        <div className="w-64 bg-gray-50 rounded border p-3">
-                          <div className="space-y-2 text-sm">
+                      <div className="flex justify-end mt-2">
+                        <div className="w-60 bg-gray-50 rounded border p-2">
+                          <div className="space-y-1 text-xs">
                             <div className="flex justify-between">
                               <span className="text-gray-600">Subtotaal {block.title}:</span>
                               <span className="font-medium">€{(block.subtotal || 0).toFixed(2)}</span>
@@ -255,19 +255,19 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
       </div>
 
       {/* Grand totals */}
-      <div className="flex justify-end border-t-2 border-gray-200 pt-6 bg-gray-50 rounded-lg p-6 mt-8">
-        <div className="w-80 space-y-3">
-          <div className="flex justify-between py-2 text-lg">
+      <div className="flex justify-end border-t-2 border-gray-200 pt-3 bg-gray-50 rounded-lg p-3 mt-4">
+        <div className="w-72 space-y-1">
+          <div className="flex justify-between py-1 text-base">
             <span className="font-bold text-gray-900">Totaal excl. BTW:</span>
             <span className="font-bold">€{(quote.total_amount || 0).toFixed(2)}</span>
           </div>
-          <div className="flex justify-between py-2 text-lg">
+          <div className="flex justify-between py-1 text-base">
             <span className="font-bold text-gray-900">Totaal BTW:</span>
             <span className="font-bold">€{(quote.total_vat_amount || 0).toFixed(2)}</span>
           </div>
-          <div className="flex justify-between py-3 border-t-2 border-gray-300">
-            <span className="font-bold text-2xl text-gray-900">EINDTOTAAL:</span>
-            <span className="font-bold text-2xl text-smans-primary">
+          <div className="flex justify-between py-2 border-t-2 border-gray-300">
+            <span className="font-bold text-xl text-gray-900">EINDTOTAAL:</span>
+            <span className="font-bold text-xl text-smans-primary">
               €{((quote.total_amount || 0) + (quote.total_vat_amount || 0)).toFixed(2)}
             </span>
           </div>

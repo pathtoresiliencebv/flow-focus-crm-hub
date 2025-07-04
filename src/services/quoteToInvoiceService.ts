@@ -53,34 +53,48 @@ export async function convertQuoteToInvoice(quote: Quote): Promise<string> {
 
     console.log('Created invoice:', invoice);
 
-    // Convert quote items to invoice items
+    // Convert quote items to invoice items with enhanced block structure preservation
     const invoiceItems: any[] = [];
     let orderIndex = 0;
+    let blockIndex = 0;
 
-    // Handle different quote data structures
-    console.log('Processing quote for invoice items...');
+    console.log('Processing quote for invoice items with block structure preservation...');
     console.log('Quote blocks:', quote.blocks);
-    console.log('Quote raw items:', quote.items);
 
     if (quote.blocks && quote.blocks.length > 0) {
-      // Use processed blocks structure
-      console.log('Processing quote blocks:', quote.blocks);
+      // Enhanced blocks structure processing with formatting preservation
+      console.log('Processing quote blocks with formatting:', quote.blocks);
+      
       for (const block of quote.blocks) {
-        // Add block title as a header item
+        blockIndex++;
+        
+        // Add block header with enhanced styling
         invoiceItems.push({
           invoice_id: invoice.id,
-          type: 'textblock',
-          description: `=== ${block.title} ===`,
+          type: 'block_header',
+          description: `${block.title}`,
           quantity: null,
           unit_price: null,
           vat_rate: 0,
           total: null,
-          order_index: orderIndex++
+          order_index: orderIndex++,
+          block_title: block.title,
+          block_order: blockIndex,
+          item_formatting: { 
+            is_block_header: true,
+            block_type: block.type
+          }
         });
 
-        // Add block items
+        // Add block items with formatting preservation
         if (block.items && block.items.length > 0) {
           for (const item of block.items) {
+            const itemFormatting = {
+              ...item.formatting,
+              block_type: block.type,
+              in_block: true
+            };
+
             invoiceItems.push({
               invoice_id: invoice.id,
               type: item.type || 'product',
@@ -89,14 +103,39 @@ export async function convertQuoteToInvoice(quote: Quote): Promise<string> {
               unit_price: item.unit_price || null,
               vat_rate: item.vat_rate || 21,
               total: item.total || null,
-              order_index: orderIndex++
+              order_index: orderIndex++,
+              block_title: block.title,
+              block_order: blockIndex,
+              item_formatting: itemFormatting
             });
           }
         }
+        
+        // Add block subtotal if it has products
+        const hasProducts = block.items?.some(item => item.type === 'product');
+        if (hasProducts && block.subtotal) {
+          invoiceItems.push({
+            invoice_id: invoice.id,
+            type: 'block_subtotal',
+            description: `Subtotaal ${block.title}`,
+            quantity: null,
+            unit_price: null,
+            vat_rate: 0,
+            total: block.subtotal + (block.vat_amount || 0),
+            order_index: orderIndex++,
+            block_title: block.title,
+            block_order: blockIndex,
+            item_formatting: { 
+              is_block_subtotal: true,
+              subtotal: block.subtotal,
+              vat_amount: block.vat_amount
+            }
+          });
+        }
       }
     } else if (quote.items) {
-      // Handle raw items from database
-      console.log('Processing quote raw items:', quote.items);
+      // Fallback: Handle raw items from database
+      console.log('Processing quote raw items with basic block structure:', quote.items);
       
       let parsedItems: any[] = [];
       try {
@@ -112,16 +151,21 @@ export async function convertQuoteToInvoice(quote: Quote): Promise<string> {
 
       for (const item of parsedItems) {
         if (item.items && Array.isArray(item.items)) {
-          // This is a block structure from raw data
+          // Block structure from raw data
+          blockIndex++;
+          
           invoiceItems.push({
             invoice_id: invoice.id,
-            type: 'textblock',
-            description: `=== ${item.title || 'Blok'} ===`,
+            type: 'block_header',
+            description: item.title || 'Blok',
             quantity: null,
             unit_price: null,
             vat_rate: 0,
             total: null,
-            order_index: orderIndex++
+            order_index: orderIndex++,
+            block_title: item.title || 'Blok',
+            block_order: blockIndex,
+            item_formatting: { is_block_header: true }
           });
 
           // Add block items
@@ -134,11 +178,14 @@ export async function convertQuoteToInvoice(quote: Quote): Promise<string> {
               unit_price: blockItem.unit_price || null,
               vat_rate: blockItem.vat_rate || 21,
               total: blockItem.total || null,
-              order_index: orderIndex++
+              order_index: orderIndex++,
+              block_title: item.title || 'Blok',
+              block_order: blockIndex,
+              item_formatting: blockItem.formatting || {}
             });
           }
         } else {
-          // This is a direct item (old structure)
+          // Direct item (old structure)
           invoiceItems.push({
             invoice_id: invoice.id,
             type: item.type || 'product',
@@ -147,7 +194,10 @@ export async function convertQuoteToInvoice(quote: Quote): Promise<string> {
             unit_price: item.unit_price || null,
             vat_rate: item.vat_rate || 21,
             total: item.total || null,
-            order_index: orderIndex++
+            order_index: orderIndex++,
+            block_title: 'Items',
+            block_order: 1,
+            item_formatting: item.formatting || {}
           });
         }
       }

@@ -479,10 +479,13 @@ export type Database = {
       }
       invoice_items: {
         Row: {
+          block_order: number | null
+          block_title: string | null
           created_at: string
           description: string
           id: string
           invoice_id: string
+          item_formatting: Json | null
           order_index: number
           quantity: number | null
           total: number | null
@@ -491,10 +494,13 @@ export type Database = {
           vat_rate: number
         }
         Insert: {
+          block_order?: number | null
+          block_title?: string | null
           created_at?: string
           description: string
           id?: string
           invoice_id: string
+          item_formatting?: Json | null
           order_index?: number
           quantity?: number | null
           total?: number | null
@@ -503,10 +509,13 @@ export type Database = {
           vat_rate?: number
         }
         Update: {
+          block_order?: number | null
+          block_title?: string | null
           created_at?: string
           description?: string
           id?: string
           invoice_id?: string
+          item_formatting?: Json | null
           order_index?: number
           quantity?: number | null
           total?: number | null
