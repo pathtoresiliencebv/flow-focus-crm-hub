@@ -2,8 +2,9 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trash2, GripVertical, Edit3 } from 'lucide-react';
+import { Trash2, GripVertical, Edit3, Plus } from 'lucide-react';
 import { QuoteItemForm } from './QuoteItemForm';
 import { QuoteItemDisplay } from './QuoteItemDisplay';
 import { QuoteItem, QuoteBlock } from '@/types/quote';
@@ -25,6 +26,42 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
 }) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(block.title);
+  const [showProductForm, setShowProductForm] = useState(false);
+  const [showTextForm, setShowTextForm] = useState(false);
+  const [textBlockContent, setTextBlockContent] = useState('');
+  const [textFormatting, setTextFormatting] = useState({
+    bold: false,
+    italic: false,
+    underline: false
+  });
+
+  const toggleTextFormatting = useCallback((type: 'bold' | 'italic' | 'underline') => {
+    setTextFormatting(prev => ({
+      ...prev,
+      [type]: !prev[type]
+    }));
+  }, []);
+
+  const handleAddTextBlock = useCallback(() => {
+    if (!textBlockContent.trim()) {
+      alert('Voer tekst in voor het tekstblok');
+      return;
+    }
+
+    const newTextBlock: Omit<QuoteItem, 'id'> = {
+      type: 'textblock',
+      description: textBlockContent.trim(),
+      vat_rate: 0,
+      formatting: textFormatting
+    };
+
+    handleAddItem(newTextBlock);
+    
+    // Reset form
+    setTextBlockContent('');
+    setTextFormatting({ bold: false, italic: false, underline: false });
+    setShowTextForm(false);
+  }, [textBlockContent, textFormatting]);
 
   const calculateBlockSubtotal = useCallback((items: QuoteItem[]): number => {
     const subtotal = items.reduce((sum, item) => {
@@ -188,8 +225,98 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
           </div>
         )}
 
-        {/* Add Item Form */}
-        <QuoteItemForm onAddItem={handleAddItem} />
+        {/* Add Item Options */}
+        <div className="space-y-4">
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowProductForm(!showProductForm)}
+              className="flex-1"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Product/Dienst toevoegen
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowTextForm(!showTextForm)}
+              className="flex-1"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Tekstblok toevoegen
+            </Button>
+          </div>
+
+          {/* Product Form */}
+          {showProductForm && (
+            <QuoteItemForm onAddItem={handleAddItem} />
+          )}
+
+          {/* Quick Text Block Form */}
+          {showTextForm && (
+            <div className="space-y-4 p-4 border rounded-lg bg-green-50">
+              <h4 className="font-medium text-gray-900">Tekstblok toevoegen</h4>
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={textFormatting.bold ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => toggleTextFormatting('bold')}
+                  >
+                    <strong>B</strong>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={textFormatting.italic ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => toggleTextFormatting('italic')}
+                    className="italic"
+                  >
+                    I
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={textFormatting.underline ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => toggleTextFormatting('underline')}
+                    className="underline"
+                  >
+                    U
+                  </Button>
+                </div>
+                <Textarea
+                  value={textBlockContent}
+                  onChange={(e) => setTextBlockContent(e.target.value)}
+                  placeholder="Voer tekst in..."
+                  className="min-h-[100px]"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    onClick={handleAddTextBlock}
+                    className="flex-1"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Tekstblok toevoegen
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowTextForm(false);
+                      setTextBlockContent('');
+                      setTextFormatting({ bold: false, italic: false, underline: false });
+                    }}
+                  >
+                    Annuleren
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Block Totals */}
         {block.items.some(item => item.type === 'product') && (
