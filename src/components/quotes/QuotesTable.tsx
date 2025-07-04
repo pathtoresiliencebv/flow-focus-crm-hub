@@ -27,7 +27,7 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
     const statusColors = {
       'concept': 'bg-gray-100 text-gray-800',
       'verstuurd': 'bg-blue-100 text-blue-800',
-      'geaccepteerd': 'bg-green-100 text-green-800',
+      'approved': 'bg-green-100 text-green-800',
       'afgewezen': 'bg-red-100 text-red-800',
       'verlopen': 'bg-orange-100 text-orange-800'
     };

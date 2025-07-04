@@ -57,10 +57,10 @@ export function Quotes() {
       setConverting(true);
       console.log('Starting quote approval process for quote:', quote.id);
       
-      // Update quote status to 'geaccepteerd'
+      // Update quote status to 'approved'
       const { error: updateError } = await supabase
         .from('quotes')
-        .update({ status: 'geaccepteerd' })
+        .update({ status: 'approved' })
         .eq('id', quote.id);
 
       if (updateError) {
@@ -68,7 +68,7 @@ export function Quotes() {
         throw updateError;
       }
 
-      console.log('Quote status updated to geaccepteerd');
+      console.log('Quote status updated to approved');
 
       // Convert to invoice
       const invoiceId = await convertQuoteToInvoice(quote);
