@@ -65,11 +65,11 @@ const handler = async (req: Request): Promise<Response> => {
         <style>
           body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background-color: #2563eb; color: white; padding: 20px; text-align: center; }
+          .header { background-color: #dc2626; color: white; padding: 20px; text-align: center; }
           .content { padding: 20px; background-color: #f9f9f9; }
           .button { 
             display: inline-block; 
-            background-color: #2563eb; 
+            background-color: #dc2626; 
             color: white; 
             padding: 12px 24px; 
             text-decoration: none; 
@@ -82,6 +82,7 @@ const handler = async (req: Request): Promise<Response> => {
       <body>
         <div class="container">
           <div class="header">
+            <img src="https://smanscrm.nl/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="SMANS" style="max-height: 60px; margin-bottom: 10px;">
             <h1>SMANS BV</h1>
             <h2>Offerte ${quote.quote_number}</h2>
           </div>

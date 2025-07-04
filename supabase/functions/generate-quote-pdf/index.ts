@@ -67,13 +67,13 @@ const handler = async (req: Request): Promise<Response> => {
             justify-content: space-between; 
             align-items: flex-start; 
             margin-bottom: 30px; 
-            border-bottom: 2px solid #2563eb;
+            border-bottom: 2px solid #dc2626;
             padding-bottom: 20px;
           }
           .logo { height: 60px; }
           .quote-title { 
             text-align: right; 
-            color: #2563eb;
+            color: #dc2626;
           }
           .quote-title h1 { 
             margin: 0; 
@@ -91,7 +91,7 @@ const handler = async (req: Request): Promise<Response> => {
             margin-bottom: 30px; 
           }
           .info-section h3 { 
-            color: #2563eb; 
+            color: #dc2626; 
             margin-bottom: 10px; 
             font-size: 16px;
           }
@@ -107,12 +107,12 @@ const handler = async (req: Request): Promise<Response> => {
           .block { 
             background: #f8f9fa; 
             border: 1px solid #e9ecef; 
-            border-left: 4px solid #2563eb; 
+            border-left: 4px solid #dc2626; 
             padding: 20px; 
             margin-bottom: 20px; 
           }
           .block-title { 
-            color: #2563eb; 
+            color: #dc2626; 
             font-size: 18px; 
             font-weight: bold; 
             margin-bottom: 15px; 
@@ -149,8 +149,8 @@ const handler = async (req: Request): Promise<Response> => {
           .grand-total { 
             font-weight: bold; 
             font-size: 18px; 
-            color: #2563eb; 
-            border-top: 2px solid #2563eb; 
+            color: #dc2626; 
+            border-top: 2px solid #dc2626; 
           }
           .footer { 
             margin-top: 50px; 
@@ -164,7 +164,8 @@ const handler = async (req: Request): Promise<Response> => {
       <body>
         <!-- Header -->
         <div class="header">
-          <div>
+          <div style="display: flex; align-items: center;">
+            <img src="https://smanscrm.nl/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="SMANS" class="logo" style="margin-right: 20px;" />
             <h2>${settings?.company_name || 'SMANS BV'}</h2>
           </div>
           <div class="quote-title">
@@ -216,7 +217,7 @@ const handler = async (req: Request): Promise<Response> => {
 
         <!-- Quote Blocks -->
         <div class="quote-blocks">
-          <h3 style="color: #2563eb; font-size: 20px; margin-bottom: 20px;">OFFERTEONDERDELEN</h3>
+          <h3 style="color: #dc2626; font-size: 20px; margin-bottom: 20px;">OFFERTEONDERDELEN</h3>
           ${quote.items && quote.items.length > 0 ? quote.items.map((block: any, index: number) => `
             <div class="block">
               <div class="block-title">${block.title}</div>
@@ -286,8 +287,8 @@ const handler = async (req: Request): Promise<Response> => {
 
         <!-- Client Signature (if signed and includeSigned is true) -->
         ${includeSigned && quote.client_signature_data && quote.client_signed_at ? `
-        <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #2563eb;">
-          <h3 style="color: #2563eb; margin-bottom: 20px;">GOEDKEURING KLANT</h3>
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #dc2626;">
+          <h3 style="color: #dc2626; margin-bottom: 20px;">GOEDKEURING KLANT</h3>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
             <div>
               <h4>Klant handtekening:</h4>

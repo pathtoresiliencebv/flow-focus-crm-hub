@@ -256,13 +256,34 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
+    // 7. Send notification email to admin with PDF attachment
+    try {
+      const { error: emailError } = await supabase.functions.invoke('send-quote-email', {
+        body: {
+          quoteId: quote_id,
+          recipientEmail: 'admin@smanscrm.nl', // Change to your admin email
+          recipientName: 'SMANS Administratie',
+          subject: `Offerte ${quote.quote_number} goedgekeurd door ${quote.customer_name}`,
+          message: `Goed nieuws! De offerte ${quote.quote_number} voor klant ${quote.customer_name} is zojuist goedgekeurd. Het project en concept factuur zijn automatisch aangemaakt in het systeem.`
+        }
+      });
+
+      if (emailError) {
+        console.error('Error sending notification email:', emailError);
+      } else {
+        console.log('Notification email sent successfully');
+      }
+    } catch (emailError) {
+      console.error('Failed to send notification email:', emailError);
+    }
+
     console.log('Quote approval automation completed successfully');
 
     return new Response(JSON.stringify({
       success: true,
       project_id: project.id,
       invoice_id: invoice?.id,
-      message: 'Project and concept invoice created successfully'
+      message: 'Project and concept invoice created successfully, notification email sent'
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
