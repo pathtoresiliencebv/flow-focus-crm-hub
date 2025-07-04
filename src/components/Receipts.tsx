@@ -11,7 +11,9 @@ import { Upload, FileText, Settings, Mail, Download, Eye, Trash2, Check, X, Cloc
 import { toast } from '@/hooks/use-toast';
 import { ImageUpload } from './ImageUpload';
 import { MobileReceiptCard } from './mobile/MobileReceiptCard';
+import { MobileReceiptScanner } from './mobile/MobileReceiptScanner';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Receipt {
   id: string;
@@ -86,6 +88,7 @@ export const Receipts = () => {
     category: ''
   });
   const isMobile = useIsMobile();
+  const { hasPermission, profile } = useAuth();
 
   // Load settings and receipts from localStorage
   useEffect(() => {
@@ -156,6 +159,16 @@ export const Receipts = () => {
   };
 
   const handleApprovalAction = (receiptId: string, action: 'approve' | 'reject') => {
+    // Only administrators can approve/reject receipts
+    if (!hasPermission('invoices_edit')) {
+      toast({
+        title: "Geen toegang",
+        description: "Je hebt geen rechten om bonnetjes goed te keuren",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setPendingAction({ receiptId, action });
     setConfirmDialogOpen(true);
     if (action === 'reject') {
@@ -254,6 +267,11 @@ export const Receipts = () => {
 
   const pendingReceipts = receipts.filter(r => r.status === 'pending');
   const processedReceipts = receipts.filter(r => r.status !== 'pending');
+  
+  // Show scanner interface for Installateurs on mobile
+  if (isMobile && profile?.role === 'Installateur') {
+    return <MobileReceiptScanner />;
+  }
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-full overflow-x-hidden">
@@ -501,7 +519,7 @@ export const Receipts = () => {
                       onView={viewReceipt}
                       onApprove={() => handleApprovalAction(receipt.id, 'approve')}
                       onReject={() => handleApprovalAction(receipt.id, 'reject')}
-                      showActions={true}
+                      showActions={hasPermission('invoices_edit')}
                     />
                   ))}
                 </div>
@@ -539,20 +557,24 @@ export const Receipts = () => {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => handleApprovalAction(receipt.id, 'approve')}
-                              className="bg-green-600 hover:bg-green-700 text-white"
-                            >
-                              <Check className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => handleApprovalAction(receipt.id, 'reject')}
-                              className="bg-red-600 hover:bg-red-700 text-white"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
+                            {hasPermission('invoices_edit') && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleApprovalAction(receipt.id, 'approve')}
+                                  className="bg-green-600 hover:bg-green-700 text-white"
+                                >
+                                  <Check className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleApprovalAction(receipt.id, 'reject')}
+                                  className="bg-red-600 hover:bg-red-700 text-white"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
