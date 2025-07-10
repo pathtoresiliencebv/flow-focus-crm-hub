@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from './use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -88,15 +89,36 @@ export const usePWA = () => {
       }
 
       const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        // You would need to generate VAPID keys for production
-        applicationServerKey: null
+      
+      // Get existing subscription first
+      let subscription = await registration.pushManager.getSubscription();
+      
+      if (!subscription) {
+        // Create new subscription with VAPID key
+        const vapidPublicKey = 'BMqYHI_qfJkZbqKZ4XEXGhSz4F8_Qg8rQVDQ_5xZ4wJjJJd8YQzP0lKjJQKG7eHwXx2l5ZdQx0rJQJkXkG9vV2Q'; // Replace with actual VAPID public key
+        
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+        });
+      }
+
+      // Register subscription with backend
+      const { error } = await supabase.functions.invoke('notification-processor', {
+        body: {
+          type: 'register_push_subscription',
+          subscription: subscription.toJSON()
+        }
       });
+
+      if (error) {
+        console.error('Error registering push subscription:', error);
+        throw error;
+      }
 
       toast({
         title: "Notificaties ingeschakeld",
-        description: "Je ontvangt nu push notificaties",
+        description: "Je ontvangt nu push notificaties voor nieuwe berichten",
       });
 
       return subscription;
@@ -110,6 +132,22 @@ export const usePWA = () => {
       return null;
     }
   }, [toast]);
+
+  // Helper function to convert VAPID key
+  function urlBase64ToUint8Array(base64String: string) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+      .replace(/\-/g, '+')
+      .replace(/_/g, '/');
+
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
 
   const updateAvailable = useCallback(() => {
     if ('serviceWorker' in navigator) {
