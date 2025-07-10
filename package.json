@@ -11,6 +11,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor-community/barcode-scanner": "^4.0.1",
+    "@capacitor-community/screen-brightness": "^7.0.0",
     "@capacitor/android": "^7.4.0",
     "@capacitor/app": "^7.0.1",
     "@capacitor/camera": "^7.0.1",
@@ -22,6 +24,7 @@
     "@capacitor/haptics": "^7.0.1",
     "@capacitor/ios": "^7.4.0",
     "@capacitor/local-notifications": "^7.0.1",
+    "@capacitor/motion": "^7.0.0",
     "@capacitor/network": "^7.0.1",
     "@capacitor/preferences": "^7.0.1",
     "@capacitor/push-notifications": "^7.0.1",
