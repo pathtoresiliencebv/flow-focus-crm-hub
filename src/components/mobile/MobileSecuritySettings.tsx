@@ -7,6 +7,11 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { useSecurityService } from "@/hooks/useSecurityService";
 import { useSecureApiClient } from "@/hooks/useSecureApiClient";
+import { useBiometricAuth } from "@/hooks/useBiometricAuth";
+import { useDeviceRegistration } from "@/hooks/useDeviceRegistration";
+import { useMultiFactorAuth } from "@/hooks/useMultiFactorAuth";
+import { BiometricSetupWizard } from "./BiometricSetupWizard";
+import { DeviceManagementPanel } from "./DeviceManagementPanel";
 import { 
   Shield, 
   Lock, 
@@ -17,11 +22,15 @@ import {
   RefreshCw,
   Trash2,
   CheckCircle,
-  XCircle
+  XCircle,
+  Smartphone
 } from "lucide-react";
 
 export const MobileSecuritySettings = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'biometric' | 'devices' | 'mfa'>('overview');
+  const [showBiometricWizard, setShowBiometricWizard] = useState(false);
+  
   const {
     securityConfig,
     securityMetrics,
@@ -31,6 +40,22 @@ export const MobileSecuritySettings = () => {
   } = useSecurityService();
   
   const { getSecurityMetrics, clearLogs } = useSecureApiClient();
+  
+  const {  
+    capabilities: biometricCapabilities,
+    isEnabled: biometricEnabled,
+    setBiometricEnabled
+  } = useBiometricAuth();
+  
+  const {
+    deviceTrust,
+    isTrustedDevice
+  } = useDeviceRegistration();
+  
+  const {
+    mfaConfig,
+    setMFAEnabled
+  } = useMultiFactorAuth();
 
   const apiMetrics = getSecurityMetrics();
 
@@ -72,8 +97,34 @@ export const MobileSecuritySettings = () => {
     }
   };
 
-  return (
-    <div className="p-4 space-y-4">
+  if (showBiometricWizard) {
+    return (
+      <div className="p-4">
+        <BiometricSetupWizard
+          onComplete={() => setShowBiometricWizard(false)}
+          onSkip={() => setShowBiometricWizard(false)}
+        />
+      </div>
+    );
+  }
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'overview':
+        return renderOverviewTab();
+      case 'biometric':
+        return renderBiometricTab();
+      case 'devices':
+        return <DeviceManagementPanel />;
+      case 'mfa':  
+        return renderMFATab();
+      default:
+        return renderOverviewTab();
+    }
+  };
+
+  const renderOverviewTab = () => (
+    <div className="space-y-4">
       {/* Security Status */}
       <Card>
         <CardHeader>
@@ -307,6 +358,178 @@ export const MobileSecuritySettings = () => {
           </Button>
         </CardContent>
       </Card>
+    </div>
+  );
+
+  const renderBiometricTab = () => (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5" />
+            Biometric Authentication
+          </CardTitle>
+          <CardDescription>
+            Secure access with fingerprint, face recognition, or other biometric methods
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-sm font-medium">Enable Biometric Auth</label>
+              <p className="text-xs text-muted-foreground">
+                Use biometric authentication for enhanced security
+              </p>
+            </div>
+            <Switch
+              checked={biometricEnabled}
+              onCheckedChange={(checked) => setBiometricEnabled(checked)}
+              disabled={isLoading || !biometricCapabilities.isAvailable}
+            />
+          </div>
+
+          <Separator />
+
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <span className="font-medium">Available:</span>
+              <p className="text-muted-foreground">
+                {biometricCapabilities.isAvailable ? 'Yes' : 'No'}
+              </p>
+            </div>
+            <div>
+              <span className="font-medium">Enrolled:</span>
+              <p className="text-muted-foreground">
+                {biometricCapabilities.isEnrolled ? 'Yes' : 'No'}
+              </p>
+            </div>
+          </div>
+
+          {biometricCapabilities.supportedTypes.length > 0 && (
+            <div className="space-y-2">
+              <span className="font-medium text-sm">Supported Types:</span>
+              <div className="flex flex-wrap gap-2">
+                {biometricCapabilities.supportedTypes.map(type => (
+                  <Badge key={type} variant="outline">
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <Separator />
+
+          <Button
+            onClick={() => setShowBiometricWizard(true)}
+            disabled={isLoading}
+            className="w-full"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Setup Biometric Authentication
+          </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const renderMFATab = () => (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            Multi-Factor Authentication
+          </CardTitle>
+          <CardDescription>
+            Add an extra layer of security with multi-factor authentication
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <label className="text-sm font-medium">Enable MFA</label>
+              <p className="text-xs text-muted-foreground">
+                Require additional verification for sensitive operations
+              </p>
+            </div>
+            <Switch
+              checked={mfaConfig.isEnabled}
+              onCheckedChange={(checked) => setMFAEnabled(checked, checked ? ['email'] : [])}
+              disabled={isLoading}
+            />
+          </div>
+
+          {mfaConfig.isEnabled && (
+            <>
+              <Separator />
+              
+              <div className="space-y-3">
+                <span className="font-medium text-sm">Available Methods:</span>
+                <div className="space-y-2">
+                  {mfaConfig.methods.map(method => (
+                    <div key={method} className="flex items-center justify-between p-2 border rounded">
+                      <span className="text-sm capitalize">{method.replace('_', ' ')}</span>
+                      <Badge variant="outline">Active</Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <span className="font-medium text-sm">Required For:</span>
+                <div className="flex flex-wrap gap-2">
+                  {mfaConfig.requiredFor.map(operation => (
+                    <Badge key={operation} variant="secondary">
+                      {operation.replace('_', ' ')}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  return (
+    <div className="p-4 space-y-4">
+      {/* Tab Navigation */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Security & Authentication</CardTitle>
+          <CardDescription>
+            Manage your security settings and authentication methods
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { id: 'overview', label: 'Overview', icon: <Shield className="h-4 w-4" /> },
+              { id: 'biometric', label: 'Biometric', icon: <CheckCircle className="h-4 w-4" /> },
+              { id: 'devices', label: 'Devices', icon: <Smartphone className="h-4 w-4" /> },
+              { id: 'mfa', label: 'MFA', icon: <Key className="h-4 w-4" /> }
+            ].map((tab) => (
+              <Button
+                key={tab.id}
+                variant={activeTab === tab.id ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveTab(tab.id as any)}
+                className="flex flex-col items-center gap-1 h-auto py-2"
+              >
+                {tab.icon}
+                <span className="text-xs">{tab.label}</span>
+              </Button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tab Content */}
+      {renderTabContent()}
     </div>
   );
 };
