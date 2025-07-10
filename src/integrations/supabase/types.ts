@@ -59,6 +59,48 @@ export type Database = {
         }
         Relationships: []
       }
+      automation_rules: {
+        Row: {
+          actions_config: Json
+          created_at: string | null
+          created_by: string
+          execution_count: number | null
+          id: string
+          is_active: boolean | null
+          last_triggered_at: string | null
+          name: string
+          priority: number | null
+          trigger_config: Json
+          updated_at: string | null
+        }
+        Insert: {
+          actions_config: Json
+          created_at?: string | null
+          created_by: string
+          execution_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          name: string
+          priority?: number | null
+          trigger_config: Json
+          updated_at?: string | null
+        }
+        Update: {
+          actions_config?: Json
+          created_at?: string | null
+          created_by?: string
+          execution_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          name?: string
+          priority?: number | null
+          trigger_config?: Json
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       chat_channels: {
         Row: {
           created_at: string
@@ -361,6 +403,45 @@ export type Database = {
           updated_at?: string
           user_id?: string
           withdrawn_at?: string | null
+        }
+        Relationships: []
+      }
+      conversation_analytics: {
+        Row: {
+          avg_response_time: unknown | null
+          conversation_participants: string[]
+          created_at: string | null
+          date: string
+          id: string
+          language_distribution: Json | null
+          message_count: number | null
+          project_id: string | null
+          sentiment_score: number | null
+          topic_keywords: string[] | null
+        }
+        Insert: {
+          avg_response_time?: unknown | null
+          conversation_participants: string[]
+          created_at?: string | null
+          date: string
+          id?: string
+          language_distribution?: Json | null
+          message_count?: number | null
+          project_id?: string | null
+          sentiment_score?: number | null
+          topic_keywords?: string[] | null
+        }
+        Update: {
+          avg_response_time?: unknown | null
+          conversation_participants?: string[]
+          created_at?: string | null
+          date?: string
+          id?: string
+          language_distribution?: Json | null
+          message_count?: number | null
+          project_id?: string | null
+          sentiment_score?: number | null
+          topic_keywords?: string[] | null
         }
         Relationships: []
       }
@@ -947,6 +1028,50 @@ export type Database = {
           },
         ]
       }
+      message_bookmarks: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          id: string
+          message_id: string | null
+          notes: string | null
+          remind_at: string | null
+          tags: string[] | null
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          message_id?: string | null
+          notes?: string | null
+          remind_at?: string | null
+          tags?: string[] | null
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          message_id?: string | null
+          notes?: string | null
+          remind_at?: string | null
+          tags?: string[] | null
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_bookmarks_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "direct_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_classifications: {
         Row: {
           confidence: number
@@ -1035,6 +1160,50 @@ export type Database = {
           variables?: Json | null
         }
         Relationships: []
+      }
+      message_threads: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_resolved: boolean | null
+          parent_message_id: string | null
+          participants: string[] | null
+          priority: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          title: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          parent_message_id?: string | null
+          participants?: string[] | null
+          priority?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          title?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          parent_message_id?: string | null
+          participants?: string[] | null
+          priority?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_threads_parent_message_id_fkey"
+            columns: ["parent_message_id"]
+            isOneToOne: false
+            referencedRelation: "direct_messages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notification_delivery_logs: {
         Row: {
