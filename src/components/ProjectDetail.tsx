@@ -70,7 +70,7 @@ const ProjectDetail = () => {
       value: project.value?.toString() ?? '',
       status: project.status ?? 'te-plannen',
       description: project.description ?? '',
-      assignedUserId: project.assigned_user_id ?? '',
+      assignedUserId: project.assigned_user_id ?? 'none',
     });
     setIsEditing(true);
   };
@@ -96,7 +96,7 @@ const ProjectDetail = () => {
       value: Number(editData.value) || null,
       status: editData.status as "te-plannen" | "gepland" | "herkeuring" | "afgerond",
       description: editData.description || null,
-      assigned_user_id: editData.assignedUserId || null,
+      assigned_user_id: editData.assignedUserId === "none" ? null : (editData.assignedUserId || null),
     };
     updateProject(project.id, projectData);
     setIsEditing(false);
@@ -266,13 +266,13 @@ const ProjectDetail = () => {
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Selecteer monteur" />
                     </SelectTrigger>
-                    <SelectContent className="bg-background border shadow-md z-50">
-                      <SelectItem value="">Geen monteur toegewezen</SelectItem>
-                      {isLoadingUsers ? (
-                        <SelectItem value="" disabled>Monteurs laden...</SelectItem>
-                      ) : monteurs.length === 0 ? (
-                        <SelectItem value="" disabled>Geen monteurs beschikbaar</SelectItem>
-                      ) : (
+                     <SelectContent className="bg-background border shadow-md z-50">
+                       <SelectItem value="none">Geen monteur toegewezen</SelectItem>
+                       {isLoadingUsers ? (
+                         <SelectItem value="loading" disabled>Monteurs laden...</SelectItem>
+                       ) : monteurs.length === 0 ? (
+                         <SelectItem value="unavailable" disabled>Geen monteurs beschikbaar</SelectItem>
+                       ) : (
                         monteurs.map((monteur) => (
                           <SelectItem key={monteur.id} value={monteur.id}>
                             {monteur.full_name || monteur.email}
