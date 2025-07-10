@@ -35,24 +35,29 @@
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
 
     /* SMANS brand color */
     --smans-primary: 0 71% 36%;
     --smans-primary-foreground: 0 0% 98%;
+    
+    /* Enhanced theme variables */
+    --base-font-size: 1rem;
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Accessibility variables */
+    --focus-ring: 2px solid hsl(var(--ring));
+    --focus-ring-offset: 2px;
+    
+    /* Dynamic accent color support */
+    --accent-dynamic: 262 83% 58%;
   }
 
   .dark {
@@ -105,6 +110,56 @@
 
   body {
     @apply bg-background text-foreground;
+    font-size: var(--base-font-size);
+  }
+  
+  /* High contrast mode */
+  .high-contrast {
+    --foreground: 0 0% 0%;
+    --background: 0 0% 100%;
+    --muted: 0 0% 80%;
+    --muted-foreground: 0 0% 20%;
+    --border: 0 0% 50%;
+    --input: 0 0% 90%;
+    --primary: 0 0% 0%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 85%;
+    --secondary-foreground: 0 0% 15%;
+  }
+  
+  .dark.high-contrast {
+    --foreground: 0 0% 100%;
+    --background: 0 0% 0%;
+    --muted: 0 0% 20%;
+    --muted-foreground: 0 0% 80%;
+    --border: 0 0% 50%;
+    --input: 0 0% 10%;
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 85%;
+  }
+  
+  /* Font size variants */
+  .text-xs { font-size: calc(var(--base-font-size) * 0.75); }
+  .text-sm { font-size: calc(var(--base-font-size) * 0.875); }
+  .text-base { font-size: var(--base-font-size); }
+  .text-lg { font-size: calc(var(--base-font-size) * 1.125); }
+  .text-xl { font-size: calc(var(--base-font-size) * 1.25); }
+  
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+  
+  /* Focus indicators for accessibility */
+  *:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
   }
 
   /* Mobile-first responsive design utilities */

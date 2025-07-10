@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import {
   Clock,
   RefreshCw
 } from 'lucide-react';
+import { MobilePreferencesPanel } from './MobilePreferencesPanel';
 import { BackgroundSyncIndicator } from './BackgroundSyncIndicator';
 import { useBackgroundSync } from '@/hooks/useBackgroundSync';
 import { useBatteryOptimization } from '@/hooks/useBatteryOptimization';
@@ -28,8 +29,13 @@ export const MobileSettingsPanel: React.FC<MobileSettingsPanelProps> = ({ onClos
   const { syncStatus, config, performSync } = useBackgroundSync();
   const { batteryState, getOptimizedSettings } = useBatteryOptimization();
   const { isActive, getAppInfo } = useAppLifecycle();
+  const [activeTab, setActiveTab] = useState<'sync' | 'preferences'>('preferences');
   
   const optimizedSettings = getOptimizedSettings();
+
+  if (activeTab === 'preferences') {
+    return <MobilePreferencesPanel onClose={onClose} />;
+  }
 
   return (
     <div className="h-full bg-background overflow-y-auto">

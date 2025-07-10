@@ -138,7 +138,7 @@ export const useDevicePreferences = () => {
         const { error: updateError } = await supabase
           .from('user_preferences')
           .update({
-            preferences: prefsToSync,
+            preferences: prefsToSync as any,
             updated_at: new Date().toISOString(),
           })
           .eq('user_id', user.id);
@@ -150,7 +150,7 @@ export const useDevicePreferences = () => {
           .from('user_preferences')
           .insert({
             user_id: user.id,
-            preferences: prefsToSync,
+            preferences: prefsToSync as any,
           });
 
         if (insertError) throw insertError;
@@ -185,7 +185,8 @@ export const useDevicePreferences = () => {
       }
 
       if (cloudPrefs?.preferences) {
-        const mergedPrefs = { ...DEFAULT_PREFERENCES, ...cloudPrefs.preferences };
+        const cloudPrefsData = cloudPrefs.preferences as Partial<DevicePreferences>;
+        const mergedPrefs = { ...DEFAULT_PREFERENCES, ...cloudPrefsData };
         setPreferences(mergedPrefs);
         await saveLocalPreferences(mergedPrefs);
         setLastSyncTime(new Date());
