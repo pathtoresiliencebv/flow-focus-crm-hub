@@ -1,4 +1,4 @@
-import { LayoutDashboard, Calendar, FolderKanban, Receipt, Mail } from "lucide-react";
+import { LayoutDashboard, Calendar, FolderKanban, Receipt, Mail, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MobileBottomNavigationProps {
@@ -11,8 +11,8 @@ export const MobileBottomNavigation = ({ activeTab, onTabChange }: MobileBottomN
     { key: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { key: "calendar", icon: Calendar, label: "Planning" },
     { key: "projects", icon: FolderKanban, label: "Projecten" },
+    { key: "chat", icon: MessageSquare, label: "Chat" },
     { key: "receipts", icon: Receipt, label: "Bonnetjes" },
-    { key: "email", icon: Mail, label: "E-mail" },
   ];
 
   return (

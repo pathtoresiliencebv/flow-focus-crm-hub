@@ -23,6 +23,7 @@ import ProjectDetail from "@/components/ProjectDetail";
 import { Permission } from "@/types/permissions";
 import { ShieldAlert } from "lucide-react";
 import { MobileDashboard } from "@/components/mobile/MobileDashboard";
+import { MobileEnhancedChatView } from "@/components/mobile/MobileEnhancedChatView";
 import { MobileBottomNavigation } from "@/components/mobile/MobileBottomNavigation";
 import { MobileHeader } from "@/components/mobile/MobileHeader";
 import { ChatWidget } from "@/components/ChatWidget";
@@ -121,6 +122,8 @@ const Index = () => {
         return <Invoicing />;
       case "email":
         return <Email />;
+      case "chat":
+        return <MobileEnhancedChatView onBack={() => setActiveTab("dashboard")} />;
       case "personnel":
         return <Personnel />;
       case "users":
