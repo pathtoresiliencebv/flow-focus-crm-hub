@@ -333,6 +333,56 @@ export type Database = {
           },
         ]
       }
+      email_sync_logs: {
+        Row: {
+          created_at: string
+          email_settings_id: string
+          emails_added: number | null
+          emails_processed: number | null
+          emails_updated: number | null
+          error_message: string | null
+          id: string
+          sync_completed_at: string | null
+          sync_duration_ms: number | null
+          sync_started_at: string
+          sync_status: string
+        }
+        Insert: {
+          created_at?: string
+          email_settings_id: string
+          emails_added?: number | null
+          emails_processed?: number | null
+          emails_updated?: number | null
+          error_message?: string | null
+          id?: string
+          sync_completed_at?: string | null
+          sync_duration_ms?: number | null
+          sync_started_at?: string
+          sync_status?: string
+        }
+        Update: {
+          created_at?: string
+          email_settings_id?: string
+          emails_added?: number | null
+          emails_processed?: number | null
+          emails_updated?: number | null
+          error_message?: string | null
+          id?: string
+          sync_completed_at?: string | null
+          sync_duration_ms?: number | null
+          sync_started_at?: string
+          sync_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_sync_logs_email_settings_id_fkey"
+            columns: ["email_settings_id"]
+            isOneToOne: false
+            referencedRelation: "user_email_settings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_templates: {
         Row: {
           body_html: string
@@ -407,10 +457,13 @@ export type Database = {
           is_starred: boolean | null
           labels: string[] | null
           message_id: string | null
+          provider_message_id: string | null
+          raw_headers: Json | null
           received_at: string | null
           reply_to: string | null
           sent_at: string | null
           subject: string
+          sync_hash: string | null
           thread_id: string | null
           to_addresses: string[]
           updated_at: string | null
@@ -435,10 +488,13 @@ export type Database = {
           is_starred?: boolean | null
           labels?: string[] | null
           message_id?: string | null
+          provider_message_id?: string | null
+          raw_headers?: Json | null
           received_at?: string | null
           reply_to?: string | null
           sent_at?: string | null
           subject: string
+          sync_hash?: string | null
           thread_id?: string | null
           to_addresses: string[]
           updated_at?: string | null
@@ -463,10 +519,13 @@ export type Database = {
           is_starred?: boolean | null
           labels?: string[] | null
           message_id?: string | null
+          provider_message_id?: string | null
+          raw_headers?: Json | null
           received_at?: string | null
           reply_to?: string | null
           sent_at?: string | null
           subject?: string
+          sync_hash?: string | null
           thread_id?: string | null
           to_addresses?: string[]
           updated_at?: string | null
@@ -1385,10 +1444,18 @@ export type Database = {
           imap_port: number | null
           imap_username: string | null
           is_active: boolean | null
+          is_syncing: boolean | null
+          last_sync_at: string | null
+          oauth_access_token: string | null
+          oauth_refresh_token: string | null
+          oauth_token_expires_at: string | null
+          provider_type: string | null
           smtp_host: string | null
           smtp_password: string | null
           smtp_port: number | null
           smtp_username: string | null
+          sync_error_message: string | null
+          sync_status: string | null
           updated_at: string | null
           user_id: string
         }
@@ -1402,10 +1469,18 @@ export type Database = {
           imap_port?: number | null
           imap_username?: string | null
           is_active?: boolean | null
+          is_syncing?: boolean | null
+          last_sync_at?: string | null
+          oauth_access_token?: string | null
+          oauth_refresh_token?: string | null
+          oauth_token_expires_at?: string | null
+          provider_type?: string | null
           smtp_host?: string | null
           smtp_password?: string | null
           smtp_port?: number | null
           smtp_username?: string | null
+          sync_error_message?: string | null
+          sync_status?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -1419,10 +1494,18 @@ export type Database = {
           imap_port?: number | null
           imap_username?: string | null
           is_active?: boolean | null
+          is_syncing?: boolean | null
+          last_sync_at?: string | null
+          oauth_access_token?: string | null
+          oauth_refresh_token?: string | null
+          oauth_token_expires_at?: string | null
+          provider_type?: string | null
           smtp_host?: string | null
           smtp_password?: string | null
           smtp_port?: number | null
           smtp_username?: string | null
+          sync_error_message?: string | null
+          sync_status?: string | null
           updated_at?: string | null
           user_id?: string
         }

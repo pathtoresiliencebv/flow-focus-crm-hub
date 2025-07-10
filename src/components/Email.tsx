@@ -12,8 +12,10 @@ import { EmailDetailView } from './EmailDetailView';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useEmailSync } from '@/hooks/useEmailSync';
+import { useEmailRealtime } from '@/hooks/useEmailRealtime';
 
 interface Email {
   id: string;
@@ -38,6 +40,10 @@ interface EmailAccount {
 export function Email() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { syncEmails, isSyncing } = useEmailSync();
+  
+  // Enable real-time email updates
+  useEmailRealtime();
   const [emails, setEmails] = useState<Email[]>([]);
   const [selectedEmails, setSelectedEmails] = useState<string[]>([]);
   const [currentFolder, setCurrentFolder] = useState('inbox');
@@ -269,6 +275,14 @@ export function Email() {
     refetchEmails();
   };
 
+  const handleSyncAll = () => {
+    emailAccounts.forEach(account => {
+      if (account.is_active) {
+        syncEmails({ emailSettingsId: account.id });
+      }
+    });
+  };
+
   const handleNavigateToSettings = () => {
     setShowSettings(true);
   };
@@ -386,11 +400,23 @@ export function Email() {
                 className="pl-10"
               />
             </div>
-            <Button onClick={() => setShowCompose(true)} className="w-full sm:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Nieuwe e-mail</span>
-              <span className="sm:hidden">Nieuw</span>
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleSyncAll} 
+                variant="outline" 
+                disabled={isSyncing || !hasEmailAccounts}
+                className="w-full sm:w-auto"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Sync alle accounts</span>
+                <span className="sm:hidden">Sync</span>
+              </Button>
+              <Button onClick={() => setShowCompose(true)} className="w-full sm:w-auto">
+                <Plus className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Nieuwe e-mail</span>
+                <span className="sm:hidden">Nieuw</span>
+              </Button>
+            </div>
           </div>
         </div>
 
