@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ChatWindow } from "./ChatWindow";
+import { EnhancedChatWindow } from "./chat/EnhancedChatWindow";
 import { cn } from "@/lib/utils";
 
 export const ResizableChatWidget = () => {
@@ -79,7 +79,7 @@ export const ResizableChatWidget = () => {
           />
 
           <div className="w-full h-full">
-            <ChatWindow onClose={() => setIsOpen(false)} />
+            <EnhancedChatWindow onClose={() => setIsOpen(false)} />
           </div>
         </div>
       )}

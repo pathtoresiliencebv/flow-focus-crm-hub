@@ -3,6 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
 import { TranslationService } from '@/services/translationService';
+import { enhancedTranslationService } from '@/services/enhancedTranslationService';
+import { languageDetectionService } from '@/services/languageDetectionService';
+import { useChatFileUpload } from './useChatFileUpload';
 
 export interface DirectMessage {
   id: string;
@@ -14,6 +17,17 @@ export interface DirectMessage {
   created_at: string;
   updated_at: string;
   is_read: boolean;
+  message_type?: string;
+  file_url?: string;
+  file_name?: string;
+  file_type?: string;
+  file_size?: number;
+  thumbnail_url?: string;
+  audio_duration?: number;
+  transcription_text?: string;
+  detected_language?: string;
+  context_type?: string;
+  translation_confidence?: number;
   sender?: {
     id: string;
     full_name?: string;
@@ -33,10 +47,12 @@ export interface ChatUser {
 export const useDirectChat = () => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
+  const { uploadFile } = useChatFileUpload();
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [availableUsers, setAvailableUsers] = useState<ChatUser[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isTranslating, setIsTranslating] = useState(false);
 
   // Load available users for chat based on role
   const loadAvailableUsers = useCallback(async () => {
@@ -122,56 +138,15 @@ export const useDirectChat = () => {
     }
   }, [user, toast]);
 
-  // Send a direct message with automatic translation
+  // Send a text message with enhanced translation
   const sendMessage = useCallback(async (toUserId: string, content: string) => {
     if (!user || !content.trim()) return;
 
     try {
-      // Get recipient's role to determine language
-      const { data: recipientData } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', toUserId)
-        .single();
-
-      // Simple language logic: Admin/Administratie = Dutch, Installateur = Polish
-      const recipientLanguage = recipientData?.role === 'Installateur' ? 'pl' : 'nl';
-      const senderLanguage = profile?.role === 'Installateur' ? 'pl' : 'nl';
-
-      // Detect and translate if needed
-      const detectedLanguage = TranslationService.detectLanguage(content);
-      let translatedContent: Record<string, string> = {};
-
-      if (detectedLanguage !== recipientLanguage) {
-        const translation = await TranslationService.translateText(
-          content,
-          detectedLanguage,
-          recipientLanguage
-        );
-        translatedContent[recipientLanguage] = translation;
-      }
-
-      if (detectedLanguage !== senderLanguage && senderLanguage !== recipientLanguage) {
-        const senderTranslation = await TranslationService.translateText(
-          content,
-          detectedLanguage,
-          senderLanguage
-        );
-        translatedContent[senderLanguage] = senderTranslation;
-      }
-
-      const { error } = await supabase
-        .from('direct_messages')
-        .insert({
-          from_user_id: user.id,
-          to_user_id: toUserId,
-          content: content.trim(),
-          original_language: detectedLanguage,
-          translated_content: Object.keys(translatedContent).length > 0 ? translatedContent : null,
-        });
-
-      if (error) throw error;
-
+      await sendEnhancedMessage(toUserId, {
+        content: content.trim(),
+        messageType: 'text'
+      });
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -180,7 +155,160 @@ export const useDirectChat = () => {
         variant: "destructive",
       });
     }
-  }, [user, profile, toast]);
+  }, [user, toast]);
+
+  // Send a file message
+  const sendFileMessage = useCallback(async (toUserId: string, file: File) => {
+    if (!user || !file) return;
+
+    try {
+      setIsTranslating(true);
+      
+      // Upload file first
+      const uploadResult = await uploadFile(file, 'chat-files');
+      const { url: fileUrl, fileName, fileType, fileSize } = uploadResult;
+      
+      await sendEnhancedMessage(toUserId, {
+        content: `📎 ${fileName}`,
+        messageType: 'file',
+        fileUrl,
+        fileName,
+        fileType,
+        fileSize
+      });
+    } catch (error) {
+      console.error('Error sending file:', error);
+      toast({
+        title: "Fout",
+        description: "Kon bestand niet versturen",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTranslating(false);
+    }
+  }, [user, uploadFile, toast]);
+
+  // Send a voice message
+  const sendVoiceMessage = useCallback(async (toUserId: string, audioBlob: Blob, duration: number) => {
+    if (!user || !audioBlob) return;
+
+    try {
+      setIsTranslating(true);
+      
+      // Create file from blob
+      const audioFile = new File([audioBlob], `voice-${Date.now()}.webm`, { type: 'audio/webm' });
+      
+      // Upload audio file
+      const uploadResult = await uploadFile(audioFile, 'chat-files');
+      const { url: fileUrl, fileName, fileType, fileSize } = uploadResult;
+      
+      // Get transcription
+      let transcriptionText = '';
+      try {
+        const formData = new FormData();
+        formData.append('audio', audioBlob);
+        
+        const { data } = await supabase.functions.invoke('voice-to-text', {
+          body: formData
+        });
+        
+        transcriptionText = data?.text || '';
+      } catch (transcriptionError) {
+        console.warn('Transcription failed:', transcriptionError);
+      }
+      
+      await sendEnhancedMessage(toUserId, {
+        content: transcriptionText || '🎵 Voice message',
+        messageType: 'voice',
+        fileUrl,
+        fileName,
+        fileType,
+        fileSize,
+        audioDuration: duration,
+        transcriptionText
+      });
+    } catch (error) {
+      console.error('Error sending voice message:', error);
+      toast({
+        title: "Fout",
+        description: "Kon spraakbericht niet versturen",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTranslating(false);
+    }
+  }, [user, uploadFile, toast]);
+
+  // Enhanced message sender with language detection and translation
+  const sendEnhancedMessage = useCallback(async (toUserId: string, messageData: {
+    content: string;
+    messageType: string;
+    fileUrl?: string;
+    fileName?: string;
+    fileType?: string;
+    fileSize?: number;
+    audioDuration?: number;
+    transcriptionText?: string;
+  }) => {
+    if (!user) return;
+
+    try {
+      // Get recipient's language preference
+      const { data: recipientData } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', toUserId)
+        .single();
+
+      const recipientLanguage = (recipientData?.role === 'Installateur' ? 'pl' : 'nl');
+      const senderLanguage = (profile?.role === 'Installateur' ? 'pl' : 'nl');
+
+      // Detect language of content
+      const detectionResult = languageDetectionService.detectFromContent(messageData.content);
+      const detectedLanguage = detectionResult.code;
+      
+      // Enhanced translation if needed
+      let translatedContent: Record<string, string> = {};
+      let translationConfidence = 1.0;
+
+      if (detectedLanguage !== recipientLanguage && messageData.content.trim()) {
+        const translationResult = await enhancedTranslationService.translateText({
+          text: messageData.content,
+          fromLanguage: detectedLanguage,
+          toLanguage: recipientLanguage,
+          context: 'casual'
+        });
+        translatedContent[recipientLanguage] = translationResult.translatedText;
+        translationConfidence = translationResult.confidence;
+      }
+
+      const { error } = await supabase
+        .from('direct_messages')
+        .insert({
+          from_user_id: user.id,
+          to_user_id: toUserId,
+          content: messageData.content,
+          original_language: detectedLanguage,
+          translated_content: Object.keys(translatedContent).length > 0 ? translatedContent : null,
+          translation_confidence: translationConfidence,
+          message_type: messageData.messageType,
+          file_url: messageData.fileUrl,
+          file_name: messageData.fileName,
+          file_type: messageData.fileType,
+          file_size: messageData.fileSize,
+          audio_duration: messageData.audioDuration,
+          transcription_text: messageData.transcriptionText,
+          detected_language: detectedLanguage,
+          context_type: 'work'
+        });
+
+      if (error) throw error;
+
+    } catch (error) {
+      console.error('Error sending enhanced message:', error);
+      throw error;
+    }
+  }, [user, profile]);
 
   // Mark messages as read
   const markMessagesAsRead = useCallback(async (fromUserId: string) => {
@@ -274,7 +402,10 @@ export const useDirectChat = () => {
     selectedUserId,
     setSelectedUserId,
     loading,
+    isTranslating,
     sendMessage,
+    sendFileMessage,
+    sendVoiceMessage,
     loadMessages,
     getUnreadCount,
     loadAvailableUsers

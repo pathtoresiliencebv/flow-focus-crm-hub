@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { MessageCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SimpleChatWindow } from "./SimpleChatWindow";
+import { EnhancedChatWindow } from "./chat/EnhancedChatWindow";
 import { cn } from "@/lib/utils";
 import { useDirectChat } from "@/hooks/useDirectChat";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,7 +23,7 @@ export const ChatWidget = () => {
       {/* Chat Window - Always fullscreen */}
       {isOpen && (
         <div className="fixed inset-0 z-60 shadow-2xl overflow-hidden bg-background border transition-all duration-300">
-          <SimpleChatWindow onClose={() => setIsOpen(false)} />
+          <EnhancedChatWindow onClose={() => setIsOpen(false)} />
         </div>
       )}
 
