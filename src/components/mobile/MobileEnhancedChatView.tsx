@@ -11,11 +11,15 @@ import { useLanguageDetection } from "@/hooks/useLanguageDetection";
 import { useChatFileUpload } from "@/hooks/useChatFileUpload";
 import { useNativeCapabilities } from "@/hooks/useNativeCapabilities";
 import { useNetworkAware } from "@/hooks/useNetworkAware";
+import { useFileSystemManager } from "@/hooks/useFileSystemManager";
+import { useDownloadManager } from "@/hooks/useDownloadManager";
 import { MobileChatChannelList } from "./MobileChatChannelList";
 import { MobileChatMessages } from "./MobileChatMessages";
 import { MobileChatInput } from "./MobileChatInput";
 import { MobileLanguageSettings } from "./MobileLanguageSettings";
 import { NetworkIndicator } from "./NetworkIndicator";
+import { MobileDownloadProgress } from "./MobileDownloadProgress";
+import { MobileFileOrganizer } from "./MobileFileOrganizer";
 
 interface MobileEnhancedChatViewProps {
   onBack: () => void;
@@ -285,6 +289,9 @@ export const MobileEnhancedChatView: React.FC<MobileEnhancedChatViewProps> = ({ 
           <NetworkIndicator />
         </div>
       </div>
+
+      {/* Download Progress */}
+      <MobileDownloadProgress compact />
 
       {/* Messages */}
       <MobileChatMessages
