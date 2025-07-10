@@ -270,36 +270,69 @@ export type Database = {
       }
       direct_messages: {
         Row: {
+          audio_duration: number | null
           content: string
+          context_type: string | null
           created_at: string
+          detected_language: string | null
+          file_name: string | null
+          file_size: number | null
+          file_type: string | null
+          file_url: string | null
           from_user_id: string
           id: string
           is_read: boolean | null
+          message_type: string | null
           original_language: string
+          thumbnail_url: string | null
           to_user_id: string
+          transcription_text: string | null
           translated_content: Json | null
+          translation_confidence: number | null
           updated_at: string
         }
         Insert: {
+          audio_duration?: number | null
           content: string
+          context_type?: string | null
           created_at?: string
+          detected_language?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string | null
           from_user_id: string
           id?: string
           is_read?: boolean | null
+          message_type?: string | null
           original_language?: string
+          thumbnail_url?: string | null
           to_user_id: string
+          transcription_text?: string | null
           translated_content?: Json | null
+          translation_confidence?: number | null
           updated_at?: string
         }
         Update: {
+          audio_duration?: number | null
           content?: string
+          context_type?: string | null
           created_at?: string
+          detected_language?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          file_url?: string | null
           from_user_id?: string
           id?: string
           is_read?: boolean | null
+          message_type?: string | null
           original_language?: string
+          thumbnail_url?: string | null
           to_user_id?: string
+          transcription_text?: string | null
           translated_content?: Json | null
+          translation_confidence?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -928,27 +961,36 @@ export type Database = {
           full_name: string | null
           id: string
           is_online: boolean | null
+          language_detection_enabled: boolean | null
+          language_preference: string | null
           last_seen: string | null
           role: Database["public"]["Enums"]["user_role"] | null
           status: Database["public"]["Enums"]["user_status"] | null
+          timezone: string | null
           updated_at: string | null
         }
         Insert: {
           full_name?: string | null
           id: string
           is_online?: boolean | null
+          language_detection_enabled?: boolean | null
+          language_preference?: string | null
           last_seen?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
           status?: Database["public"]["Enums"]["user_status"] | null
+          timezone?: string | null
           updated_at?: string | null
         }
         Update: {
           full_name?: string | null
           id?: string
           is_online?: boolean | null
+          language_detection_enabled?: boolean | null
+          language_preference?: string | null
           last_seen?: string | null
           role?: Database["public"]["Enums"]["user_role"] | null
           status?: Database["public"]["Enums"]["user_status"] | null
+          timezone?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -1466,6 +1508,45 @@ export type Database = {
           id?: number
           permission?: Database["public"]["Enums"]["app_permission"]
           role?: Database["public"]["Enums"]["user_role"]
+        }
+        Relationships: []
+      }
+      translation_cache: {
+        Row: {
+          confidence: number | null
+          context_type: string | null
+          created_at: string | null
+          id: string
+          last_used_at: string | null
+          source_language: string
+          source_text: string
+          target_language: string
+          translated_text: string
+          usage_count: number | null
+        }
+        Insert: {
+          confidence?: number | null
+          context_type?: string | null
+          created_at?: string | null
+          id?: string
+          last_used_at?: string | null
+          source_language: string
+          source_text: string
+          target_language: string
+          translated_text: string
+          usage_count?: number | null
+        }
+        Update: {
+          confidence?: number | null
+          context_type?: string | null
+          created_at?: string | null
+          id?: string
+          last_used_at?: string | null
+          source_language?: string
+          source_text?: string
+          target_language?: string
+          translated_text?: string
+          usage_count?: number | null
         }
         Relationships: []
       }
