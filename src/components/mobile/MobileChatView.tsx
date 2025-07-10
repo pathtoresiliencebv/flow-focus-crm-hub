@@ -1,519 +1,162 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { 
-  Send, 
-  Paperclip, 
-  Mic, 
-  Camera,
-  ArrowLeft,
-  MoreVertical,
-  Search,
-  Briefcase
-} from "lucide-react";
-import { useChat } from "@/hooks/useChat";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
-import { BackgroundSyncIndicator } from "./BackgroundSyncIndicator";
-import { useOfflineChat } from "@/hooks/useOfflineChat";
-import { useVoiceToText } from "@/hooks/useVoiceToText";
-import { useEnhancedCamera } from "@/hooks/useEnhancedCamera";
-import { formatDistanceToNow } from "date-fns";
-import { nl } from "date-fns/locale";
+import React, { useState, useCallback } from 'react';
+import { ArrowLeft, Users, Settings, Phone, Video } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { useDirectChat } from '@/hooks/useDirectChat';
+import { useAuth } from '@/hooks/useAuth';
+import { useRealtimeChat } from '@/hooks/useRealtimeChat';
+import { MessageBubble } from '@/components/chat/MessageBubble';
+import { ChatInputEnhanced } from '@/components/chat/ChatInputEnhanced';
+import { cn } from '@/lib/utils';
 
 interface MobileChatViewProps {
-  projectId: string;
-  projectTitle: string;
-  onBack?: () => void;
+  selectedUserId: string | null;
+  onBack: () => void;
+  isFullScreen?: boolean;
+  showBottomTabs?: boolean;
+  enableSwipeGestures?: boolean;
 }
 
-export const MobileChatView: React.FC<MobileChatViewProps> = ({ 
-  projectId, 
-  projectTitle, 
-  onBack 
+export const MobileChatView: React.FC<MobileChatViewProps> = ({
+  selectedUserId,
+  onBack,
+  isFullScreen = true,
+  showBottomTabs = false,
+  enableSwipeGestures = true
 }) => {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const {
-    channels,
-    messages,
-    selectedChannelId,
-    setSelectedChannelId,
+  const { 
+    messages, 
     sendMessage,
-    createChannel,
-    loading
-  } = useChat();
+    availableUsers 
+  } = useDirectChat();
   
-  const { 
-    isOnline, 
-    pendingSync, 
-    addOfflineMessage 
-  } = useOfflineChat();
-  
-  const { 
-    transcribeAudio, 
-    isTranscribing 
-  } = useVoiceToText();
-
-  const { capturePhoto, captureWorkPhoto, isCapturing: isCameraCapturing } = useEnhancedCamera();
-
-  const [messageInput, setMessageInput] = useState('');
+  const { features, setTyping } = useRealtimeChat(selectedUserId || undefined);
   const [isRecording, setIsRecording] = useState(false);
-  const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+
+  const selectedUser = availableUsers.find(u => u.id === selectedUserId);
   
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const userMessages = messages.filter(m => 
+    (m.from_user_id === selectedUserId && m.to_user_id === user?.id) ||
+    (m.from_user_id === user?.id && m.to_user_id === selectedUserId)
+  ).sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
 
-  // Find or create project channel
-  const projectChannel = channels.find(c => c.type === 'project' && c.project_id === projectId);
-
-  // Auto-create project channel if it doesn't exist
-  useEffect(() => {
-    if (!loading && !projectChannel && user) {
-      const channelName = `Project: ${projectTitle}`;
-      createChannel(channelName, 'project', projectId, []);
-    }
-  }, [loading, projectChannel, user, projectId, projectTitle, createChannel]);
-
-  // Set selected channel when project channel is available
-  useEffect(() => {
-    if (projectChannel && selectedChannelId !== projectChannel.id) {
-      setSelectedChannelId(projectChannel.id);
-    }
-  }, [projectChannel, selectedChannelId, setSelectedChannelId]);
-
-  // Auto-scroll to bottom
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const handleSendMessage = async () => {
-    if (!messageInput.trim() || !selectedChannelId) return;
-
+  const handleSendMessage = useCallback(async (content: string, type: string = 'text') => {
+    if (!selectedUserId || !user) return;
+    
     try {
-      if (isOnline) {
-        await sendMessage(selectedChannelId, messageInput);
-      } else {
-        await addOfflineMessage(selectedChannelId, messageInput, 'text');
-        toast({
-          title: "Bericht opgeslagen",
-          description: "Bericht wordt verzonden zodra je online bent",
-        });
-      }
-      setMessageInput('');
+      await sendMessage(selectedUserId, content);
     } catch (error) {
-      toast({
-        title: "Fout",
-        description: "Kon bericht niet versturen",
-        variant: "destructive",
-      });
+      console.error('Error sending message:', error);
     }
-  };
+  }, [selectedUserId, user, sendMessage]);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !selectedChannelId) return;
+  const handleVoiceRecord = useCallback(() => {
+    setIsRecording(prev => !prev);
+    // Implement voice recording logic here
+  }, []);
 
-    try {
-      // For images, send as image type
-      const messageType = file.type.startsWith('image/') ? 'image' : 'file';
-      
-      await sendMessage(
-        selectedChannelId, 
-        `📎 ${file.name}`,
-        messageType,
-        undefined,
-        file.name
-      );
-      
-      toast({
-        title: "Bestand gedeeld",
-        description: `${file.name} is gedeeld`,
-      });
-    } catch (error) {
-      toast({
-        title: "Fout",
-        description: "Kon bestand niet uploaden",
-        variant: "destructive",
-      });
-    } finally {
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
+  const handleFileUpload = useCallback((files: FileList) => {
+    // Implement file upload logic here
+    console.log('Files to upload:', files);
+  }, []);
 
-  const handleCameraCapture = async () => {
-    try {
-      const result = await capturePhoto({
-        allowEditing: true,
-      });
-
-      if (result && selectedChannelId) {
-        await sendMessage(
-          selectedChannelId,
-          `📸 Foto (${Math.round(result.fileSize / 1024)}KB)`,
-          'image',
-          undefined,
-          result.fileName
-        );
-        
-        toast({
-          title: "Foto gedeeld",
-          description: `${result.fileName} is gedeeld`,
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Fout",
-        description: "Kon foto niet maken",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleWorkPhotoCapture = async () => {
-    try {
-      const result = await captureWorkPhoto('medium');
-
-      if (result && selectedChannelId) {
-        await sendMessage(
-          selectedChannelId,
-          `🔧 Werkfoto (${Math.round(result.fileSize / 1024)}KB)`,
-          'image',
-          undefined,
-          result.fileName
-        );
-        
-        toast({
-          title: "Werkfoto gedeeld",
-          description: `${result.fileName} is gedeeld`,
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Fout",
-        description: "Kon werkfoto niet maken",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      
-      const chunks: BlobPart[] = [];
-      recorder.ondataavailable = (e) => chunks.push(e.data);
-      recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        setRecordingBlob(blob);
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      setMediaRecorder(recorder);
-      recorder.start();
-      setIsRecording(true);
-    } catch (error) {
-      toast({
-        title: "Fout",
-        description: "Kon microfoon niet openen",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorder && isRecording) {
-      mediaRecorder.stop();
-      setIsRecording(false);
-    }
-  };
-
-  const sendVoiceMessage = async () => {
-    if (!recordingBlob || !selectedChannelId) return;
-
-    try {
-      // Try to transcribe audio to text
-      const transcribedText = await transcribeAudio(recordingBlob);
-      const content = transcribedText || "🎤 Spraakbericht";
-      
-      if (isOnline) {
-        await sendMessage(selectedChannelId, content, 'voice');
-      } else {
-        await addOfflineMessage(selectedChannelId, content, 'voice');
-        toast({
-          title: "Spraakbericht opgeslagen",
-          description: "Wordt verzonden zodra je online bent",
-        });
-      }
-      
-      setRecordingBlob(null);
-      toast({
-        title: "Spraakbericht verzonden",
-      });
-    } catch (error) {
-      toast({
-        title: "Fout",
-        description: "Kon spraakbericht niet versturen",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const filteredMessages = messages.filter(msg =>
-    searchQuery === '' || 
-    msg.content?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const formatTime = (timestamp: string) => {
-    return formatDistanceToNow(new Date(timestamp), { 
-      addSuffix: true, 
-      locale: nl 
-    });
-  };
-
-  const renderMessage = (message: any) => {
-    const isOwnMessage = message.sender_id === user?.id;
-    const sender = message.sender;
-
+  if (!selectedUserId || !selectedUser) {
     return (
-      <div key={message.id} className={`flex gap-2 mb-3 ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
-        {!isOwnMessage && (
-          <Avatar className="h-6 w-6">
-            <AvatarFallback className="text-xs">
-              {sender?.full_name ? sender.full_name.split(' ').map((n: string) => n[0]).join('') : 'U'}
-            </AvatarFallback>
-          </Avatar>
-        )}
-        
-        <div className={`flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'} max-w-[75%]`}>
-          {!isOwnMessage && sender?.full_name && (
-            <span className="text-xs font-medium text-muted-foreground mb-1">{sender.full_name}</span>
-          )}
-          
-          <div className={`rounded-2xl px-3 py-2 ${
-            isOwnMessage 
-              ? 'bg-primary text-primary-foreground' 
-              : 'bg-muted'
-          }`}>
-            {message.message_type === 'voice' ? (
-              <div className="flex items-center gap-2 min-w-[120px]">
-                <div className="h-6 w-6 rounded-full bg-muted-foreground/20 flex items-center justify-center">
-                  <Mic className="h-3 w-3" />
-                </div>
-                <div className="flex-1 h-1 bg-muted-foreground/30 rounded-full">
-                  <div className="h-1 bg-current rounded-full w-1/3"></div>
-                </div>
-                <span className="text-xs">0:15</span>
-              </div>
-            ) : message.message_type === 'file' || message.message_type === 'image' ? (
-              <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded bg-muted-foreground/20 flex items-center justify-center">
-                  {message.message_type === 'image' ? (
-                    <Camera className="h-3 w-3" />
-                  ) : (
-                    <Paperclip className="h-3 w-3" />
-                  )}
-                </div>
-                <span className="text-xs">{message.file_name || 'Bestand'}</span>
-              </div>
-            ) : (
-              <p className="text-sm">{message.content}</p>
-            )}
-          </div>
-          
-          <span className="text-xs text-muted-foreground mt-1">
-            {formatTime(message.created_at)}
-          </span>
-        </div>
-      </div>
-    );
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <p>Chat wordt geladen...</p>
+      <div className="flex items-center justify-center h-full text-muted-foreground">
+        <p>Select a user to start chatting</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="bg-background border-b p-4 flex items-center gap-3">
-        {onBack && (
-          <Button variant="ghost" size="sm" onClick={onBack} className="h-8 w-8 p-0">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        )}
+    <div className={cn(
+      "flex flex-col bg-background",
+      isFullScreen ? "h-screen" : "h-full"
+    )}>
+      {/* Mobile Header */}
+      <div className="flex items-center gap-3 p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <Button variant="ghost" size="sm" onClick={onBack} className="h-8 w-8 p-0">
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
         
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <h2 className="font-semibold text-sm">Project Chat</h2>
-            {!isOnline && (
-              <div className="h-2 w-2 bg-yellow-500 rounded-full" title="Offline" />
-            )}
-            {pendingSync && (
-              <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" title="Synchronizing..." />
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <div className="relative">
+            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+              <span className="text-sm font-medium">
+                {selectedUser.full_name?.charAt(0) || 'U'}
+              </span>
+            </div>
+            {features.onlinePresence.onlineUsers.includes(selectedUserId) && (
+              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-background" />
             )}
           </div>
-          <p className="text-xs text-muted-foreground truncate">{projectTitle}</p>
+          
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium truncate">{selectedUser.full_name}</h3>
+            {features.typingIndicators.isTyping && features.typingIndicators.users.length > 0 && (
+              <p className="text-sm text-muted-foreground">
+                {features.typingIndicators.users[0].name} is typing...
+              </p>
+            )}
+            {features.onlinePresence.onlineUsers.includes(selectedUserId) && (
+              <Badge variant="secondary" className="text-xs">Online</Badge>
+            )}
+          </div>
         </div>
         
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => setShowSearch(!showSearch)}
-          className="h-8 w-8 p-0"
-        >
-          <Search className="h-4 w-4" />
-        </Button>
-        
-        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-          <MoreVertical className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            <Phone className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            <Video className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            <Settings className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
-      {/* Search */}
-      {showSearch && (
-        <div className="p-3 border-b">
-          <Input
-            placeholder="Zoek in berichten..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-8 text-sm"
-          />
+      {/* Messages Area */}
+      <ScrollArea className="flex-1 px-4 py-2">
+        <div className="space-y-4">
+          {userMessages.map((message, index) => {
+            const isOwn = message.from_user_id === user?.id;
+            const showSender = !isOwn && (index === 0 || userMessages[index - 1].from_user_id !== message.from_user_id);
+            
+            return (
+              <MessageBubble
+                key={message.id}
+                message={message}
+                isOwn={isOwn}
+                showSender={showSender}
+                senderName={selectedUser.full_name}
+                onReact={(emoji) => console.log('React:', emoji)}
+                onReply={() => console.log('Reply to:', message.id)}
+                onTranslate={() => console.log('Translate:', message.id)}
+              />
+            );
+          })}
         </div>
-      )}
-      
-      {/* Messages */}
-      <ScrollArea className="flex-1 p-3">
-        {filteredMessages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center text-muted-foreground">
-              <p className="text-sm">Nog geen berichten</p>
-              <p className="text-xs mt-1">Start het gesprek!</p>
-            </div>
-          </div>
-        ) : (
-          <>
-            {filteredMessages.map(renderMessage)}
-            <div ref={messagesEndRef} />
-          </>
-        )}
       </ScrollArea>
-      
-      {/* Voice Recording Preview */}
-      {recordingBlob && (
-        <div className="mx-3 mb-3 p-3 bg-muted rounded-lg flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse"></div>
-            <span className="text-sm">Opname klaar</span>
-          </div>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => setRecordingBlob(null)}>
-              Annuleren
-            </Button>
-            <Button size="sm" onClick={sendVoiceMessage}>
-              Versturen
-            </Button>
-          </div>
-        </div>
-      )}
-      
-      {/* Input Area */}
-      <div className="p-3 border-t bg-background">
-        <div className="flex items-center gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,.pdf,.doc,.docx,.txt"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={!selectedChannelId}
-            className="h-8 w-8 p-0"
-          >
-            <Paperclip className="h-4 w-4" />
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleCameraCapture}
-            disabled={!selectedChannelId || isCameraCapturing}
-            className="h-8 w-8 p-0"
-          >
-            <Camera className="h-4 w-4" />
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleWorkPhotoCapture}
-            disabled={!selectedChannelId || isCameraCapturing}
-            className="h-8 w-8 p-0"
-            title="Werkfoto"
-          >
-            <Briefcase className="h-4 w-4" />
-          </Button>
-          
-          <div className="flex-1">
-            <Input
-              placeholder="Typ je bericht..."
-              value={messageInput}
-              onChange={(e) => setMessageInput(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
-              disabled={!selectedChannelId}
-              className="h-8 rounded-full"
-            />
-          </div>
-          
-          {messageInput.trim() ? (
-            <Button 
-              onClick={handleSendMessage}
-              disabled={!selectedChannelId}
-              size="sm"
-              className="h-8 w-8 p-0 rounded-full"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              onTouchStart={startRecording}
-              onTouchEnd={stopRecording}
-              onMouseDown={startRecording}
-              onMouseUp={stopRecording}
-              onMouseLeave={stopRecording}
-              disabled={!selectedChannelId || isTranscribing}
-              className={`h-8 w-8 p-0 rounded-full ${isRecording ? 'bg-red-100 text-red-600' : ''}`}
-            >
-              <Mic className={`h-4 w-4 ${isTranscribing ? 'animate-pulse' : ''}`} />
-            </Button>
-          )}
-        </div>
+
+      {/* Mobile Input */}
+      <div className={cn(
+        "border-t bg-background",
+        showBottomTabs && "pb-16" // Space for bottom tabs
+      )}>
+        <ChatInputEnhanced
+          onSendMessage={handleSendMessage}
+          onTyping={setTyping}
+          onFileUpload={handleFileUpload}
+          onVoiceRecord={handleVoiceRecord}
+          isRecording={isRecording}
+          placeholder="Type a message..."
+          enableVoiceInput={true}
+          enableFileUpload={true}
+        />
       </div>
     </div>
   );
