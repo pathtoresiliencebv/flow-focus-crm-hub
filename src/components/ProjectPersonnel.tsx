@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Lock } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useUserStore } from "@/hooks/useUserStore";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ProjectPersonnelAssignment {
   id: string;
@@ -22,19 +23,11 @@ interface ProjectPersonnelProps {
 }
 
 export const ProjectPersonnel = ({ projectId }: ProjectPersonnelProps) => {
+  const { profile } = useAuth();
   const { users } = useUserStore();
   const installers = users.filter(user => user.role === "Installateur");
   
-  const [assignments, setAssignments] = useState<ProjectPersonnelAssignment[]>([
-    {
-      id: "1",
-      userId: 2,
-      userName: "Piet Bakker",
-      role: "Hoofdmonteur",
-      hourlyRate: 45.00,
-      estimatedHours: 16
-    }
-  ]);
+  const [assignments, setAssignments] = useState<ProjectPersonnelAssignment[]>([]);
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -75,18 +68,22 @@ export const ProjectPersonnel = ({ projectId }: ProjectPersonnelProps) => {
   const totalEstimatedHours = assignments.reduce((sum, assignment) => 
     sum + assignment.estimatedHours, 0
   );
+  
+  // Check if user has permission to manage personnel
+  const canManagePersonnel = profile?.role === 'Administrator' || profile?.role === 'Administratie';
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Toegewezen personeel</CardTitle>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Personeel toewijzen
-            </Button>
-          </DialogTrigger>
+        {canManagePersonnel ? (
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Personeel toewijzen
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Personeel toewijzen aan project</DialogTitle>
@@ -167,12 +164,33 @@ export const ProjectPersonnel = ({ projectId }: ProjectPersonnelProps) => {
             </form>
           </DialogContent>
         </Dialog>
+        ) : (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Lock className="h-4 w-4" />
+            <span className="text-sm">Alleen toegankelijk voor administrators</span>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
-        {assignments.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">
-            Nog geen personeel toegewezen aan dit project.
-          </p>
+        {!canManagePersonnel ? (
+          <div className="text-center py-12 space-y-4">
+            <Lock className="h-12 w-12 text-muted-foreground mx-auto" />
+            <div>
+              <p className="text-lg font-medium text-muted-foreground">Geen toegang</p>
+              <p className="text-sm text-muted-foreground">
+                Personeel beheer is alleen toegankelijk voor administrators en administratie medewerkers.
+              </p>
+            </div>
+          </div>
+        ) : assignments.length === 0 ? (
+          <div className="text-center py-8 space-y-4">
+            <p className="text-muted-foreground">
+              Nog geen personeel toegewezen aan dit project.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Personeel wordt automatisch gekoppeld wanneer planning wordt ingesteld.
+            </p>
+          </div>
         ) : (
           <>
             <Table>
@@ -195,13 +213,15 @@ export const ProjectPersonnel = ({ projectId }: ProjectPersonnelProps) => {
                     <TableCell>{assignment.estimatedHours}h</TableCell>
                     <TableCell>€{(assignment.hourlyRate * assignment.estimatedHours).toFixed(2)}</TableCell>
                     <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDelete(assignment.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {canManagePersonnel && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDelete(assignment.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

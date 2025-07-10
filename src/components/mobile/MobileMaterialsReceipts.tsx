@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Package, Receipt, Camera, Trash2 } from "lucide-react";
+import { Plus, Package, Receipt, Camera, Trash2, Lock } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -35,7 +35,7 @@ interface MobileMaterialsReceiptsProps {
 }
 
 export const MobileMaterialsReceipts: React.FC<MobileMaterialsReceiptsProps> = ({ projectId }) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const [materials, setMaterials] = useState<Material[]>([]);
   const [receipts, setReceipts] = useState<ReceiptData[]>([]);
@@ -152,6 +152,23 @@ export const MobileMaterialsReceipts: React.FC<MobileMaterialsReceiptsProps> = (
     input.click();
   };
 
+  // Check if user has permission to manage materials and receipts
+  const canManageMaterials = profile?.role === 'Administrator' || profile?.role === 'Administratie';
+
+  if (!canManageMaterials) {
+    return (
+      <div className="text-center py-12 space-y-4">
+        <Lock className="h-12 w-12 text-muted-foreground mx-auto" />
+        <div>
+          <p className="text-lg font-medium text-muted-foreground">Geen toegang</p>
+          <p className="text-sm text-muted-foreground">
+            Materiaal beheer is alleen toegankelijk voor administrators en administratie medewerkers.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <Tabs defaultValue="materials" className="w-full">
@@ -167,7 +184,20 @@ export const MobileMaterialsReceipts: React.FC<MobileMaterialsReceiptsProps> = (
         </TabsList>
 
         <TabsContent value="materials" className="space-y-4">
-          {!showMaterialForm ? (
+          {materials.length === 0 && !showMaterialForm ? (
+            <div className="text-center py-8 space-y-4">
+              <p className="text-muted-foreground">
+                Nog geen materialen toegevoegd aan dit project.
+              </p>
+              <Button
+                onClick={() => setShowMaterialForm(true)}
+                variant="outline"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Eerste Materiaal Toevoegen
+              </Button>
+            </div>
+          ) : !showMaterialForm ? (
             <Button
               onClick={() => setShowMaterialForm(true)}
               className="w-full"
@@ -254,7 +284,20 @@ export const MobileMaterialsReceipts: React.FC<MobileMaterialsReceiptsProps> = (
         </TabsContent>
 
         <TabsContent value="receipts" className="space-y-4">
-          {!showReceiptForm ? (
+          {receipts.length === 0 && !showReceiptForm ? (
+            <div className="text-center py-8 space-y-4">
+              <p className="text-muted-foreground">
+                Nog geen bonnetjes toegevoegd aan dit project.
+              </p>
+              <Button
+                onClick={() => setShowReceiptForm(true)}
+                variant="outline"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Eerste Bonnetje Toevoegen
+              </Button>
+            </div>
+          ) : !showReceiptForm ? (
             <Button
               onClick={() => setShowReceiptForm(true)}
               className="w-full"

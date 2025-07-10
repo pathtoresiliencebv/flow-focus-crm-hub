@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, Edit } from "lucide-react";
+import { Plus, Trash2, Edit, Lock } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Material {
   id: string;
@@ -22,24 +23,8 @@ interface ProjectMaterialsProps {
 }
 
 export const ProjectMaterials = ({ projectId }: ProjectMaterialsProps) => {
-  const [materials, setMaterials] = useState<Material[]>([
-    {
-      id: "1",
-      name: "Kunststof kozijn 120x150cm",
-      quantity: 6,
-      unit: "stuks",
-      pricePerUnit: 275.00,
-      totalPrice: 1650.00
-    },
-    {
-      id: "2", 
-      name: "Isolatieglas HR++",
-      quantity: 6,
-      unit: "m²",
-      pricePerUnit: 45.00,
-      totalPrice: 270.00
-    }
-  ]);
+  const { profile } = useAuth();
+  const [materials, setMaterials] = useState<Material[]>([]);
   
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -91,18 +76,22 @@ export const ProjectMaterials = ({ projectId }: ProjectMaterialsProps) => {
   };
 
   const totalValue = materials.reduce((sum, material) => sum + material.totalPrice, 0);
+  
+  // Check if user has permission to manage materials
+  const canManageMaterials = profile?.role === 'Administrator' || profile?.role === 'Administratie';
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Materialen</CardTitle>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Materiaal toevoegen
-            </Button>
-          </DialogTrigger>
+        {canManageMaterials ? (
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Materiaal toevoegen
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
@@ -166,12 +155,33 @@ export const ProjectMaterials = ({ projectId }: ProjectMaterialsProps) => {
             </form>
           </DialogContent>
         </Dialog>
+        ) : (
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Lock className="h-4 w-4" />
+            <span className="text-sm">Alleen toegankelijk voor administrators</span>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
-        {materials.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">
-            Nog geen materialen toegevoegd aan dit project.
-          </p>
+        {!canManageMaterials ? (
+          <div className="text-center py-12 space-y-4">
+            <Lock className="h-12 w-12 text-muted-foreground mx-auto" />
+            <div>
+              <p className="text-lg font-medium text-muted-foreground">Geen toegang</p>
+              <p className="text-sm text-muted-foreground">
+                Materialen beheer is alleen toegankelijk voor administrators en administratie medewerkers.
+              </p>
+            </div>
+          </div>
+        ) : materials.length === 0 ? (
+          <div className="text-center py-8 space-y-4">
+            <p className="text-muted-foreground">
+              Nog geen materialen toegevoegd aan dit project.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Klik op "Materiaal toevoegen" om materialen voor dit project te beheren.
+            </p>
+          </div>
         ) : (
           <>
             <Table>
@@ -194,22 +204,24 @@ export const ProjectMaterials = ({ projectId }: ProjectMaterialsProps) => {
                     <TableCell>€{material.pricePerUnit.toFixed(2)}</TableCell>
                     <TableCell>€{material.totalPrice.toFixed(2)}</TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEdit(material)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDelete(material.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      {canManageMaterials && (
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEdit(material)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleDelete(material.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

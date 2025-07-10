@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
-import { Camera, Clock, CheckCircle, FileText, User, MapPin, Phone, MessageCircle, Receipt } from "lucide-react";
+import { Camera, Clock, CheckCircle, FileText, User, MapPin, Phone, Receipt } from "lucide-react";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
 import { useCrmStore } from "@/hooks/useCrmStore";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,7 +14,7 @@ import { useProjectDelivery } from "@/hooks/useProjectDelivery";
 import { MobileTimeRegistration } from './MobileTimeRegistration';
 import { MobilePhotoUpload } from './MobilePhotoUpload';
 import { MobileWorkOrder } from './MobileWorkOrder';
-import { MobileChatView } from './MobileChatView';
+
 import { MobileProjectDelivery } from './MobileProjectDelivery';
 import { MobileMaterialsReceipts } from './MobileMaterialsReceipts';
 
@@ -150,7 +150,7 @@ export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId 
 
       {/* Mobile Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-6 m-4">
+        <TabsList className="grid w-full grid-cols-5 m-4">
           <TabsTrigger value="tasks" className="flex flex-col items-center gap-1 py-3">
             <CheckCircle className="h-4 w-4" />
             <span className="text-xs">Taken</span>
@@ -166,10 +166,6 @@ export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId 
           <TabsTrigger value="materials" className="flex flex-col items-center gap-1 py-3">
             <Receipt className="h-4 w-4" />
             <span className="text-xs">Materiaal</span>
-          </TabsTrigger>
-          <TabsTrigger value="chat" className="flex flex-col items-center gap-1 py-3">
-            <MessageCircle className="h-4 w-4" />
-            <span className="text-xs">Chat</span>
           </TabsTrigger>
           <TabsTrigger value="workorder" className="flex flex-col items-center gap-1 py-3">
             <FileText className="h-4 w-4" />
@@ -246,10 +242,6 @@ export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId 
 
           <TabsContent value="materials" className="mt-0">
             <MobileMaterialsReceipts projectId={projectId} />
-          </TabsContent>
-
-          <TabsContent value="chat" className="mt-0 h-[calc(100vh-300px)]">
-            <MobileChatView projectId={projectId} projectTitle={project.title} />
           </TabsContent>
 
           <TabsContent value="workorder" className="mt-0">
