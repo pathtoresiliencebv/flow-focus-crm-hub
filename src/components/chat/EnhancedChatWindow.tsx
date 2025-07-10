@@ -173,7 +173,7 @@ export const EnhancedChatWindow = ({ onClose }: EnhancedChatWindowProps) => {
     if (!message.content || translatedMessages.has(message.id)) return;
 
     try {
-      const fromLang = message.detected_language || 'nl';
+      const fromLang = (message as any).detected_language || 'nl';
       const toLang = userLanguage;
       
       if (fromLang === toLang) return;
