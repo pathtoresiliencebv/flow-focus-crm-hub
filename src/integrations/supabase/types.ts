@@ -364,6 +364,45 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_insights: {
+        Row: {
+          created_at: string | null
+          data: Json | null
+          description: string
+          id: string
+          insight_type: string
+          is_read: boolean | null
+          project_id: string | null
+          severity: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          data?: Json | null
+          description: string
+          id?: string
+          insight_type: string
+          is_read?: boolean | null
+          project_id?: string | null
+          severity?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          data?: Json | null
+          description?: string
+          id?: string
+          insight_type?: string
+          is_read?: boolean | null
+          project_id?: string | null
+          severity?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       customers: {
         Row: {
           address: string | null
@@ -907,6 +946,95 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      message_classifications: {
+        Row: {
+          confidence: number
+          entities: Json | null
+          id: string
+          intent: string
+          message_id: string | null
+          processed_at: string | null
+          sentiment: string
+          topics: string[] | null
+          urgency: string
+        }
+        Insert: {
+          confidence: number
+          entities?: Json | null
+          id?: string
+          intent: string
+          message_id?: string | null
+          processed_at?: string | null
+          sentiment: string
+          topics?: string[] | null
+          urgency: string
+        }
+        Update: {
+          confidence?: number
+          entities?: Json | null
+          id?: string
+          intent?: string
+          message_id?: string | null
+          processed_at?: string | null
+          sentiment?: string
+          topics?: string[] | null
+          urgency?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_classifications_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "direct_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_templates: {
+        Row: {
+          category: string
+          content: string
+          created_at: string | null
+          created_by: string
+          id: string
+          is_active: boolean | null
+          is_system_template: boolean | null
+          language: string
+          name: string
+          updated_at: string | null
+          usage_count: number | null
+          variables: Json | null
+        }
+        Insert: {
+          category: string
+          content: string
+          created_at?: string | null
+          created_by: string
+          id?: string
+          is_active?: boolean | null
+          is_system_template?: boolean | null
+          language?: string
+          name: string
+          updated_at?: string | null
+          usage_count?: number | null
+          variables?: Json | null
+        }
+        Update: {
+          category?: string
+          content?: string
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          is_active?: boolean | null
+          is_system_template?: boolean | null
+          language?: string
+          name?: string
+          updated_at?: string | null
+          usage_count?: number | null
+          variables?: Json | null
+        }
+        Relationships: []
       }
       notification_delivery_logs: {
         Row: {
@@ -1900,6 +2028,53 @@ export type Database = {
           role?: Database["public"]["Enums"]["user_role"]
         }
         Relationships: []
+      }
+      smart_reply_feedback: {
+        Row: {
+          created_at: string | null
+          custom_text: string | null
+          feedback_text: string | null
+          id: string
+          message_id: string | null
+          suggestion_id: string
+          suggestion_text: string
+          user_id: string
+          was_helpful: boolean | null
+          was_used: boolean
+        }
+        Insert: {
+          created_at?: string | null
+          custom_text?: string | null
+          feedback_text?: string | null
+          id?: string
+          message_id?: string | null
+          suggestion_id: string
+          suggestion_text: string
+          user_id: string
+          was_helpful?: boolean | null
+          was_used: boolean
+        }
+        Update: {
+          created_at?: string | null
+          custom_text?: string | null
+          feedback_text?: string | null
+          id?: string
+          message_id?: string | null
+          suggestion_id?: string
+          suggestion_text?: string
+          user_id?: string
+          was_helpful?: boolean | null
+          was_used?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_reply_feedback_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "direct_messages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       translation_cache: {
         Row: {
