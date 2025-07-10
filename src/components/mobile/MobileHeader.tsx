@@ -1,6 +1,8 @@
 import { ArrowLeft, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { NotificationCenter } from "@/components/NotificationCenter";
+import { RealtimeIndicator } from "@/components/RealtimeIndicator";
 
 interface MobileHeaderProps {
   title?: string;
@@ -23,6 +25,8 @@ export const MobileHeader = ({ title, showBack = false, onMenuClick }: MobileHea
           </div>
           
           <div className="flex items-center gap-2 flex-shrink-0">
+            <RealtimeIndicator />
+            <NotificationCenter />
             {showBack ? (
               <Button
                 variant="ghost"
