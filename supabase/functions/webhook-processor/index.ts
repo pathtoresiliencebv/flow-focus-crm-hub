@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { createHash, createHmac } from "https://deno.land/std@0.190.0/node/crypto.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -105,10 +104,21 @@ async function handleSendWebhook(
     // Create signature if secret key is provided
     let signature = '';
     if (webhook.secret_key) {
-      const payloadString = JSON.stringify(payload);
-      signature = createHmac('sha256', webhook.secret_key)
-        .update(payloadString)
-        .digest('hex');
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(webhook.secret_key);
+      const payloadData = encoder.encode(JSON.stringify(payload));
+      
+      const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        keyData,
+        { name: 'HMAC', hash: 'SHA-256' },
+        false,
+        ['sign']
+      );
+      
+      const signatureBuffer = await crypto.subtle.sign('HMAC', cryptoKey, payloadData);
+      const signatureArray = new Uint8Array(signatureBuffer);
+      signature = Array.from(signatureArray, byte => byte.toString(16).padStart(2, '0')).join('');
     }
 
     // Prepare headers
