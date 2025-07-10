@@ -908,6 +908,54 @@ export type Database = {
           },
         ]
       }
+      notification_delivery_logs: {
+        Row: {
+          clicked_at: string | null
+          created_at: string
+          delivered_at: string | null
+          delivery_method: string
+          endpoint: string | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          notification_id: string | null
+          opened_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          clicked_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          delivery_method: string
+          endpoint?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          notification_id?: string | null
+          opened_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          clicked_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          delivery_method?: string
+          endpoint?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          notification_id?: string | null
+          opened_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notification_preferences: {
         Row: {
           browser_notifications: boolean | null
@@ -968,6 +1016,57 @@ export type Database = {
           updated_at?: string
           user_id?: string
           weekend_notifications?: boolean | null
+        }
+        Relationships: []
+      }
+      notification_queue: {
+        Row: {
+          created_at: string
+          id: string
+          max_retries: number | null
+          message: string
+          notification_type: string
+          payload: Json | null
+          priority: number | null
+          processed_at: string | null
+          retry_count: number | null
+          scheduled_for: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          max_retries?: number | null
+          message: string
+          notification_type: string
+          payload?: Json | null
+          priority?: number | null
+          processed_at?: string | null
+          retry_count?: number | null
+          scheduled_for: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          max_retries?: number | null
+          message?: string
+          notification_type?: string
+          payload?: Json | null
+          priority?: number | null
+          processed_at?: string | null
+          retry_count?: number | null
+          scheduled_for?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1751,6 +1850,39 @@ export type Database = {
         }
         Relationships: []
       }
+      realtime_event_logs: {
+        Row: {
+          acknowledged_at: string | null
+          channel_id: string | null
+          created_at: string
+          delivery_status: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          channel_id?: string | null
+          created_at?: string
+          delivery_status?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          channel_id?: string | null
+          created_at?: string
+          delivery_status?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       role_permissions: {
         Row: {
           id: number
@@ -1942,6 +2074,45 @@ export type Database = {
           id?: string
           preferences?: Json
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      webhook_endpoints: {
+        Row: {
+          created_at: string
+          event_types: string[] | null
+          id: string
+          is_active: boolean | null
+          last_triggered_at: string | null
+          name: string
+          secret_key: string | null
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_types?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          name: string
+          secret_key?: string | null
+          updated_at?: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_types?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          name?: string
+          secret_key?: string | null
+          updated_at?: string
+          url?: string
           user_id?: string
         }
         Relationships: []
