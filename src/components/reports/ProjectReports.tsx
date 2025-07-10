@@ -1,9 +1,58 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { projectStatusData, projectTrendData } from "@/data/mockReportData";
+import { useReportsData } from "@/hooks/useReportsData";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export const ProjectReports = () => {
+interface ProjectReportsProps {
+  period: string;
+}
+
+export const ProjectReports = ({ period }: ProjectReportsProps) => {
+  const { projectData, loading, error } = useReportsData(period);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardHeader className="pb-2">
+                <Skeleton className="h-4 w-32" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-16" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[1, 2].map((i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-5 w-48" />
+              </CardHeader>
+              <CardContent className="h-80">
+                <Skeleton className="h-full w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !projectData) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="text-center py-8">
+            <p className="text-red-500">{error || 'Geen projectdata beschikbaar'}</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -12,7 +61,7 @@ export const ProjectReports = () => {
             <CardTitle className="text-base">Actieve projecten</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">18</p>
+            <p className="text-3xl font-bold">{projectData.activeProjects}</p>
           </CardContent>
         </Card>
         <Card>
@@ -20,8 +69,8 @@ export const ProjectReports = () => {
             <CardTitle className="text-base">Voltooide projecten</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">24</p>
-            <p className="text-sm text-muted-foreground">Afgelopen 30 dagen</p>
+            <p className="text-3xl font-bold">{projectData.completedProjects}</p>
+            <p className="text-sm text-muted-foreground">Deze periode</p>
           </CardContent>
         </Card>
         <Card>
@@ -29,7 +78,7 @@ export const ProjectReports = () => {
             <CardTitle className="text-base">Gem. projectduur</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">12 dagen</p>
+            <p className="text-3xl font-bold">{projectData.averageProjectDuration} dagen</p>
           </CardContent>
         </Card>
       </div>
@@ -43,7 +92,7 @@ export const ProjectReports = () => {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={projectStatusData}
+                  data={projectData.statusDistribution}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -52,7 +101,7 @@ export const ProjectReports = () => {
                   dataKey="value"
                   label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                 >
-                  {projectStatusData.map((entry, index) => (
+                  {projectData.statusDistribution.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -70,7 +119,7 @@ export const ProjectReports = () => {
           <CardContent className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
-                data={projectTrendData}
+                data={projectData.projectTrends}
                 margin={{
                   top: 5,
                   right: 30,

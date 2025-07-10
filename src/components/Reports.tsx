@@ -36,15 +36,15 @@ export const Reports = () => {
         </TabsList>
 
         <TabsContent value="sales">
-          <SalesReports />
+          <SalesReports period={period} />
         </TabsContent>
 
         <TabsContent value="projects">
-          <ProjectReports />
+          <ProjectReports period={period} />
         </TabsContent>
 
         <TabsContent value="finance">
-          <FinancialReports />
+          <FinancialReports period={period} />
         </TabsContent>
 
         <TabsContent value="inventory">
