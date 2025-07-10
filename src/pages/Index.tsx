@@ -10,6 +10,7 @@ import { Receipts } from "@/components/Receipts";
 import { Quotes } from "@/components/Quotes";
 import { Invoicing } from "@/components/Invoicing";
 import { Email } from "@/components/Email";
+import { EnhancedChatWindow } from "@/components/chat/EnhancedChatWindow";
 import Personnel from "@/components/Personnel";
 import UserManagement from "@/components/UserManagement";
 import { Salary } from "@/components/Salary";
@@ -81,6 +82,7 @@ const Index = () => {
     quotes: "invoices_view",
     invoicing: "invoices_view",
     email: null,
+    chat: null,
     personnel: "users_view",
     users: "users_view",
     salary: "users_view",
@@ -123,7 +125,9 @@ const Index = () => {
       case "email":
         return <Email />;
       case "chat":
-        return <MobileEnhancedChatView onBack={() => setActiveTab("dashboard")} />;
+        return isMobile ? 
+          <MobileEnhancedChatView onBack={() => setActiveTab("dashboard")} /> :
+          <EnhancedChatWindow onClose={() => {}} />;
       case "personnel":
         return <Personnel />;
       case "users":

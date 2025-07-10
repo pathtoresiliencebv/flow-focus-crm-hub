@@ -13,7 +13,8 @@ import {
   UserCheck,
   BarChart,
   Settings,
-  Mail
+  Mail,
+  MessageCircle
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Permission } from "@/types/permissions";
@@ -81,6 +82,12 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
       label: "Postvak IN",
       icon: <Mail className="h-5 w-5" />,
       key: "email",
+      permission: null,
+    },
+    {
+      label: "Chat",
+      icon: <MessageCircle className="h-5 w-5" />,
+      key: "chat",
       permission: null,
     },
     {
