@@ -13,6 +13,7 @@ import { useNativeCapabilities } from "@/hooks/useNativeCapabilities";
 import { useNetworkAware } from "@/hooks/useNetworkAware";
 import { useFileSystemManager } from "@/hooks/useFileSystemManager";
 import { useDownloadManager } from "@/hooks/useDownloadManager";
+import { useEnhancedCamera } from "@/hooks/useEnhancedCamera";
 import { MobileChatChannelList } from "./MobileChatChannelList";
 import { MobileChatMessages } from "./MobileChatMessages";
 import { MobileChatInput } from "./MobileChatInput";
@@ -20,6 +21,7 @@ import { MobileLanguageSettings } from "./MobileLanguageSettings";
 import { NetworkIndicator } from "./NetworkIndicator";
 import { MobileDownloadProgress } from "./MobileDownloadProgress";
 import { MobileFileOrganizer } from "./MobileFileOrganizer";
+import { EnhancedCameraCapture } from "./EnhancedCameraCapture";
 
 interface MobileEnhancedChatViewProps {
   onBack: () => void;
@@ -30,7 +32,8 @@ export const MobileEnhancedChatView: React.FC<MobileEnhancedChatViewProps> = ({ 
   const { toast } = useToast();
   const { userLanguage, supportedLanguages, updateUserLanguage } = useLanguageDetection();
   const { uploadFile } = useChatFileUpload();
-  const { isNativeApp, takePicture, hapticFeedback } = useNativeCapabilities();
+  const { isNativeApp, hapticFeedback } = useNativeCapabilities();
+  const { capturePhoto, captureDocument, captureReceipt, captureWorkPhoto } = useEnhancedCamera();
   const { 
     networkQuality, 
     adaptiveSettings, 
@@ -171,7 +174,7 @@ export const MobileEnhancedChatView: React.FC<MobileEnhancedChatViewProps> = ({ 
 
     try {
       await hapticFeedback();
-      const result = await takePicture({
+      const result = await capturePhoto({
         allowEditing: true,
       });
 
@@ -179,7 +182,7 @@ export const MobileEnhancedChatView: React.FC<MobileEnhancedChatViewProps> = ({ 
         // Convert dataUrl to File
         const response = await fetch(result.dataUrl);
         const blob = await response.blob();
-        const file = new File([blob], `photo_${Date.now()}.${result.format}`, { type: `image/${result.format}` });
+        const file = new File([blob], result.fileName, { type: `image/${result.format}` });
         
         const uploadResult = await uploadFile(file, user.id);
         
@@ -203,7 +206,7 @@ export const MobileEnhancedChatView: React.FC<MobileEnhancedChatViewProps> = ({ 
         variant: "destructive"
       });
     }
-  }, [isNativeApp, takePicture, hapticFeedback, user?.id, uploadFile, handleSendMessage, toast]);
+  }, [isNativeApp, capturePhoto, hapticFeedback, user?.id, uploadFile, handleSendMessage, toast]);
 
   const handleVoiceMessage = useCallback(async (audioUrl: string, transcription: string, duration: number) => {
     await handleSendMessage(
@@ -310,6 +313,57 @@ export const MobileEnhancedChatView: React.FC<MobileEnhancedChatViewProps> = ({ 
         onVoiceMessage={handleVoiceMessage}
         fileInputRef={fileInputRef}
         isNativeApp={isNativeApp}
+      />
+
+      {/* Enhanced Camera Capture */}
+      <EnhancedCameraCapture
+        onMediaCaptured={async (media) => {
+          if (Array.isArray(media)) {
+            // Handle multiple photos
+            for (const photo of media) {
+              if (user?.id) {
+                const response = await fetch(photo.dataUrl);
+                const blob = await response.blob();
+                const file = new File([blob], photo.fileName, { type: `image/${photo.format}` });
+                
+                const uploadResult = await uploadFile(file, user.id);
+                
+                await handleSendMessage(
+                  `📸 ${photo.fileName}`,
+                  'image',
+                  {
+                    file_url: uploadResult.url,
+                    file_name: uploadResult.fileName,
+                    file_size: uploadResult.fileSize,
+                    file_type: uploadResult.fileType,
+                    thumbnail_url: uploadResult.thumbnailUrl
+                  }
+                );
+              }
+            }
+          } else {
+            // Handle single photo
+            if (user?.id) {
+              const response = await fetch(media.dataUrl);
+              const blob = await response.blob();
+              const file = new File([blob], media.fileName, { type: `image/${media.format}` });
+              
+              const uploadResult = await uploadFile(file, user.id);
+              
+              await handleSendMessage(
+                `📸 ${media.fileName}`,
+                'image',
+                {
+                  file_url: uploadResult.url,
+                  file_name: uploadResult.fileName,
+                  file_size: uploadResult.fileSize,
+                  file_type: uploadResult.fileType,
+                  thumbnail_url: uploadResult.thumbnailUrl
+                }
+              );
+            }
+          }
+        }}
       />
 
       {/* Hidden file input */}

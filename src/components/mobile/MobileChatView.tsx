@@ -12,13 +12,15 @@ import {
   Camera,
   ArrowLeft,
   MoreVertical,
-  Search
+  Search,
+  Briefcase
 } from "lucide-react";
 import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useOfflineChat } from "@/hooks/useOfflineChat";
 import { useVoiceToText } from "@/hooks/useVoiceToText";
+import { useEnhancedCamera } from "@/hooks/useEnhancedCamera";
 import { formatDistanceToNow } from "date-fns";
 import { nl } from "date-fns/locale";
 
@@ -55,6 +57,8 @@ export const MobileChatView: React.FC<MobileChatViewProps> = ({
     transcribeAudio, 
     isTranscribing 
   } = useVoiceToText();
+
+  const { capturePhoto, captureWorkPhoto, isCapturing: isCameraCapturing } = useEnhancedCamera();
 
   const [messageInput, setMessageInput] = useState('');
   const [isRecording, setIsRecording] = useState(false);
@@ -142,6 +146,62 @@ export const MobileChatView: React.FC<MobileChatViewProps> = ({
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+    }
+  };
+
+  const handleCameraCapture = async () => {
+    try {
+      const result = await capturePhoto({
+        allowEditing: true,
+      });
+
+      if (result && selectedChannelId) {
+        await sendMessage(
+          selectedChannelId,
+          `📸 Foto (${Math.round(result.fileSize / 1024)}KB)`,
+          'image',
+          undefined,
+          result.fileName
+        );
+        
+        toast({
+          title: "Foto gedeeld",
+          description: `${result.fileName} is gedeeld`,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Fout",
+        description: "Kon foto niet maken",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleWorkPhotoCapture = async () => {
+    try {
+      const result = await captureWorkPhoto('medium');
+
+      if (result && selectedChannelId) {
+        await sendMessage(
+          selectedChannelId,
+          `🔧 Werkfoto (${Math.round(result.fileSize / 1024)}KB)`,
+          'image',
+          undefined,
+          result.fileName
+        );
+        
+        toast({
+          title: "Werkfoto gedeeld",
+          description: `${result.fileName} is gedeeld`,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Fout",
+        description: "Kon werkfoto niet maken",
+        variant: "destructive",
+      });
     }
   };
 
@@ -394,16 +454,22 @@ export const MobileChatView: React.FC<MobileChatViewProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => {
-              if (fileInputRef.current) {
-                fileInputRef.current.accept = "image/*";
-                fileInputRef.current.click();
-              }
-            }}
-            disabled={!selectedChannelId}
+            onClick={handleCameraCapture}
+            disabled={!selectedChannelId || isCameraCapturing}
             className="h-8 w-8 p-0"
           >
             <Camera className="h-4 w-4" />
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleWorkPhotoCapture}
+            disabled={!selectedChannelId || isCameraCapturing}
+            className="h-8 w-8 p-0"
+            title="Werkfoto"
+          >
+            <Briefcase className="h-4 w-4" />
           </Button>
           
           <div className="flex-1">
