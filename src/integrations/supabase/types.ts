@@ -268,6 +268,42 @@ export type Database = {
         }
         Relationships: []
       }
+      direct_messages: {
+        Row: {
+          content: string
+          created_at: string
+          from_user_id: string
+          id: string
+          is_read: boolean | null
+          original_language: string
+          to_user_id: string
+          translated_content: Json | null
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          from_user_id: string
+          id?: string
+          is_read?: boolean | null
+          original_language?: string
+          to_user_id: string
+          translated_content?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          from_user_id?: string
+          id?: string
+          is_read?: boolean | null
+          original_language?: string
+          to_user_id?: string
+          translated_content?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_queue: {
         Row: {
           attempts: number | null
