@@ -25,6 +25,18 @@
 
   <body>
     <div id="root"></div>
+    <!-- Enhanced Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => {
+            console.log('Enhanced Service Worker registered:', registration);
+          })
+          .catch(error => {
+            console.error('Enhanced Service Worker registration failed:', error);
+          });
+      }
+    </script>
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>

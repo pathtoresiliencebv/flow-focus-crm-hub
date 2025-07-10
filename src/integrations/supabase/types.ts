@@ -736,7 +736,9 @@ export type Database = {
           email_digest_frequency: string | null
           email_notifications: boolean
           id: string
+          instant_notifications: boolean | null
           marketing_emails: boolean | null
+          notification_schedule: Json | null
           notification_sound: boolean | null
           project_notifications: boolean
           push_notifications: boolean
@@ -754,7 +756,9 @@ export type Database = {
           email_digest_frequency?: string | null
           email_notifications?: boolean
           id?: string
+          instant_notifications?: boolean | null
           marketing_emails?: boolean | null
+          notification_schedule?: Json | null
           notification_sound?: boolean | null
           project_notifications?: boolean
           push_notifications?: boolean
@@ -772,7 +776,9 @@ export type Database = {
           email_digest_frequency?: string | null
           email_notifications?: boolean
           id?: string
+          instant_notifications?: boolean | null
           marketing_emails?: boolean | null
+          notification_schedule?: Json | null
           notification_sound?: boolean | null
           project_notifications?: boolean
           push_notifications?: boolean
@@ -1381,6 +1387,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      push_subscriptions: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          is_active: boolean
+          subscription_data: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          is_active?: boolean
+          subscription_data: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          is_active?: boolean
+          subscription_data?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       quote_settings: {
         Row: {

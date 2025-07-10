@@ -6,247 +6,260 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface NotificationRequest {
-  userId: string;
-  templateName: string;
-  variables: Record<string, any>;
-  recipientEmail?: string;
-  recipientName?: string;
-  scheduleFor?: string;
+interface PushSubscription {
+  endpoint: string;
+  keys: {
+    p256dh: string;
+    auth: string;
+  };
 }
 
-interface NotificationTemplate {
-  id: string;
-  name: string;
-  template_type: 'email' | 'push' | 'system';
-  subject_template?: string;
-  body_template: string;
-  variables: string[];
-  is_active: boolean;
+interface NotificationPayload {
+  type: 'chat_message' | 'project_update' | 'general';
+  title: string;
+  body: string;
+  data?: any;
+  sender_name?: string;
+  channel_id?: string;
+  message_id?: string;
+  project_id?: string;
 }
 
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-);
-
-function replaceVariables(template: string, variables: Record<string, any>): string {
-  return template.replace(/{{(\w+)}}/g, (match, key) => {
-    return variables[key] || match;
-  });
-}
-
-async function processEmailNotification(
-  template: NotificationTemplate,
-  variables: Record<string, any>,
-  recipientEmail: string,
-  recipientName?: string,
-  scheduleFor?: string
-) {
-  console.log('Processing email notification:', { template: template.name, recipientEmail });
-
-  const subject = replaceVariables(template.subject_template || '', variables);
-  const bodyHtml = replaceVariables(template.body_template, variables);
-  
-  // Queue the email for sending
-  const { error: queueError } = await supabase
-    .from('email_queue')
-    .insert({
-      recipient_email: recipientEmail,
-      recipient_name: recipientName,
-      template_id: template.id,
-      subject,
-      body_html: bodyHtml,
-      template_variables: variables,
-      scheduled_for: scheduleFor ? new Date(scheduleFor).toISOString() : new Date().toISOString(),
-      status: 'pending'
-    });
-
-  if (queueError) {
-    throw new Error(`Failed to queue email: ${queueError.message}`);
-  }
-
-  console.log('Email queued successfully');
-}
-
-async function processPushNotification(
-  template: NotificationTemplate,
-  variables: Record<string, any>,
-  userId: string
-) {
-  console.log('Processing push notification:', { template: template.name, userId });
-
-  const title = replaceVariables(template.subject_template || template.name, variables);
-  const message = replaceVariables(template.body_template, variables);
-
-  // Create user notification
-  const { error: notificationError } = await supabase
-    .from('user_notifications')
-    .insert({
-      user_id: userId,
-      title,
-      message,
-      type: 'info',
-      reference_type: variables.reference_type,
-      reference_id: variables.reference_id
-    });
-
-  if (notificationError) {
-    throw new Error(`Failed to create notification: ${notificationError.message}`);
-  }
-
-  console.log('Push notification created successfully');
-}
-
-async function checkUserPreferences(userId: string, notificationType: string): Promise<boolean> {
-  const { data: preferences, error } = await supabase
-    .from('notification_preferences')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
-
-  if (error || !preferences) {
-    console.log('No preferences found, using defaults');
-    return true; // Default to allow notifications
-  }
-
-  // Check if user wants this type of notification
-  switch (notificationType) {
-    case 'email':
-      return preferences.email_notifications;
-    case 'push':
-      return preferences.push_notifications || preferences.browser_notifications;
-    case 'chat':
-      return preferences.chat_notifications;
-    case 'project':
-      return preferences.project_notifications;
-    case 'quote':
-      return preferences.quote_notifications;
-    default:
-      return true;
-  }
-}
-
-async function checkQuietHours(userId: string): Promise<boolean> {
-  const { data: preferences, error } = await supabase
-    .from('notification_preferences')
-    .select('quiet_hours_start, quiet_hours_end, weekend_notifications')
-    .eq('user_id', userId)
-    .single();
-
-  if (error || !preferences) {
-    return false; // No quiet hours configured
-  }
-
-  const now = new Date();
-  const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
-  const currentDay = now.getDay(); // 0 = Sunday, 6 = Saturday
-
-  // Check weekend notifications
-  if (!preferences.weekend_notifications && (currentDay === 0 || currentDay === 6)) {
-    return true; // It's weekend and user doesn't want weekend notifications
-  }
-
-  // Check quiet hours
-  const quietStart = preferences.quiet_hours_start;
-  const quietEnd = preferences.quiet_hours_end;
-
-  if (quietStart && quietEnd) {
-    if (quietStart <= quietEnd) {
-      // Same day quiet hours (e.g., 22:00 - 08:00 next day)
-      return currentTime >= quietStart && currentTime <= quietEnd;
-    } else {
-      // Overnight quiet hours (e.g., 22:00 - 08:00)
-      return currentTime >= quietStart || currentTime <= quietEnd;
-    }
-  }
-
-  return false;
-}
-
-const handler = async (req: Request): Promise<Response> => {
+serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { userId, templateName, variables, recipientEmail, recipientName, scheduleFor }: NotificationRequest = await req.json();
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log('Processing notification request:', { userId, templateName });
+    const { type, payload, subscription, user_id } = await req.json();
 
-    // Get the notification template
-    const { data: template, error: templateError } = await supabase
-      .from('notification_templates')
-      .select('*')
-      .eq('name', templateName)
-      .eq('is_active', true)
-      .single();
+    console.log('Notification processor request:', { type, user_id });
 
-    if (templateError || !template) {
-      throw new Error(`Template not found: ${templateName}`);
-    }
-
-    // Check user preferences
-    const notificationType = template.template_type;
-    const allowNotification = await checkUserPreferences(userId, notificationType);
-
-    if (!allowNotification) {
-      console.log('Notification blocked by user preferences');
-      return new Response(
-        JSON.stringify({ message: 'Notification blocked by user preferences' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Check quiet hours for push notifications
-    if (notificationType === 'push' || notificationType === 'system') {
-      const isQuietHours = await checkQuietHours(userId);
-      if (isQuietHours) {
-        console.log('Notification delayed due to quiet hours');
-        // Schedule for after quiet hours - simplified to 8 AM next day
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(8, 0, 0, 0);
-        scheduleFor = tomorrow.toISOString();
-      }
-    }
-
-    // Process based on template type
-    if (template.template_type === 'email') {
-      const email = recipientEmail || variables.recipient_email;
-      const name = recipientName || variables.recipient_name;
+    switch (type) {
+      case 'register_push_subscription':
+        return await handlePushSubscriptionRegistration(supabase, subscription, user_id);
       
-      if (!email) {
-        throw new Error('Recipient email is required for email notifications');
-      }
-
-      await processEmailNotification(template, variables, email, name, scheduleFor);
-    } else if (template.template_type === 'push' || template.template_type === 'system') {
-      await processPushNotification(template, variables, userId);
+      case 'push_notification':
+        return await handlePushNotification(supabase, payload, user_id);
+      
+      case 'chat_message_notification':
+        return await handleChatMessageNotification(supabase, payload);
+        
+      default:
+        return new Response(
+          JSON.stringify({ error: 'Unknown notification type' }),
+          { 
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
     }
-
-    return new Response(
-      JSON.stringify({ 
-        message: 'Notification processed successfully',
-        template_type: template.template_type,
-        scheduled: !!scheduleFor
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      }
-    );
-
-  } catch (error: any) {
-    console.error('Error processing notification:', error);
+  } catch (error) {
+    console.error('Error in notification processor:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
+      { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
   }
-};
+});
 
-serve(handler);
+async function handlePushSubscriptionRegistration(
+  supabase: any,
+  subscription: PushSubscription,
+  userId: string
+) {
+  try {
+    // Store push subscription in database
+    const { error } = await supabase
+      .from('push_subscriptions')
+      .upsert({
+        user_id: userId,
+        subscription_data: subscription,
+        endpoint: subscription.endpoint,
+        is_active: true,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,endpoint'
+      });
+
+    if (error) {
+      console.error('Error storing push subscription:', error);
+      throw error;
+    }
+
+    console.log('Push subscription registered successfully for user:', userId);
+
+    return new Response(
+      JSON.stringify({ success: true, message: 'Push subscription registered' }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
+  } catch (error) {
+    console.error('Error registering push subscription:', error);
+    throw error;
+  }
+}
+
+async function handlePushNotification(
+  supabase: any,
+  payload: NotificationPayload,
+  userId?: string
+) {
+  try {
+    // Get active push subscriptions for target users
+    let query = supabase
+      .from('push_subscriptions')
+      .select('*')
+      .eq('is_active', true);
+
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+
+    const { data: subscriptions, error } = await query;
+
+    if (error) {
+      console.error('Error fetching push subscriptions:', error);
+      throw error;
+    }
+
+    if (!subscriptions || subscriptions.length === 0) {
+      console.log('No active push subscriptions found');
+      return new Response(
+        JSON.stringify({ success: true, sent: 0, message: 'No subscriptions found' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // Send push notifications
+    const results = await Promise.allSettled(
+      subscriptions.map(sub => sendPushNotification(sub.subscription_data, payload))
+    );
+
+    const successful = results.filter(r => r.status === 'fulfilled').length;
+    const failed = results.filter(r => r.status === 'rejected').length;
+
+    console.log(`Push notifications sent: ${successful} successful, ${failed} failed`);
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        sent: successful, 
+        failed: failed,
+        total: subscriptions.length
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
+  } catch (error) {
+    console.error('Error handling push notification:', error);
+    throw error;
+  }
+}
+
+async function handleChatMessageNotification(
+  supabase: any,
+  { channel_id, message_id, sender_name, content }: any
+) {
+  try {
+    // Get channel participants
+    const { data: participants, error } = await supabase
+      .from('chat_participants')
+      .select('user_id')
+      .eq('channel_id', channel_id);
+
+    if (error || !participants) {
+      console.error('Error fetching channel participants:', error);
+      throw error;
+    }
+
+    // Get push subscriptions for participants
+    const userIds = participants.map(p => p.user_id);
+    const { data: subscriptions, error: subError } = await supabase
+      .from('push_subscriptions')
+      .select('*')
+      .in('user_id', userIds)
+      .eq('is_active', true);
+
+    if (subError) {
+      console.error('Error fetching push subscriptions:', subError);
+      throw subError;
+    }
+
+    if (!subscriptions || subscriptions.length === 0) {
+      return new Response(
+        JSON.stringify({ success: true, sent: 0 }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const notificationPayload: NotificationPayload = {
+      type: 'chat_message',
+      title: `Nieuw bericht van ${sender_name}`,
+      body: content || 'Nieuw bericht ontvangen',
+      sender_name,
+      channel_id,
+      message_id,
+      data: {
+        url: `/chat?channel=${channel_id}`,
+        type: 'chat_message',
+        channel_id,
+        message_id
+      }
+    };
+
+    // Send notifications
+    const results = await Promise.allSettled(
+      subscriptions.map(sub => sendPushNotification(sub.subscription_data, notificationPayload))
+    );
+
+    const successful = results.filter(r => r.status === 'fulfilled').length;
+
+    return new Response(
+      JSON.stringify({ 
+        success: true, 
+        sent: successful,
+        total: subscriptions.length
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    );
+  } catch (error) {
+    console.error('Error handling chat message notification:', error);
+    throw error;
+  }
+}
+
+async function sendPushNotification(subscription: PushSubscription, payload: NotificationPayload) {
+  try {
+    // Note: In production, you would use a proper Web Push library with VAPID keys
+    // For now, this is a placeholder that logs the notification
+    console.log('Sending push notification:', {
+      endpoint: subscription.endpoint,
+      payload: payload.title
+    });
+
+    // In a real implementation, you would use webpush library:
+    // const webpush = require('web-push');
+    // webpush.setVapidDetails('mailto:your-email@example.com', publicKey, privateKey);
+    // return await webpush.sendNotification(subscription, JSON.stringify(payload));
+
+    return Promise.resolve({ success: true });
+  } catch (error) {
+    console.error('Error sending push notification:', error);
+    throw error;
+  }
+}

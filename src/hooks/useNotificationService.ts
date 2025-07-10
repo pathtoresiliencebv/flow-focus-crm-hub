@@ -1,156 +1,168 @@
-import { useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useCallback } from 'react';
+import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
-interface SendNotificationParams {
-  userId: string;
-  templateName: string;
-  variables: Record<string, any>;
-  recipientEmail?: string;
-  recipientName?: string;
-  scheduleFor?: string;
+interface NotificationPayload {
+  type: 'chat_message' | 'project_update' | 'general';
+  title: string;
+  body: string;
+  data?: any;
+  sender_name?: string;
+  channel_id?: string;
+  message_id?: string;
+  project_id?: string;
 }
 
 export const useNotificationService = () => {
+  const { user } = useAuth();
   const { toast } = useToast();
 
-  const sendNotification = useCallback(async (params: SendNotificationParams) => {
-    try {
-      console.log('Sending notification:', params);
+  // Handle navigation messages from service worker
+  useEffect(() => {
+    const handleServiceWorkerMessage = (event: MessageEvent) => {
+      const { type, url, notificationData, messageId, channelId } = event.data;
 
-      const { data, error } = await supabase.functions.invoke('notification-processor', {
-        body: params
+      switch (type) {
+        case 'NAVIGATE_TO_URL':
+          if (url && url !== window.location.pathname) {
+            window.history.pushState({}, '', url);
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }
+          break;
+          
+        case 'MARK_MESSAGE_READ':
+          if (messageId && channelId) {
+            markMessageAsRead(messageId, channelId);
+          }
+          break;
+          
+        case 'GET_AUTH_TOKEN':
+          // Respond with auth token for service worker
+          if (event.ports && event.ports[0]) {
+            const token = localStorage.getItem('supabase.auth.token');
+            event.ports[0].postMessage({ token });
+          }
+          break;
+      }
+    };
+
+    navigator.serviceWorker?.addEventListener('message', handleServiceWorkerMessage);
+    
+    return () => {
+      navigator.serviceWorker?.removeEventListener('message', handleServiceWorkerMessage);
+    };
+  }, []);
+
+  const markMessageAsRead = useCallback(async (messageId: string, channelId: string) => {
+    if (!user?.id) return;
+
+    try {
+      // Get current message to update read_by field
+      const { data: message, error: fetchError } = await supabase
+        .from('chat_messages')
+        .select('read_by')
+        .eq('id', messageId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching message:', fetchError);
+        return;
+      }
+
+      // Update read_by field to include current user
+      const currentReadBy = (message?.read_by as Record<string, boolean>) || {};
+      const updatedReadBy = {
+        ...currentReadBy,
+        [user.id]: true
+      };
+
+      const { error } = await supabase
+        .from('chat_messages')
+        .update({
+          read_by: updatedReadBy
+        })
+        .eq('id', messageId);
+
+      if (error) {
+        console.error('Error marking message as read:', error);
+      }
+    } catch (error) {
+      console.error('Error marking message as read:', error);
+    }
+  }, [user?.id]);
+
+  const sendPushNotification = useCallback(async (payload: NotificationPayload) => {
+    if (!user?.id) return;
+
+    try {
+      const { error } = await supabase.functions.invoke('notification-processor', {
+        body: {
+          type: 'push_notification',
+          payload,
+          user_id: user.id
+        }
       });
 
       if (error) {
-        throw error;
+        console.error('Error sending push notification:', error);
+        return false;
       }
 
-      console.log('Notification sent successfully:', data);
-      return data;
-    } catch (error: any) {
-      console.error('Failed to send notification:', error);
-      toast({
-        title: "Notificatie fout",
-        description: "Kon notificatie niet verzenden",
-        variant: "destructive",
-      });
-      throw error;
+      return true;
+    } catch (error) {
+      console.error('Error sending push notification:', error);
+      return false;
     }
-  }, [toast]);
+  }, [user?.id]);
 
-  // Helper methods for common notification types
-  const notifyProjectStatusChange = useCallback(async (
-    userId: string,
-    projectTitle: string,
-    newStatus: string,
-    customerName: string,
-    recipientEmail?: string
-  ) => {
-    return sendNotification({
-      userId,
-      templateName: 'project_status_change',
-      variables: {
-        project_title: projectTitle,
-        new_status: newStatus,
-        customer_name: customerName,
-        reference_type: 'project'
-      },
-      recipientEmail
-    });
-  }, [sendNotification]);
-
-  const notifyProjectAssignment = useCallback(async (
-    userId: string,
-    projectTitle: string,
-    customerName: string,
-    dueDate?: string,
-    recipientEmail?: string
-  ) => {
-    return sendNotification({
-      userId,
-      templateName: 'new_project_assigned',
-      variables: {
-        project_title: projectTitle,
-        customer_name: customerName,
-        due_date: dueDate,
-        reference_type: 'project'
-      },
-      recipientEmail
-    });
-  }, [sendNotification]);
-
-  const notifyQuoteApproval = useCallback(async (
-    userId: string,
-    quoteNumber: string,
-    projectTitle: string,
-    customerName: string,
-    totalAmount: number,
-    recipientEmail?: string
-  ) => {
-    return sendNotification({
-      userId,
-      templateName: 'quote_approved',
-      variables: {
-        quote_number: quoteNumber,
-        project_title: projectTitle,
-        customer_name: customerName,
-        total_amount: new Intl.NumberFormat('nl-NL', {
-          style: 'currency',
-          currency: 'EUR'
-        }).format(totalAmount),
-        reference_type: 'quote'
-      },
-      recipientEmail
-    });
-  }, [sendNotification]);
-
-  const notifyNewChatMessage = useCallback(async (
-    userIds: string[],
+  const triggerChatNotification = useCallback(async (
+    channelId: string,
+    message: string,
     senderName: string,
-    projectTitle: string,
-    messagePreview: string
+    messageId: string
   ) => {
-    const notifications = userIds.map(userId => 
-      sendNotification({
-        userId,
-        templateName: 'new_chat_message',
-        variables: {
-          sender_name: senderName,
-          project_title: projectTitle,
-          message_preview: messagePreview,
-          reference_type: 'chat'
-        }
-      })
-    );
+    return sendPushNotification({
+      type: 'chat_message',
+      title: `Nieuw bericht van ${senderName}`,
+      body: message,
+      sender_name: senderName,
+      channel_id: channelId,
+      message_id: messageId,
+      data: {
+        url: `/chat?channel=${channelId}`,
+        type: 'chat_message',
+        channel_id: channelId,
+        message_id: messageId
+      }
+    });
+  }, [sendPushNotification]);
 
-    return Promise.all(notifications);
-  }, [sendNotification]);
-
-  const notifySystemMaintenance = useCallback(async (
-    userIds: string[],
-    maintenanceDate: string,
-    duration: string
+  const triggerProjectNotification = useCallback(async (
+    projectId: string,
+    title: string,
+    message: string
   ) => {
-    const notifications = userIds.map(userId => 
-      sendNotification({
-        userId,
-        templateName: 'system_maintenance',
-        variables: {
-          maintenance_date: maintenanceDate,
-          duration: duration,
-          reference_type: 'system'
-        }
-      })
-    );
+    return sendPushNotification({
+      type: 'project_update',
+      title,
+      body: message,
+      project_id: projectId,
+      data: {
+        url: `/projects/${projectId}`,
+        type: 'project_update',
+        project_id: projectId
+      }
+    });
+  }, [sendPushNotification]);
 
-    return Promise.all(notifications);
-  }, [sendNotification]);
-
-  // Browser push notification (if permission granted)
   const requestNotificationPermission = useCallback(async () => {
     if (!('Notification' in window)) {
-      console.log('This browser does not support notifications');
+      toast({
+        title: "Notificaties niet ondersteund",
+        description: "Je browser ondersteunt geen notificaties",
+        variant: "destructive"
+      });
       return false;
     }
 
@@ -159,49 +171,36 @@ export const useNotificationService = () => {
     }
 
     if (Notification.permission === 'denied') {
+      toast({
+        title: "Notificaties geblokkeerd",
+        description: "Notificaties zijn uitgeschakeld in je browser instellingen",
+        variant: "destructive"
+      });
       return false;
     }
 
     const permission = await Notification.requestPermission();
-    return permission === 'granted';
-  }, []);
-
-  const showBrowserNotification = useCallback(async (
-    title: string,
-    message: string,
-    icon?: string
-  ) => {
-    const hasPermission = await requestNotificationPermission();
     
-    if (!hasPermission) {
-      console.log('Notification permission not granted');
-      return;
+    if (permission === 'granted') {
+      toast({
+        title: "Notificaties ingeschakeld",
+        description: "Je ontvangt nu meldingen voor nieuwe berichten",
+      });
+      return true;
+    } else {
+      toast({
+        title: "Notificaties geweigerd",
+        description: "Je ontvangt geen meldingen voor nieuwe berichten",
+        variant: "destructive"
+      });
+      return false;
     }
-
-    const notification = new Notification(title, {
-      body: message,
-      icon: icon || '/favicon.ico',
-      badge: '/favicon.ico',
-      tag: 'app-notification',
-      requireInteraction: true
-    });
-
-    // Auto close after 5 seconds
-    setTimeout(() => {
-      notification.close();
-    }, 5000);
-
-    return notification;
-  }, [requestNotificationPermission]);
+  }, [toast]);
 
   return {
-    sendNotification,
-    notifyProjectStatusChange,
-    notifyProjectAssignment,
-    notifyQuoteApproval,
-    notifyNewChatMessage,
-    notifySystemMaintenance,
+    triggerChatNotification,
+    triggerProjectNotification,
     requestNotificationPermission,
-    showBrowserNotification
+    markMessageAsRead
   };
 };
