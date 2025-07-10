@@ -25,7 +25,7 @@ import { ShieldAlert } from "lucide-react";
 import { MobileDashboard } from "@/components/mobile/MobileDashboard";
 import { MobileBottomNavigation } from "@/components/mobile/MobileBottomNavigation";
 import { MobileHeader } from "@/components/mobile/MobileHeader";
-import { FloatingChat } from "@/components/FloatingChat";
+import { ChatWidget } from "@/components/ChatWidget";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 
@@ -172,7 +172,7 @@ const Index = () => {
           {renderContent()}
         </div>
         <MobileBottomNavigation activeTab={activeTab} onTabChange={handleSetActiveTab} />
-        <FloatingChat />
+        <ChatWidget />
       </div>
     );
   }
@@ -180,7 +180,7 @@ const Index = () => {
   return (
     <AppSidebar activeTab={activeTab} setActiveTab={handleSetActiveTab}>
       {renderContent()}
-      <FloatingChat />
+      <ChatWidget />
     </AppSidebar>
   );
 };
