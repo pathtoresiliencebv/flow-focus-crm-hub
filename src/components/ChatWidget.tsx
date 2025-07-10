@@ -1,19 +1,19 @@
 
 import { useState, useEffect } from "react";
-import { MessageCircle, X, Maximize2, Minimize2 } from "lucide-react";
+import { MessageCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SimpleChatWindow } from "./SimpleChatWindow";
 import { cn } from "@/lib/utils";
-import { useChat } from "@/hooks/useChat";
+import { useDirectChat } from "@/hooks/useDirectChat";
 import { useAuth } from "@/hooks/useAuth";
 
 export const ChatWidget = () => {
   const { user } = useAuth();
-  const { channels } = useChat();
+  const { availableUsers } = useDirectChat();
   const [isOpen, setIsOpen] = useState(false);
   
-  // Calculate total unread count across all channels
-  const unreadCount = channels.reduce((total, channel) => total + (channel.unread_count || 0), 0);
+  // For now, no unread count - we'll implement this later if needed
+  const unreadCount = 0;
   
   // Don't show if user is not authenticated
   if (!user) return null;
