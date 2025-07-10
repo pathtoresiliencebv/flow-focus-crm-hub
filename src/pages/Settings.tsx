@@ -4,9 +4,10 @@ import { QuoteSettingsForm } from '@/components/QuoteSettingsForm';
 import { InvoiceSettingsForm } from '@/components/InvoiceSettingsForm';
 import { EmailTemplateManager } from '@/components/EmailTemplateManager';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, FileText, CreditCard, Mail, MessageSquareText } from "lucide-react";
+import { Settings as SettingsIcon, FileText, CreditCard, Mail, MessageSquareText, Bell } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmailSettings } from '@/components/EmailSettings';
+import { NotificationTester } from '@/components/NotificationTester';
 
 export default function Settings() {
   return (
@@ -20,7 +21,7 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="quotes" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="quotes" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Offerte Instellingen
@@ -36,6 +37,10 @@ export default function Settings() {
           <TabsTrigger value="templates" className="flex items-center gap-2">
             <MessageSquareText className="h-4 w-4" />
             Email Templates
+          </TabsTrigger>
+          <TabsTrigger value="notifications" className="flex items-center gap-2">
+            <Bell className="h-4 w-4" />
+            Notificaties
           </TabsTrigger>
         </TabsList>
 
@@ -53,6 +58,20 @@ export default function Settings() {
 
         <TabsContent value="templates" className="space-y-6">
           <EmailTemplateManager />
+        </TabsContent>
+
+        <TabsContent value="notifications" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Notificatie Systeem Tester</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Test het enterprise notificatie systeem met push notificaties, real-time updates en meer.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <NotificationTester />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
