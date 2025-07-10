@@ -18,6 +18,7 @@ import { MobileChatChannelList } from "./MobileChatChannelList";
 import { MobileChatMessages } from "./MobileChatMessages";
 import { MobileChatInput } from "./MobileChatInput";
 import { MobileLanguageSettings } from "./MobileLanguageSettings";
+import { BackgroundSyncIndicator } from "./BackgroundSyncIndicator";
 import { NetworkIndicator } from "./NetworkIndicator";
 import { MobileDownloadProgress } from "./MobileDownloadProgress";
 import { MobileFileOrganizer } from "./MobileFileOrganizer";

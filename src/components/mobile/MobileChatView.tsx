@@ -18,6 +18,7 @@ import {
 import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { BackgroundSyncIndicator } from "./BackgroundSyncIndicator";
 import { useOfflineChat } from "@/hooks/useOfflineChat";
 import { useVoiceToText } from "@/hooks/useVoiceToText";
 import { useEnhancedCamera } from "@/hooks/useEnhancedCamera";
