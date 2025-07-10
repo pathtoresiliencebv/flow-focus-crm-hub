@@ -10,10 +10,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguageDetection } from "@/hooks/useLanguageDetection";
 import { useChatFileUpload } from "@/hooks/useChatFileUpload";
 import { useNativeCapabilities } from "@/hooks/useNativeCapabilities";
+import { useNetworkAware } from "@/hooks/useNetworkAware";
 import { MobileChatChannelList } from "./MobileChatChannelList";
 import { MobileChatMessages } from "./MobileChatMessages";
 import { MobileChatInput } from "./MobileChatInput";
 import { MobileLanguageSettings } from "./MobileLanguageSettings";
+import { NetworkIndicator } from "./NetworkIndicator";
 
 interface MobileEnhancedChatViewProps {
   onBack: () => void;
@@ -25,6 +27,12 @@ export const MobileEnhancedChatView: React.FC<MobileEnhancedChatViewProps> = ({ 
   const { userLanguage, supportedLanguages, updateUserLanguage } = useLanguageDetection();
   const { uploadFile } = useChatFileUpload();
   const { isNativeApp, takePicture, hapticFeedback } = useNativeCapabilities();
+  const { 
+    networkQuality, 
+    adaptiveSettings, 
+    addToQueue, 
+    downloadFile 
+  } = useNetworkAware();
   
   const {
     channels,
@@ -74,6 +82,35 @@ export const MobileEnhancedChatView: React.FC<MobileEnhancedChatViewProps> = ({ 
 
     try {
       const file = files[0];
+      
+      // Check network quality and adapt behavior
+      if (networkQuality === 'offline') {
+        // Queue for later upload
+        addToQueue({
+          type: 'file_upload',
+          priority: 'high',
+          payload: {
+            file,
+            userId: user.id,
+            channelId: selectedChannelId
+          },
+          maxRetries: 3
+        });
+        
+        toast({
+          title: "Upload Queued",
+          description: "File will be uploaded when connection is restored",
+          variant: "default"
+        });
+        return;
+      }
+      
+      // Compress image based on network quality
+      let quality = adaptiveSettings.imageQuality;
+      if (file.type.startsWith('image/') && networkQuality === 'poor') {
+        quality = Math.min(quality, 60);
+      }
+      
       const uploadResult = await uploadFile(file, user.id);
       
       await handleSendMessage(
@@ -93,13 +130,30 @@ export const MobileEnhancedChatView: React.FC<MobileEnhancedChatViewProps> = ({ 
       }
     } catch (error) {
       console.error('File upload error:', error);
+      
+      // Queue failed uploads for retry
+      if (networkQuality !== 'offline') {
+        addToQueue({
+          type: 'file_upload',
+          priority: 'medium',
+          payload: {
+            file: files[0],
+            userId: user?.id,
+            channelId: selectedChannelId
+          },
+          maxRetries: 2
+        });
+      }
+      
       toast({
         title: "Upload Fout",
-        description: "Kon bestand niet uploaden",
+        description: networkQuality === 'poor' ? 
+          "Upload queued for retry when connection improves" :
+          "Kon bestand niet uploaden",
         variant: "destructive"
       });
     }
-  }, [user?.id, selectedChannelId, uploadFile, handleSendMessage, toast, isNativeApp, hapticFeedback]);
+  }, [user?.id, selectedChannelId, uploadFile, handleSendMessage, toast, isNativeApp, hapticFeedback, networkQuality, adaptiveSettings, addToQueue]);
 
   const handleCameraCapture = useCallback(async () => {
     if (!isNativeApp) {
@@ -170,10 +224,13 @@ export const MobileEnhancedChatView: React.FC<MobileEnhancedChatViewProps> = ({ 
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <h1 className="text-lg font-semibold">Enhanced Chat</h1>
-            <Badge variant="secondary" className="text-xs">
-              <Globe className="h-3 w-3 mr-1" />
-              {supportedLanguages.find(l => l.code === userLanguage)?.name}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-xs">
+                <Globe className="h-3 w-3 mr-1" />
+                {supportedLanguages.find(l => l.code === userLanguage)?.name}
+              </Badge>
+              <NetworkIndicator />
+            </div>
           </div>
           <Button 
             variant="ghost" 
@@ -220,10 +277,13 @@ export const MobileEnhancedChatView: React.FC<MobileEnhancedChatViewProps> = ({ 
             )}
           </div>
         </div>
-        <Badge variant="secondary" className="text-xs">
-          <Globe className="h-3 w-3 mr-1" />
-          {supportedLanguages.find(l => l.code === userLanguage)?.name}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="text-xs">
+            <Globe className="h-3 w-3 mr-1" />
+            {supportedLanguages.find(l => l.code === userLanguage)?.name}
+          </Badge>
+          <NetworkIndicator />
+        </div>
       </div>
 
       {/* Messages */}
