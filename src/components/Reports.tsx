@@ -6,7 +6,6 @@ import { ReportsHeader } from '@/components/reports/ReportsHeader';
 import { SalesReports } from '@/components/reports/SalesReports';
 import { ProjectReports } from '@/components/reports/ProjectReports';
 import { FinancialReports } from '@/components/reports/FinancialReports';
-import { InventoryReports } from '@/components/reports/InventoryReports';
 
 export const Reports = () => {
   const [period, setPeriod] = useState('month');
@@ -32,7 +31,6 @@ export const Reports = () => {
           <TabsTrigger value="sales" className="text-xs sm:text-sm">Verkoopcijfers</TabsTrigger>
           <TabsTrigger value="projects" className="text-xs sm:text-sm">Projectoverzicht</TabsTrigger>
           <TabsTrigger value="finance" className="text-xs sm:text-sm">Financiële resultaten</TabsTrigger>
-          <TabsTrigger value="inventory" className="text-xs sm:text-sm">Voorraadanalyse</TabsTrigger>
         </TabsList>
 
         <TabsContent value="sales">
@@ -45,10 +43,6 @@ export const Reports = () => {
 
         <TabsContent value="finance">
           <FinancialReports period={period} />
-        </TabsContent>
-
-        <TabsContent value="inventory">
-          <InventoryReports />
         </TabsContent>
       </Tabs>
     </div>

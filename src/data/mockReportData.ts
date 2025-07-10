@@ -40,12 +40,3 @@ export const financialData = [
   { name: 'Jun', revenue: 8800, costs: 5900, profit: 2900 },
 ];
 
-export const inventoryData = [
-  { name: 'Kunststof kozijnen', current: 45, minimum: 20 },
-  { name: 'Aluminium kozijnen', current: 32, minimum: 15 },
-  { name: 'Houten kozijnen', current: 28, minimum: 10 },
-  { name: 'Triple glas', current: 55, minimum: 25 },
-  { name: 'Dubbel glas', current: 78, minimum: 30 },
-  { name: 'Vensterbanken', current: 62, minimum: 20 },
-  { name: 'Afstandhouders', current: 42, minimum: 40 },
-];
