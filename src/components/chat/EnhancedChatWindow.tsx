@@ -22,10 +22,12 @@ import { CameraCapture } from "./CameraCapture";
 import { VoiceRecorder } from "./VoiceRecorder";
 
 interface EnhancedChatWindowProps {
-  onClose: () => void;
+  onClose?: () => void;
+  isFullscreen?: boolean;
+  className?: string;
 }
 
-export const EnhancedChatWindow = ({ onClose }: EnhancedChatWindowProps) => {
+export const EnhancedChatWindow = ({ onClose, isFullscreen = false, className = "" }: EnhancedChatWindowProps) => {
   const { user, profile } = useAuth();
   const { users } = useUsers();
   const { toast } = useToast();
@@ -255,11 +257,11 @@ export const EnhancedChatWindow = ({ onClose }: EnhancedChatWindowProps) => {
 
   return (
     <>
-      <Card className="w-full h-full shadow-xl">
+      <Card className={`${isFullscreen ? 'w-full h-screen' : 'w-full h-full'} shadow-xl ${className}`}>
         {/* Header */}
         <CardHeader className="p-4 border-b flex flex-row items-center justify-between">
           <div className="flex items-center gap-3">
-            <h3 className="font-semibold">Enhanced Team Chat</h3>
+            <h3 className="font-semibold">{isFullscreen ? 'Team Chat' : 'Enhanced Team Chat'}</h3>
             {selectedChannel && (
               <Badge variant="default">
                 {selectedChannel.name}
@@ -358,15 +360,18 @@ export const EnhancedChatWindow = ({ onClose }: EnhancedChatWindowProps) => {
               </DialogContent>
             </Dialog>
             
-            <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="h-4 w-4" />
-            </Button>
+            {/* Only show close button if onClose is provided */}
+            {onClose && (
+              <Button variant="ghost" size="sm" onClick={onClose}>
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </CardHeader>
 
         <CardContent className="p-0 flex h-[calc(100%-80px)]">
-          {/* Channel List */}
-          <div className="w-1/3 border-r">
+          {/* Channel List - responsive width */}
+          <div className={`${isFullscreen ? 'w-1/4 min-w-64' : 'w-1/3'} border-r`}>
             <ScrollArea className="h-full">
               <div className="p-2">
                 {channels.map((channel) => (
@@ -410,7 +415,7 @@ export const EnhancedChatWindow = ({ onClose }: EnhancedChatWindowProps) => {
           >
             {selectedChannelId ? (
               <>
-                {/* Messages */}
+                {/* Messages - better sizing for fullscreen */}
                 <ScrollArea className="flex-1 p-4">
                   <div className="space-y-4">
                     {messages.map((message) => (
@@ -423,7 +428,7 @@ export const EnhancedChatWindow = ({ onClose }: EnhancedChatWindowProps) => {
                           </Avatar>
                         )}
                         
-                        <div className={`flex flex-col ${message.sender_id === user?.id ? "items-end" : "items-start"} max-w-xs`}>
+                        <div className={`flex flex-col ${message.sender_id === user?.id ? "items-end" : "items-start"} ${isFullscreen ? 'max-w-lg' : 'max-w-xs'}`}>
                           {message.sender_id !== user?.id && (
                             <div className="flex items-center gap-2 mb-1">
                               <p className="text-xs font-medium text-muted-foreground">
@@ -449,7 +454,7 @@ export const EnhancedChatWindow = ({ onClose }: EnhancedChatWindowProps) => {
                                   <img 
                                     src={(message as any).thumbnail_url || message.file_url} 
                                     alt={message.file_name || 'Image'}
-                                    className="max-w-xs rounded cursor-pointer"
+                                    className={`${isFullscreen ? 'max-w-md' : 'max-w-xs'} rounded cursor-pointer`}
                                     onClick={() => window.open(message.file_url!, '_blank')}
                                   />
                                 ) : (

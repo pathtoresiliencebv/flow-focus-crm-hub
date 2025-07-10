@@ -127,7 +127,7 @@ const Index = () => {
       case "chat":
         return isMobile ? 
           <MobileEnhancedChatView onBack={() => setActiveTab("dashboard")} /> :
-          <EnhancedChatWindow onClose={() => {}} />;
+          <EnhancedChatWindow isFullscreen={true} />;
       case "personnel":
         return <Personnel />;
       case "users":
