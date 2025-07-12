@@ -1,20 +1,13 @@
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { MessageCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EnhancedChatWindow } from "./chat/EnhancedChatWindow";
 import { cn } from "@/lib/utils";
-import { useEnhancedChat } from "@/hooks/useEnhancedChat";
 import { useAuth } from "@/hooks/useAuth";
 
 export const ChatWidget = () => {
   const { user } = useAuth();
-  const { totalUnreadCount } = useEnhancedChat({
-    enableRealtime: true,
-    enableDirectMessages: true,
-    enableChannels: true,
-    autoLoadMessages: false
-  });
+  const totalUnreadCount = 0; // Temporary for debugging
   const [isOpen, setIsOpen] = useState(false);
   
   // Don't show if user is not authenticated

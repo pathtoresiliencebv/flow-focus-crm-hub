@@ -6,16 +6,23 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { CheckCircle, XCircle, Clock, Activity } from 'lucide-react';
-import { useChatIntegrationTest } from '@/hooks/useChatIntegrationTest';
+// import { useChatIntegrationTest } from '@/hooks/useChatIntegrationTest';
 
 export const ChatTestingPanel = () => {
-  const {
-    testSuite,
-    runIntegrationTests,
-    getPerformanceMetrics,
-    resetTests,
-    isTestingSupported
-  } = useChatIntegrationTest();
+  // const {
+  //   testSuite,
+  //   runIntegrationTests,
+  //   getPerformanceMetrics,
+  //   resetTests,
+  //   isTestingSupported
+  // } = useChatIntegrationTest();
+  
+  // Temporary dummy data for debugging
+  const testSuite = { isRunning: false, results: [], overallScore: 0, totalTests: 0, passedTests: 0 };
+  const runIntegrationTests = () => {};
+  const getPerformanceMetrics = () => ({ storeSize: { channels: 0, availableUsers: 0, totalMessages: 0, subscriptions: 0 }, memory: { unreadCounts: 0, typingUsers: 0 }, realtime: { connected: false, features: 0 } });
+  const resetTests = () => {};
+  const isTestingSupported = false;
 
   const [showDetails, setShowDetails] = useState(false);
 
