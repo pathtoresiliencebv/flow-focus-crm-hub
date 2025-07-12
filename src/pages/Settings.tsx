@@ -4,10 +4,11 @@ import { QuoteSettingsForm } from '@/components/QuoteSettingsForm';
 import { InvoiceSettingsForm } from '@/components/InvoiceSettingsForm';
 import { EmailTemplateManager } from '@/components/EmailTemplateManager';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, FileText, CreditCard, Mail, MessageSquareText, Bell } from "lucide-react";
+import { Settings as SettingsIcon, FileText, CreditCard, Mail, MessageSquareText, Bell, Activity } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmailSettings } from '@/components/EmailSettings';
 import { NotificationTester } from '@/components/NotificationTester';
+import { ChatTestingPanel } from '@/components/chat/ChatTestingPanel';
 
 export default function Settings() {
   return (
@@ -21,7 +22,7 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="quotes" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="quotes" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Offerte Instellingen
@@ -41,6 +42,10 @@ export default function Settings() {
           <TabsTrigger value="notifications" className="flex items-center gap-2">
             <Bell className="h-4 w-4" />
             Notificaties
+          </TabsTrigger>
+          <TabsTrigger value="chat-testing" className="flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            Chat Testing
           </TabsTrigger>
         </TabsList>
 
@@ -72,6 +77,10 @@ export default function Settings() {
               <NotificationTester />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="chat-testing" className="space-y-6">
+          <ChatTestingPanel />
         </TabsContent>
       </Tabs>
     </div>
