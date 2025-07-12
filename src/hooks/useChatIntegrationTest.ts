@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useEnhancedChat } from './useEnhancedChat';
 import { useAuth } from './useAuth';
-import { useToast } from './use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useChatStore } from './useChatStore';
 
 interface TestResult {
