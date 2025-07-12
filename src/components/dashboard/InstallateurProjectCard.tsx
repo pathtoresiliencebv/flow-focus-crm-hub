@@ -107,10 +107,6 @@ export const InstallateurProjectCard = ({ project, onProjectClick }: Installateu
             <Progress value={completionPercentage} className="h-2" />
           </div>
 
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-muted-foreground">Waarde</span>
-            <span className="font-medium">€{project.value?.toLocaleString('nl-NL') || '0'}</span>
-          </div>
 
           {/* Action Buttons */}
           <div className="pt-2 border-t space-y-2">

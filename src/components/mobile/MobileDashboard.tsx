@@ -160,8 +160,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
             </div>
           )}
 
-          <div className="flex justify-between items-center text-xs">
-            <span className="text-muted-foreground">€{project.value}</span>
+          <div className="flex justify-center items-center text-xs">
             <span className="text-muted-foreground">{project.date}</span>
           </div>
 

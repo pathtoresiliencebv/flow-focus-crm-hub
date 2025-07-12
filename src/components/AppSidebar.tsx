@@ -110,7 +110,13 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
     }
   ];
 
-  const links = allLinks.filter(link => link.permission === null || hasPermission(link.permission as Permission));
+  const links = allLinks.filter(link => {
+    // Hide Reports completely for Installateurs
+    if (link.key === "reports" && profile?.role === 'Installateur') {
+      return false;
+    }
+    return link.permission === null || hasPermission(link.permission as Permission);
+  });
 
   return (
     <Sidebar 

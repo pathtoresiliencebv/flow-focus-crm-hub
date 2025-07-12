@@ -6,10 +6,29 @@ import { ReportsHeader } from '@/components/reports/ReportsHeader';
 import { SalesReports } from '@/components/reports/SalesReports';
 import { ProjectReports } from '@/components/reports/ProjectReports';
 import { FinancialReports } from '@/components/reports/FinancialReports';
+import { useAuth } from '@/hooks/useAuth';
+import { Card, CardContent } from "@/components/ui/card";
 
 export const Reports = () => {
   const [period, setPeriod] = useState('month');
   const { toast } = useToast();
+  const { profile } = useAuth();
+  
+  // Block access for Installateurs
+  if (profile?.role === 'Installateur') {
+    return (
+      <div className="p-4 sm:p-6">
+        <Card>
+          <CardContent className="text-center py-8">
+            <h2 className="text-xl font-semibold mb-2">Geen toegang</h2>
+            <p className="text-muted-foreground">
+              U heeft geen toegang tot rapportages.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   
   const handleDownload = () => {
     toast({

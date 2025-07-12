@@ -28,7 +28,7 @@ export const Dashboard = () => {
   // Calculate statistics
   const totalCustomers = customers.length;
   const activeProjects = filteredProjects.filter(p => p.status !== "afgerond").length;
-  const totalRevenue = filteredProjects.reduce((sum, project) => sum + (project.value || 0), 0);
+  const totalRevenue = profile?.role === 'Installateur' ? 0 : filteredProjects.reduce((sum, project) => sum + (project.value || 0), 0);
   const completedProjects = filteredProjects.filter(p => p.status === "afgerond").length;
 
   // Get upcoming planning items (next 7 days) from database
@@ -100,6 +100,7 @@ export const Dashboard = () => {
           activeProjects={activeProjects}
           totalRevenue={totalRevenue}
           completedProjects={completedProjects}
+          userRole={profile?.role}
         />
 
         {/* Main Content Area - Mobile optimized */}

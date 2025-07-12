@@ -250,16 +250,18 @@ const ProjectDetail = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor="edit-value" className="text-xs font-medium">Waarde (€)</Label>
-                  <Input
-                    id="edit-value"
-                    type="number"
-                    value={editData.value}
-                    onChange={(e) => handleInputChange("value", e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
+                {profile?.role !== 'Installateur' && (
+                  <div>
+                    <Label htmlFor="edit-value" className="text-xs font-medium">Waarde (€)</Label>
+                    <Input
+                      id="edit-value"
+                      type="number"
+                      value={editData.value}
+                      onChange={(e) => handleInputChange("value", e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                )}
                 <div>
                   <Label htmlFor="edit-assigned-user" className="text-xs font-medium">Toegewezen monteur</Label>
                   <Select value={editData.assignedUserId} onValueChange={(value) => handleInputChange("assignedUserId", value)}>
@@ -295,7 +297,9 @@ const ProjectDetail = () => {
                   project.status === "afgerond" ? "Afgerond" :
                   "Onbekend"
                 }</p>
-                <p className="text-sm"><span className="font-medium">Waarde:</span> €{project.value}</p>
+                {profile?.role !== 'Installateur' && (
+                  <p className="text-sm"><span className="font-medium">Waarde:</span> €{project.value}</p>
+                )}
                 <p className="text-sm"><span className="font-medium">Monteur:</span> {
                   assignedMonteur ? (assignedMonteur.full_name || assignedMonteur.email) : "Niet toegewezen"
                 }</p>
