@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Dashboard } from "@/components/Dashboard";
 import { Customers } from "@/components/Customers";
