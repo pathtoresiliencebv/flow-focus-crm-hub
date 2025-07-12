@@ -4,16 +4,18 @@ import { MessageCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EnhancedChatWindow } from "./chat/EnhancedChatWindow";
 import { cn } from "@/lib/utils";
-import { useDirectChat } from "@/hooks/useDirectChat";
+import { useEnhancedChat } from "@/hooks/useEnhancedChat";
 import { useAuth } from "@/hooks/useAuth";
 
 export const ChatWidget = () => {
   const { user } = useAuth();
-  const { availableUsers } = useDirectChat();
+  const { totalUnreadCount } = useEnhancedChat({
+    enableRealtime: true,
+    enableDirectMessages: true,
+    enableChannels: true,
+    autoLoadMessages: false
+  });
   const [isOpen, setIsOpen] = useState(false);
-  
-  // For now, no unread count - we'll implement this later if needed
-  const unreadCount = 0;
   
   // Don't show if user is not authenticated
   if (!user) return null;
@@ -43,9 +45,9 @@ export const ChatWidget = () => {
           ) : (
             <>
               <MessageCircle className="h-6 w-6 text-primary-foreground" />
-              {unreadCount > 0 && (
+              {totalUnreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
-                  {unreadCount > 99 ? '99+' : unreadCount}
+                  {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
                 </span>
               )}
             </>
