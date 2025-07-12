@@ -8,7 +8,7 @@ import { Settings as SettingsIcon, FileText, CreditCard, Mail, MessageSquareText
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmailSettings } from '@/components/EmailSettings';
 import { NotificationTester } from '@/components/NotificationTester';
-import { ChatTestingPanel } from '@/components/chat/ChatTestingPanel';
+// import { ChatTestingPanel } from '@/components/chat/ChatTestingPanel';
 
 export default function Settings() {
   return (
@@ -80,7 +80,7 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="chat-testing" className="space-y-6">
-          <ChatTestingPanel />
+          <div>Chat Testing Panel tijdelijk uitgeschakeld voor debugging</div>
         </TabsContent>
       </Tabs>
     </div>
