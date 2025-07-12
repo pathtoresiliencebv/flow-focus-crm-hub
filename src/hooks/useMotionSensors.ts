@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Motion } from '@capacitor/motion';
-import { useToast } from './use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useAuditLogger } from './useAuditLogger';
 
 interface MotionData {

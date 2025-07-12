@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useChatStore } from './useChatStore';
 import { useNetworkAware } from './useNetworkAware';
-import { useToast } from './use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface OptimizationConfig {
   enableMessageBatching?: boolean;

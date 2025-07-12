@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { App, AppState } from '@capacitor/app';
 import { Device } from '@capacitor/device';
 import { useAuth } from './useAuth';
-import { useToast } from './use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useOfflineChat } from './useOfflineChat';
 import { useNetworkAware } from './useNetworkAware';
 

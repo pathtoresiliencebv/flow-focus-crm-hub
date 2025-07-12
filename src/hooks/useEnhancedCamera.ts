@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { Camera, CameraResultType, CameraSource, CameraDirection } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
 import { Device } from '@capacitor/device';
-import { useToast } from './use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useNativeCapabilities } from './useNativeCapabilities';
 
 export interface CameraOptions {

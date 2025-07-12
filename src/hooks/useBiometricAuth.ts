@@ -3,7 +3,7 @@ import { Preferences } from '@capacitor/preferences';
 import { Device } from '@capacitor/device';
 import { useNativeCapabilities } from './useNativeCapabilities';
 import { useSecurityService } from './useSecurityService';
-import { useToast } from './use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 export interface BiometricCapabilities {
   isAvailable: boolean;

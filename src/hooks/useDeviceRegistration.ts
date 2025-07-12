@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Device } from '@capacitor/device';
 import { Preferences } from '@capacitor/preferences';
 import { useSecurityService } from './useSecurityService';
-import { useToast } from './use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 export interface DeviceInfo {
   id: string;

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Preferences } from '@capacitor/preferences';
 import { useNativeCapabilities } from './useNativeCapabilities';
 import { encryptionService } from '@/services/encryptionService';
-import { useToast } from './use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface SecurityConfig {
   encryptionEnabled: boolean;

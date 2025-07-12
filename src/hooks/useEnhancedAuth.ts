@@ -4,7 +4,7 @@ import { useBiometricAuth } from './useBiometricAuth';
 import { useDeviceRegistration } from './useDeviceRegistration';
 import { useMultiFactorAuth } from './useMultiFactorAuth';
 import { useSecurityService } from './useSecurityService';
-import { useToast } from './use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 export interface EnhancedAuthState {
   isAuthenticated: boolean;

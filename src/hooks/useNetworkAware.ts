@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNativeCapabilities } from './useNativeCapabilities';
-import { useToast } from './use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 export type NetworkQuality = 'excellent' | 'good' | 'poor' | 'offline';
 export type SyncPriority = 'high' | 'medium' | 'low';

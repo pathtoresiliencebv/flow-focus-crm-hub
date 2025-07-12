@@ -5,7 +5,7 @@ import { Network, ConnectionStatus } from '@capacitor/network';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Preferences } from '@capacitor/preferences';
 import { Capacitor } from '@capacitor/core';
-import { useToast } from './use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 export const useNativeCapabilities = () => {
   const { toast } = useToast();

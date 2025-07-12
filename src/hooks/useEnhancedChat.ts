@@ -1,6 +1,6 @@
 import { useCallback, useEffect } from 'react';
 import { useAuth } from './useAuth';
-import { useToast } from './use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useChat } from './useChat';
 import { useDirectChat } from './useDirectChat';
 import { useRealtimeChat } from './useRealtimeChat';

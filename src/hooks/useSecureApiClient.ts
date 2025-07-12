@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSecurityService } from './useSecurityService';
 import { useNetworkAware } from './useNetworkAware';
-import { useToast } from './use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface ApiRequestConfig {
   retries?: number;

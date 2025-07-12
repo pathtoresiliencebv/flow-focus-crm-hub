@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { BarcodeScanner, SupportedFormat } from '@capacitor-community/barcode-scanner';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
-import { useToast } from './use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useAuditLogger } from './useAuditLogger';
 
 interface ScanResult {
