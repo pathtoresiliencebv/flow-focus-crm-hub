@@ -17,6 +17,12 @@ const config: CapacitorConfig = {
     },
     PushNotifications: {
       presentationOptions: ["badge", "sound", "alert"]
+    },
+    LiveUpdates: {
+      appId: 'com.flowfocus.crmhub',
+      channel: 'production',
+      autoUpdateMethod: 'background',
+      maxVersions: 2
     }
   }
 };

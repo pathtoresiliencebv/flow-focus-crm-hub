@@ -1,0 +1,7 @@
+{
+  "name": "Smans CRM",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react"
+}
