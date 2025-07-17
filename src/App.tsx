@@ -18,7 +18,7 @@ function App() {
           <Route path="/customers/:customerId" element={<Index />} />
           <Route path="/projects/:projectId" element={<Index />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/public-quote/:token" element={<PublicQuote />} />
+          <Route path="/quote/:token" element={<PublicQuote />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
