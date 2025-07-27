@@ -9,6 +9,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { X, Send, Paperclip } from 'lucide-react';
 import { EmailTemplateSelector } from './EmailTemplateSelector';
+import { FileUpload, AttachmentList, FileUploadResult } from '@/components/ui/file-upload';
+import { EmailAutocomplete } from '@/components/ui/email-autocomplete';
 
 interface EmailComposeProps {
   onClose: () => void;
@@ -30,6 +32,7 @@ export const EmailCompose: React.FC<EmailComposeProps> = ({ onClose, replyTo }) 
     body: ''
   });
   const [isSending, setIsSending] = useState(false);
+  const [attachments, setAttachments] = useState<FileUploadResult[]>([]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,6 +78,11 @@ export const EmailCompose: React.FC<EmailComposeProps> = ({ onClose, replyTo }) 
           body_html: formData.body.replace(/\n/g, '<br>'),
           email_settings_id: emailSettings.id,
           in_reply_to: replyTo?.inReplyTo || undefined,
+          attachments: attachments.length > 0 ? attachments.map(att => ({
+            filename: att.name,
+            content: att.content,
+            contentType: att.contentType
+          })) : undefined,
         }
       });
 
@@ -104,6 +112,14 @@ export const EmailCompose: React.FC<EmailComposeProps> = ({ onClose, replyTo }) 
     }
   };
 
+  const handleAttachmentsSelected = (files: FileUploadResult[]) => {
+    setAttachments(prev => [...prev, ...files]);
+  };
+
+  const handleRemoveAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader className="flex flex-row items-center justify-between pb-4">
@@ -117,31 +133,27 @@ export const EmailCompose: React.FC<EmailComposeProps> = ({ onClose, replyTo }) 
           <div className="grid grid-cols-1 gap-4">
             <div>
               <label className="text-sm font-medium">Aan</label>
-              <Input
-                type="email"
+              <EmailAutocomplete
                 value={formData.to}
-                onChange={(e) => setFormData({ ...formData, to: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, to: value })}
                 placeholder="ontvanger@voorbeeld.nl"
-                required
               />
             </div>
             
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">CC</label>
-                <Input
-                  type="email"
+                <EmailAutocomplete
                   value={formData.cc}
-                  onChange={(e) => setFormData({ ...formData, cc: e.target.value })}
+                  onChange={(value) => setFormData({ ...formData, cc: value })}
                   placeholder="cc@voorbeeld.nl"
                 />
               </div>
               <div>
                 <label className="text-sm font-medium">BCC</label>
-                <Input
-                  type="email"
+                <EmailAutocomplete
                   value={formData.bcc}
-                  onChange={(e) => setFormData({ ...formData, bcc: e.target.value })}
+                  onChange={(value) => setFormData({ ...formData, bcc: value })}
                   placeholder="bcc@voorbeeld.nl"
                 />
               </div>
@@ -181,11 +193,26 @@ export const EmailCompose: React.FC<EmailComposeProps> = ({ onClose, replyTo }) 
             disabled={isSending}
           />
 
+          {/* File Upload for Attachments */}
+          <div className="space-y-4">
+            <FileUpload
+              onFilesSelected={handleAttachmentsSelected}
+              accept="image/*,.pdf,.doc,.docx,.txt"
+              multiple={true}
+            >
+              <Button type="button" variant="outline" className="w-full">
+                <Paperclip className="h-4 w-4 mr-2" />
+                Bijlage toevoegen
+              </Button>
+            </FileUpload>
+            
+            <AttachmentList 
+              attachments={attachments}
+              onRemove={handleRemoveAttachment}
+            />
+          </div>
+
           <div className="flex justify-between items-center pt-4">
-            <Button type="button" variant="outline">
-              <Paperclip className="h-4 w-4 mr-2" />
-              Bijlage toevoegen
-            </Button>
             
             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={onClose}>

@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   DialogContent,
   DialogHeader,
@@ -28,6 +30,9 @@ const accountSchema = z.object({
   smtp_username: z.string().optional(),
   smtp_password: z.string().optional(),
   is_active: z.boolean().default(true),
+  signature_html: z.string().optional(),
+  signature_text: z.string().optional(),
+  auto_add_signature: z.boolean().default(true),
 });
 
 export type AccountFormData = z.infer<typeof accountSchema>;
@@ -46,6 +51,9 @@ interface EmailAccount {
   smtp_username?: string;
   smtp_password?: string;
   is_active?: boolean;
+  signature_html?: string;
+  signature_text?: string;
+  auto_add_signature?: boolean;
 }
 
 interface EmailAccountFormProps {
@@ -76,6 +84,9 @@ export function EmailAccountForm({ onSubmit, editingAccount, onClose }: EmailAcc
       smtp_username: '',
       smtp_password: '',
       is_active: true,
+      signature_html: '',
+      signature_text: '',
+      auto_add_signature: true,
     });
   }, [editingAccount, form]);
 
@@ -222,6 +233,58 @@ export function EmailAccountForm({ onSubmit, editingAccount, onClose }: EmailAcc
             <Switch id="is_active" checked={form.watch('is_active')} onCheckedChange={(checked) => form.setValue('is_active', checked, { shouldDirty: true })} />
             <Label htmlFor="is_active">Actief</Label>
         </div>
+
+        {/* Email Signature Section */}
+        <div className="space-y-4 border-t pt-4">
+          <h3 className="text-lg font-medium">E-mail Handtekening</h3>
+          
+          <div className="flex items-center space-x-2">
+            <Switch 
+              id="auto_add_signature" 
+              checked={form.watch('auto_add_signature')} 
+              onCheckedChange={(checked) => form.setValue('auto_add_signature', checked, { shouldDirty: true })} 
+            />
+            <Label htmlFor="auto_add_signature">Automatisch toevoegen aan e-mails</Label>
+          </div>
+
+          <Tabs defaultValue="text" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="text">Tekst</TabsTrigger>
+              <TabsTrigger value="html">HTML</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="text" className="space-y-2">
+              <Label htmlFor="signature_text">Handtekening (Platte tekst)</Label>
+              <Textarea
+                id="signature_text"
+                {...form.register('signature_text')}
+                placeholder="Met vriendelijke groet,&#10;&#10;[Uw naam]&#10;[Functie]"
+                rows={4}
+              />
+            </TabsContent>
+            
+            <TabsContent value="html" className="space-y-2">
+              <Label htmlFor="signature_html">Handtekening (HTML)</Label>
+              <Textarea
+                id="signature_html"
+                {...form.register('signature_html')}
+                placeholder="<strong>Met vriendelijke groet,</strong><br><br>[Uw naam]<br>[Functie]"
+                rows={4}
+                className="font-mono text-sm"
+              />
+              {form.watch('signature_html') && (
+                <div className="mt-2 p-2 bg-muted rounded text-sm">
+                  <Label>Voorbeeld:</Label>
+                  <div 
+                    dangerouslySetInnerHTML={{ __html: form.watch('signature_html') || '' }}
+                    className="mt-1 p-2 bg-background rounded border"
+                  />
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
+
         <DialogFooter>
           <Button type="submit">
             Opslaan

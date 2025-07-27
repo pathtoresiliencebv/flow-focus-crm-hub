@@ -406,6 +406,39 @@ export type Database = {
         }
         Relationships: []
       }
+      contacts: {
+        Row: {
+          company: string | null
+          created_at: string
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       conversation_analytics: {
         Row: {
           avg_response_time: unknown | null
@@ -2346,6 +2379,7 @@ export type Database = {
       }
       user_email_settings: {
         Row: {
+          auto_add_signature: boolean | null
           created_at: string | null
           display_name: string
           email_address: string
@@ -2361,6 +2395,8 @@ export type Database = {
           oauth_refresh_token: string | null
           oauth_token_expires_at: string | null
           provider_type: string | null
+          signature_html: string | null
+          signature_text: string | null
           smtp_host: string | null
           smtp_password: string | null
           smtp_port: number | null
@@ -2371,6 +2407,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          auto_add_signature?: boolean | null
           created_at?: string | null
           display_name: string
           email_address: string
@@ -2386,6 +2423,8 @@ export type Database = {
           oauth_refresh_token?: string | null
           oauth_token_expires_at?: string | null
           provider_type?: string | null
+          signature_html?: string | null
+          signature_text?: string | null
           smtp_host?: string | null
           smtp_password?: string | null
           smtp_port?: number | null
@@ -2396,6 +2435,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          auto_add_signature?: boolean | null
           created_at?: string | null
           display_name?: string
           email_address?: string
@@ -2411,6 +2451,8 @@ export type Database = {
           oauth_refresh_token?: string | null
           oauth_token_expires_at?: string | null
           provider_type?: string | null
+          signature_html?: string | null
+          signature_text?: string | null
           smtp_host?: string | null
           smtp_password?: string | null
           smtp_port?: number | null

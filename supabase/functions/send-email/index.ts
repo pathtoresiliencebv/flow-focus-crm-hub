@@ -66,13 +66,24 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Email settings not found or not authorized');
     }
 
+    // Add signature if enabled
+    let bodyHtml = emailRequest.body_html;
+    let bodyText = emailRequest.body_text;
+    
+    if (emailSettings.auto_add_signature && emailSettings.signature_html) {
+      bodyHtml += '<br><br>' + emailSettings.signature_html;
+    }
+    if (emailSettings.auto_add_signature && emailSettings.signature_text) {
+      bodyText += '\n\n' + emailSettings.signature_text;
+    }
+
     // Prepare email data for Resend
     const emailData: any = {
       from: `${emailSettings.display_name} <${emailSettings.email_address}>`,
       to: emailRequest.to,
       subject: emailRequest.subject,
-      text: emailRequest.body_text,
-      html: emailRequest.body_html,
+      text: bodyText,
+      html: bodyHtml,
     };
 
     if (emailRequest.cc && emailRequest.cc.length > 0) {
