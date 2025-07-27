@@ -24,6 +24,7 @@ interface EmailDetailViewProps {
   onToggleStar: (id: string, isStarred: boolean) => void;
   onArchive: (id: string) => void;
   onDelete: (id: string) => void;
+  hideBackButton?: boolean;
 }
 
 export const EmailDetailView: React.FC<EmailDetailViewProps> = ({
@@ -32,7 +33,8 @@ export const EmailDetailView: React.FC<EmailDetailViewProps> = ({
   onReply,
   onToggleStar,
   onArchive,
-  onDelete
+  onDelete,
+  hideBackButton = false
 }) => {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -49,10 +51,13 @@ export const EmailDetailView: React.FC<EmailDetailViewProps> = ({
     <div className="h-full flex flex-col">
       {/* Header with back button and actions */}
       <div className="p-4 border-b flex items-center justify-between">
-        <Button variant="ghost" onClick={onBack} className="flex items-center gap-2">
-          <ArrowLeft className="h-4 w-4" />
-          Terug
-        </Button>
+        {!hideBackButton && (
+          <Button variant="ghost" onClick={onBack} className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Terug
+          </Button>
+        )}
+        {hideBackButton && <div />}
         
         <div className="flex items-center gap-2">
           <Button

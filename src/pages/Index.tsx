@@ -9,6 +9,7 @@ import { Receipts } from "@/components/Receipts";
 import { Quotes } from "@/components/Quotes";
 import { Invoicing } from "@/components/Invoicing";
 import { Email } from "@/components/Email";
+import { EmailFullscreen } from "@/components/EmailFullscreen";
 import { EnhancedChatWindow } from "@/components/chat/EnhancedChatWindow";
 import Personnel from "@/components/Personnel";
 import UserManagement from "@/components/UserManagement";
@@ -125,7 +126,7 @@ const Index = () => {
       case "invoicing":
         return <Invoicing />;
       case "email":
-        return <Email />;
+        return <EmailFullscreen onBackToDashboard={() => setActiveTab("dashboard")} />;
       case "chat":
         return isMobile ? 
           <MobileEnhancedChatView onBack={() => setActiveTab("dashboard")} /> :

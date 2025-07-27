@@ -76,7 +76,7 @@ export function EmailList({
   return (
     <Card className="h-full">
       <CardContent className="p-0 h-full flex flex-col">
-        <div className="p-4 border-b bg-gray-50">
+        <div className="p-4 border-b bg-muted/30">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Checkbox
@@ -102,9 +102,9 @@ export function EmailList({
               {filteredEmails.map((email) => (
                 <div
                   key={email.id}
-                  className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
-                    selectedEmails.includes(email.id) ? 'bg-blue-50' : ''
-                  } ${!email.isRead ? 'bg-blue-25 border-l-4 border-l-blue-500' : ''}`}
+                  className={`p-4 hover:bg-muted/50 transition-colors cursor-pointer group ${
+                    selectedEmails.includes(email.id) ? 'bg-primary/10 border-l-4 border-l-primary' : ''
+                  } ${!email.isRead ? 'bg-blue-50/50 dark:bg-blue-950/20 border-l-4 border-l-blue-500' : ''}`}
                   onClick={() => onViewEmail(email)}
                 >
                   <div className="flex items-start gap-3">
