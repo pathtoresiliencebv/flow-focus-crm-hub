@@ -124,6 +124,16 @@ export default function PublicQuote() {
       return;
     }
 
+    // Prevent re-signing if already approved
+    if (quote?.status === 'approved') {
+      toast({
+        title: "Offerte al goedgekeurd",
+        description: "Deze offerte is al goedgekeurd en ondertekend.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSigning(true);
     try {
       const { error } = await supabase
@@ -134,7 +144,8 @@ export default function PublicQuote() {
           client_name: clientName.trim(),
           status: 'approved'
         })
-        .eq('public_token', token);
+        .eq('public_token', token)
+        .neq('status', 'approved'); // Additional safety check
 
       if (error) {
         console.error('Error signing quote:', error);
@@ -175,6 +186,56 @@ export default function PublicQuote() {
       });
     } finally {
       setSigning(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-quote-pdf', {
+        body: { quoteId: quote?.id, includeSigned: true }
+      });
+
+      if (error) {
+        toast({
+          title: "Fout bij PDF genereren",
+          description: "Er is een fout opgetreden bij het genereren van de PDF.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data?.success && data?.pdfData) {
+        // Create download link
+        const pdfData = data.pdfData;
+        const byteCharacters = atob(pdfData);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/pdf' });
+        
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = data.filename || `offerte-${quote?.quote_number}-ondertekend.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        toast({
+          title: "PDF gedownload",
+          description: "De offerte PDF is succesvol gedownload.",
+        });
+      }
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast({
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het downloaden van de PDF.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -233,6 +294,26 @@ export default function PublicQuote() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
+        
+        {/* Success Banner for Approved Quotes */}
+        {quote.status === 'approved' && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-6 py-4 rounded-lg mb-6 flex items-center justify-between">
+            <div className="flex items-center">
+              <Check className="h-6 w-6 mr-2" />
+              <div>
+                <h3 className="font-bold text-lg">Deze offerte is goedgekeurd!</h3>
+                <p className="text-sm">Ondertekend op {format(new Date(quote.client_signed_at!), 'dd MMMM yyyy', { locale: nl })} door {quote.client_name}</p>
+              </div>
+            </div>
+            <Button 
+              onClick={handleDownloadPdf}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Download PDF
+            </Button>
+          </div>
+        )}
         {/* Header */}
         <div className="bg-white rounded-lg shadow-sm p-8 mb-6">
           <div className="flex justify-between items-start mb-6">
@@ -453,9 +534,10 @@ export default function PublicQuote() {
           </div>
         )}
 
-        {/* Client Signature Section */}
-        <div className="bg-white rounded-lg shadow-sm p-8">
-          {isSigned ? (
+        {/* Client Signature Section - Hide if quote is approved */}
+        {quote.status !== 'approved' && (
+          <div className="bg-white rounded-lg shadow-sm p-8">
+            {isSigned ? (
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <Check className="h-5 w-5 text-green-600" />
@@ -528,7 +610,8 @@ export default function PublicQuote() {
               )}
             </div>
           )}
-        </div>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-gray-500">

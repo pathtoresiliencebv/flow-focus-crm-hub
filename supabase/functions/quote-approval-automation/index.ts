@@ -256,7 +256,24 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // 7. Send notification email to admin with PDF attachment
+    // 7. Send confirmation email to customer
+    try {
+      const { error: confirmationEmailError } = await supabase.functions.invoke('send-quote-confirmation-email', {
+        body: {
+          quoteId: quote_id
+        }
+      });
+
+      if (confirmationEmailError) {
+        console.error('Error sending customer confirmation email:', confirmationEmailError);
+      } else {
+        console.log('Customer confirmation email sent successfully');
+      }
+    } catch (confirmationEmailError) {
+      console.error('Failed to send customer confirmation email:', confirmationEmailError);
+    }
+
+    // 8. Send notification email to admin with PDF attachment
     try {
       const { error: emailError } = await supabase.functions.invoke('send-quote-email', {
         body: {
@@ -283,7 +300,7 @@ const handler = async (req: Request): Promise<Response> => {
       success: true,
       project_id: project.id,
       invoice_id: invoice?.id,
-      message: 'Project and concept invoice created successfully, notification email sent'
+      message: 'Project and concept invoice created successfully, confirmation and notification emails sent'
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
