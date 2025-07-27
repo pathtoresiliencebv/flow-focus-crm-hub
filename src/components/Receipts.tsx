@@ -342,16 +342,26 @@ export const Receipts = () => {
             <CardContent className="space-y-4">
               <div>
                 <Label className="text-sm font-medium">Bonnetjes Email</Label>
-                <p className="text-lg font-mono bg-muted p-2 rounded">bonnetjes@smanscrm.nl</p>
+                <p className="text-lg font-mono bg-muted p-2 rounded">info@smanscrm.nl</p>
               </div>
               <div className="space-y-2">
                 <h4 className="font-medium">Hoe werkt het?</h4>
                 <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Verstuur bonnetjes naar: bonnetjes@smanscrm.nl</li>
-                  <li>• Voeg afbeeldingen toe als bijlage</li>
+                  <li>• Verstuur bonnetjes naar: info@smanscrm.nl</li>
+                  <li>• Voeg afbeeldingen toe als bijlage (alleen afbeeldingen)</li>
                   <li>• Bonnetjes worden automatisch verwerkt</li>
-                  <li>• U ontvangt een bevestiging via email</li>
+                  <li>• Administrators ontvangen notificaties</li>
+                  <li>• U ontvangt een bevestiging via email na goedkeuring/afwijzing</li>
                 </ul>
+              </div>
+              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                <h5 className="font-medium text-blue-900 dark:text-blue-100">Email Service Status</h5>
+                <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                  Voor automatische verwerking moet een email service worden ingesteld die webhooks verstuurt naar onze processor.
+                </p>
+                <div className="mt-2 text-xs text-blue-600 dark:text-blue-400">
+                  <strong>Webhook URL:</strong> https://pvesgvkyiaqmsudmmtkc.supabase.co/functions/v1/receipt-processor
+                </div>
               </div>
             </CardContent>
           </Card>
