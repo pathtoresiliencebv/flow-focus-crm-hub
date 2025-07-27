@@ -1,7 +1,23 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTimeRegistrations } from "@/hooks/useTimeRegistrations";
+import { Loader2 } from "lucide-react";
 
 export const TimeReportsView = () => {
+  const { getStatistics, isLoading } = useTimeRegistrations();
+  const stats = getStatistics();
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center p-8">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Statistieken laden...</span>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -16,7 +32,7 @@ export const TimeReportsView = () => {
                 <CardTitle className="text-base">Totaal deze week</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold">36.5 uren</p>
+                <p className="text-3xl font-bold">{stats.totalHoursThisWeek} uren</p>
               </CardContent>
             </Card>
             <Card>
@@ -24,7 +40,7 @@ export const TimeReportsView = () => {
                 <CardTitle className="text-base">Gemiddeld per dag</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold">7.3 uren</p>
+                <p className="text-3xl font-bold">{stats.averageHoursPerDay} uren</p>
               </CardContent>
             </Card>
             <Card>
@@ -32,7 +48,7 @@ export const TimeReportsView = () => {
                 <CardTitle className="text-base">Totaal factureerbaar</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-3xl font-bold">32.0 uren</p>
+                <p className="text-3xl font-bold">{stats.billableHours} uren</p>
               </CardContent>
             </Card>
           </div>

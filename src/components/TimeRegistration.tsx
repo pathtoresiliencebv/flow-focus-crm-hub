@@ -18,15 +18,7 @@ export const TimeRegistration = () => {
   
   const handleSubmitTime = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    toast({
-      title: "Tijd geregistreerd",
-      description: "De tijdsregistratie is succesvol opgeslagen.",
-    });
-    
     setTimeDialogOpen(false);
-    // Resetting date is not ideal, maybe keep it. For now, keeping original logic.
-    // setSelectedDate(null); 
   };
 
   const handleEventClick = (event: any) => {
