@@ -24,6 +24,9 @@ interface EmailAccount {
   imap_username?: string;
   imap_password?: string;
   is_active?: boolean;
+  signature_html?: string;
+  signature_text?: string;
+  auto_add_signature?: boolean;
 }
 
 export function EmailSettings() {
@@ -51,6 +54,9 @@ export function EmailSettings() {
           imap_username: updateData.imap_username,
           imap_password: updateData.imap_password,
           is_active: updateData.is_active ?? true,
+          signature_html: updateData.signature_html,
+          signature_text: updateData.signature_text,
+          auto_add_signature: updateData.auto_add_signature ?? true,
         });
       }
     }

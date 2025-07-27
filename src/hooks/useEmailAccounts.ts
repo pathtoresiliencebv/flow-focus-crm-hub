@@ -18,6 +18,9 @@ interface EmailAccount {
   imap_username?: string;
   imap_password?: string;
   is_active?: boolean;
+  signature_html?: string;
+  signature_text?: string;
+  auto_add_signature?: boolean;
 }
 
 export const useEmailAccounts = () => {
