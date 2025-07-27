@@ -30,9 +30,8 @@ interface AppSidebarProps {
 export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProps) {
   const { user, logout, profile, hasPermission } = useAuth();
   
-  // Only use chat unread count if user has chat access
-  const shouldUseChatCount = ['Administrator', 'Administratie', 'Installateur'].includes(profile?.role || '');
-  const { totalUnreadCount } = shouldUseChatCount ? useChatUnreadCount() : { totalUnreadCount: 0 };
+  // Always call the hook - it handles access control internally
+  const { totalUnreadCount } = useChatUnreadCount();
 
   const allLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null, badge?: number}[] = [
     {

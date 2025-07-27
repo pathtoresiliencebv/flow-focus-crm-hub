@@ -3,12 +3,16 @@ import { useAuth } from './useAuth';
 import { useDirectChat } from './useDirectChat';
 
 export const useChatUnreadCount = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { availableUsers, getUnreadCount } = useDirectChat();
   const [totalUnreadCount, setTotalUnreadCount] = useState<number>(0);
 
+  // Check if user has chat access
+  const hasChatAccess = ['Administrator', 'Administratie', 'Installateur'].includes(profile?.role || '');
+
   const calculateTotalUnreadCount = useCallback(async () => {
-    if (!user || !availableUsers || availableUsers.length === 0) {
+    // Return 0 if user doesn't have chat access
+    if (!hasChatAccess || !user || !availableUsers || availableUsers.length === 0) {
       setTotalUnreadCount(0);
       return;
     }
@@ -26,7 +30,7 @@ export const useChatUnreadCount = () => {
       console.error('Error calculating unread count:', error);
       setTotalUnreadCount(0);
     }
-  }, [user, availableUsers, getUnreadCount]);
+  }, [hasChatAccess, user, availableUsers, getUnreadCount]);
 
   useEffect(() => {
     calculateTotalUnreadCount();
