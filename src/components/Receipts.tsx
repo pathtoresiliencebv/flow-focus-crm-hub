@@ -23,21 +23,21 @@ interface Receipt {
   user_id?: string;
   email_from?: string;
   subject?: string;
-  amount?: number;
+  amount?: number | null;
   description?: string;
   category?: string;
   receipt_file_url: string;
   receipt_file_name: string;
   receipt_file_type: string;
   status: 'pending' | 'approved' | 'rejected';
-  approved_by?: string;
-  approved_at?: string;
-  rejection_reason?: string;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  rejection_reason?: string | null;
   email_message_id?: string;
   created_at: string;
   updated_at: string;
-  profiles?: { full_name: string };
-  user_profiles?: { full_name: string };
+  profiles?: { full_name: string } | null;
+  user_profiles?: { full_name: string } | null;
 }
 
 export const Receipts = () => {
@@ -70,8 +70,8 @@ export const Receipts = () => {
         .from('receipts')
         .select(`
           *,
-          profiles:approved_by(full_name),
-          user_profiles:user_id(full_name)
+          profiles!approved_by(full_name),
+          user_profiles:profiles!user_id(full_name)
         `)
         .order('created_at', { ascending: false });
 
@@ -80,7 +80,9 @@ export const Receipts = () => {
       // Transform the data to match our interface
       const transformedData = (data || []).map(receipt => ({
         ...receipt,
-        status: receipt.status as 'pending' | 'approved' | 'rejected'
+        status: receipt.status as 'pending' | 'approved' | 'rejected',
+        profiles: receipt.profiles || null,
+        user_profiles: receipt.user_profiles || null
       }));
       
       setReceipts(transformedData);
