@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ImageUpload } from '@/components/ImageUpload';
 import { MobileReceiptCard } from '@/components/mobile/MobileReceiptCard';
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
 import { Upload, Check, X, Eye, Mail } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
@@ -40,7 +41,7 @@ interface Receipt {
 }
 
 export const Receipts = () => {
-  const { isMobile } = useMobile();
+  const isMobile = useIsMobile();
   const { profile } = useAuth();
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -75,7 +76,14 @@ export const Receipts = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setReceipts(data || []);
+      
+      // Transform the data to match our interface
+      const transformedData = (data || []).map(receipt => ({
+        ...receipt,
+        status: receipt.status as 'pending' | 'approved' | 'rejected'
+      }));
+      
+      setReceipts(transformedData);
     } catch (error) {
       console.error('Error loading receipts:', error);
     }
@@ -337,7 +345,7 @@ export const Receipts = () => {
           <div className="space-y-4">
             <div>
               <Label>Bestand</Label>
-              <ImageUpload onImageChange={handleFileUpload} />
+              <ImageUpload value={newReceipt.fileData} onChange={handleFileUpload} />
             </div>
             <div>
               <Label htmlFor="amount">Bedrag (optioneel)</Label>
