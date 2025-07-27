@@ -139,164 +139,207 @@ async function syncEmailsViaIMAP(emailSettings: EmailSettings, supabase: any) {
           reject(err);
           return;
         }
-
-    // Calculate date filter (last sync or last 24 hours)
-    const sinceDate = emailSettings.last_sync_at 
-      ? new Date(emailSettings.last_sync_at)
-      : new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
-
-    // Search for recent emails with attachments
-    const searchCriteria = [
-      'UNSEEN', // Only unread emails
-      'SINCE', sinceDate.toISOString().split('T')[0].replace(/-/g, '-')
-    ];
-
-    const messageIds = await client.search(searchCriteria);
-    console.log(`Found ${messageIds.length} new messages`);
-
-    let processedCount = 0;
-    let attachmentCount = 0;
-
-    // Process each message
-    for (const uid of messageIds) {
-      try {
-        // Fetch message with attachments
-        const message = await client.fetch(uid, {
-          bodies: 'HEADER.FIELDS (FROM TO SUBJECT DATE)',
-          struct: true,
-          envelope: true
-        });
-
-        if (!message || !message.struct) continue;
-
-        // Extract message details
-        const envelope = message.envelope;
-        const subject = envelope.subject || 'No Subject';
-        const fromAddress = envelope.from?.[0]?.mailbox && envelope.from?.[0]?.host 
-          ? `${envelope.from[0].mailbox}@${envelope.from[0].host}`
-          : 'unknown@unknown.com';
-
-        console.log(`Processing message: ${subject} from ${fromAddress}`);
-
-        // Check for attachments in message structure
-        const attachments: Array<{filename: string; content: Uint8Array; contentType: string}> = [];
         
-        function findAttachments(parts: any, depth = 0) {
-          if (!parts) return;
-          
-          if (Array.isArray(parts)) {
-            parts.forEach(part => findAttachments(part, depth + 1));
-          } else if (parts.disposition && 
-                     parts.disposition.type && 
-                     parts.disposition.type.toLowerCase() === 'attachment') {
-            
-            const filename = parts.disposition.params?.filename || 
-                           parts.params?.name || 
-                           `attachment_${Date.now()}`;
-            
-            const contentType = parts.type && parts.subtype 
-              ? `${parts.type.toLowerCase()}/${parts.subtype.toLowerCase()}`
-              : 'application/octet-stream';
+        // Calculate date filter (last sync or last 24 hours)
+        const sinceDate = emailSettings.last_sync_at 
+          ? new Date(emailSettings.last_sync_at)
+          : new Date(Date.now() - 24 * 60 * 60 * 1000); // 24 hours ago
 
-            // Only process image and PDF files
-            const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
-            if (validTypes.includes(contentType)) {
-              console.log(`Found attachment: ${filename} (${contentType})`);
-              
-              // Fetch attachment content
-              try {
-                const attachmentData = client.fetch(uid, {
-                  bodies: [parts.partID || '1'],
-                  struct: false
-                });
-                
-                if (attachmentData && attachmentData.bodies) {
-                  const body = attachmentData.bodies[parts.partID || '1'];
-                  if (body) {
-                    let content: Uint8Array;
-                    
-                    if (parts.encoding && parts.encoding.toLowerCase() === 'base64') {
-                      // Decode base64
-                      const decoder = new TextDecoder();
-                      const base64String = decoder.decode(body);
-                      const binaryString = atob(base64String.replace(/\s/g, ''));
-                      content = new Uint8Array(binaryString.length);
-                      for (let i = 0; i < binaryString.length; i++) {
-                        content[i] = binaryString.charCodeAt(i);
-                      }
-                    } else {
-                      content = new Uint8Array(body);
-                    }
-                    
-                    attachments.push({
-                      filename,
-                      content,
-                      contentType
-                    });
-                  }
-                }
-              } catch (fetchError) {
-                console.error(`Error fetching attachment ${filename}:`, fetchError);
-              }
-            }
-          } else if (parts.parts) {
-            findAttachments(parts.parts, depth + 1);
+        console.log(`Searching for emails since: ${sinceDate.toISOString()}`);
+
+        // Search for recent emails
+        const searchCriteria = [
+          'UNSEEN', // Only unread emails
+          ['SINCE', sinceDate]
+        ];
+
+        imap.search(searchCriteria, (err: any, results: number[]) => {
+          if (err) {
+            console.error('Search error:', err);
+            reject(err);
+            return;
           }
-        }
 
-        findAttachments(message.struct);
+          console.log(`Found ${results.length} new messages`);
+          
+          if (results.length === 0) {
+            imap.end();
+            resolve({
+              success: true,
+              emailsProcessed: 0,
+              attachmentsProcessed: 0
+            });
+            return;
+          }
 
-        // Process attachments
-        for (const attachment of attachments) {
-          await processEmailAttachment(supabase, attachment, fromAddress);
-          attachmentCount++;
-        }
+          let processedCount = 0;
+          let attachmentCount = 0;
 
-        // Mark message as read
-        await client.addFlags(uid, ['\\Seen']);
-        processedCount++;
+          // Fetch message details
+          const fetch = imap.fetch(results, {
+            bodies: 'HEADER.FIELDS (FROM TO SUBJECT DATE)',
+            struct: true
+          });
 
-      } catch (messageError) {
-        console.error(`Error processing message ${uid}:`, messageError);
-      }
-    }
+          fetch.on('message', (msg: any, seqno: number) => {
+            let header: any = {};
+            let attachments: Array<{filename: string; content: Buffer; contentType: string}> = [];
 
-    // Close IMAP connection
-    await client.close();
+            msg.on('body', (stream: any, info: any) => {
+              let buffer = '';
+              stream.on('data', (chunk: any) => {
+                buffer += chunk.toString('ascii');
+              });
+              stream.once('end', () => {
+                header = Imap.parseHeader(buffer);
+                console.log(`Message ${seqno}: ${header.subject?.[0] || 'No Subject'} from ${header.from?.[0] || 'Unknown'}`);
+              });
+            });
 
-    // Update sync status
-    await supabase
-      .from('user_email_settings')
-      .update({
-        last_sync_at: new Date().toISOString(),
-        sync_status: 'completed',
-        is_syncing: false
-      })
-      .eq('id', emailSettings.id);
+            msg.once('attributes', (attrs: any) => {
+              if (attrs.struct) {
+                // Process message structure to find attachments
+                function processStruct(struct: any[], path: string = '') {
+                  struct.forEach((part: any, index: number) => {
+                    const partPath = path ? `${path}.${index + 1}` : `${index + 1}`;
+                    
+                    if (part.disposition?.type === 'attachment' || part.type === 'application' || part.type === 'image') {
+                      const filename = part.disposition?.params?.filename || 
+                                     part.params?.name || 
+                                     `attachment_${Date.now()}_${index}`;
+                      
+                      const contentType = part.type && part.subtype 
+                        ? `${part.type.toLowerCase()}/${part.subtype.toLowerCase()}`
+                        : 'application/octet-stream';
 
-    console.log(`IMAP sync completed: ${processedCount} emails processed, ${attachmentCount} attachments found`);
+                      // Only process image and PDF files
+                      const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+                      if (validTypes.includes(contentType)) {
+                        console.log(`Found attachment: ${filename} (${contentType})`);
+                        
+                        // Fetch attachment content
+                        const attachmentFetch = imap.fetch([seqno], {
+                          bodies: [partPath],
+                          struct: false
+                        });
+                        
+                        attachmentFetch.on('message', (attachMsg: any) => {
+                          attachMsg.on('body', (attachStream: any) => {
+                            const chunks: Buffer[] = [];
+                            attachStream.on('data', (chunk: Buffer) => {
+                              chunks.push(chunk);
+                            });
+                            attachStream.once('end', () => {
+                              let content = Buffer.concat(chunks);
+                              
+                              // Handle base64 encoding if needed
+                              if (part.encoding && part.encoding.toLowerCase() === 'base64') {
+                                content = Buffer.from(content.toString(), 'base64');
+                              }
+                              
+                              attachments.push({
+                                filename,
+                                content,
+                                contentType
+                              });
+                            });
+                          });
+                        });
+                      }
+                    } else if (Array.isArray(part)) {
+                      processStruct(part, partPath);
+                    }
+                  });
+                }
 
-    return {
-      success: true,
-      emailsProcessed: processedCount,
-      attachmentsProcessed: attachmentCount
-    };
+                if (Array.isArray(attrs.struct)) {
+                  processStruct(attrs.struct);
+                }
+              }
+            });
 
-  } catch (error) {
-    console.error('IMAP sync error:', error);
-    
-    // Update error status
-    await supabase
-      .from('user_email_settings')
-      .update({
-        sync_status: 'error',
-        sync_error_message: error.message,
-        is_syncing: false
-      })
-      .eq('id', emailSettings.id);
+            msg.once('end', async () => {
+              // Process attachments after message is fully processed
+              const fromEmail = header.from?.[0] || 'unknown@unknown.com';
+              
+              for (const attachment of attachments) {
+                try {
+                  await processEmailAttachment(supabase, attachment, fromEmail);
+                  attachmentCount++;
+                } catch (error) {
+                  console.error(`Error processing attachment ${attachment.filename}:`, error);
+                }
+              }
 
-    throw error;
-  }
+              // Mark message as read
+              imap.addFlags([seqno], ['\\Seen'], (err: any) => {
+                if (err) console.error('Error marking message as read:', err);
+              });
+
+              processedCount++;
+              
+              // Check if all messages are processed
+              if (processedCount === results.length) {
+                imap.end();
+              }
+            });
+          });
+
+          fetch.once('error', (err: any) => {
+            console.error('Fetch error:', err);
+            imap.end();
+            reject(err);
+          });
+
+          fetch.once('end', () => {
+            console.log('Fetch completed');
+            setTimeout(() => {
+              // Update sync status
+              supabase
+                .from('user_email_settings')
+                .update({
+                  last_sync_at: new Date().toISOString(),
+                  sync_status: 'completed',
+                  is_syncing: false
+                })
+                .eq('id', emailSettings.id)
+                .then(() => {
+                  console.log(`IMAP sync completed: ${processedCount} emails processed, ${attachmentCount} attachments found`);
+                  resolve({
+                    success: true,
+                    emailsProcessed: processedCount,
+                    attachmentsProcessed: attachmentCount
+                  });
+                });
+            }, 2000); // Wait 2 seconds for all attachments to process
+          });
+        });
+      });
+    });
+
+    imap.once('error', (err: any) => {
+      console.error('IMAP connection error:', err);
+      
+      // Update error status
+      supabase
+        .from('user_email_settings')
+        .update({
+          sync_status: 'error',
+          sync_error_message: err.message,
+          is_syncing: false
+        })
+        .eq('id', emailSettings.id)
+        .then(() => {
+          reject(err);
+        });
+    });
+
+    imap.once('end', () => {
+      console.log('IMAP connection ended');
+    });
+
+    imap.connect();
+  });
 }
 
 serve(async (req) => {
