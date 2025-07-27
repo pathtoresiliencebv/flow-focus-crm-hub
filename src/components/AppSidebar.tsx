@@ -128,9 +128,16 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
     return link.permission === null || hasPermission(link.permission as Permission);
   });
 
-  // Get chat link for footer if user has access
+  // FORCE chat link to always be available - remove role checks for visibility
   const chatLink = allLinks.find(link => link.key === "chat");
-  const hasChatAccess = chatLink && ['Administrator', 'Administratie', 'Installateur'].includes(profile?.role || '');
+  
+  // Debug logging
+  console.log('Chat Link Debug:', {
+    chatLink: !!chatLink,
+    profile: profile?.role,
+    totalUnreadCount,
+    user: !!user
+  });
 
   return (
     <Sidebar 
@@ -140,7 +147,7 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
       logout={logout}
       activeTab={activeTab}
       setActiveTab={setActiveTab}
-      chatLink={hasChatAccess ? chatLink : null}
+      chatLink={chatLink}
     >
       {children}
     </Sidebar>
