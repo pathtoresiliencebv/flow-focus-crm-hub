@@ -190,7 +190,7 @@ const Index = () => {
   return (
     <AppSidebar activeTab={activeTab} setActiveTab={handleSetActiveTab}>
       {renderContent()}
-      {/* <ChatWidget /> */}
+      <ChatWidget />
     </AppSidebar>
   );
 };
