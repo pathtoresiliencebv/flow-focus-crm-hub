@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Smans CRM',
   webDir: 'dist',
   server: {
-    url: 'https://smanscrm.pathtoresilience.dev',
+    url: 'https://smanscrm.nl',
     cleartext: true
   },
   plugins: {

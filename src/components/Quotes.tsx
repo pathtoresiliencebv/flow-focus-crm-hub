@@ -36,7 +36,7 @@ export function Quotes() {
   };
 
   const handleViewPublic = (publicToken: string) => {
-    const url = `${window.location.origin}/quote/${publicToken}`;
+    const url = `https://smanscrm.nl/quote/${publicToken}`;
     window.open(url, '_blank');
   };
 
