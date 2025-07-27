@@ -101,6 +101,30 @@ export type Database = {
         }
         Relationships: []
       }
+      bonnetjes: {
+        Row: {
+          created_at: string | null
+          file_name: string | null
+          file_path: string | null
+          id: number
+          sender: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          id?: never
+          sender?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          id?: never
+          sender?: string | null
+        }
+        Relationships: []
+      }
       chat_channels: {
         Row: {
           created_at: string
