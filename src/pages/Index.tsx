@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Dashboard } from "@/components/Dashboard";
@@ -40,7 +39,10 @@ const AccessDenied = () => (
 );
 
 const Index = () => {
+  console.log("Index component rendering");
   const { isAuthenticated, isLoading, hasPermission, profile } = useAuth();
+  console.log("Auth state:", { isAuthenticated, isLoading, profile });
+  
   const { customerId, projectId } = useParams();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
