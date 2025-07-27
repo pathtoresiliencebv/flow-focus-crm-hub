@@ -94,8 +94,13 @@ export const usePWA = () => {
       let subscription = await registration.pushManager.getSubscription();
       
       if (!subscription) {
-        // Create new subscription with VAPID key
-        const vapidPublicKey = 'BMqYHI_qfJkZbqKZ4XEXGhSz4F8_Qg8rQVDQ_5xZ4wJjJJd8YQzP0lKjJQKG7eHwXx2l5ZdQx0rJQJkXkG9vV2Q'; // Replace with actual VAPID public key
+        // Get VAPID public key from environment
+        const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+        
+        if (!vapidPublicKey) {
+          console.warn('VAPID public key not configured, push notifications unavailable');
+          return null;
+        }
         
         subscription = await registration.pushManager.subscribe({
           userVisibleOnly: true,

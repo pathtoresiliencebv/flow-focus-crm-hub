@@ -23,8 +23,9 @@ export const LocationMapInput = ({ value, onChange, placeholder = "Voer adres in
   const marker = useRef<mapboxgl.Marker | null>(null);
   const { toast } = useToast();
 
-  // Set Mapbox access token
-  mapboxgl.accessToken = 'pk.eyJ1IjoicGF0aHRvcmVzaWxpZW5jZSIsImEiOiJjbWI1YWh3bDQyN3l6MmpxenczNmt5MWw2In0.n20L1mg1bLaxrQa4--AfBA';
+  // Set Mapbox access token from environment variables
+  const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN || '';
+  mapboxgl.accessToken = MAPBOX_TOKEN;
 
   // Real geocoding function using Mapbox Geocoding API
   const searchAddress = async (query: string) => {
@@ -36,8 +37,20 @@ export const LocationMapInput = ({ value, onChange, placeholder = "Voer adres in
     setIsSearching(true);
     
     try {
+      if (!MAPBOX_TOKEN) {
+        console.warn('Mapbox token not configured, using fallback suggestions');
+        const mockSuggestions = [
+          `${query} - Voorbeeld adres 1`,
+          `${query} - Voorbeeld adres 2`,
+          `${query} - Voorbeeld adres 3`
+        ];
+        setSuggestions(mockSuggestions);
+        setIsSearching(false);
+        return;
+      }
+
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&country=NL&types=address,poi`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&country=NL&types=address,poi`
       );
       const data = await response.json();
       
@@ -83,8 +96,13 @@ export const LocationMapInput = ({ value, onChange, placeholder = "Voer adres in
     if (!map.current) return;
 
     try {
+      if (!MAPBOX_TOKEN) {
+        console.warn('Mapbox token not configured, map location update skipped');
+        return;
+      }
+
       const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${mapboxgl.accessToken}&limit=1`
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${MAPBOX_TOKEN}&limit=1`
       );
       const data = await response.json();
       
