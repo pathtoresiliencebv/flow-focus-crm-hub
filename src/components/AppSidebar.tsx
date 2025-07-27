@@ -29,7 +29,10 @@ interface AppSidebarProps {
 
 export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProps) {
   const { user, logout, profile, hasPermission } = useAuth();
-  const { totalUnreadCount } = useChatUnreadCount();
+  
+  // Only use chat unread count if user has chat access
+  const shouldUseChatCount = ['Administrator', 'Administratie', 'Installateur'].includes(profile?.role || '');
+  const { totalUnreadCount } = shouldUseChatCount ? useChatUnreadCount() : { totalUnreadCount: 0 };
 
   const allLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null, badge?: number}[] = [
     {
@@ -91,7 +94,7 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
       icon: <MessageCircle className="h-5 w-5" />,
       key: "chat",
       permission: null,
-      badge: totalUnreadCount,
+      badge: totalUnreadCount > 0 ? totalUnreadCount : undefined,
     },
     {
       label: "Personeel",

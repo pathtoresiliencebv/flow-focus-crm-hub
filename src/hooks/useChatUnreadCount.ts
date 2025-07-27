@@ -5,10 +5,10 @@ import { useDirectChat } from './useDirectChat';
 export const useChatUnreadCount = () => {
   const { user } = useAuth();
   const { availableUsers, getUnreadCount } = useDirectChat();
-  const [totalUnreadCount, setTotalUnreadCount] = useState(0);
+  const [totalUnreadCount, setTotalUnreadCount] = useState<number>(0);
 
   const calculateTotalUnreadCount = useCallback(async () => {
-    if (!user || availableUsers.length === 0) {
+    if (!user || !availableUsers || availableUsers.length === 0) {
       setTotalUnreadCount(0);
       return;
     }
@@ -16,8 +16,10 @@ export const useChatUnreadCount = () => {
     try {
       let total = 0;
       for (const chatUser of availableUsers) {
-        const count = await getUnreadCount(chatUser.id);
-        total += count;
+        if (chatUser?.id && getUnreadCount) {
+          const count = await getUnreadCount(chatUser.id);
+          total += count || 0;
+        }
       }
       setTotalUnreadCount(total);
     } catch (error) {
