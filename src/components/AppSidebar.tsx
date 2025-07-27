@@ -115,17 +115,22 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
     }
   ];
 
+  // Filter out chat from regular menu - it will be in the footer
   const links = allLinks.filter(link => {
+    // Hide Chat from regular menu - will be in footer
+    if (link.key === "chat") {
+      return false;
+    }
     // Hide Reports completely for Installateurs
     if (link.key === "reports" && profile?.role === 'Installateur') {
       return false;
     }
-    // Show Chat only for Administrator, Administratie, and Installateur
-    if (link.key === "chat" && !['Administrator', 'Administratie', 'Installateur'].includes(profile?.role || '')) {
-      return false;
-    }
     return link.permission === null || hasPermission(link.permission as Permission);
   });
+
+  // Get chat link for footer if user has access
+  const chatLink = allLinks.find(link => link.key === "chat");
+  const hasChatAccess = chatLink && ['Administrator', 'Administratie', 'Installateur'].includes(profile?.role || '');
 
   return (
     <Sidebar 
@@ -135,6 +140,7 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
       logout={logout}
       activeTab={activeTab}
       setActiveTab={setActiveTab}
+      chatLink={hasChatAccess ? chatLink : null}
     >
       {children}
     </Sidebar>

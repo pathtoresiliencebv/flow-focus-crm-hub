@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, LogOut, Settings } from "lucide-react";
+import { User, LogOut, Settings, MessageCircle } from "lucide-react";
 
 const AnimatedMenuToggle = ({
   toggle,
@@ -124,7 +124,7 @@ const CollapsibleSection = ({
   );
 };
 
-export const Sidebar = ({ links, user, profile, logout, activeTab, setActiveTab, children }) => {
+export const Sidebar = ({ links, user, profile, logout, activeTab, setActiveTab, chatLink, children }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const mobileSidebarVariants = {
@@ -194,6 +194,20 @@ export const Sidebar = ({ links, user, profile, logout, activeTab, setActiveTab,
            >
              <Settings className="h-5 w-5" />
              {settingsLink.label}
+           </button>
+        )}
+        {chatLink && (
+           <button
+             onClick={createLinkHandler(chatLink.key)}
+             className={`flex gap-2 font-medium text-sm items-center w-full py-3 px-4 rounded-xl mb-4 relative ${activeTab === chatLink.key ? 'bg-smans-primary text-smans-primary-foreground' : 'bg-smans-primary text-smans-primary-foreground hover:bg-smans-primary/90'}`}
+           >
+             <MessageCircle className="h-5 w-5" />
+             {chatLink.label}
+             {chatLink.badge && chatLink.badge > 0 && (
+               <span className="ml-auto bg-white text-smans-primary text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                 {chatLink.badge > 99 ? '99+' : chatLink.badge}
+               </span>
+             )}
            </button>
         )}
         <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
