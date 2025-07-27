@@ -56,23 +56,38 @@ async function syncViaIMAP(emailSettings: any, supabase: any) {
       .update({ is_syncing: true })
       .eq('id', emailSettings.id);
 
-    // For demo purposes, simulate email sync
-    // In a real implementation, you would use an IMAP library here
+    // Real IMAP sync implementation would go here
+    // For now, we'll create a more realistic demo with multiple emails
     const simulatedEmails = [
       {
         user_id: emailSettings.user_id,
         email_settings_id: emailSettings.id,
-        subject: 'Welcome to Email Sync',
-        from_address: 'noreply@example.com',
-        from_name: 'Email System',
+        subject: 'Welkom bij Smans CRM Email Sync',
+        from_address: 'info@smansonderhoud.nl',
+        from_name: 'Smans Onderhoud',
         to_addresses: [emailSettings.email_address],
-        body_text: 'Your email synchronization is now active!',
-        body_html: '<p>Your email synchronization is now active!</p>',
+        body_text: 'Uw email synchronisatie is nu actief! U ontvangt vanaf nu automatisch uw emails in het CRM systeem.',
+        body_html: '<h2>Welkom bij Smans CRM</h2><p>Uw email synchronisatie is nu actief!</p><p>U ontvangt vanaf nu automatisch uw emails in het CRM systeem.</p>',
         folder: 'inbox',
         is_read: false,
         received_at: new Date().toISOString(),
-        provider_message_id: `sync-demo-${Date.now()}`,
+        provider_message_id: `sync-welcome-${Date.now()}`,
         sync_hash: `hash-${Date.now()}`
+      },
+      {
+        user_id: emailSettings.user_id,
+        email_settings_id: emailSettings.id,
+        subject: 'Test Email - Inkomende Post',
+        from_address: 'test@example.com',
+        from_name: 'Test Klant',
+        to_addresses: [emailSettings.email_address],
+        body_text: 'Dit is een test email om te controleren of de synchronisatie correct werkt.',
+        body_html: '<p>Dit is een test email om te controleren of de synchronisatie correct werkt.</p>',
+        folder: 'inbox',
+        is_read: false,
+        received_at: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+        provider_message_id: `sync-test-${Date.now()}`,
+        sync_hash: `hash-test-${Date.now()}`
       }
     ];
 

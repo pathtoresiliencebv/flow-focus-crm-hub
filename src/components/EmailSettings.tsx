@@ -8,7 +8,9 @@ import {
 import { Plus } from 'lucide-react';
 import { AccountFormData, EmailAccountForm } from './EmailAccountForm';
 import { EmailAccountsTable } from './EmailAccountsTable';
+import { EmailWebhookSetup } from './EmailWebhookSetup';
 import { useEmailAccounts } from '@/hooks/useEmailAccounts';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface EmailAccount {
   id: string;
@@ -87,32 +89,45 @@ export function EmailSettings() {
   return (
     <div>
       <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-2xl font-bold tracking-tight">E-mail Accounts</h2>
-        <div className="flex items-center space-x-2">
-          <Dialog open={isFormOpen} onOpenChange={setFormOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={handleAddNew}>
-                <Plus className="mr-2 h-4 w-4" />
-                Account toevoegen
-              </Button>
-            </DialogTrigger>
-            {isFormOpen && (
-              <EmailAccountForm 
-                onSubmit={handleSubmit}
-                editingAccount={editingAccount}
-                onClose={handleCloseForm}
-              />
-            )}
-          </Dialog>
-        </div>
+        <h2 className="text-2xl font-bold tracking-tight">E-mail Beheer</h2>
       </div>
-      <div className="py-4">
-        <EmailAccountsTable
-          accounts={accounts}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
-      </div>
+      
+      <Tabs defaultValue="accounts" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="accounts">Email Accounts</TabsTrigger>
+          <TabsTrigger value="webhook">Bonnetjes Setup</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="accounts" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-medium">E-mail Accounts</h3>
+            <Dialog open={isFormOpen} onOpenChange={setFormOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={handleAddNew}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Account toevoegen
+                </Button>
+              </DialogTrigger>
+              {isFormOpen && (
+                <EmailAccountForm 
+                  onSubmit={handleSubmit}
+                  editingAccount={editingAccount}
+                  onClose={handleCloseForm}
+                />
+              )}
+            </Dialog>
+          </div>
+          <EmailAccountsTable
+            accounts={accounts}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        </TabsContent>
+        
+        <TabsContent value="webhook" className="space-y-4">
+          <EmailWebhookSetup />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

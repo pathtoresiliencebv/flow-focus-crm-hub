@@ -70,7 +70,62 @@ export function EmailAccountForm({ onSubmit, editingAccount, onClose }: EmailAcc
     resolver: zodResolver(accountSchema),
   });
 
+  const getDefaultSignature = () => {
+    const htmlSignature = `<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-mail Handtekening Smans Onderhoud en Service</title>
+<style>
+    /* Gebruik inline stijlen voor maximale compatibiliteit met e-mailclients */
+</style>
+</head>
+<body>
+<br>
+Met vriendelijke groet,
+<br>
+-----
+  <table style="width: 100%; max-width: 500px; border-spacing: 0; font-family: Arial, sans-serif; color: #333333;">
+    <tr>
+      <td style="width: 30%; padding-right: 20px; vertical-align: top;">
+        <a href="https://smansonderhoud.nl" target="_blank">
+          <img src="https://smanscrm.nl/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="Smans Logo" style="width: 100%; max-width: 120px; height: auto;">
+        </a>
+      </td>
+      <td style="width: 70%; vertical-align: top; border-left: 2px solid #b91c1c; padding-left: 20px;">
+        <h3 style="margin: 0 0 5px 0; font-size: 18px; font-weight: bold; color: #333333;">
+          Team Smans Onderhoud en Service
+        </h3>
+        <p style="margin: 0 0 10px 0; font-size: 14px;">
+          <a href="https://smansonderhoud.nl" style="color: #b91c1c; text-decoration: none;">
+            smansonderhoud.nl
+          </a>
+        </p>
+        <p style="margin: 0; font-size: 12px;">
+          <a href="#" style="color: #b91c1c; text-decoration: none; margin-right: 10px;">Facebook</a>
+          <a href="#" style="color: #b91c1c; text-decoration: none; margin-right: 10px;">LinkedIn</a>
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+    const textSignature = `
+Met vriendelijke groet,
+
+-----
+Team Smans Onderhoud en Service
+smansonderhoud.nl
+`;
+
+    return { htmlSignature, textSignature };
+  };
+
   React.useEffect(() => {
+    const { htmlSignature, textSignature } = getDefaultSignature();
+    
     form.reset(editingAccount || {
       display_name: '',
       email_address: '',
@@ -84,8 +139,8 @@ export function EmailAccountForm({ onSubmit, editingAccount, onClose }: EmailAcc
       smtp_username: '',
       smtp_password: '',
       is_active: true,
-      signature_html: '',
-      signature_text: '',
+      signature_html: htmlSignature,
+      signature_text: textSignature,
       auto_add_signature: true,
     });
   }, [editingAccount, form]);
