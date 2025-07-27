@@ -8,6 +8,7 @@ import { Camera, Upload, Check } from 'lucide-react';
 import { useNativeCapabilities } from '@/hooks/useNativeCapabilities';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Receipt {
   id: string;
@@ -67,7 +68,7 @@ export const MobileReceiptScanner = () => {
     }
   };
 
-  const saveReceipt = () => {
+  const saveReceipt = async () => {
     if (!capturedImage || !profile) {
       toast({
         title: "Fout",
@@ -77,34 +78,69 @@ export const MobileReceiptScanner = () => {
       return;
     }
 
-    const receipt: Receipt = {
-      id: Date.now().toString(),
-      fileName: `bonnetje_${Date.now()}`,
-      uploadDate: new Date().toLocaleDateString('nl-NL'),
-      amount: receiptData.amount,
-      description: receiptData.description,
-      category: receiptData.category,
-      fileData: capturedImage,
-      fileType: 'image',
-      status: 'pending',
-      uploadedBy: profile.full_name || 'Onbekend',
-      uploaderName: profile.full_name || 'Onbekend'
-    };
+    try {
+      // Convert base64 to blob
+      const base64Data = capturedImage.split(',')[1];
+      const byteCharacters = atob(base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'image/jpeg' });
 
-    // Save to localStorage (in a real app, this would go to the backend)
-    const existingReceipts = JSON.parse(localStorage.getItem('crm_receipts') || '[]');
-    const updatedReceipts = [...existingReceipts, receipt];
-    localStorage.setItem('crm_receipts', JSON.stringify(updatedReceipts));
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Gebruiker niet gevonden');
+      }
 
-    toast({
-      title: "Bonnetje opgeslagen",
-      description: "Het bonnetje is verzonden voor goedkeuring",
-    });
+      // Upload to storage
+      const fileName = `${user.id}/${Date.now()}_receipt.jpg`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('receipts')
+        .upload(fileName, blob);
 
-    // Reset form
-    setCapturedImage(null);
-    setReceiptData({ amount: '', description: '', category: '' });
-    setShowUploadDialog(false);
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Create receipt record
+      const { error: insertError } = await supabase
+        .from('receipts')
+        .insert({
+          user_id: user.id,
+          amount: receiptData.amount ? parseFloat(receiptData.amount) : null,
+          description: receiptData.description || 'Mobile bonnetje',
+          category: receiptData.category,
+          receipt_file_url: fileName,
+          receipt_file_name: `receipt_${Date.now()}.jpg`,
+          receipt_file_type: 'image/jpeg',
+          status: 'pending'
+        });
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      toast({
+        title: "Bonnetje opgeslagen",
+        description: "Het bonnetje is verzonden voor goedkeuring",
+      });
+
+      // Reset form
+      setCapturedImage(null);
+      setReceiptData({ amount: '', description: '', category: '' });
+      setShowUploadDialog(false);
+
+    } catch (error: any) {
+      console.error('Error saving receipt:', error);
+      toast({
+        title: "Fout",
+        description: "Kon bonnetje niet opslaan: " + error.message,
+        variant: "destructive"
+      });
+    }
   };
 
   return (

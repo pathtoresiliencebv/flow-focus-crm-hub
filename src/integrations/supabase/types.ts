@@ -2180,6 +2180,66 @@ export type Database = {
         }
         Relationships: []
       }
+      receipts: {
+        Row: {
+          amount: number | null
+          approved_at: string | null
+          approved_by: string | null
+          category: string | null
+          created_at: string | null
+          description: string | null
+          email_from: string | null
+          email_message_id: string | null
+          id: string
+          receipt_file_name: string
+          receipt_file_type: string
+          receipt_file_url: string
+          rejection_reason: string | null
+          status: string | null
+          subject: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount?: number | null
+          approved_at?: string | null
+          approved_by?: string | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          email_from?: string | null
+          email_message_id?: string | null
+          id?: string
+          receipt_file_name: string
+          receipt_file_type: string
+          receipt_file_url: string
+          rejection_reason?: string | null
+          status?: string | null
+          subject?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number | null
+          approved_at?: string | null
+          approved_by?: string | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          email_from?: string | null
+          email_message_id?: string | null
+          id?: string
+          receipt_file_name?: string
+          receipt_file_type?: string
+          receipt_file_url?: string
+          rejection_reason?: string | null
+          status?: string | null
+          subject?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       role_permissions: {
         Row: {
           id: number
