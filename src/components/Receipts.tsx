@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,8 +35,8 @@ interface Receipt {
   email_message_id?: string;
   created_at: string;
   updated_at: string;
-  profiles?: { full_name: string } | null;
-  user_profiles?: { full_name: string } | null;
+  approver_name?: string | null;
+  user_name?: string | null;
 }
 
 export const Receipts = () => {
@@ -66,23 +65,38 @@ export const Receipts = () => {
 
   const loadReceipts = async () => {
     try {
-      const { data, error } = await supabase
+      // First get all receipts
+      const { data: receiptsData, error: receiptsError } = await supabase
         .from('receipts')
-        .select(`
-          *,
-          profiles!approved_by(full_name),
-          user_profiles:profiles!user_id(full_name)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      
+      if (receiptsError) throw receiptsError;
+
+      // Get all unique user IDs and approved_by IDs
+      const allUserIds = new Set<string>();
+      receiptsData?.forEach(receipt => {
+        if (receipt.user_id) allUserIds.add(receipt.user_id);
+        if (receipt.approved_by) allUserIds.add(receipt.approved_by);
+      });
+
+      // Get profile information for all users
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', Array.from(allUserIds));
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of user ID to profile for quick lookup
+      const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+
       // Transform the data to match our interface
-      const transformedData = (data || []).map(receipt => ({
+      const transformedData = (receiptsData || []).map(receipt => ({
         ...receipt,
         status: receipt.status as 'pending' | 'approved' | 'rejected',
-        profiles: receipt.profiles || null,
-        user_profiles: receipt.user_profiles || null
+        approver_name: receipt.approved_by ? profilesMap.get(receipt.approved_by)?.full_name || null : null,
+        user_name: receipt.user_id ? profilesMap.get(receipt.user_id)?.full_name || null : null
       }));
       
       setReceipts(transformedData);
@@ -263,6 +277,9 @@ export const Receipts = () => {
                     {receipt.email_from && (
                       <p className="text-xs text-muted-foreground">Via: {receipt.email_from}</p>
                     )}
+                    {receipt.user_name && (
+                      <p className="text-xs text-muted-foreground">Door: {receipt.user_name}</p>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={() => viewReceipt(receipt)}>
@@ -298,8 +315,11 @@ export const Receipts = () => {
                     <p className="text-sm text-muted-foreground">
                       {formatDate(receipt.created_at)} • {formatAmount(receipt.amount)}
                     </p>
-                    {receipt.profiles?.full_name && (
-                      <p className="text-xs text-muted-foreground">Door: {receipt.profiles.full_name}</p>
+                    {receipt.user_name && (
+                      <p className="text-xs text-muted-foreground">Door: {receipt.user_name}</p>
+                    )}
+                    {receipt.approver_name && (
+                      <p className="text-xs text-muted-foreground">Goedgekeurd door: {receipt.approver_name}</p>
                     )}
                   </div>
                   <Button variant="outline" size="sm" onClick={() => viewReceipt(receipt)}>
