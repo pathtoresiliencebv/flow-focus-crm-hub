@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useCallback } from 'react';
+import React from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Session, User } from '@supabase/supabase-js';
@@ -13,12 +12,12 @@ interface UserProfile {
 }
 
 export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = React.useState<User | null>(null);
+  const [profile, setProfile] = React.useState<UserProfile | null>(null);
+  const [session, setSession] = React.useState<Session | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
 
-  const fetchProfile = useCallback(async (user: User) => {
+  const fetchProfile = React.useCallback(async (user: User) => {
     const { data: profileData, error } = await supabase
       .from('profiles')
       .select('full_name, role, status')
@@ -59,7 +58,7 @@ export const useAuth = () => {
     }
   }, []);
 
-  useEffect(() => {
+  React.useEffect(() => {
     setIsLoading(true);
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
