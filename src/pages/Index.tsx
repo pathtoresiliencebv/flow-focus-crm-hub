@@ -182,7 +182,7 @@ const Index = () => {
           {renderContent()}
         </div>
         <MobileBottomNavigation activeTab={activeTab} onTabChange={handleSetActiveTab} />
-        {/* <ChatWidget /> */}
+        <ChatWidget />
       </div>
     );
   }
