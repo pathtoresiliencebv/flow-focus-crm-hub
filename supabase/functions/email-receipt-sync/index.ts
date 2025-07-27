@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { connect } from "https://deno.land/x/imap@v0.2.0/mod.ts";
+import Imap from "npm:imap";
+import { inspect } from "npm:util";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -117,24 +118,27 @@ async function processEmailAttachment(
 }
 
 async function syncEmailsViaIMAP(emailSettings: EmailSettings, supabase: any) {
-  try {
+  return new Promise((resolve, reject) => {
     console.log(`Starting IMAP sync for ${emailSettings.email_address}`);
 
-    // Connect to IMAP server
-    const client = await connect({
-      hostname: emailSettings.imap_host,
+    const imap = new Imap({
+      user: emailSettings.imap_username,
+      password: emailSettings.imap_password,
+      host: emailSettings.imap_host,
       port: emailSettings.imap_port,
-      auth: {
-        username: emailSettings.imap_username,
-        password: emailSettings.imap_password,
-      },
       tls: true,
+      tlsOptions: { rejectUnauthorized: false }
     });
 
-    console.log('Connected to IMAP server');
-
-    // Select INBOX
-    await client.select('INBOX');
+    imap.once('ready', () => {
+      console.log('Connected to IMAP server');
+      
+      imap.openBox('INBOX', false, (err: any, box: any) => {
+        if (err) {
+          console.error('Error opening INBOX:', err);
+          reject(err);
+          return;
+        }
 
     // Calculate date filter (last sync or last 24 hours)
     const sinceDate = emailSettings.last_sync_at 
