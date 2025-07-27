@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ArrowLeft, Reply, Forward, Archive, Trash2, Star, Paperclip } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import DOMPurify from 'dompurify';
 
 interface Email {
   id: string;
@@ -140,7 +141,7 @@ export const EmailDetailView: React.FC<EmailDetailViewProps> = ({
             <div 
               className="prose max-w-none"
               dangerouslySetInnerHTML={{ 
-                __html: email.body.includes('<') ? email.body : email.body.replace(/\n/g, '<br>') 
+                __html: DOMPurify.sanitize(email.body.includes('<') ? email.body : email.body.replace(/\n/g, '<br>'))
               }}
             />
           </CardContent>

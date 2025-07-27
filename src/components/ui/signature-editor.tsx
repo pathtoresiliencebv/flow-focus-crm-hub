@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Bold, Italic, Link, Save } from 'lucide-react';
+import DOMPurify from 'dompurify';
 
 interface SignatureData {
   signatureHtml: string;
@@ -180,7 +181,7 @@ export function SignatureEditor({ initialData, onSave, onCancel }: SignatureEdit
                 <Label>Voorbeeld:</Label>
                 <Card className="p-4 mt-2 bg-muted">
                   <div 
-                    dangerouslySetInnerHTML={{ __html: signatureHtml }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(signatureHtml) }}
                     className="text-sm"
                   />
                 </Card>

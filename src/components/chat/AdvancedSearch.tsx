@@ -13,6 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { useAdvancedSearch } from '@/hooks/useAdvancedSearch';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import DOMPurify from 'dompurify';
 
 export const AdvancedSearch: React.FC = () => {
   const {
@@ -305,7 +306,7 @@ export const AdvancedSearch: React.FC = () => {
                         </div>
                         <div 
                           className="text-sm" 
-                          dangerouslySetInnerHTML={{ __html: result.highlight }}
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(result.highlight) }}
                         />
                       </div>
                     </CardContent>

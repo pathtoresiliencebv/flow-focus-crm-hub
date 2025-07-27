@@ -27,9 +27,20 @@ class EncryptionService {
         return;
       }
 
+      // Generate or retrieve salt
+      let salt = '';
+      const { value: existingSalt } = await Preferences.get({ key: 'encryption_salt' });
+      
+      if (existingSalt) {
+        salt = existingSalt;
+      } else {
+        salt = this.generateSalt();
+        await Preferences.set({ key: 'encryption_salt', value: salt });
+      }
+
       // Generate new master key
       const key = passphrase 
-        ? CryptoJS.PBKDF2(passphrase, 'salt', { 
+        ? CryptoJS.PBKDF2(passphrase, salt, { 
             keySize: 256/32, 
             iterations: this.config.keyDerivationRounds 
           }).toString()
@@ -154,14 +165,66 @@ class EncryptionService {
    */
   async rotateKey(newPassphrase?: string): Promise<void> {
     try {
-      // Remove old key
+      // Remove old key and salt
       await Preferences.remove({ key: 'encryption_master_key' });
+      await Preferences.remove({ key: 'encryption_salt' });
       
-      // Initialize new key
+      // Clear in-memory key
+      this.masterKey = null;
+      
+      // Initialize new key with new salt
       await this.initializeMasterKey(newPassphrase);
+      
+      // Log key rotation for audit purposes
+      console.log('Encryption key rotated successfully at:', new Date().toISOString());
     } catch (error) {
       console.error('Key rotation failed:', error);
       throw new Error('Failed to rotate encryption key');
+    }
+  }
+
+  /**
+   * Backup encryption configuration
+   */
+  async backupEncryptionConfig(): Promise<string> {
+    try {
+      const { value: key } = await Preferences.get({ key: 'encryption_master_key' });
+      const { value: salt } = await Preferences.get({ key: 'encryption_salt' });
+      
+      if (!key || !salt) {
+        throw new Error('No encryption configuration to backup');
+      }
+      
+      return JSON.stringify({
+        encryptedKey: this.encrypt(key, 'backup-key'),
+        salt: salt,
+        timestamp: Date.now(),
+        config: this.config
+      });
+    } catch (error) {
+      console.error('Backup failed:', error);
+      throw new Error('Failed to backup encryption configuration');
+    }
+  }
+
+  /**
+   * Restore encryption configuration from backup
+   */
+  async restoreEncryptionConfig(backupData: string, backupPassword: string): Promise<void> {
+    try {
+      const backup = JSON.parse(backupData);
+      const restoredKey = this.decrypt(backup.encryptedKey, 'backup-key');
+      
+      await Preferences.set({ key: 'encryption_master_key', value: restoredKey });
+      await Preferences.set({ key: 'encryption_salt', value: backup.salt });
+      
+      this.masterKey = restoredKey;
+      this.config = backup.config || this.config;
+      
+      console.log('Encryption configuration restored successfully at:', new Date().toISOString());
+    } catch (error) {
+      console.error('Restore failed:', error);
+      throw new Error('Failed to restore encryption configuration');
     }
   }
 }

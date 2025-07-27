@@ -16,6 +16,7 @@ import {
   DialogClose,
 } from '@/components/ui/dialog';
 import { EmailProviderSelector } from './EmailProviderSelector';
+import DOMPurify from 'dompurify';
 
 const accountSchema = z.object({
   display_name: z.string().min(1, 'Weergavenaam is verplicht'),
@@ -331,7 +332,7 @@ smansonderhoud.nl
                 <div className="mt-2 p-2 bg-muted rounded text-sm">
                   <Label>Voorbeeld:</Label>
                   <div 
-                    dangerouslySetInnerHTML={{ __html: form.watch('signature_html') || '' }}
+                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(form.watch('signature_html') || '') }}
                     className="mt-1 p-2 bg-background rounded border"
                   />
                 </div>
