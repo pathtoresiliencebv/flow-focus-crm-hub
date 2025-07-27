@@ -19,6 +19,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { Permission } from "@/types/permissions";
 import { NotificationCenter } from "./NotificationCenter";
+import { useChatUnreadCount } from "@/hooks/useChatUnreadCount";
 
 interface AppSidebarProps {
   activeTab: string;
@@ -28,8 +29,9 @@ interface AppSidebarProps {
 
 export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProps) {
   const { user, logout, profile, hasPermission } = useAuth();
+  const { totalUnreadCount } = useChatUnreadCount();
 
-  const allLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null}[] = [
+  const allLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null, badge?: number}[] = [
     {
       label: "Dashboard",
       icon: <LayoutDashboard className="h-5 w-5" />,
@@ -89,6 +91,7 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
       icon: <MessageCircle className="h-5 w-5" />,
       key: "chat",
       permission: null,
+      badge: totalUnreadCount,
     },
     {
       label: "Personeel",
@@ -113,6 +116,10 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
   const links = allLinks.filter(link => {
     // Hide Reports completely for Installateurs
     if (link.key === "reports" && profile?.role === 'Installateur') {
+      return false;
+    }
+    // Show Chat only for Administrator, Administratie, and Installateur
+    if (link.key === "chat" && !['Administrator', 'Administratie', 'Installateur'].includes(profile?.role || '')) {
       return false;
     }
     return link.permission === null || hasPermission(link.permission as Permission);

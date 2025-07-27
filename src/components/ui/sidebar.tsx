@@ -135,7 +135,7 @@ export const Sidebar = ({ links, user, profile, logout, activeTab, setActiveTab,
   const toggleSidebar = () => setIsOpen(!isOpen);
 
   const mainLinks = links.slice(0, 4);
-  const werkLinks = links.filter(l => ["time", "receipts", "quotes", "invoicing", "email"].includes(l.key));
+  const werkLinks = links.filter(l => ["time", "receipts", "quotes", "invoicing", "email", "chat"].includes(l.key));
   const beheerLinks = links.filter(l => ["personnel", "users", "salary", "reports"].includes(l.key));
   const settingsLink = links.find(l => l.key === 'settings');
 
@@ -154,10 +154,15 @@ export const Sidebar = ({ links, user, profile, logout, activeTab, setActiveTab,
       <li key={link.key} className={!isCollapsible ? "mb-2" : ""}>
         <button
           onClick={createLinkHandler(link.key)}
-          className={`${commonClasses} ${activeClasses} ${collapsibleClasses}`}
+          className={`${commonClasses} ${activeClasses} ${collapsibleClasses} relative`}
         >
           {!isCollapsible && link.icon}
           {link.label}
+          {link.badge && link.badge > 0 && (
+            <span className="ml-auto bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+              {link.badge > 99 ? '99+' : link.badge}
+            </span>
+          )}
         </button>
       </li>
     );

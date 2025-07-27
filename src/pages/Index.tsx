@@ -11,6 +11,7 @@ import { Invoicing } from "@/components/Invoicing";
 import { Email } from "@/components/Email";
 import { EmailFullscreen } from "@/components/EmailFullscreen";
 import { EnhancedChatWindow } from "@/components/chat/EnhancedChatWindow";
+import { DirectChatWindow } from "@/components/DirectChatWindow";
 import Personnel from "@/components/Personnel";
 import UserManagement from "@/components/UserManagement";
 import { Salary } from "@/components/Salary";
@@ -128,9 +129,7 @@ const Index = () => {
       case "email":
         return <EmailFullscreen onBackToDashboard={() => setActiveTab("dashboard")} />;
       case "chat":
-        return isMobile ? 
-          <MobileEnhancedChatView onBack={() => setActiveTab("dashboard")} /> :
-          <EnhancedChatWindow isFullscreen={true} />;
+        return <DirectChatWindow onBack={() => setActiveTab("dashboard")} />;
       case "personnel":
         return <Personnel />;
       case "users":
@@ -182,7 +181,6 @@ const Index = () => {
           {renderContent()}
         </div>
         <MobileBottomNavigation activeTab={activeTab} onTabChange={handleSetActiveTab} />
-        <ChatWidget />
       </div>
     );
   }
@@ -190,7 +188,6 @@ const Index = () => {
   return (
     <AppSidebar activeTab={activeTab} setActiveTab={handleSetActiveTab}>
       {renderContent()}
-      <ChatWidget />
     </AppSidebar>
   );
 };
