@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Session, User } from '@supabase/supabase-js';
@@ -12,10 +12,14 @@ interface UserProfile {
 }
 
 export const useAuth = () => {
+  console.log('useAuth: Starting hook execution');
+  
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  console.log('useAuth: useState calls successful');
 
   const fetchProfile = useCallback(async (user: User) => {
     const { data: profileData, error } = await supabase
