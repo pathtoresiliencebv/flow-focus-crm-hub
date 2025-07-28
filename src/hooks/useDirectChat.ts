@@ -59,14 +59,28 @@ export const useDirectChat = () => {
     if (!user) return;
 
     try {
+      console.log('Loading available users for chat...');
       const { data, error } = await supabase
         .rpc('get_available_chat_users', { current_user_id: user.id });
 
-      if (error) throw error;
+      if (error) {
+        console.error('RPC error:', error);
+        throw error;
+      }
 
-      setAvailableUsers(data || []);
+      console.log('Available users loaded:', data);
+      
+      // Filter out users with null or empty full_name and add fallback
+      const validUsers = (data || []).map((user: ChatUser) => ({
+        ...user,
+        full_name: user.full_name || user.role || 'Onbekende gebruiker'
+      }));
+
+      setAvailableUsers(validUsers);
     } catch (error) {
       console.error('Error loading available users:', error);
+      // Set empty array to prevent crash
+      setAvailableUsers([]);
       toast({
         title: "Fout",
         description: "Kon gebruikers niet laden",

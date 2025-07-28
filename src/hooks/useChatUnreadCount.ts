@@ -12,12 +12,20 @@ export const useChatUnreadCount = () => {
 
   const calculateTotalUnreadCount = useCallback(async () => {
     // Return 0 if user doesn't have chat access
-    if (!hasChatAccess || !user || !availableUsers || availableUsers.length === 0) {
+    if (!hasChatAccess || !user) {
+      setTotalUnreadCount(0);
+      return;
+    }
+
+    // Safe check for availableUsers
+    if (!availableUsers || availableUsers.length === 0) {
+      console.log('No available users for chat yet, setting count to 0');
       setTotalUnreadCount(0);
       return;
     }
 
     try {
+      console.log('Calculating unread count for', availableUsers.length, 'users');
       let total = 0;
       for (const chatUser of availableUsers) {
         if (chatUser?.id && getUnreadCount) {
@@ -25,6 +33,7 @@ export const useChatUnreadCount = () => {
           total += count || 0;
         }
       }
+      console.log('Total unread count:', total);
       setTotalUnreadCount(total);
     } catch (error) {
       console.error('Error calculating unread count:', error);
