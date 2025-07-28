@@ -128,15 +128,22 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
     return link.permission === null || hasPermission(link.permission as Permission);
   });
 
-  // FORCE chat link to always be available - remove role checks for visibility
-  const chatLink = allLinks.find(link => link.key === "chat");
+  // FORCE chat link to always be available for all roles
+  const chatLink = {
+    label: "Chat",
+    icon: <MessageCircle className="h-5 w-5" />,
+    key: "chat",
+    permission: null,
+    badge: totalUnreadCount > 0 ? totalUnreadCount : undefined,
+  };
   
   // Debug logging
   console.log('Chat Link Debug:', {
     chatLink: !!chatLink,
     profile: profile?.role,
     totalUnreadCount,
-    user: !!user
+    user: !!user,
+    hasAccess: ['Administrator', 'Administratie', 'Installateur'].includes(profile?.role || '')
   });
 
   return (

@@ -196,20 +196,24 @@ export const Sidebar = ({ links, user, profile, logout, activeTab, setActiveTab,
              {settingsLink.label}
            </button>
         )}
-        {chatLink && (
-           <button
-             onClick={createLinkHandler(chatLink.key)}
-             className={`flex gap-2 font-medium text-sm items-center w-full py-3 px-4 rounded-xl mb-4 relative ${activeTab === chatLink.key ? 'bg-smans-primary text-smans-primary-foreground' : 'bg-smans-primary text-smans-primary-foreground hover:bg-smans-primary/90'}`}
-           >
-             <MessageCircle className="h-5 w-5" />
-             {chatLink.label}
-             {chatLink.badge && chatLink.badge > 0 && (
-               <span className="ml-auto bg-white text-smans-primary text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
-                 {chatLink.badge > 99 ? '99+' : chatLink.badge}
-               </span>
-             )}
-           </button>
-        )}
+         {chatLink && (
+            <button
+              onClick={createLinkHandler(chatLink.key)}
+              className={`flex gap-2 font-medium text-sm items-center w-full py-3 px-4 rounded-xl mb-4 relative transition-all duration-200 hover:scale-105 ${
+                activeTab === chatLink.key 
+                  ? 'bg-smans-primary text-smans-primary-foreground ring-2 ring-smans-primary/30' 
+                  : 'bg-smans-primary text-smans-primary-foreground hover:bg-smans-primary/90 shadow-lg'
+              }`}
+            >
+              <MessageCircle className="h-5 w-5" />
+              {chatLink.label}
+              {chatLink.badge && chatLink.badge > 0 && (
+                <span className="ml-auto bg-white text-smans-primary text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold animate-pulse">
+                  {chatLink.badge > 99 ? '99+' : chatLink.badge}
+                </span>
+              )}
+            </button>
+         )}
         <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
           <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center shrink-0">
             <User className="h-5 w-5" />
