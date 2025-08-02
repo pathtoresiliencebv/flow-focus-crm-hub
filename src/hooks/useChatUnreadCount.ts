@@ -17,9 +17,9 @@ export const useChatUnreadCount = () => {
       return;
     }
 
-    // Safe check for availableUsers
+    // Safe check for availableUsers - but don't block the calculation
     if (!availableUsers || availableUsers.length === 0) {
-      console.log('No available users for chat yet, setting count to 0');
+      console.log('No available users for chat yet, keeping current count or setting to 0');
       setTotalUnreadCount(0);
       return;
     }

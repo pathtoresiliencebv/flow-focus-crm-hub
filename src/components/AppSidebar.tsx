@@ -30,8 +30,11 @@ interface AppSidebarProps {
 export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProps) {
   const { user, logout, profile, hasPermission } = useAuth();
   
-  // Always call the hook - it handles access control internally
+  // Get unread count but don't let it affect chat visibility
   const { totalUnreadCount } = useChatUnreadCount();
+  
+  // Check if user has chat access - INDEPENDENT of unread count loading
+  const hasChatAccess = ['Administrator', 'Administratie', 'Installateur'].includes(profile?.role || '');
 
   const allLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null, badge?: number}[] = [
     {
@@ -128,14 +131,14 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
     return link.permission === null || hasPermission(link.permission as Permission);
   });
 
-  // FORCE chat link to always be available for all roles
-  const chatLink = {
+  // FORCE chat link to ALWAYS be available if user has chat access - COMPLETELY INDEPENDENT of data loading
+  const chatLink = hasChatAccess ? {
     label: "Chat",
     icon: <MessageCircle className="h-5 w-5" />,
     key: "chat",
     permission: null,
     badge: totalUnreadCount > 0 ? totalUnreadCount : undefined,
-  };
+  } : null;
   
   // Debug logging
   console.log('Chat Link Debug:', {
