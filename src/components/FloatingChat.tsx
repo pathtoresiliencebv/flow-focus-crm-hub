@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { MessageCircle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MobileImprovedChatView } from "./mobile/MobileImprovedChatView";
 import { ImprovedChatWindow } from "./ImprovedChatWindow";
+import { useChatUnreadCount } from "@/hooks/useChatUnreadCount";
 
 interface FloatingChatProps {
   currentProjectId?: string;
@@ -17,16 +17,25 @@ export const FloatingChat: React.FC<FloatingChatProps> = ({
   currentProjectId, 
   currentProjectTitle 
 }) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const isMobile = useIsMobile();
-  const { channels } = useChat();
+  const { totalUnreadCount } = useChatUnreadCount();
   const [isOpen, setIsOpen] = useState(false);
 
-  // Calculate total unread count across all channels
-  const unreadCount = channels.reduce((total, channel) => total + (channel.unread_count || 0), 0);
+  // Check if user has chat access
+  const hasChatAccess = profile?.role && ['Administrator', 'Administratie', 'Installateur'].includes(profile.role);
 
-  // Don't show if user is not authenticated
-  if (!user) return null;
+  // Debug logging
+  console.log('FloatingChat Debug:', {
+    user: !!user,
+    profile: profile?.role,
+    hasChatAccess,
+    totalUnreadCount,
+    isOpen
+  });
+
+  // Show chat button if user exists and has chat access
+  if (!user || !hasChatAccess) return null;
 
   return (
     <>
@@ -67,9 +76,9 @@ export const FloatingChat: React.FC<FloatingChatProps> = ({
           ) : (
             <>
               <MessageCircle className={cn("text-primary-foreground", isMobile ? "h-5 w-5" : "h-6 w-6")} />
-              {unreadCount > 0 && (
+              {totalUnreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
-                  {unreadCount > 99 ? '99+' : unreadCount}
+                  {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
                 </span>
               )}
             </>
