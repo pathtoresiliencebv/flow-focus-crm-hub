@@ -1,15 +1,19 @@
 import React, { useState } from "react";
 import { MessageCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { EnhancedChatWindow } from "./chat/EnhancedChatWindow";
+import { DirectChatWindow } from "./chat/DirectChatWindow";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useDirectChat } from "@/hooks/useDirectChat";
 
 export const ChatWidget = () => {
   try {
     const { user, isLoading } = useAuth();
-    const totalUnreadCount = 0; // Temporary for debugging
+    const { conversations } = useDirectChat();
     const [isOpen, setIsOpen] = useState(false);
+    
+    // Calculate total unread count
+    const totalUnreadCount = conversations.reduce((total, conv) => total + conv.unread_count, 0);
     
     // Don't show if user is not authenticated or still loading
     if (isLoading || !user) return null;
@@ -19,7 +23,7 @@ export const ChatWidget = () => {
         {/* Chat Window - Always fullscreen */}
         {isOpen && (
           <div className="fixed inset-0 z-60 shadow-2xl overflow-hidden bg-background border transition-all duration-300">
-            <EnhancedChatWindow onClose={() => setIsOpen(false)} />
+            <DirectChatWindow onClose={() => setIsOpen(false)} isFullscreen />
           </div>
         )}
 

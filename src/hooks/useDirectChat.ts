@@ -2,426 +2,286 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { TranslationService } from '@/services/translationService';
 import { enhancedTranslationService } from '@/services/enhancedTranslationService';
 import { languageDetectionService } from '@/services/languageDetectionService';
 import { useChatFileUpload } from './useChatFileUpload';
 
 export interface DirectMessage {
   id: string;
-  from_user_id: string;
-  to_user_id: string;
+  sender_id: string;
+  receiver_id: string;
   content: string;
-  original_language: string;
-  translated_content?: Record<string, string> | null;
-  created_at: string;
-  updated_at: string;
-  is_read: boolean;
-  message_type?: string;
+  message_type: 'text' | 'image' | 'file' | 'voice' | 'location';
   file_url?: string;
   file_name?: string;
-  file_type?: string;
   file_size?: number;
+  file_type?: string;
   thumbnail_url?: string;
   audio_duration?: number;
   transcription_text?: string;
+  latitude?: number;
+  longitude?: number;
+  address?: string;
   detected_language?: string;
-  context_type?: string;
-  translation_confidence?: number;
-  sender?: {
-    id: string;
-    full_name?: string;
-    role?: string;
-    language_preference?: string;
-  };
+  is_read: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface ChatUser {
-  id: string;
-  full_name?: string;
-  role?: string;
-  is_online?: boolean;
-  language_preference?: string;
+export interface Conversation {
+  other_user_id: string;
+  other_user_name?: string;
+  other_user_email?: string;
+  other_user_role?: string;
+  last_message?: string;
+  last_message_at?: string;
+  unread_count: number;
 }
 
 export const useDirectChat = () => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
-  const { uploadFile } = useChatFileUpload();
-  const [messages, setMessages] = useState<DirectMessage[]>([]);
-  const [availableUsers, setAvailableUsers] = useState<ChatUser[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isTranslating, setIsTranslating] = useState(false);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [messages, setMessages] = useState<DirectMessage[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
-  // Load available users for chat based on role
-  const loadAvailableUsers = useCallback(async () => {
-    if (!user) return;
-
-    try {
-      console.log('Loading available users for chat...');
-      const { data, error } = await supabase
-        .rpc('get_available_chat_users', { current_user_id: user.id });
-
-      if (error) {
-        console.error('RPC error:', error);
-        throw error;
-      }
-
-      console.log('Available users loaded:', data);
-      
-      // Filter out users with null or empty full_name and add fallback
-      const validUsers = (data || []).map((user: ChatUser) => ({
-        ...user,
-        full_name: user.full_name || user.role || 'Onbekende gebruiker'
-      }));
-
-      setAvailableUsers(validUsers);
-    } catch (error) {
-      console.error('Error loading available users:', error);
-      // Set empty array to prevent crash
-      setAvailableUsers([]);
-      toast({
-        title: "Fout",
-        description: "Kon gebruikers niet laden",
-        variant: "destructive",
-      });
-    }
-  }, [user, toast]);
-
-  // Load messages for a specific user conversation
-  const loadMessages = useCallback(async (otherUserId: string) => {
-    if (!user || !otherUserId) return;
+  // Load conversations (list of users I've chatted with)
+  const loadConversations = useCallback(async () => {
+    if (!user?.id) return;
 
     try {
       const { data, error } = await supabase
         .from('direct_messages')
         .select(`
-          *,
-          sender:profiles!direct_messages_from_user_id_fkey(id, full_name, role)
+          sender_id,
+          receiver_id,
+          content,
+          created_at,
+          is_read,
+          profiles!direct_messages_sender_id_fkey (id, full_name, email, role),
+          receiver_profiles:profiles!direct_messages_receiver_id_fkey (id, full_name, email, role)
         `)
-        .or(`and(from_user_id.eq.${user.id},to_user_id.eq.${otherUserId}),and(from_user_id.eq.${otherUserId},to_user_id.eq.${user.id})`)
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Group messages by conversation and get latest message + unread count
+      const conversationMap = new Map<string, Conversation>();
+
+      data?.forEach((msg: any) => {
+        const otherUserId = msg.sender_id === user.id ? msg.receiver_id : msg.sender_id;
+        const otherUser = msg.sender_id === user.id 
+          ? msg.receiver_profiles // receiver profile
+          : msg.profiles; // sender profile
+
+        if (!conversationMap.has(otherUserId)) {
+          conversationMap.set(otherUserId, {
+            other_user_id: otherUserId,
+            other_user_name: otherUser?.full_name,
+            other_user_email: otherUser?.email,
+            other_user_role: otherUser?.role,
+            last_message: msg.content,
+            last_message_at: msg.created_at,
+            unread_count: 0
+          });
+        }
+
+        // Update unread count (messages received that are not read)
+        if (msg.receiver_id === user.id && !msg.is_read) {
+          const conv = conversationMap.get(otherUserId)!;
+          conv.unread_count++;
+        }
+      });
+
+      setConversations(Array.from(conversationMap.values()));
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+    }
+  }, [user?.id]);
+
+  // Load messages for selected conversation
+  const loadMessages = useCallback(async () => {
+    if (!user?.id || !selectedUserId) {
+      setMessages([]);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('direct_messages')
+        .select('*')
+        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${selectedUserId}),and(sender_id.eq.${selectedUserId},receiver_id.eq.${user.id})`)
         .order('created_at', { ascending: true });
 
-      if (error) {
-        console.error('Error loading messages:', error);
-        // Fallback without profile join
-        const { data: fallbackData, error: fallbackError } = await supabase
-          .from('direct_messages')
-          .select('*')
-          .or(`and(from_user_id.eq.${user.id},to_user_id.eq.${otherUserId}),and(from_user_id.eq.${otherUserId},to_user_id.eq.${user.id})`)
-          .order('created_at', { ascending: true });
+      if (error) throw error;
 
-        if (fallbackError) throw fallbackError;
-
-        const mappedMessages: DirectMessage[] = (fallbackData || []).map(msg => ({
-          ...msg,
-          translated_content: msg.translated_content as Record<string, string> | null,
-          sender: {
-            id: msg.from_user_id,
-            full_name: 'Unknown User',
-            role: 'Bekijker'
-          }
-        }));
-
-        setMessages(mappedMessages);
-        return;
-      }
-
-      const mappedMessages: DirectMessage[] = (data || []).map(msg => ({
-        ...msg,
-        translated_content: msg.translated_content as Record<string, string> | null,
-        sender: Array.isArray(msg.sender) && msg.sender.length > 0 ? msg.sender[0] : {
-          id: msg.from_user_id,
-          full_name: 'Unknown User',
-          role: 'Bekijker'
-        }
-      }));
-
-      setMessages(mappedMessages);
-
-      // Mark messages as read
-      await markMessagesAsRead(otherUserId);
+      setMessages(data || []);
     } catch (error) {
       console.error('Error loading messages:', error);
-      toast({
-        title: "Fout",
-        description: "Kon berichten niet laden",
-        variant: "destructive",
-      });
     }
-  }, [user, toast]);
+  }, [user?.id, selectedUserId]);
 
-  // Send a text message with enhanced translation
-  const sendMessage = useCallback(async (toUserId: string, content: string) => {
-    if (!user || !content.trim()) return;
+  // Send a message
+  const sendMessage = useCallback(async (
+    receiverId: string, 
+    content: string, 
+    messageType: string = 'text',
+    fileData?: any,
+    locationData?: any
+  ) => {
+    if (!user?.id) return;
 
     try {
-      await sendEnhancedMessage(toUserId, {
-        content: content.trim(),
-        messageType: 'text'
-      });
-    } catch (error) {
-      console.error('Error sending message:', error);
-      toast({
-        title: "Fout",
-        description: "Kon bericht niet versturen",
-        variant: "destructive",
-      });
-    }
-  }, [user, toast]);
+      const messageData: any = {
+        sender_id: user.id,
+        receiver_id: receiverId,
+        content,
+        message_type: messageType,
+        is_read: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
 
-  // Send a file message
-  const sendFileMessage = useCallback(async (toUserId: string, file: File) => {
-    if (!user || !file) return;
-
-    try {
-      setIsTranslating(true);
-      
-      // Upload file first
-      const uploadResult = await uploadFile(file, 'chat-files');
-      const { url: fileUrl, fileName, fileType, fileSize } = uploadResult;
-      
-      await sendEnhancedMessage(toUserId, {
-        content: `📎 ${fileName}`,
-        messageType: 'file',
-        fileUrl,
-        fileName,
-        fileType,
-        fileSize
-      });
-    } catch (error) {
-      console.error('Error sending file:', error);
-      toast({
-        title: "Fout",
-        description: "Kon bestand niet versturen",
-        variant: "destructive",
-      });
-    } finally {
-      setIsTranslating(false);
-    }
-  }, [user, uploadFile, toast]);
-
-  // Send a voice message
-  const sendVoiceMessage = useCallback(async (toUserId: string, audioBlob: Blob, duration: number) => {
-    if (!user || !audioBlob) return;
-
-    try {
-      setIsTranslating(true);
-      
-      // Create file from blob
-      const audioFile = new File([audioBlob], `voice-${Date.now()}.webm`, { type: 'audio/webm' });
-      
-      // Upload audio file
-      const uploadResult = await uploadFile(audioFile, 'chat-files');
-      const { url: fileUrl, fileName, fileType, fileSize } = uploadResult;
-      
-      // Get transcription
-      let transcriptionText = '';
-      try {
-        const formData = new FormData();
-        formData.append('audio', audioBlob);
-        
-        const { data } = await supabase.functions.invoke('voice-to-text', {
-          body: formData
-        });
-        
-        transcriptionText = data?.text || '';
-      } catch (transcriptionError) {
-        console.warn('Transcription failed:', transcriptionError);
+      // Add file data if present
+      if (fileData) {
+        messageData.file_url = fileData.file_url;
+        messageData.file_name = fileData.file_name;
+        messageData.file_size = fileData.file_size;
+        messageData.file_type = fileData.file_type;
+        messageData.thumbnail_url = fileData.thumbnail_url;
+        messageData.audio_duration = fileData.audio_duration;
+        messageData.transcription_text = fileData.transcription_text;
       }
-      
-      await sendEnhancedMessage(toUserId, {
-        content: transcriptionText || '🎵 Voice message',
-        messageType: 'voice',
-        fileUrl,
-        fileName,
-        fileType,
-        fileSize,
-        audioDuration: duration,
-        transcriptionText
-      });
-    } catch (error) {
-      console.error('Error sending voice message:', error);
-      toast({
-        title: "Fout",
-        description: "Kon spraakbericht niet versturen",
-        variant: "destructive",
-      });
-    } finally {
-      setIsTranslating(false);
-    }
-  }, [user, uploadFile, toast]);
 
-  // Enhanced message sender with language detection and translation
-  const sendEnhancedMessage = useCallback(async (toUserId: string, messageData: {
-    content: string;
-    messageType: string;
-    fileUrl?: string;
-    fileName?: string;
-    fileType?: string;
-    fileSize?: number;
-    audioDuration?: number;
-    transcriptionText?: string;
-  }) => {
-    if (!user) return;
+      // Add location data if present
+      if (locationData) {
+        messageData.latitude = locationData.latitude;
+        messageData.longitude = locationData.longitude;
+        messageData.address = locationData.address;
+      }
 
-    try {
-      // Get recipient's language preference
-      const { data: recipientData } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', toUserId)
-        .single();
-
-      const recipientLanguage = (recipientData?.role === 'Installateur' ? 'pl' : 'nl');
-      const senderLanguage = (profile?.role === 'Installateur' ? 'pl' : 'nl');
-
-      // Detect language of content
-      const detectionResult = languageDetectionService.detectFromContent(messageData.content);
-      const detectedLanguage = detectionResult.code;
-      
-      // Enhanced translation if needed
-      let translatedContent: Record<string, string> = {};
-      let translationConfidence = 1.0;
-
-      if (detectedLanguage !== recipientLanguage && messageData.content.trim()) {
-        const translationResult = await enhancedTranslationService.translateText({
-          text: messageData.content,
-          fromLanguage: detectedLanguage,
-          toLanguage: recipientLanguage,
-          context: 'casual'
-        });
-        translatedContent[recipientLanguage] = translationResult.translatedText;
-        translationConfidence = translationResult.confidence;
+      // Detect language for text messages
+      if (messageType === 'text' && content.trim()) {
+        try {
+          const response = await supabase.functions.invoke('translate-message', {
+            body: { 
+              text: content,
+              action: 'detect'
+            }
+          });
+          
+          if (response.data?.detectedLanguage) {
+            messageData.detected_language = response.data.detectedLanguage;
+          }
+        } catch (error) {
+          console.warn('Language detection failed:', error);
+        }
       }
 
       const { error } = await supabase
         .from('direct_messages')
-        .insert({
-          from_user_id: user.id,
-          to_user_id: toUserId,
-          content: messageData.content,
-          original_language: detectedLanguage,
-          translated_content: Object.keys(translatedContent).length > 0 ? translatedContent : null,
-          translation_confidence: translationConfidence,
-          message_type: messageData.messageType,
-          file_url: messageData.fileUrl,
-          file_name: messageData.fileName,
-          file_type: messageData.fileType,
-          file_size: messageData.fileSize,
-          audio_duration: messageData.audioDuration,
-          transcription_text: messageData.transcriptionText,
-          detected_language: detectedLanguage,
-          context_type: 'work'
-        });
+        .insert([messageData]);
 
       if (error) throw error;
 
+      // Reload conversations and messages
+      await Promise.all([loadConversations(), loadMessages()]);
     } catch (error) {
-      console.error('Error sending enhanced message:', error);
+      console.error('Error sending message:', error);
       throw error;
     }
-  }, [user, profile]);
+  }, [user?.id, loadConversations, loadMessages]);
 
   // Mark messages as read
-  const markMessagesAsRead = useCallback(async (fromUserId: string) => {
-    if (!user) return;
+  const markAsRead = useCallback(async (otherUserId: string) => {
+    if (!user?.id) return;
 
     try {
-      await supabase
+      const { error } = await supabase
         .from('direct_messages')
         .update({ is_read: true })
-        .eq('from_user_id', fromUserId)
-        .eq('to_user_id', user.id)
+        .eq('sender_id', otherUserId)
+        .eq('receiver_id', user.id)
         .eq('is_read', false);
+
+      if (error) throw error;
+
+      // Update local state
+      setConversations(prev => 
+        prev.map(conv => 
+          conv.other_user_id === otherUserId 
+            ? { ...conv, unread_count: 0 }
+            : conv
+        )
+      );
     } catch (error) {
       console.error('Error marking messages as read:', error);
     }
-  }, [user]);
+  }, [user?.id]);
 
-  // Get unread count for a user
-  const getUnreadCount = useCallback(async (fromUserId: string): Promise<number> => {
-    if (!user) return 0;
-
-    try {
-      const { count, error } = await supabase
-        .from('direct_messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('from_user_id', fromUserId)
-        .eq('to_user_id', user.id)
-        .eq('is_read', false);
-
-      if (error) throw error;
-      return count || 0;
-    } catch (error) {
-      console.error('Error getting unread count:', error);
-      return 0;
-    }
-  }, [user]);
-
-  // Set up real-time subscriptions
+  // Set up real-time subscription
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
 
-    const subscription = supabase
-      .channel('direct-messages')
+    const channel = supabase
+      .channel('direct_messages')
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'direct_messages',
+          filter: `or(sender_id.eq.${user.id},receiver_id.eq.${user.id})`
         },
         (payload) => {
-          const newMessage = payload.new as DirectMessage;
+          console.log('Direct message change:', payload);
           
-          // Only add message if it's for current conversation
-          if (selectedUserId && 
-              ((newMessage.from_user_id === user.id && newMessage.to_user_id === selectedUserId) ||
-               (newMessage.from_user_id === selectedUserId && newMessage.to_user_id === user.id))) {
-            setMessages(prev => [...prev, newMessage]);
-            
-            // Mark as read if we're the recipient
-            if (newMessage.to_user_id === user.id) {
-              markMessagesAsRead(newMessage.from_user_id);
-            }
+          // Reload data when changes occur
+          loadConversations();
+          if (selectedUserId) {
+            loadMessages();
           }
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(subscription);
+      supabase.removeChannel(channel);
     };
-  }, [user, selectedUserId, markMessagesAsRead]);
+  }, [user?.id, selectedUserId, loadConversations, loadMessages]);
 
-  // Load initial data
+  // Load data on mount and when user changes
   useEffect(() => {
-    if (user) {
-      loadAvailableUsers().finally(() => setLoading(false));
-    }
-  }, [user, loadAvailableUsers]);
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        await loadConversations();
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Load messages when user is selected
-  useEffect(() => {
-    if (selectedUserId) {
-      loadMessages(selectedUserId);
+    if (user?.id) {
+      loadData();
     }
+  }, [user?.id, loadConversations]);
+
+  // Load messages when selected user changes
+  useEffect(() => {
+    loadMessages();
   }, [selectedUserId, loadMessages]);
 
   return {
+    loading,
+    conversations,
     messages,
-    availableUsers,
     selectedUserId,
     setSelectedUserId,
-    loading,
-    isTranslating,
     sendMessage,
-    sendFileMessage,
-    sendVoiceMessage,
-    loadMessages,
-    getUnreadCount,
-    loadAvailableUsers
+    markAsRead,
+    refreshConversations: loadConversations,
+    refreshMessages: loadMessages
   };
 };

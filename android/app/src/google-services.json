@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "700295697920",
+    "project_id": "smanscrm",
+    "storage_bucket": "smanscrm.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:700295697920:android:8990ef2fed931e3ce66ae5",
+        "android_client_info": {
+          "package_name": "com.smanscrm.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-CiN5SXApg_2naubYaZmW6TeR-TFlL4w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
