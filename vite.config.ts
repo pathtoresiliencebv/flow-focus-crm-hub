@@ -14,16 +14,20 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' &&
     componentTagger(),
   ].filter(Boolean),
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
   build: {
     rollupOptions: {
       output: {
         manualChunks: undefined,
       },
+    },
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom']
+  },
+  resolve: {
+    dedupe: ['react', 'react-dom'],
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
     },
   },
 }));
