@@ -23,7 +23,11 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     include: ['react', 'react-dom'],
-    force: true
+    force: true,
+    exclude: []
+  },
+  define: {
+    global: 'globalThis',
   },
   resolve: {
     dedupe: ['react', 'react-dom'],
