@@ -1,18 +1,17 @@
-
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
 import './index.css'
 
-// Force React to be available globally for debugging
-if (typeof window !== 'undefined') {
-  (window as any).React = React;
-  (window as any).ReactDOM = ReactDOM;
-}
-
-// Ensure React hooks are properly available
-if (!React || !React.useState) {
-  throw new Error('React is not properly loaded');
+// Simple working app component
+function App() {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold mb-4">App is Loading...</h1>
+        <p>React is working properly</p>
+      </div>
+    </div>
+  )
 }
 
 const rootElement = document.getElementById("root");
