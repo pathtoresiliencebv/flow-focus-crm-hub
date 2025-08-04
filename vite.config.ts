@@ -8,34 +8,22 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    force: true
   },
   plugins: [
     react(),
     mode === 'development' &&
     componentTagger(),
   ].filter(Boolean),
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+    },
+  },
   build: {
     rollupOptions: {
       output: {
         manualChunks: undefined,
       },
-    },
-  },
-  optimizeDeps: {
-    include: ['react', 'react-dom', 'react/jsx-runtime'],
-    force: true,
-    exclude: []
-  },
-  define: {
-    global: 'globalThis',
-  },
-  resolve: {
-    dedupe: ['react', 'react-dom'],
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-      "react": path.resolve("./node_modules/react"),
-      "react-dom": path.resolve("./node_modules/react-dom")
     },
   },
 }));

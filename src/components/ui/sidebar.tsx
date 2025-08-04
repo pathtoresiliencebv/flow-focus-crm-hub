@@ -124,7 +124,7 @@ const CollapsibleSection = ({
   );
 };
 
-export const Sidebar = ({ links, user, profile, logout, activeTab, setActiveTab, chatLink = null, children }) => {
+export const Sidebar = ({ links, user, profile, logout, activeTab, setActiveTab, chatLink, children }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const mobileSidebarVariants = {

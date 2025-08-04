@@ -19,6 +19,8 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { Permission } from "@/types/permissions";
 import { NotificationCenter } from "./NotificationCenter";
+import { useChatUnreadCount } from "@/hooks/useChatUnreadCount";
+
 interface AppSidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
@@ -27,6 +29,12 @@ interface AppSidebarProps {
 
 export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProps) {
   const { user, logout, profile, hasPermission } = useAuth();
+  
+  // Get unread count but don't let it affect chat visibility
+  const { totalUnreadCount } = useChatUnreadCount();
+  
+  // Check if user has chat access - INDEPENDENT of unread count loading
+  const hasChatAccess = ['Administrator', 'Administratie', 'Installateur'].includes(profile?.role || '');
 
   const allLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null, badge?: number}[] = [
     {
@@ -84,6 +92,13 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
       permission: null,
     },
     {
+      label: "Chat",
+      icon: <MessageCircle className="h-5 w-5" />,
+      key: "chat",
+      permission: null,
+      badge: totalUnreadCount > 0 ? totalUnreadCount : undefined,
+    },
+    {
       label: "Personeel",
       icon: <UserCheck className="h-5 w-5" />,
       key: "personnel",
@@ -103,13 +118,35 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
     }
   ];
 
-  // Filter links based on permissions
+  // Filter out chat from regular menu - it will be in the footer
   const links = allLinks.filter(link => {
+    // Hide Chat from regular menu - will be in footer
+    if (link.key === "chat") {
+      return false;
+    }
     // Hide Reports completely for Installateurs
     if (link.key === "reports" && profile?.role === 'Installateur') {
       return false;
     }
     return link.permission === null || hasPermission(link.permission as Permission);
+  });
+
+  // FORCE chat link to ALWAYS be available if user has chat access - COMPLETELY INDEPENDENT of data loading
+  const chatLink = hasChatAccess ? {
+    label: "Chat",
+    icon: <MessageCircle className="h-5 w-5" />,
+    key: "chat",
+    permission: null,
+    badge: totalUnreadCount > 0 ? totalUnreadCount : undefined,
+  } : null;
+  
+  // Debug logging
+  console.log('Chat Link Debug:', {
+    chatLink: !!chatLink,
+    profile: profile?.role,
+    totalUnreadCount,
+    user: !!user,
+    hasAccess: ['Administrator', 'Administratie', 'Installateur'].includes(profile?.role || '')
   });
 
   return (
@@ -120,6 +157,7 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
       logout={logout}
       activeTab={activeTab}
       setActiveTab={setActiveTab}
+      chatLink={chatLink}
     >
       {children}
     </Sidebar>
