@@ -2,18 +2,22 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye, Send } from "lucide-react";
+import { Eye, Send, CreditCard, DollarSign } from "lucide-react";
+import { usePayments } from "@/hooks/usePayments";
 
 interface Invoice {
   id: string;
   invoice_number: string;
   customer_name: string;
+  customer_email?: string;
   project_title?: string;
   invoice_date: string;
   due_date: string;
   status: string;
   total_amount: number;
   source_quote_id?: string;
+  payment_date?: string;
+  payment_method?: string;
 }
 
 interface InvoicesTableProps {

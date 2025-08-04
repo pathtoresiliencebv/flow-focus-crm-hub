@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(touch:*)",
+      "Bash(chmod:*)",
+      "Bash(npx supabase:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": []
+  }
+}

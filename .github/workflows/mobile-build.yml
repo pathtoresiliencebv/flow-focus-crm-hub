@@ -1,0 +1,293 @@
+name: Mobile App Build & Deploy
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'capacitor.config.ts'
+      - 'package.json'
+      - 'vite.config.ts'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'public/**'
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      deploy_to_stores:
+        description: 'Deploy to app stores'
+        required: true
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: '18'
+  JAVA_VERSION: '17'
+  XCODE_VERSION: '15.0'
+
+jobs:
+  # Web build and test
+  web-build:
+    name: Build Web App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run type checking
+        run: npm run type-check
+
+      - name: Run tests
+        run: npm run test:ci
+        env:
+          CI: true
+
+      - name: Build web app
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Upload web build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: dist/
+          retention-days: 7
+
+  # Android build
+  android-build:
+    name: Build Android App
+    runs-on: ubuntu-latest
+    needs: web-build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download web build
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: dist/
+
+      - name: Sync Capacitor
+        run: |
+          npm run build
+          npx cap sync android
+
+      - name: Build Android Debug APK
+        if: github.ref != 'refs/heads/main'
+        run: |
+          cd android
+          ./gradlew assembleDebug
+
+      - name: Build Android Release APK
+        if: github.ref == 'refs/heads/main'
+        run: |
+          cd android
+          ./gradlew assembleRelease
+        env:
+          ANDROID_KEYSTORE_FILE: ${{ secrets.ANDROID_KEYSTORE_FILE }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+      - name: Sign Android APK
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_FILE }}" | base64 -d > android/keystore.jks
+          cd android
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file=keystore.jks \
+            -Pandroid.injected.signing.store.password="${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.ANDROID_KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.ANDROID_KEY_PASSWORD }}"
+
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: android/app/build/outputs/apk/**/*.apk
+          retention-days: 30
+
+  # iOS build
+  ios-build:
+    name: Build iOS App
+    runs-on: macos-latest
+    needs: web-build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Install iOS dependencies
+        run: |
+          sudo gem install cocoapods
+          pod --version
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download web build
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: dist/
+
+      - name: Sync Capacitor
+        run: |
+          npm run build
+          npx cap sync ios
+
+      - name: Install iOS Pods
+        run: |
+          cd ios/App
+          pod install
+
+      - name: Build iOS Archive
+        if: github.ref == 'refs/heads/main'
+        run: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -destination generic/platform=iOS \
+            -archivePath App.xcarchive \
+            archive
+        env:
+          CODE_SIGN_IDENTITY: ${{ secrets.IOS_CODE_SIGN_IDENTITY }}
+          PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+
+      - name: Export IPA
+        if: github.ref == 'refs/heads/main'
+        run: |
+          cd ios/App
+          xcodebuild -exportArchive \
+            -archivePath App.xcarchive \
+            -exportPath export \
+            -exportOptionsPlist ExportOptions.plist
+
+      - name: Upload iOS IPA
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: ios/App/export/*.ipa
+          retention-days: 30
+
+  # Deploy to stores (only on main branch and manual trigger)
+  deploy-android:
+    name: Deploy Android to Play Store
+    runs-on: ubuntu-latest
+    needs: [android-build]
+    if: github.ref == 'refs/heads/main' && (github.event.inputs.deploy_to_stores == 'true' || github.event_name == 'workflow_dispatch')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download Android APK
+        uses: actions/download-artifact@v4
+        with:
+          name: android-apk
+
+      - name: Upload to Google Play Console
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: nl.smanscrm.app
+          releaseFiles: '**/*.apk'
+          track: internal # internal, alpha, beta, production
+          status: draft
+          inAppUpdatePriority: 2
+
+  deploy-ios:
+    name: Deploy iOS to App Store
+    runs-on: macos-latest
+    needs: [ios-build]
+    if: github.ref == 'refs/heads/main' && (github.event.inputs.deploy_to_stores == 'true' || github.event_name == 'workflow_dispatch')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download iOS IPA
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-ipa
+
+      - name: Upload to App Store Connect
+        run: |
+          xcrun altool --upload-app \
+            --type ios \
+            --file *.ipa \
+            --username "${{ secrets.APPLE_ID_USERNAME }}" \
+            --password "${{ secrets.APPLE_ID_PASSWORD }}"
+
+  # Notify on completion
+  notify:
+    name: Notify Build Status
+    runs-on: ubuntu-latest
+    needs: [web-build, android-build, ios-build]
+    if: always()
+    steps:
+      - name: Notify Success
+        if: needs.web-build.result == 'success' && needs.android-build.result == 'success' && needs.ios-build.result == 'success'
+        run: |
+          echo "✅ All builds completed successfully!"
+          # Add Slack/Discord notification here if needed
+
+      - name: Notify Failure
+        if: needs.web-build.result == 'failure' || needs.android-build.result == 'failure' || needs.ios-build.result == 'failure'
+        run: |
+          echo "❌ One or more builds failed!"
+          # Add Slack/Discord notification here if needed

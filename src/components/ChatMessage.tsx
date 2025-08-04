@@ -1,9 +1,11 @@
 
+import React, { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Download, Play } from "lucide-react";
+import { Download, Play, Languages, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslation, TranslationResult } from '@/hooks/useTranslation';
 
 interface ChatUser {
   id: string;
@@ -23,6 +25,8 @@ interface Message {
   type: "text" | "image" | "file" | "voice";
   fileUrl?: string;
   fileName?: string;
+  detected_language?: string;
+  original_language?: string;
 }
 
 interface ChatMessageProps {
@@ -32,12 +36,71 @@ interface ChatMessageProps {
 }
 
 export const ChatMessage = ({ message, isOwnMessage, sender }: ChatMessageProps) => {
+  const { 
+    userPreferences, 
+    translateMessage, 
+    getLanguageFlag, 
+    getLanguageName,
+    t 
+  } = useTranslation();
+  
+  const [translation, setTranslation] = useState<TranslationResult | null>(null);
+  const [showTranslation, setShowTranslation] = useState(true);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translationError, setTranslationError] = useState<string | null>(null);
+
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString("nl-NL", { 
       hour: "2-digit", 
       minute: "2-digit" 
     });
   };
+
+  // Auto-translate messages if needed
+  useEffect(() => {
+    const shouldTranslate = 
+      message.type === 'text' && 
+      !isOwnMessage && 
+      userPreferences.chat_translation_enabled &&
+      message.detected_language &&
+      message.detected_language !== userPreferences.preferred_language;
+
+    if (shouldTranslate && !translation) {
+      performTranslation();
+    }
+  }, [message, userPreferences, isOwnMessage]);
+
+  const performTranslation = async () => {
+    if (isTranslating || !message.content) return;
+
+    setIsTranslating(true);
+    setTranslationError(null);
+
+    try {
+      const result = await translateMessage(
+        message.content,
+        userPreferences.preferred_language,
+        message.id,
+        message.detected_language || message.original_language
+      );
+
+      if (result.error) {
+        setTranslationError(result.error);
+      } else {
+        setTranslation(result);
+      }
+    } catch (error) {
+      setTranslationError(error instanceof Error ? error.message : 'Translation failed');
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
+  const canTranslate = 
+    message.type === 'text' && 
+    !isOwnMessage && 
+    message.detected_language &&
+    message.detected_language !== userPreferences.preferred_language;
 
   const renderMessageContent = () => {
     switch (message.type) {
@@ -77,14 +140,101 @@ export const ChatMessage = ({ message, isOwnMessage, sender }: ChatMessageProps)
         );
       default:
         return (
-          <div className="space-y-1">
-            <p className="text-sm">{message.content}</p>
-            {message.translatedContent && message.translatedContent !== message.content && (
-              <div className="border-t pt-1 mt-2">
+          <div className="space-y-2">
+            {/* Original message */}
+            <div className="flex items-start gap-2">
+              <div className="flex-1">
+                <p className="text-sm">{message.content}</p>
+              </div>
+              {canTranslate && message.detected_language && (
+                <div className="flex items-center gap-1">
+                  <Badge variant="outline" className="text-xs">
+                    {getLanguageFlag(message.detected_language)} {message.detected_language.toUpperCase()}
+                  </Badge>
+                  {!userPreferences.chat_translation_enabled && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={performTranslation}
+                      disabled={isTranslating}
+                      className="h-6 w-6 p-0"
+                    >
+                      <Languages className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Translation */}
+            {userPreferences.chat_translation_enabled && (translation || isTranslating || translationError) && (
+              <div className="border-t pt-2 space-y-1">
+                <div className="flex items-center justify-between">
+                  <Badge variant="secondary" className="text-xs">
+                    {getLanguageFlag(userPreferences.preferred_language)} {t('chat.translated', 'Translated')}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowTranslation(!showTranslation)}
+                    className="h-6 w-6 p-0"
+                  >
+                    {showTranslation ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                  </Button>
+                </div>
+
+                {showTranslation && (
+                  <>
+                    {isTranslating && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <div className="animate-spin rounded-full h-3 w-3 border-b border-current"></div>
+                        {t('chat.translating', 'Translating...')}
+                      </div>
+                    )}
+
+                    {translationError && (
+                      <div className="text-xs text-red-500">
+                        {t('chat.translation_error', 'Translation failed')}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={performTranslation}
+                          className="ml-2 h-4 text-xs underline"
+                        >
+                          {t('common.retry', 'Retry')}
+                        </Button>
+                      </div>
+                    )}
+
+                    {translation && !translation.error && (
+                      <div className="space-y-1">
+                        <p className="text-sm text-muted-foreground italic">
+                          {translation.translatedText}
+                        </p>
+                        {translation.confidence < 0.8 && (
+                          <p className="text-xs text-orange-500">
+                            {t('chat.low_confidence', 'Translation confidence is low')}
+                          </p>
+                        )}
+                        {translation.cached && (
+                          <p className="text-xs text-green-600">
+                            {t('chat.cached_translation', 'Cached translation')}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Legacy translated content support */}
+            {message.translatedContent && message.translatedContent !== message.content && !translation && (
+              <div className="border-t pt-2">
                 <Badge variant="outline" className="mb-1 text-xs">
-                  Vertaald
+                  {t('chat.translated', 'Translated')}
                 </Badge>
-                <p className="text-sm text-gray-600 italic">
+                <p className="text-sm text-muted-foreground italic">
                   {message.translatedContent}
                 </p>
               </div>
@@ -110,7 +260,7 @@ export const ChatMessage = ({ message, isOwnMessage, sender }: ChatMessageProps)
           <div className="flex items-center gap-2 mb-1">
             <p className="text-xs font-medium text-gray-700">{sender.name}</p>
             <Badge variant="secondary" className="text-xs">
-              {sender.language.toUpperCase()}
+              {getLanguageFlag(sender.language)} {sender.language.toUpperCase()}
             </Badge>
           </div>
         )}

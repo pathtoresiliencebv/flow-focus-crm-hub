@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Method for export -->
+    <key>method</key>
+    <string>app-store</string>
+    
+    <!-- Upload symbols for crash reporting -->
+    <key>uploadSymbols</key>
+    <true/>
+    
+    <!-- Upload bitcode -->
+    <key>uploadBitcode</key>
+    <false/>
+    
+    <!-- Compile bitcode -->
+    <key>compileBitcode</key>
+    <false/>
+    
+    <!-- Team ID -->
+    <key>teamID</key>
+    <string>$(DEVELOPMENT_TEAM)</string>
+    
+    <!-- Provisioning profiles -->
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>nl.smanscrm.app</key>
+        <string>Smans CRM Distribution</string>
+    </dict>
+    
+    <!-- Signing style -->
+    <key>signingStyle</key>
+    <string>manual</string>
+    
+    <!-- Signing certificate -->
+    <key>signingCertificate</key>
+    <string>iPhone Distribution</string>
+    
+    <!-- Destination -->
+    <key>destination</key>
+    <string>export</string>
+    
+    <!-- Generate app size report -->
+    <key>generateAppStoreInformation</key>
+    <true/>
+    
+    <!-- Thinning -->
+    <key>thinning</key>
+    <string>&lt;none&gt;</string>
+    
+    <!-- Manifest -->
+    <key>manifest</key>
+    <dict>
+        <key>appURL</key>
+        <string>https://releases.smanscrm.nl/ios/app.ipa</string>
+        <key>displayImageURL</key>
+        <string>https://releases.smanscrm.nl/ios/icon-57.png</string>
+        <key>fullSizeImageURL</key>
+        <string>https://releases.smanscrm.nl/ios/icon-512.png</string>
+    </dict>
+    
+    <!-- Distribution Summary -->
+    <key>distributionBundleIdentifier</key>
+    <string>nl.smanscrm.app</string>
+    
+    <!-- App Store Connect -->
+    <key>manageAppVersionAndBuildNumber</key>
+    <true/>
+</dict>
+</plist>
