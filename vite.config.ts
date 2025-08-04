@@ -22,12 +22,15 @@ export default defineConfig(({ mode }) => ({
     },
   },
   optimizeDeps: {
-    include: ['react', 'react-dom']
+    include: ['react', 'react-dom'],
+    force: true
   },
   resolve: {
     dedupe: ['react', 'react-dom'],
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "react": path.resolve("./node_modules/react"),
+      "react-dom": path.resolve("./node_modules/react-dom")
     },
   },
 }));
