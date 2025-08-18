@@ -19,7 +19,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { Permission } from "@/types/permissions";
 import { NotificationCenter } from "./NotificationCenter";
-import { useChatUnreadCount } from "@/hooks/useChatUnreadCount";
+// import { useChatUnreadCount } from "@/hooks/useChatUnreadCount";
 
 interface AppSidebarProps {
   activeTab: string;
@@ -31,7 +31,7 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
   const { user, logout, profile, hasPermission } = useAuth();
   
   // Get unread count but don't let it affect chat visibility
-  const { totalUnreadCount } = useChatUnreadCount();
+  const totalUnreadCount = 0; // Simplified for now
   
   // Check if user has chat access - INDEPENDENT of unread count loading
   const hasChatAccess = ['Administrator', 'Administratie', 'Installateur'].includes(profile?.role || '');

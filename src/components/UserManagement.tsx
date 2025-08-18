@@ -12,13 +12,32 @@ import { UserTable } from './users/UserTable';
 import { Profile } from '@/types/user';
 
 const UserManagement = () => {
-  const { data: users, isLoading, error } = useQuery({ queryKey: ['users'], queryFn: fetchUsers });
+  const { data: users, isLoading, error } = useQuery({ 
+    queryKey: ['users'], 
+    queryFn: fetchUsers,
+    retry: false
+  });
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
   const [isCreateUserOpen, setCreateUserOpen] = useState(false);
   const { hasPermission } = useAuth();
 
-  if (isLoading) return <div>Loading users...</div>;
-  if (error) return <div>Error fetching users: {error.message}</div>;
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <span className="ml-2">Laden van gebruikers...</span>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-600 mb-4">Fout bij laden van gebruikers</p>
+        <p className="text-muted-foreground">{error.message}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -32,7 +51,7 @@ const UserManagement = () => {
         )}
       </div>
       <Card>
-        <UserTable users={users || []} onEdit={setEditingUser} />
+        <UserTable users={Array.isArray(users) ? users : []} onEdit={setEditingUser} />
       </Card>
       {editingUser && (
         <EditUserDialog user={editingUser} onClose={() => setEditingUser(null)} />
