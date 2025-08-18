@@ -60,7 +60,7 @@ export const IOSTabBar: React.FC<IOSTabBarProps> = ({
       label: 'Profile',
       icon: <User className="h-5 w-5" />,
     },
-  ].filter(tab => !tab.permission || hasPermission(tab.permission));
+  ].filter(tab => !tab.permission || hasPermission(tab.permission as any));
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-pb">

@@ -192,28 +192,32 @@ export class ErrorHandler {
   // Report error to backend service
   private async reportError(errorReport: ErrorReport): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('error_logs')
-        .insert({
-          error_id: errorReport.id,
-          message: errorReport.message,
-          stack_trace: errorReport.stack,
-          category: errorReport.category,
-          severity: errorReport.severity,
-          user_id: errorReport.context.userId,
-          component: errorReport.context.component,
-          action: errorReport.context.action,
-          additional_data: errorReport.context.additionalData,
-          timestamp: new Date(errorReport.timestamp).toISOString(),
-          user_agent: navigator.userAgent,
-          url: window.location.href,
-        });
+      // Note: Commenting out error logging to DB for now as table doesn't exist
+      // const { error } = await supabase
+      //   .from('error_logs')
+      //   .insert({
+      //     error_id: errorReport.id,
+      //     message: errorReport.message,
+      //     stack_trace: errorReport.stack,
+      //     category: errorReport.category,
+      //     severity: errorReport.severity,
+      //     user_id: errorReport.context.userId,
+      //     component: errorReport.context.component,
+      //     action: errorReport.context.action,
+      //     additional_data: errorReport.context.additionalData,
+      //     timestamp: new Date(errorReport.timestamp).toISOString(),
+      //     user_agent: navigator.userAgent,
+      //     url: window.location.href,
+      //   });
 
-      if (error) {
-        console.error('Failed to report error to backend:', error);
-        // Keep in queue for retry
-        return;
-      }
+      // if (error) {
+      //   console.error('Failed to report error to backend:', error);
+      //   // Keep in queue for retry
+      //   return;
+      // }
+      
+      // For now, just log to console in production too
+      console.warn('Error logged locally:', errorReport);
 
       // Remove from queue after successful reporting
       const index = this.errorQueue.findIndex(e => e.id === errorReport.id);
