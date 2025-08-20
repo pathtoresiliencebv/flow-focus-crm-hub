@@ -19,7 +19,6 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { Permission } from "@/types/permissions";
 import { NotificationCenter } from "./NotificationCenter";
-// import { useChatUnreadCount } from "@/hooks/useChatUnreadCount";
 
 interface AppSidebarProps {
   activeTab: string;
@@ -29,14 +28,8 @@ interface AppSidebarProps {
 
 export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProps) {
   const { user, logout, profile, hasPermission } = useAuth();
-  
-  // Get unread count but don't let it affect chat visibility
-  const totalUnreadCount = 0; // Simplified for now
-  
-  // Check if user has chat access - INDEPENDENT of unread count loading
-  const hasChatAccess = ['Administrator', 'Administratie', 'Installateur'].includes(profile?.role || '');
 
-  const allLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null, badge?: number}[] = [
+  const allLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null}[] = [
     {
       label: "Dashboard",
       icon: <LayoutDashboard className="h-5 w-5" />,
@@ -96,7 +89,6 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
       icon: <MessageCircle className="h-5 w-5" />,
       key: "chat",
       permission: null,
-      badge: totalUnreadCount > 0 ? totalUnreadCount : undefined,
     },
     {
       label: "Personeel",
@@ -120,10 +112,7 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
 
   // Filter links based on permissions and role
   const links = allLinks.filter(link => {
-    // Only show Chat for users with chat access
-    if (link.key === "chat") {
-      return hasChatAccess;
-    }
+    // Chat is available for all authenticated users now
     // Hide Reports completely for Installateurs
     if (link.key === "reports" && profile?.role === 'Installateur') {
       return false;
@@ -131,14 +120,6 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
     return link.permission === null || hasPermission(link.permission as Permission);
   });
 
-  // Debug logging
-  console.log('Chat Access Debug:', {
-    profile: profile?.role,
-    totalUnreadCount,
-    user: !!user,
-    hasChatAccess,
-    links: links.map(l => l.key)
-  });
 
   return (
     <Sidebar 

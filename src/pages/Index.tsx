@@ -24,11 +24,8 @@ import ProjectDetail from "@/components/ProjectDetail";
 import { Permission } from "@/types/permissions";
 import { ShieldAlert } from "lucide-react";
 import { MobileDashboard } from "@/components/mobile/MobileDashboard";
-// import { MobileEnhancedChatView } from "@/components/mobile/MobileEnhancedChatView"; // Will be replaced
 import { MobileBottomNavigation } from "@/components/mobile/MobileBottomNavigation";
 import { MobileHeader } from "@/components/mobile/MobileHeader";
-// import { ChatWidget } from "@/components/ChatWidget";
-// import { FloatingChat } from "@/components/FloatingChat"; // Will be replaced
 import { useIsMobile } from "@/hooks/use-mobile";
 
 
@@ -181,8 +178,6 @@ const Index = () => {
           {renderContent()}
         </div>
         <MobileBottomNavigation activeTab={activeTab} onTabChange={handleSetActiveTab} />
-        
-        {/* Chat widget will be added later */}
       </div>
     );
   }
@@ -190,7 +185,6 @@ const Index = () => {
   return (
     <AppSidebar activeTab={activeTab} setActiveTab={handleSetActiveTab}>
       {renderContent()}
-      {/* Chat widget will be added later */}
     </AppSidebar>
   );
 };
