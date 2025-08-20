@@ -118,11 +118,11 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
     }
   ];
 
-  // Filter out chat from regular menu - it will be in the footer
+  // Filter links based on permissions and role
   const links = allLinks.filter(link => {
-    // Hide Chat from regular menu - will be in footer
+    // Only show Chat for users with chat access
     if (link.key === "chat") {
-      return false;
+      return hasChatAccess;
     }
     // Hide Reports completely for Installateurs
     if (link.key === "reports" && profile?.role === 'Installateur') {
@@ -131,22 +131,13 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
     return link.permission === null || hasPermission(link.permission as Permission);
   });
 
-  // FORCE chat link to ALWAYS be available if user has chat access - COMPLETELY INDEPENDENT of data loading
-  const chatLink = hasChatAccess ? {
-    label: "Chat",
-    icon: <MessageCircle className="h-5 w-5" />,
-    key: "chat",
-    permission: null,
-    badge: totalUnreadCount > 0 ? totalUnreadCount : undefined,
-  } : null;
-  
   // Debug logging
-  console.log('Chat Link Debug:', {
-    chatLink: !!chatLink,
+  console.log('Chat Access Debug:', {
     profile: profile?.role,
     totalUnreadCount,
     user: !!user,
-    hasAccess: ['Administrator', 'Administratie', 'Installateur'].includes(profile?.role || '')
+    hasChatAccess,
+    links: links.map(l => l.key)
   });
 
   return (
@@ -157,7 +148,6 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
       logout={logout}
       activeTab={activeTab}
       setActiveTab={setActiveTab}
-      chatLink={chatLink}
     >
       {children}
     </Sidebar>
