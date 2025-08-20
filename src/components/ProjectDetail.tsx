@@ -15,7 +15,7 @@ import { ProjectMaterials } from "./ProjectMaterials";
 import { ProjectPersonnel } from "./ProjectPersonnel";
 import { ProjectPlanning } from "./ProjectPlanning";
 import { ProjectTasks } from "./ProjectTasks";
-import { ProjectChat } from "./ProjectChat";
+// import { ProjectChat } from "./ProjectChat"; // Disabled for now
 import { useProjectDelivery } from "@/hooks/useProjectDelivery";
 import { ProjectDeliveryDialog } from "./dashboard/ProjectDeliveryDialog";
 import { useAuth } from "@/hooks/useAuth";
@@ -479,7 +479,9 @@ const ProjectDetail = () => {
         </TabsContent>
 
         <TabsContent value="chat">
-          <ProjectChat projectId={project.id} projectTitle={project.title} />
+          <div className="text-center py-8 text-muted-foreground">
+            Chat functionaliteit wordt binnenkort toegevoegd.
+          </div>
         </TabsContent>
 
         <TabsContent value="reports">

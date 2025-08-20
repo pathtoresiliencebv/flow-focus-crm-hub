@@ -10,7 +10,7 @@ import { Quotes } from "@/components/Quotes";
 import { Invoicing } from "@/components/Invoicing";
 import { Email } from "@/components/Email";
 import { EmailFullscreen } from "@/components/EmailFullscreen";
-import { EnhancedChatWindow } from "@/components/chat/EnhancedChatWindow";
+import { SimpleChatPage } from "@/components/SimpleChatPage";
 import Personnel from "@/components/Personnel";
 import UserManagement from "@/components/UserManagement";
 import { Salary } from "@/components/Salary";
@@ -24,11 +24,11 @@ import ProjectDetail from "@/components/ProjectDetail";
 import { Permission } from "@/types/permissions";
 import { ShieldAlert } from "lucide-react";
 import { MobileDashboard } from "@/components/mobile/MobileDashboard";
-import { MobileEnhancedChatView } from "@/components/mobile/MobileEnhancedChatView";
+// import { MobileEnhancedChatView } from "@/components/mobile/MobileEnhancedChatView"; // Will be replaced
 import { MobileBottomNavigation } from "@/components/mobile/MobileBottomNavigation";
 import { MobileHeader } from "@/components/mobile/MobileHeader";
 // import { ChatWidget } from "@/components/ChatWidget";
-import { FloatingChat } from "@/components/FloatingChat";
+// import { FloatingChat } from "@/components/FloatingChat"; // Will be replaced
 import { useIsMobile } from "@/hooks/use-mobile";
 
 
@@ -129,7 +129,7 @@ const Index = () => {
       case "email":
         return <EmailFullscreen onBackToDashboard={() => setActiveTab("dashboard")} />;
       case "chat":
-        return <EnhancedChatWindow />;
+        return <SimpleChatPage />;
       case "personnel":
         return <Personnel />;
       case "users":
@@ -182,8 +182,7 @@ const Index = () => {
         </div>
         <MobileBottomNavigation activeTab={activeTab} onTabChange={handleSetActiveTab} />
         
-        {/* Add FloatingChat for mobile */}
-        <FloatingChat />
+        {/* Chat widget will be added later */}
       </div>
     );
   }
@@ -191,8 +190,7 @@ const Index = () => {
   return (
     <AppSidebar activeTab={activeTab} setActiveTab={handleSetActiveTab}>
       {renderContent()}
-      {/* Add FloatingChat for desktop */}
-      <FloatingChat />
+      {/* Chat widget will be added later */}
     </AppSidebar>
   );
 };
