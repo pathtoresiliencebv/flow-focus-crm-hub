@@ -1,8 +1,8 @@
 // Enhanced Service Worker for Flow Focus CRM
-const CACHE_NAME = 'flow-focus-crm-v2';
-const STATIC_CACHE = 'static-v2';
-const CHAT_MEDIA_CACHE = 'chat-media-v1';
-const API_CACHE = 'api-cache-v1';
+const CACHE_NAME = 'flow-focus-crm-v3-no-old-chat';
+const STATIC_CACHE = 'static-v3';
+const CHAT_MEDIA_CACHE = 'chat-media-v2';
+const API_CACHE = 'api-cache-v2';
 
 // Install event - cache static resources and initialize chat media cache
 self.addEventListener('install', (event) => {
@@ -40,8 +40,8 @@ self.addEventListener('activate', (event) => {
       caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
-            if (!['flow-focus-crm-v2', 'static-v2', 'chat-media-v1', 'api-cache-v1'].includes(cacheName)) {
-              console.log('Deleting old cache:', cacheName);
+            if (!['flow-focus-crm-v3-no-old-chat', 'static-v3', 'chat-media-v2', 'api-cache-v2'].includes(cacheName)) {
+              console.log('Deleting old cache including old chat components:', cacheName);
               return caches.delete(cacheName);
             }
           })
