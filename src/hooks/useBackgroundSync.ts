@@ -3,7 +3,7 @@ import { App, AppState } from '@capacitor/app';
 import { Device } from '@capacitor/device';
 import { useAuth } from './useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { useOfflineChat } from './useOfflineChat';
+// import { useOfflineChat } from './useOfflineChat'; // Removed - not needed for simple chat
 import { useNetworkAware } from './useNetworkAware';
 
 interface BackgroundSyncConfig {
@@ -33,7 +33,7 @@ const DEFAULT_CONFIG: BackgroundSyncConfig = {
 export const useBackgroundSync = (config: Partial<BackgroundSyncConfig> = {}) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { syncPendingMessages, getPendingCount } = useOfflineChat();
+  // const { syncPendingMessages, getPendingCount } = useOfflineChat(); // Removed - not needed for simple chat
   const { isOnline, networkQuality } = useNetworkAware();
   
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
@@ -138,12 +138,12 @@ export const useBackgroundSync = (config: Partial<BackgroundSyncConfig> = {}) =>
     setSyncStatus(prev => ({ ...prev, isBackgroundSyncing: true }));
 
     try {
-      // Get pending operations count
-      const pendingCount = await getPendingCount();
+      // Get pending operations count (simplified for new chat)
+      const pendingCount = 0; // No offline messages in simple chat
       setSyncStatus(prev => ({ ...prev, pendingOperations: pendingCount }));
 
-      // Perform message sync
-      await syncPendingMessages();
+      // Perform sync (simplified for new chat)
+      // await syncPendingMessages(); // Removed - not needed for simple chat
 
       // Update sync status
       setSyncStatus(prev => ({
@@ -181,7 +181,7 @@ export const useBackgroundSync = (config: Partial<BackgroundSyncConfig> = {}) =>
     } finally {
       await stopBackgroundTask();
     }
-  }, [user, isOnline, syncStatus.isBackgroundSyncing, syncPendingMessages, getPendingCount, startBackgroundTask, stopBackgroundTask, syncConfig.maxRetries, toast]);
+  }, [user, isOnline, syncStatus.isBackgroundSyncing, startBackgroundTask, stopBackgroundTask, syncConfig.maxRetries, toast]);
 
   const startPeriodicSync = useCallback(() => {
     if (syncIntervalRef.current) {

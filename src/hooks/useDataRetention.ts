@@ -181,24 +181,13 @@ export const useDataRetention = () => {
           expiredRecords.push(...(auditLogs || []));
           break;
 
-        case 'chat_messages':
-          const { data: chatMessages, error: chatError } = await supabase
-            .from('chat_messages')
-            .select('id, created_at')
-            .lt('created_at', cutoffDate.toISOString());
-
-          if (chatError) throw chatError;
-          expiredCount = chatMessages?.length || 0;
-          expiredRecords.push(...(chatMessages || []));
-          break;
-
         case 'direct_messages':
-          const { data: directMessages, error: dmError } = await supabase
+          const { data: directMessages, error: directError } = await supabase
             .from('direct_messages')
             .select('id, created_at')
             .lt('created_at', cutoffDate.toISOString());
 
-          if (dmError) throw dmError;
+          if (directError) throw directError;
           expiredCount = directMessages?.length || 0;
           expiredRecords.push(...(directMessages || []));
           break;
@@ -290,20 +279,12 @@ export const useDataRetention = () => {
             deleteError = auditError;
             break;
             
-          case 'chat_messages':
-            const { error: chatError } = await supabase
-              .from('chat_messages')
-              .delete()
-              .in('id', recordIds);
-            deleteError = chatError;
-            break;
-            
           case 'direct_messages':
-            const { error: dmError } = await supabase
+            const { error: directError } = await supabase
               .from('direct_messages')
               .delete()
               .in('id', recordIds);
-            deleteError = dmError;
+            deleteError = directError;
             break;
             
           case 'compliance_events':
