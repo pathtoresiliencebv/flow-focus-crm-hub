@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -2623,20 +2623,20 @@ export type Database = {
       get_all_user_details: {
         Args: Record<PropertyKey, never>
         Returns: {
-          id: string
+          email: string
           full_name: string
+          id: string
           role: Database["public"]["Enums"]["user_role"]
           status: Database["public"]["Enums"]["user_status"]
-          email: string
         }[]
       }
       get_available_chat_users: {
         Args: { current_user_id: string }
         Returns: {
-          id: string
           full_name: string
-          role: Database["public"]["Enums"]["user_role"]
+          id: string
           is_online: boolean
+          role: Database["public"]["Enums"]["user_role"]
         }[]
       }
       get_or_create_direct_channel: {
@@ -2659,13 +2659,13 @@ export type Database = {
       }
       update_role_permissions: {
         Args: {
-          p_role: Database["public"]["Enums"]["user_role"]
           p_permissions: Database["public"]["Enums"]["app_permission"][]
+          p_role: Database["public"]["Enums"]["user_role"]
         }
         Returns: undefined
       }
       update_user_online_status: {
-        Args: { p_user_id: string; p_is_online: boolean }
+        Args: { p_is_online: boolean; p_user_id: string }
         Returns: undefined
       }
       user_can_access_channel: {
