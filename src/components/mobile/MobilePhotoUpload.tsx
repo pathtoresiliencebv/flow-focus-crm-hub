@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Camera, Upload, X, Image } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { useNativeCapabilities } from "@/hooks/useNativeCapabilities";
 import { CameraSource } from '@capacitor/camera';
 

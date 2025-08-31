@@ -16,7 +16,7 @@ import UserManagement from "@/components/UserManagement";
 import { Salary } from "@/components/Salary";
 import { Reports } from "@/components/Reports";
 import Settings from "@/pages/Settings";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import LoginScreen from "@/components/LoginScreen";
 import { useParams, useNavigate } from "react-router-dom";
 import CustomerDetail from "@/components/CustomerDetail";
@@ -38,9 +38,7 @@ const AccessDenied = () => (
 );
 
 const Index = () => {
-  console.log("Index component rendering");
   const { isAuthenticated, isLoading, hasPermission, profile } = useAuth();
-  console.log("Auth state:", { isAuthenticated, isLoading, profile });
   
   const { customerId, projectId } = useParams();
   const navigate = useNavigate();

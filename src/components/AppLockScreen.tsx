@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Fingerprint, Shield, Lock, Eye, EyeOff } from "lucide-react";
 import { useBiometricAuth } from "@/hooks/useBiometricAuth";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 interface AppLockScreenProps {

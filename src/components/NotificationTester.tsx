@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useNotifications } from '@/hooks/useNotifications';
 import { usePushSubscription } from '@/hooks/usePushSubscription';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 export const NotificationTester: React.FC = () => {

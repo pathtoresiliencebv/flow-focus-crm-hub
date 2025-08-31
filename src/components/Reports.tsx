@@ -6,7 +6,7 @@ import { ReportsHeader } from '@/components/reports/ReportsHeader';
 import { SalesReports } from '@/components/reports/SalesReports';
 import { ProjectReports } from '@/components/reports/ProjectReports';
 import { FinancialReports } from '@/components/reports/FinancialReports';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from "@/components/ui/card";
 
 export const Reports = () => {

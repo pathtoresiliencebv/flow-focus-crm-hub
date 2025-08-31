@@ -18,7 +18,7 @@ import { ProjectTasks } from "./ProjectTasks";
 // import { ProjectChat } from "./ProjectChat"; // Disabled for now
 import { useProjectDelivery } from "@/hooks/useProjectDelivery";
 import { ProjectDeliveryDialog } from "./dashboard/ProjectDeliveryDialog";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ProjectDetail = () => {
   const { projectId } = useParams();

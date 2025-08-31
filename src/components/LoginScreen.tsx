@@ -2,7 +2,7 @@
 import React from 'react';
 import { AuthUI } from "@/components/ui/auth-ui";
 import { toast } from "@/hooks/use-toast";
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 
 const LoginScreen = () => {
   const { login, signUp, isLoading } = useAuth();

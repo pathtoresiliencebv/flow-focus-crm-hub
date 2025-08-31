@@ -11,7 +11,7 @@ import { DashboardHeader } from "./dashboard/DashboardHeader";
 import { StatsGrid } from "./dashboard/StatsGrid";
 import { UpcomingAppointments } from "./dashboard/UpcomingAppointments";
 import { InstallateurProjectCard } from "./dashboard/InstallateurProjectCard";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const Dashboard = () => {
   const [newProjectDialogOpen, setNewProjectDialogOpen] = useState(false);

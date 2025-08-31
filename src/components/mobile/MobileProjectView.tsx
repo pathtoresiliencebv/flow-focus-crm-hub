@@ -8,7 +8,7 @@ import { PullToRefresh } from "@/components/ui/pull-to-refresh";
 import { Camera, Clock, CheckCircle, FileText, User, MapPin, Phone, Receipt } from "lucide-react";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
 import { useCrmStore } from "@/hooks/useCrmStore";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { useNativeCapabilities } from "@/hooks/useNativeCapabilities";
 import { useProjectDelivery } from "@/hooks/useProjectDelivery";
 import { MobileTimeRegistration } from './MobileTimeRegistration';

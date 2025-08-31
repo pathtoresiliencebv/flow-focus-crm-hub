@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Session, User } from '@supabase/supabase-js';
@@ -11,24 +11,46 @@ interface UserProfile {
   permissions: Permission[];
 }
 
-export const useAuth = () => {
-  console.log('useAuth: Starting hook execution');
-  
-  const [user, setUser] = React.useState<User | null>(null);
-  const [profile, setProfile] = React.useState<UserProfile | null>(null);
-  const [session, setSession] = React.useState<Session | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
-  
-  console.log('useAuth: useState calls successful');
+interface AuthContextType {
+  user: User | null;
+  profile: UserProfile | null;
+  session: Session | null;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, role?: UserRole) => Promise<void>;
+  logout: () => Promise<void>;
+  isAuthenticated: boolean;
+  hasPermission: (permission: Permission) => boolean;
+}
 
-  const fetchProfile = React.useCallback(async (user: User) => {
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchProfile = useCallback(async (user: User) => {
     const { data: profileData, error } = await supabase
       .from('profiles')
       .select('full_name, role, status')
       .eq('id', user.id)
       .single();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found
+    if (error && error.code !== 'PGRST116') {
       console.error('Error fetching profile:', error);
       toast({
         title: "Fout bij profiel ophalen",
@@ -56,24 +78,16 @@ export const useAuth = () => {
 
       const permissions = permissionsData?.map(p => p.permission as Permission) || [];
       setProfile({ ...profileData, permissions });
-
     } else {
       setProfile(null);
     }
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setIsLoading(true);
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session) {
-        setSession(session);
-        setUser(session.user);
-        await fetchProfile(session.user);
-      }
-      setIsLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       const currentUser = session?.user ?? null;
       setUser(currentUser);
@@ -83,6 +97,16 @@ export const useAuth = () => {
         setTimeout(() => fetchProfile(currentUser), 0);
       } else {
         setProfile(null);
+      }
+      setIsLoading(false);
+    });
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+        await fetchProfile(session.user);
       }
       setIsLoading(false);
     });
@@ -130,7 +154,7 @@ export const useAuth = () => {
     });
 
     if (error) {
-      console.error("Sign up error:", error); // For more detailed debugging
+      console.error("Sign up error:", error);
       toast({
         title: "Registratie mislukt",
         description: error.message,
@@ -139,10 +163,8 @@ export const useAuth = () => {
       return;
     }
 
-    // If user was created and a specific role was requested (not default), update the role
     if (data.user && role !== 'Bekijker') {
       try {
-        // Wait a moment for the profile to be created by the trigger
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         const { error: roleError } = await supabase
@@ -184,7 +206,7 @@ export const useAuth = () => {
     return profile?.permissions.includes(permission) ?? false;
   };
 
-  return {
+  const value: AuthContextType = {
     user,
     profile,
     session,
@@ -195,4 +217,10 @@ export const useAuth = () => {
     isAuthenticated: !!user,
     hasPermission,
   };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

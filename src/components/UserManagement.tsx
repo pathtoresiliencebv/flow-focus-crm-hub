@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { UserPlus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { CreateUserDialog } from './CreateUserDialog';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { fetchUsers } from '@/api/users';
 import { EditUserDialog } from './users/EditUserDialog';
 import { UserTable } from './users/UserTable';

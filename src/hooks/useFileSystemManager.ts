@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CachedFile {
   id: string;

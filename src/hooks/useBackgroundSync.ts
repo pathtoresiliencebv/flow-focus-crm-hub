@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { App, AppState } from '@capacitor/app';
 import { Device } from '@capacitor/device';
-import { useAuth } from './useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 // import { useOfflineChat } from './useOfflineChat'; // Removed - not needed for simple chat
 import { useNetworkAware } from './useNetworkAware';

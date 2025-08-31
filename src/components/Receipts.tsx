@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ImageUpload } from '@/components/ImageUpload';
 import { MobileReceiptCard } from '@/components/mobile/MobileReceiptCard';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { Upload, Check, X, Eye, Mail } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';

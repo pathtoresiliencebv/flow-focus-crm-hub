@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Calendar, Clock, CheckCircle, MapPin, Phone, User } from "lucide-react";
 import { useCrmStore } from "@/hooks/useCrmStore";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
 import { MobileProjectView } from './MobileProjectView';
 

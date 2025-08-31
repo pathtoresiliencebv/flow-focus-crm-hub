@@ -11,7 +11,7 @@ import { Plus, Search, Eye, Edit, Trash2, MoreHorizontal } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCrmStore, Customer } from "@/hooks/useCrmStore";
 import { CustomerForm } from './CustomerForm';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { MobileCustomerCard } from './customers/MobileCustomerCard';
 import { useIsMobile } from '@/hooks/use-mobile';
 

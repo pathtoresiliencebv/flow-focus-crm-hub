@@ -6,6 +6,7 @@ import Index from "@/pages/Index";
 import Settings from "@/pages/Settings";
 import PublicQuote from "@/pages/PublicQuote";
 import NotFound from "@/pages/NotFound";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,19 +20,21 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <div className="min-h-screen bg-background">
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/customers/:customerId" element={<Index />} />
-            <Route path="/projects/:projectId" element={<Index />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/quote/:token" element={<PublicQuote />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </div>
-        
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
+          <div className="min-h-screen bg-background">
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/customers/:customerId" element={<Index />} />
+              <Route path="/projects/:projectId" element={<Index />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/quote/:token" element={<PublicQuote />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </div>
+          
+        </BrowserRouter>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

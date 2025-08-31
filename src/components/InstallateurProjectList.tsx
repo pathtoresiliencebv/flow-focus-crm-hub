@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useCrmStore } from "@/hooks/useCrmStore";
 import { useUsers } from "@/hooks/useUsers";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { useProjectDelivery } from "@/hooks/useProjectDelivery";
 import { ProjectDeliveryDialog } from "./dashboard/ProjectDeliveryDialog";
 

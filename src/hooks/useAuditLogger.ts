@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AuditLog {
   id: string;

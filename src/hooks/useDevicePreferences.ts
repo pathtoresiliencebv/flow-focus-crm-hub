@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Preferences } from '@capacitor/preferences';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 
 export interface DevicePreferences {

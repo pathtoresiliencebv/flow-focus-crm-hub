@@ -11,7 +11,7 @@ import { ProjectForm } from './ProjectForm';
 import { useCrmStore, ProjectWithCustomerName as Project, UpdateProject } from "@/hooks/useCrmStore";
 import { useUsers } from "@/hooks/useUsers";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { InstallateurProjectList } from './InstallateurProjectList';
 

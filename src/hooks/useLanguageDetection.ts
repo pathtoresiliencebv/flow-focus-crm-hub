@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { languageDetectionService } from '@/services/languageDetectionService';
 
 export const useLanguageDetection = () => {

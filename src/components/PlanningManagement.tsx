@@ -16,7 +16,7 @@ import { useCrmStore } from '@/hooks/useCrmStore';
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function PlanningManagement() {
   const { toast } = useToast();

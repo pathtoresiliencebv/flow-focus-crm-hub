@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from './useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { useAuditLogger } from './useAuditLogger';
 
 interface PrivacySettings {
