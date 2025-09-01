@@ -1,4 +1,4 @@
-package com.flowfocus.crmhub;
+package nl.smanscrm.app;
 
 import com.getcapacitor.BridgeActivity;
 
