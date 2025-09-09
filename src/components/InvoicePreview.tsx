@@ -11,13 +11,13 @@ interface InvoicePreviewProps {
     message?: string;
     items: Array<{ id: string; description: string; quantity: number; price: number; vatRate: number; total: number }>;
   };
-  customers: Array<{ id: number; name: string }>;
-  projects?: Array<{ id: number; title: string; value: string; customer: string }>;
+  customers: Array<{ id: string; name: string }>;
+  projects?: Array<{ id: string; title: string; value: string; customer: string }>;
 }
 
 export function InvoicePreview({ formData, customers, projects }: InvoicePreviewProps) {
-  const customerName = customers.find(c => c.id.toString() === formData.customer)?.name || "";
-  const projectTitle = projects?.find(p => p.id.toString() === formData.project)?.title || "";
+  const customerName = customers.find(c => c.id === formData.customer)?.name || "";
+  const projectTitle = projects?.find(p => p.id === formData.project)?.title || "";
   
   const subtotal = formData.items.reduce((sum, item) => sum + (item.total || 0), 0);
   const vatAmount = formData.items.reduce((sum, item) => {

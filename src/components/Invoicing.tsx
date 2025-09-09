@@ -129,12 +129,12 @@ export function Invoicing() {
 
   // Convert customers and projects to the format expected by InvoicingHeader
   const formCustomers = customers.map(customer => ({
-    id: parseInt(customer.id.slice(-8), 16), // Convert UUID to number
+    id: customer.id, // Keep as string UUID
     name: customer.name
   }));
 
   const formProjects = projects.map(project => ({
-    id: parseInt(project.id.slice(-8), 16), // Convert UUID to number
+    id: project.id, // Keep as string UUID
     title: project.title,
     value: project.value?.toString() || '0',
     customer: project.customer

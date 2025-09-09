@@ -12,8 +12,8 @@ import { InvoiceForm } from '@/components/InvoiceForm';
 import { FileText } from "lucide-react";
 
 interface InvoicingHeaderProps {
-  customers: Array<{ id: number; name: string }>;
-  projects: Array<{ id: number; title: string; value: string; customer: string }>;
+  customers: Array<{ id: string; name: string }>;
+  projects: Array<{ id: string; title: string; value: string; customer: string }>;
 }
 
 export const InvoicingHeader = ({ customers, projects }: InvoicingHeaderProps) => {

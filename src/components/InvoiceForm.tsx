@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { PlusCircle, Trash2, Receipt } from "lucide-react";
+import { PlusCircle, Trash2, Receipt, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,11 +22,13 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { InvoicePreview } from "./InvoicePreview";
+import { CustomerQuickAdd } from "./CustomerQuickAdd";
+import { useCrmStore } from "@/hooks/useCrmStore";
 
 interface InvoiceFormProps {
   onClose?: () => void;
-  customers: Array<{ id: number; name: string }>;
-  projects?: Array<{ id: number; title: string; value: string; customer: string }>;
+  customers: Array<{ id: string; name: string }>;
+  projects?: Array<{ id: string; title: string; value: string; customer: string }>;
 }
 
 interface InvoiceFormValues {
@@ -41,7 +43,11 @@ interface InvoiceFormValues {
 
 export function InvoiceForm({ onClose, customers, projects }: InvoiceFormProps) {
   const { toast } = useToast();
+  const { customers: allCustomers, projects: allProjects, addProject } = useCrmStore();
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
+  const [showCustomerAdd, setShowCustomerAdd] = useState(false);
+  const [showProjectAdd, setShowProjectAdd] = useState(false);
+  const [newProjectData, setNewProjectData] = useState({ title: "", description: "" });
   
   const form = useForm<InvoiceFormValues>({
     defaultValues: {
@@ -87,12 +93,46 @@ export function InvoiceForm({ onClose, customers, projects }: InvoiceFormProps) 
     return form.getValues('items').reduce((sum, item) => sum + (item.total || 0), 0);
   };
 
+  const handleCustomerAdded = (customerId: string) => {
+    form.setValue('customer', customerId);
+    setSelectedCustomerId(customerId);
+    setShowCustomerAdd(false);
+  };
+
+  const handleProjectAdd = async () => {
+    if (!selectedCustomerId || !newProjectData.title) return;
+    
+    try {
+      const projectData = {
+        title: newProjectData.title,
+        customer_id: selectedCustomerId,
+        description: newProjectData.description || null,
+        status: "te-plannen" as const,
+        date: null,
+        value: null,
+      };
+      
+      const newProject = await addProject(projectData);
+      form.setValue('project', newProject.id);
+      setShowProjectAdd(false);
+      setNewProjectData({ title: "", description: "" });
+    } catch (error) {
+      toast({
+        title: "Fout",
+        description: "Project kon niet worden toegevoegd.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const onSubmit = (data: InvoiceFormValues) => {
     console.log("Invoice data:", data);
     
+    const customer = allCustomers.find(c => c.id === data.customer) || customers.find(c => c.id === data.customer);
+    
     toast({
       title: "Factuur aangemaakt",
-      description: `Factuur ${data.invoiceNumber} is aangemaakt voor ${customers.find(c => c.id.toString() === data.customer)?.name}.`,
+      description: `Factuur ${data.invoiceNumber} is aangemaakt voor ${customer?.name}.`,
     });
     
     if (onClose) {
@@ -114,62 +154,130 @@ export function InvoiceForm({ onClose, customers, projects }: InvoiceFormProps) 
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Klant</FormLabel>
-                    <Select
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        setSelectedCustomerId(value);
-                      }}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecteer een klant" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {customers.map((customer) => (
-                          <SelectItem key={customer.id} value={customer.id.toString()}>
-                            {customer.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex gap-2">
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setSelectedCustomerId(value);
+                        }}
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder="Selecteer een klant" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {allCustomers.map((customer) => (
+                            <SelectItem key={customer.id} value={customer.id}>
+                              {customer.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowCustomerAdd(true)}
+                        className="shrink-0"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              {showCustomerAdd && (
+                <CustomerQuickAdd
+                  onCustomerAdded={handleCustomerAdded}
+                  onCancel={() => setShowCustomerAdd(false)}
+                />
+              )}
               
-              {projects && (
-                <FormField
-                  control={form.control}
-                  name="project"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Project</FormLabel>
+              <FormField
+                control={form.control}
+                name="project"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Project</FormLabel>
+                    <div className="flex gap-2">
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
+                        disabled={!selectedCustomerId}
                       >
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecteer een project" />
+                          <SelectTrigger className="flex-1">
+                            <SelectValue placeholder={selectedCustomerId ? "Selecteer een project" : "Selecteer eerst een klant"} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {projects
-                            .filter(project => !selectedCustomerId || 
-                              customers.find(c => c.id.toString() === selectedCustomerId)?.name === project.customer)
+                          {allProjects
+                            .filter(project => selectedCustomerId && project.customer_id === selectedCustomerId)
                             .map((project) => (
-                              <SelectItem key={project.id} value={project.id.toString()}>
+                              <SelectItem key={project.id} value={project.id}>
                                 {project.title}
                               </SelectItem>
                             ))}
                         </SelectContent>
                       </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowProjectAdd(true)}
+                        disabled={!selectedCustomerId}
+                        className="shrink-0"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {showProjectAdd && (
+                <div className="border rounded-lg p-4 space-y-3 bg-muted/50">
+                  <h4 className="font-medium">Nieuw project toevoegen</h4>
+                  <div className="space-y-2">
+                    <Input
+                      placeholder="Project titel"
+                      value={newProjectData.title}
+                      onChange={(e) => setNewProjectData(prev => ({ ...prev, title: e.target.value }))}
+                    />
+                    <Textarea
+                      placeholder="Project beschrijving (optioneel)"
+                      value={newProjectData.description}
+                      onChange={(e) => setNewProjectData(prev => ({ ...prev, description: e.target.value }))}
+                      rows={2}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowProjectAdd(false);
+                        setNewProjectData({ title: "", description: "" });
+                      }}
+                    >
+                      Annuleren
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleProjectAdd}
+                      disabled={!newProjectData.title}
+                    >
+                      Project toevoegen
+                    </Button>
+                  </div>
+                </div>
               )}
             </div>
             
@@ -380,8 +488,8 @@ export function InvoiceForm({ onClose, customers, projects }: InvoiceFormProps) 
         <div className="bg-gray-50 p-4 rounded-lg">
           <InvoicePreview 
             formData={watchedValues} 
-            customers={customers} 
-            projects={projects}
+            customers={allCustomers} 
+            projects={allProjects.map(p => ({ ...p, value: p.value?.toString() || '0' }))}
           />
         </div>
       </div>
