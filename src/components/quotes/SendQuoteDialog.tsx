@@ -57,7 +57,12 @@ SMANS BV`
 
     setIsLoading(true);
     try {
-      console.log('Sending quote email for quote:', quote.id);
+      console.log('📧 SENDING EMAIL for quote:', quote.id);
+      console.log('📧 EMAIL DATA:', {
+        quoteId: quote.id,
+        recipientEmail: formData.recipientEmail,
+        recipientName: formData.recipientName
+      });
       
       const { data, error } = await supabase.functions.invoke('send-quote-email', {
         body: {
@@ -69,20 +74,21 @@ SMANS BV`
         }
       });
 
-      console.log('Response from send-quote-email:', { data, error });
+      console.log('📧 RESPONSE from send-quote-email:', { data, error });
 
       if (error) {
-        console.error('Error sending quote:', error);
+        console.error('❌ EMAIL ERROR:', error);
         toast({
           title: "Fout bij versturen",
-          description: `Er is een fout opgetreden: ${error.message || 'Onbekende fout'}`,
+          description: `Email kon niet worden verstuurd: ${error.message || 'Onbekende fout'}`,
           variant: "destructive",
         });
         return;
       }
 
+      console.log('✅ EMAIL SENT SUCCESSFULLY');
       toast({
-        title: "Offerte verstuurd!",
+        title: "🎉 Offerte verstuurd!",
         description: `De offerte is succesvol per e-mail verstuurd naar ${formData.recipientEmail}`,
       });
 

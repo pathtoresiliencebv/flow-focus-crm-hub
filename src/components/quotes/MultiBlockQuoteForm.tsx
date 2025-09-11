@@ -29,6 +29,14 @@ const formSchema = z.object({
   validUntil: z.string().min(1, { message: "Geldig tot datum is verplicht" }),
   project: z.string().optional(),
   message: z.string().optional(),
+}).refine((data) => {
+  // Allow empty email or valid email
+  if (!data.customerEmail || data.customerEmail === "") return true;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(data.customerEmail);
+}, {
+  message: "Ongeldig email adres",
+  path: ["customerEmail"]
 });
 
 interface MultiBlockQuoteFormProps {
@@ -231,37 +239,41 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   }, [blocks, totalAmount, totalVAT, grandTotal]);
 
   const onSubmit = useCallback(async (values: z.infer<typeof formSchema>) => {
-    console.log('MultiBlockQuoteForm: Starting submit process with values:', values);
-    console.log('MultiBlockQuoteForm: Current blocks at submit:', blocks);
+    console.log('🚀 QUOTE SUBMIT: Starting with values:', values);
+    console.log('🚀 QUOTE SUBMIT: Current blocks:', blocks);
     
     setSaving(true);
     
     try {
-      // Validation checks
+      // Enhanced validation with detailed feedback
+      const errors = [];
+      
       if (!values.customer) {
-        toast({
-          title: "Fout",
-          description: "Selecteer eerst een klant.",
-          variant: "destructive",
-        });
-        setSaving(false);
-        return;
+        errors.push("Selecteer eerst een klant");
       }
-
+      
       if (!values.quoteNumber) {
-        toast({
-          title: "Fout",
-          description: "Offertenummer ontbreekt.",
-          variant: "destructive",
-        });
-        setSaving(false);
-        return;
+        errors.push("Offertenummer ontbreekt");
       }
-
+      
       if (blocks.length === 0) {
+        errors.push("Voeg ten minste één blok toe aan de offerte");
+      }
+      
+      // Check if blocks have items
+      const blocksWithItems = blocks.filter(block => 
+        block.type === 'textblock' || (block.items && block.items.length > 0)
+      );
+      
+      if (blocksWithItems.length === 0) {
+        errors.push("Voeg items toe aan de blokken van de offerte");
+      }
+      
+      if (errors.length > 0) {
+        console.log('❌ VALIDATION ERRORS:', errors);
         toast({
-          title: "Fout",
-          description: "Voeg ten minste één blok toe aan de offerte.",
+          title: "Validatie fouten",
+          description: errors.join(". "),
           variant: "destructive",
         });
         setSaving(false);
@@ -274,22 +286,24 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       console.log('MultiBlockQuoteForm: Found customer:', customer);
       console.log('MultiBlockQuoteForm: Found project:', project);
 
-      // Generate public token
-      const { data: tokenData, error: tokenError } = await supabase
-        .rpc('generate_quote_public_token');
-
-      if (tokenError) {
-        console.error('Error generating token:', tokenError);
-        toast({
-          title: "Fout",
-          description: "Kon geen publieke link genereren.",
-          variant: "destructive",
-        });
-        setSaving(false);
-        return;
+      // Generate public token with fallback
+      let tokenData = null;
+      try {
+        const { data, error: tokenError } = await supabase
+          .rpc('generate_quote_public_token');
+        
+        if (tokenError) {
+          console.warn('⚠️ Token generation failed, using fallback:', tokenError);
+          tokenData = `quote_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        } else {
+          tokenData = data;
+        }
+        
+        console.log('✅ Generated token:', tokenData);
+      } catch (err) {
+        console.warn('⚠️ Token generation exception, using fallback:', err);
+        tokenData = `quote_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       }
-
-      console.log('MultiBlockQuoteForm: Generated token:', tokenData);
 
       // Calculate totals from current blocks
       const currentTotalAmount = blocks.reduce((sum, block) => sum + (block.subtotal || 0), 0);
@@ -320,7 +334,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         admin_signature_data: adminSignature || null
       };
 
-      console.log('MultiBlockQuoteForm: Inserting quote data:', quoteData);
+      console.log('💾 SAVING: Quote data to insert:', quoteData);
 
       const { data, error } = await supabase
         .from('quotes')
@@ -329,29 +343,34 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         .single();
 
       if (error) {
-        console.error('Error saving quote:', error);
+        console.error('❌ DATABASE ERROR:', error);
+        const errorMessage = error.code === '23505' 
+          ? 'Er bestaat al een offerte met dit nummer. Probeer opnieuw.'
+          : `Database fout: ${error.message}`;
+          
         toast({
           title: "Fout bij opslaan",
-          description: `De offerte kon niet worden opgeslagen: ${error.message}`,
+          description: errorMessage,
           variant: "destructive",
         });
         setSaving(false);
         return;
       }
 
-      console.log('MultiBlockQuoteForm: Quote saved successfully:', data);
+      console.log('✅ QUOTE SAVED:', data);
 
       toast({
-        title: "Offerte opgeslagen!",
-        description: `Offerte ${values.quoteNumber} is succesvol opgeslagen.`,
+        title: "🎉 Offerte opgeslagen!",
+        description: `Offerte ${values.quoteNumber} is succesvol opgeslagen en klaar om te versturen.`,
       });
 
-      // Create quote object for send dialog
+      // Create quote object for send dialog with proper email
+      const finalEmail = values.customerEmail || customer?.email || '';
       const quoteForSend: Quote = {
         id: data.id,
         quote_number: values.quoteNumber,
         customer_name: customer?.name || '',
-        customer_email: values.customerEmail || customer?.email || '',
+        customer_email: finalEmail,
         project_title: project?.title || '',
         quote_date: values.date,
         valid_until: values.validUntil,
@@ -364,15 +383,22 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         admin_signature_data: adminSignature
       };
 
-      console.log('MultiBlockQuoteForm: Opening send dialog with quote:', quoteForSend);
+      console.log('📧 OPENING SEND DIALOG with quote:', quoteForSend);
+      console.log('📧 Email for sending:', finalEmail);
+      
       setSavedQuote(quoteForSend);
-      setShowSendDialog(true);
+      
+      // Small delay to ensure state is set before opening dialog
+      setTimeout(() => {
+        setShowSendDialog(true);
+      }, 100);
 
     } catch (error: any) {
-      console.error('Unexpected error in onSubmit:', error);
+      console.error('💥 UNEXPECTED ERROR:', error);
+      console.error('💥 ERROR STACK:', error.stack);
       toast({
-        title: "Onverwachte fout",
-        description: `Er is een fout opgetreden: ${error.message || 'Onbekende fout'}`,
+        title: "Kritieke fout",
+        description: `Er is een onverwachte fout opgetreden: ${error.message || 'Onbekende fout'}. Probeer het opnieuw.`,
         variant: "destructive",
       });
     } finally {
@@ -448,8 +474,12 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       <div className="space-y-4 overflow-y-auto pr-2">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium">Nieuwe offerte - Meerdere blokken</h3>
-          <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-lg text-sm font-medium">
-            ⚠️ Concept - Niet opgeslagen
+          <div className={`px-3 py-1 rounded-lg text-sm font-medium ${
+            savedQuote 
+              ? "bg-green-100 text-green-800" 
+              : "bg-yellow-100 text-yellow-800"
+          }`}>
+            {savedQuote ? "✅ Opgeslagen" : "⚠️ Concept - Niet opgeslagen"}
           </div>
         </div>
 
@@ -731,9 +761,13 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
               <Button type="button" variant="outline" onClick={onClose}>
                 Annuleren
               </Button>
-              <Button type="submit" disabled={saving}>
+              <Button 
+                type="submit" 
+                disabled={saving}
+                className="bg-blue-600 hover:bg-blue-700 text-white min-w-[180px]"
+              >
                 <Save className="h-4 w-4 mr-2" />
-                {saving ? "Bezig met opslaan..." : "Offerte opslaan"}
+                {saving ? "💾 Opslaan..." : "💾 Opslaan en Versturen"}
               </Button>
             </div>
           </form>
