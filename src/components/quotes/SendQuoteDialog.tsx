@@ -57,7 +57,7 @@ SMANS BV`
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('send-quote-email', {
+      const response = await supabase.functions.invoke('send-quote-email', {
         body: {
           quoteId: quote.id,
           recipientEmail: formData.recipientEmail,
@@ -67,14 +67,8 @@ SMANS BV`
         }
       });
 
-      if (error) {
-        console.error('Error sending quote email:', error);
-        toast({
-          title: "Fout bij versturen",
-          description: "De offerte kon niet worden verstuurd. Probeer het opnieuw.",
-          variant: "destructive",
-        });
-        return;
+      if (response.error) {
+        throw new Error(response.error.message || 'Fout bij verzenden van offerte');
       }
 
       toast({

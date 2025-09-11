@@ -14,6 +14,7 @@ import { InvoicingHeader } from './invoicing/InvoicingHeader';
 import { InvoiceFilters } from './invoicing/InvoiceFilters';
 import { InvoicesTable } from './invoicing/InvoicesTable';
 import { InvoicesSummary } from './invoicing/InvoicesSummary';
+import { supabase } from '@/integrations/supabase/client';
 
 export function Invoicing() {
   const { toast } = useToast();
@@ -67,16 +68,37 @@ export function Invoicing() {
   // Handler for confirming send
   const handleSendConfirm = async (emailData: { to: string; subject: string; message: string }) => {
     if (!invoiceToSend) return;
+    
+    try {
+      const response = await supabase.functions.invoke('send-invoice-email', {
+        body: {
+          invoiceId: invoiceToSend.id,
+          recipientEmail: emailData.to,
+          recipientName: invoiceToSend.customer_name,
+          subject: emailData.subject,
+          message: emailData.message
+        }
+      });
 
-    await updateInvoiceStatus(invoiceToSend.id, "verzonden");
-    
-    toast({
-      title: "Factuur verzonden",
-      description: `Factuur ${invoiceToSend.invoice_number} is verzonden naar ${emailData.to}.`,
-    });
-    
-    setInvoiceToSend(null);
-    setOpenDetailDialog(false);
+      if (response.error) {
+        throw new Error(response.error.message || 'Fout bij verzenden van factuur');
+      }
+      
+      toast({
+        title: "Factuur verzonden",
+        description: `Factuur ${invoiceToSend.invoice_number} is verzonden naar ${emailData.to}.`,
+      });
+    } catch (error: any) {
+      console.error('Error sending invoice:', error);
+      toast({
+        title: "Fout bij verzenden",
+        description: error.message || "Er is een fout opgetreden bij het verzenden van de factuur",
+        variant: "destructive",
+      });
+    } finally {
+      setInvoiceToSend(null);
+      setShowSendDialog(false);
+    }
   };
 
   // Handler for viewing invoice details

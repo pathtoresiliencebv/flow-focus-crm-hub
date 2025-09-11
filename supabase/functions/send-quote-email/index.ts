@@ -177,11 +177,11 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Update quote status to 'sent'
+    // Update quote status to 'verzonden'
     const { error: updateError } = await supabase
       .from('quotes')
       .update({ 
-        status: 'sent',
+        status: 'verzonden',
         updated_at: new Date().toISOString()
       })
       .eq('id', quoteId);

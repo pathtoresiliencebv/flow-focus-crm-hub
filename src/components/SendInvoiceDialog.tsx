@@ -42,7 +42,6 @@ export function SendInvoiceDialog({
 
   const handleSend = () => {
     onSend({ to: emailTo, subject, message });
-    onOpenChange(false);
   };
 
   const handlePreviewPDF = () => {
