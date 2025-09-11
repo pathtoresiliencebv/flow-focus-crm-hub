@@ -42,6 +42,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
 
   const fetchProfile = useCallback(async (user: User) => {
     const { data: profileData, error } = await supabase
@@ -84,37 +85,70 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   useEffect(() => {
+    if (initialized) return;
+    
     setIsLoading(true);
     
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      
-      if (currentUser) {
-        // Use setTimeout to avoid potential deadlocks with Supabase auth flow
-        setTimeout(() => fetchProfile(currentUser), 0);
-      } else {
-        setProfile(null);
-      }
-      setIsLoading(false);
-    });
+    let mounted = true;
+    let subscription: any = null;
+    
+    const initializeAuth = async () => {
+      try {
+        // Set up auth state listener FIRST
+        const { data } = supabase.auth.onAuthStateChange((event, session) => {
+          if (!mounted) return;
+          
+          setSession(session);
+          const currentUser = session?.user ?? null;
+          setUser(currentUser);
+          
+          if (currentUser) {
+            // Use setTimeout to avoid potential deadlocks with Supabase auth flow
+            setTimeout(() => {
+              if (mounted) fetchProfile(currentUser);
+            }, 0);
+          } else {
+            setProfile(null);
+          }
+          setIsLoading(false);
+        });
+        
+        subscription = data.subscription;
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session) {
-        setSession(session);
-        setUser(session.user);
-        await fetchProfile(session.user);
+        // THEN check for existing session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (mounted) {
+          if (session) {
+            setSession(session);
+            setUser(session.user);
+            await fetchProfile(session.user);
+          }
+          setIsLoading(false);
+          setInitialized(true);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+        if (mounted) {
+          setIsLoading(false);
+          setInitialized(true);
+        }
       }
-      setIsLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     return () => {
+      mounted = false;
       subscription?.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, [fetchProfile, initialized]);
 
   const login = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
