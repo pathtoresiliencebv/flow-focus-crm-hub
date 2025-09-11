@@ -7,6 +7,7 @@ import Settings from "@/pages/Settings";
 import PublicQuote from "@/pages/PublicQuote";
 import NotFound from "@/pages/NotFound";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { TranslationProvider } from "@/contexts/TranslationContext";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,7 +22,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <BrowserRouter>
+        <TranslationProvider>
+          <BrowserRouter>
           <div className="min-h-screen bg-background">
             <Routes>
               <Route path="/" element={<Index />} />
@@ -34,6 +36,7 @@ function App() {
           </div>
           
         </BrowserRouter>
+        </TranslationProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
