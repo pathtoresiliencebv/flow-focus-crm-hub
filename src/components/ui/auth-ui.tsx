@@ -1,5 +1,4 @@
-import * as React from "react";
-import { useState, useId } from "react";
+import { useState, useId, forwardRef, type ElementRef, type ComponentPropsWithoutRef, type ButtonHTMLAttributes, type ComponentProps, type InputHTMLAttributes, type FormEvent } from "react";
 import { Slot } from "@radix-ui/react-slot";
 import * as LabelPrimitive from "@radix-ui/react-label";
 import { cva, type VariantProps } from "class-variance-authority";
@@ -18,9 +17,9 @@ function cn(...inputs: ClassValue[]) {
 const labelVariants = cva(
   "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
 );
-const Label = React.forwardRef<
-  React.ElementRef<typeof LabelPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> &
+const Label = forwardRef<
+  ElementRef<typeof LabelPrimitive.Root>,
+  ComponentPropsWithoutRef<typeof LabelPrimitive.Root> &
     VariantProps<typeof labelVariants>
 >(({ className, ...props }, ref) => (
   <LabelPrimitive.Root
@@ -57,10 +56,10 @@ const buttonVariants = cva(
     },
   }
 );
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
 }
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
     return <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />;
@@ -69,7 +68,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 Button.displayName = "Button";
 
 // COMPONENT: Input
-const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
+const Input = forwardRef<HTMLInputElement, ComponentProps<"input">>(
   ({ className, type, ...props }, ref) => {
     return (
       <input
@@ -87,10 +86,10 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
 Input.displayName = "Input";
 
 // COMPONENT: PasswordInput
-export interface PasswordInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface PasswordInputProps extends InputHTMLAttributes<HTMLInputElement> {
     label?: string;
 }
-const PasswordInput = React.forwardRef<HTMLInputElement, PasswordInputProps>(
+const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
   ({ className, label, ...props }, ref) => {
     const id = useId();
     const [showPassword, setShowPassword] = useState(false);
@@ -119,7 +118,7 @@ interface AuthFormProps {
 
 // FORM: SignInForm
 function SignInForm({ onSubmit, isLoading }: AuthFormProps) {
-  const handleSignIn = (event: React.FormEvent<HTMLFormElement>) => { 
+  const handleSignIn = (event: FormEvent<HTMLFormElement>) => { 
     event.preventDefault(); 
     const formData = new FormData(event.currentTarget);
     const email = formData.get('email') as string;
@@ -149,7 +148,7 @@ function SignInForm({ onSubmit, isLoading }: AuthFormProps) {
 
 // FORM: SignUpForm
 function SignUpForm({ onSubmit, isLoading }: AuthFormProps) {
-  const handleSignUp = (event: React.FormEvent<HTMLFormElement>) => { 
+  const handleSignUp = (event: FormEvent<HTMLFormElement>) => { 
     event.preventDefault(); 
     const formData = new FormData(event.currentTarget);
     const email = formData.get('email') as string;
