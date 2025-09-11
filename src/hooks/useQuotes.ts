@@ -140,10 +140,68 @@ export const useQuotes = () => {
     fetchQuotes();
   }, []);
 
+  const duplicateQuote = async (quoteId: string) => {
+    try {
+      // Fetch the original quote
+      const { data: originalQuote, error: fetchError } = await supabase
+        .from('quotes')
+        .select('*')
+        .eq('id', quoteId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Generate new quote number
+      const { data: newQuoteNumber } = await supabase.rpc('generate_quote_number');
+
+      // Create duplicate quote
+      const today = new Date();
+      const validUntil = new Date();
+      validUntil.setDate(today.getDate() + 30);
+
+      const duplicateData = {
+        ...originalQuote,
+        id: undefined, // Let database generate new ID
+        quote_number: newQuoteNumber,
+        quote_date: today.toISOString().split('T')[0],
+        valid_until: validUntil.toISOString().split('T')[0],
+        status: 'concept',
+        public_token: null,
+        admin_signature_data: null,
+        client_signature_data: null,
+        client_name: null,
+        client_signed_at: null,
+        created_at: undefined,
+        updated_at: undefined,
+      };
+
+      const { error: insertError } = await supabase
+        .from('quotes')
+        .insert([duplicateData]);
+
+      if (insertError) throw insertError;
+
+      toast({
+        title: "Succes",
+        description: "Offerte gedupliceerd",
+      });
+
+      await fetchQuotes();
+    } catch (error) {
+      console.error('Error duplicating quote:', error);
+      toast({
+        title: "Fout",
+        description: "Kon offerte niet dupliceren",
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     quotes,
     loading,
     fetchQuotes,
-    deleteQuote
+    deleteQuote,
+    duplicateQuote,
   };
 };

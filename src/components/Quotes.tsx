@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export function Quotes() {
   const { customers, projects } = useCrmStore();
-  const { quotes, loading, fetchQuotes, deleteQuote } = useQuotes();
+  const { quotes, loading, fetchQuotes, deleteQuote, duplicateQuote } = useQuotes();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
@@ -127,14 +127,15 @@ export function Quotes() {
           />
         </CardHeader>
         <CardContent>
-          <QuotesTable
-            quotes={filteredQuotes}
-            onPreview={handlePreview}
-            onViewPublic={handleViewPublic}
-            onDelete={deleteQuote}
-            onApprove={handleApproveQuote}
-            onSendEmail={handleSendEmail}
-          />
+        <QuotesTable
+          quotes={filteredQuotes}
+          onPreview={handlePreview}
+          onViewPublic={handleViewPublic}
+          onDelete={deleteQuote}
+          onApprove={handleApproveQuote}
+          onSendEmail={handleSendEmail}
+          onDuplicate={duplicateQuote}
+        />
         </CardContent>
       </Card>
 

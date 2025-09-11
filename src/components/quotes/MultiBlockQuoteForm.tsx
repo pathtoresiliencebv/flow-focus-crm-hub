@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Save } from "lucide-react";
+import { Plus, Save, BookmarkPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { QuoteBlockForm } from './QuoteBlockForm';
 import { MultiBlockQuotePreview } from './MultiBlockQuotePreview';
@@ -18,7 +18,10 @@ import { SignatureCanvas } from '../SignatureCanvas';
 import { CustomerQuickAdd } from '../CustomerQuickAdd';
 import { ProjectQuickAdd } from '../ProjectQuickAdd';
 import { SendQuoteDialog } from './SendQuoteDialog';
+import { SaveTemplateDialog } from './SaveTemplateDialog';
+import { TemplateSelector } from './TemplateSelector';
 import { useCrmStore } from '@/hooks/useCrmStore';
+import { useQuoteTemplates } from '@/hooks/useQuoteTemplates';
 import { QuoteBlock, Quote } from '@/types/quote';
 import { supabase } from "@/integrations/supabase/client";
 
@@ -68,6 +71,9 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   const [showProjectAdd, setShowProjectAdd] = useState(false);
   const [showSendDialog, setShowSendDialog] = useState(false);
   const [savedQuote, setSavedQuote] = useState<Quote | null>(null);
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  
+  const { templates, loading: templatesLoading, saveTemplate } = useQuoteTemplates();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -404,6 +410,29 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     }
   }, [customers, projects, adminSignature, toast, blocks]);
 
+  const handleSaveAsTemplate = async (templateData: {
+    name: string;
+    description?: string;
+    category: string;
+  }) => {
+    try {
+      await saveTemplate({
+        ...templateData,
+        template_data: blocks,
+      });
+    } catch (error) {
+      // Error already handled in saveTemplate
+    }
+  };
+
+  const handleLoadTemplate = (template: any) => {
+    setBlocks(template.template_data || []);
+    toast({
+      title: "Succes",
+      description: `Template "${template.name}" geladen`,
+    });
+  };
+
   const handleFormSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -497,6 +526,20 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
 
         <Form {...form}>
           <form onSubmit={handleFormSubmit} className="space-y-4">
+            {/* Template Selector */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Template Laden</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TemplateSelector
+                  templates={templates}
+                  onSelectTemplate={handleLoadTemplate}
+                  loading={templatesLoading}
+                />
+              </CardContent>
+            </Card>
+
             {/* Basic Form Fields */}
             <Card>
               <CardHeader className="pb-2">
@@ -774,6 +817,15 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
                 Annuleren
               </Button>
               <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setShowTemplateDialog(true)}
+                disabled={blocks.length === 0}
+              >
+                <BookmarkPlus className="mr-2 h-4 w-4" />
+                Opslaan als Template
+              </Button>
+              <Button 
                 type="submit" 
                 disabled={saving}
                 className="bg-blue-600 hover:bg-blue-700 text-white min-w-[180px]"
@@ -807,6 +859,13 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
           setShowSendDialog(false);
           onClose();
         }}
+      />
+
+      {/* Save Template Dialog */}
+      <SaveTemplateDialog
+        open={showTemplateDialog}
+        onOpenChange={setShowTemplateDialog}
+        onSave={handleSaveAsTemplate}
       />
     </div>
   );
