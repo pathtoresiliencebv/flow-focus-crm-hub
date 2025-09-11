@@ -8,15 +8,19 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Edit } from 'lucide-react';
+import { Edit, Trash2 } from 'lucide-react';
 import { Profile } from '@/types/user';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface UserTableProps {
   users: (Profile & { email: string })[];
   onEdit: (user: Profile) => void;
+  onDelete: (user: Profile) => void;
 }
 
-export const UserTable = ({ users, onEdit }: UserTableProps) => {
+export const UserTable = ({ users, onEdit, onDelete }: UserTableProps) => {
+  const { hasPermission, user: currentUser } = useAuth();
+  
   return (
     <Table>
       <TableHeader>
@@ -40,9 +44,21 @@ export const UserTable = ({ users, onEdit }: UserTableProps) => {
               </span>
             </TableCell>
             <TableCell>
-              <Button variant="ghost" size="icon" onClick={() => onEdit(user)}>
-                <Edit className="h-4 w-4" />
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="ghost" size="icon" onClick={() => onEdit(user)}>
+                  <Edit className="h-4 w-4" />
+                </Button>
+                {hasPermission('users_delete') && user.id !== currentUser?.id && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => onDelete(user)}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </TableCell>
           </TableRow>
         ))}

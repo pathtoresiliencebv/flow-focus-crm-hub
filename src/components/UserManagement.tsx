@@ -1,25 +1,39 @@
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { UserPlus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { CreateUserDialog } from './CreateUserDialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { fetchUsers } from '@/api/users';
+import { fetchUsers, deleteUser } from '@/api/users';
 import { EditUserDialog } from './users/EditUserDialog';
 import { UserTable } from './users/UserTable';
+import { DeleteUserDialog } from './users/DeleteUserDialog';
 import { Profile } from '@/types/user';
 
 const UserManagement = () => {
+  const queryClient = useQueryClient();
   const { data: users, isLoading, error } = useQuery({ 
     queryKey: ['users'], 
     queryFn: fetchUsers,
     retry: false
   });
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
+  const [deletingUser, setDeletingUser] = useState<Profile | null>(null);
   const [isCreateUserOpen, setCreateUserOpen] = useState(false);
   const { hasPermission } = useAuth();
+
+  const deleteUserMutation = useMutation({
+    mutationFn: deleteUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setDeletingUser(null);
+    },
+    onError: () => {
+      // Error handling is done in the deleteUser function
+    }
+  });
 
   if (isLoading) {
     return (
@@ -51,10 +65,23 @@ const UserManagement = () => {
         )}
       </div>
       <Card>
-        <UserTable users={Array.isArray(users) ? users : []} onEdit={setEditingUser} />
+        <UserTable 
+          users={Array.isArray(users) ? users : []} 
+          onEdit={setEditingUser}
+          onDelete={setDeletingUser}
+        />
       </Card>
       {editingUser && (
         <EditUserDialog user={editingUser} onClose={() => setEditingUser(null)} />
+      )}
+      {deletingUser && (
+        <DeleteUserDialog
+          user={deletingUser}
+          open={!!deletingUser}
+          onClose={() => setDeletingUser(null)}
+          onConfirm={() => deleteUserMutation.mutate(deletingUser.id)}
+          isLoading={deleteUserMutation.isPending}
+        />
       )}
       {hasPermission('users_edit') && (
         <CreateUserDialog open={isCreateUserOpen} onOpenChange={setCreateUserOpen} />

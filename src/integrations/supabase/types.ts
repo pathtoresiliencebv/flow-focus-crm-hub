@@ -2596,6 +2596,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      delete_user_safely: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       demote_other_admins: {
         Args: { p_user_id_to_keep: string }
         Returns: undefined

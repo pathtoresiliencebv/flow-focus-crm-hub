@@ -40,3 +40,22 @@ export async function updateUser(profile: Partial<Profile> & { id: string }) {
 
   return data;
 }
+
+export async function deleteUser(userId: string) {
+  const { error } = await supabase.rpc('delete_user_safely', {
+    p_user_id: userId,
+  });
+  
+  if (error) {
+    if (error.message.includes('You cannot delete your own account')) {
+      toast({ title: 'Fout', description: 'U kunt uw eigen account niet verwijderen.', variant: 'destructive' });
+    } else if (error.message.includes('Only Administrators can delete users')) {
+      toast({ title: 'Geen Toegang', description: 'Alleen beheerders kunnen gebruikers verwijderen.', variant: 'destructive' });
+    } else {
+      toast({ title: 'Fout', description: `Het verwijderen van de gebruiker is mislukt: ${error.message}`, variant: 'destructive' });
+    }
+    throw new Error(error.message);
+  }
+
+  toast({ title: 'Gebruiker Verwijderd', description: 'De gebruiker is succesvol verwijderd.', variant: 'default' });
+}
