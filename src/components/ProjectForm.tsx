@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useCrmStore, ProjectWithCustomerName as Project, NewProject, UpdateProject } from "@/hooks/useCrmStore";
 import { CustomerQuickAdd } from "./CustomerQuickAdd";
 import { Plus } from "lucide-react";
+import { useUsers } from "@/hooks/useUsers";
+import { useAuth } from "@/contexts/AuthContext";
 
 type ProjectStatus = "te-plannen" | "gepland" | "in-uitvoering" | "herkeuring" | "afgerond";
 interface ProjectFormProps {
@@ -18,6 +20,8 @@ interface ProjectFormProps {
 
 export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingProject }: ProjectFormProps) => {
   const { addProject, updateProject, customers } = useCrmStore();
+  const { monteurs } = useUsers();
+  const { hasPermission } = useAuth();
   const [showCustomerAdd, setShowCustomerAdd] = useState(false);
   const [formData, setFormData] = useState({
     title: existingProject?.title || "",
@@ -26,6 +30,7 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
     value: existingProject?.value || "",
     status: existingProject?.status || initialStatus,
     description: existingProject?.description || "",
+    assignedUserId: existingProject?.assigned_user_id || "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -47,6 +52,13 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
     setFormData((prev) => ({
       ...prev,
       status,
+    }));
+  };
+
+  const handleAssignedUserChange = (assignedUserId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      assignedUserId,
     }));
   };
 
@@ -74,6 +86,7 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
       value: Number(formData.value) || null,
       status: formData.status as ProjectStatus,
       description: formData.description || null,
+      assigned_user_id: formData.assignedUserId || null,
     };
 
     if (existingProject) {
@@ -155,6 +168,25 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
             </Select>
           </div>
         </div>
+
+        {hasPermission('projects_edit') && (
+          <div className="space-y-2">
+            <Label htmlFor="assignedUser">Toegewezen aan</Label>
+            <Select value={formData.assignedUserId} onValueChange={handleAssignedUserChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecteer installateur" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Geen toewijzing</SelectItem>
+                {monteurs.map((monteur) => (
+                  <SelectItem key={monteur.id} value={monteur.id}>
+                    {monteur.full_name || monteur.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
