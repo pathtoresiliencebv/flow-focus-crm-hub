@@ -1,7 +1,7 @@
 
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LucideProps } from "lucide-react";
-import React from "react";
 
 interface StatCardProps {
   title: string;

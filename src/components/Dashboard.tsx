@@ -14,6 +14,7 @@ import { InstallateurProjectCard } from "./dashboard/InstallateurProjectCard";
 import { useAuth } from "@/contexts/AuthContext";
 
 export const Dashboard = () => {
+  console.log("Dashboard component rendering start");
   const [newProjectDialogOpen, setNewProjectDialogOpen] = useState(false);
   const { customers, projects, addProject } = useCrmStore();
   const { planningItems, getCalendarEvents } = usePlanningStore();
