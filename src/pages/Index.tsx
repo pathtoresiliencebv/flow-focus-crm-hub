@@ -106,7 +106,6 @@ const Index = () => {
 
     switch (activeTab) {
       case "dashboard":
-        console.log("Rendering Dashboard component");
         return <Dashboard />;
       case "customers":
         return <Customers />;

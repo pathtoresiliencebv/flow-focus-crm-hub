@@ -24,18 +24,17 @@ function App() {
       <AuthProvider>
         <TranslationProvider>
           <BrowserRouter>
-          <div className="min-h-screen bg-background">
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/customers/:customerId" element={<Index />} />
-              <Route path="/projects/:projectId" element={<Index />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/quote/:token" element={<PublicQuote />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </div>
-          
-        </BrowserRouter>
+            <div className="min-h-screen bg-background">
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/customers/:customerId" element={<Index />} />
+                <Route path="/projects/:projectId" element={<Index />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/quote/:token" element={<PublicQuote />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </div>
+          </BrowserRouter>
         </TranslationProvider>
       </AuthProvider>
     </QueryClientProvider>
