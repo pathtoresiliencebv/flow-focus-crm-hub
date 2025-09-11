@@ -1,4 +1,3 @@
-import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
@@ -25,26 +24,24 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ErrorBoundary>
-          <AuthProvider>
-            <TranslationProvider>
-              <BrowserRouter>
-                <div className="min-h-screen bg-background">
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/customers/:customerId" element={<Index />} />
-                    <Route path="/projects/:projectId" element={<Index />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/quote/:token" element={<PublicQuote />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                  <Toaster />
-                  <Sonner />
-                </div>
-              </BrowserRouter>
-            </TranslationProvider>
-          </AuthProvider>
-        </ErrorBoundary>
+        <AuthProvider>
+          <TranslationProvider>
+            <BrowserRouter>
+              <div className="min-h-screen bg-background">
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/customers/:customerId" element={<Index />} />
+                  <Route path="/projects/:projectId" element={<Index />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/quote/:token" element={<PublicQuote />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+                <Toaster />
+                <Sonner />
+              </div>
+            </BrowserRouter>
+          </TranslationProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
