@@ -278,12 +278,13 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         .insert(quoteData);
 
       if (error) {
+        console.error('Database error saving draft:', error);
         toast({
           title: "Fout bij opslaan",
-          description: `Kon concept niet opslaan: ${error.message}`,
+          description: `Kon concept niet opslaan: ${error.message || 'Onbekende database fout'}`,
           variant: "destructive",
         });
-        return;
+        return false;
       }
 
       toast({
@@ -294,12 +295,15 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       if (closeAfter) {
         onClose();
       }
+      return true;
     } catch (error: any) {
+      console.error('Unexpected error saving draft:', error);
       toast({
         title: "Fout",
-        description: `Er is een fout opgetreden: ${error.message}`,
+        description: `Er is een onverwachte fout opgetreden: ${error.message || 'Probeer het opnieuw'}`,
         variant: "destructive",
       });
+      return false;
     } finally {
       setSaving(false);
     }
@@ -370,9 +374,10 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         .single();
 
       if (error) {
+        console.error('Database error saving quote for send:', error);
         toast({
           title: "Fout bij opslaan",
-          description: `Database fout: ${error.message}`,
+          description: `Database fout: ${error.message || 'Kon offerte niet opslaan voor verzending'}`,
           variant: "destructive",
         });
         return;
@@ -845,7 +850,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
             />
 
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={onClose}>
+              <Button type="button" variant="outline" onClick={handleExitWithConfirm}>
                 Annuleren
               </Button>
               <Button 
