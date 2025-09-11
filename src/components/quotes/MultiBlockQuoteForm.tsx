@@ -18,6 +18,7 @@ import { SignatureCanvas } from '../SignatureCanvas';
 import { CustomerQuickAdd } from '../CustomerQuickAdd';
 import { ProjectQuickAdd } from '../ProjectQuickAdd';
 import { SendQuoteDialog } from './SendQuoteDialog';
+import { useCrmStore } from '@/hooks/useCrmStore';
 import { QuoteBlock, Quote } from '@/types/quote';
 import { supabase } from "@/integrations/supabase/client";
 
@@ -41,15 +42,12 @@ const formSchema = z.object({
 
 interface MultiBlockQuoteFormProps {
   onClose: () => void;
-  customers: Array<{ id: string; name: string; email?: string }>;
-  projects?: Array<{ id: string; title: string; value: string; customer: string }>;
 }
 
 export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
-  onClose,
-  customers,
-  projects
+  onClose
 }) => {
+  const { customers, projects, isLoading: crmLoading } = useCrmStore();
   const { toast } = useToast();
   const [blocks, setBlocks] = useState<QuoteBlock[]>([
     {
@@ -422,18 +420,32 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   }) || [];
 
   const handleCustomerAdded = (customerId: string) => {
+    console.log('Customer added, setting customerId to:', customerId);
     form.setValue('customer', customerId);
     setShowCustomerAdd(false);
-    // Update email when customer is selected
-    const customer = customers.find(c => c.id === customerId);
-    if (customer?.email) {
-      form.setValue('customerEmail', customer.email);
-    }
+    
+    // Wait a bit for the data to refresh, then update email if available
+    setTimeout(() => {
+      const customer = customers.find(c => c.id === customerId);
+      if (customer?.email) {
+        form.setValue('customerEmail', customer.email);
+      }
+    }, 500);
   };
 
   const handleProjectAdded = (projectId: string) => {
+    console.log('Project added, setting projectId to:', projectId);
     form.setValue('project', projectId);
     setShowProjectAdd(false);
+    
+    // Wait a bit for the data to refresh, then update project details
+    setTimeout(() => {
+      const project = projects.find(p => p.id === projectId);
+      if (project) {
+        // Project title is automatically filled in the form preview
+        console.log('Found new project:', project.title);
+      }
+    }, 500);
   };
 
   // Watch customer changes to auto-fill email

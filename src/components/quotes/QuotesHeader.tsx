@@ -9,16 +9,12 @@ interface QuotesHeaderProps {
   showNewQuote: boolean;
   setShowNewQuote: (show: boolean) => void;
   onQuoteCreated: () => void;
-  customers: Array<{ id: string; name: string; email?: string }>;
-  projects: Array<{ id: string; title: string; value: string; customer: string }>;
 }
 
 export const QuotesHeader: React.FC<QuotesHeaderProps> = ({
   showNewQuote,
   setShowNewQuote,
-  onQuoteCreated,
-  customers,
-  projects
+  onQuoteCreated
 }) => {
   return (
     <div className="flex justify-between items-center">
@@ -39,8 +35,6 @@ export const QuotesHeader: React.FC<QuotesHeaderProps> = ({
               setShowNewQuote(false);
               onQuoteCreated();
             }}
-            customers={customers}
-            projects={projects}
           />
         </DialogContent>
       </Dialog>

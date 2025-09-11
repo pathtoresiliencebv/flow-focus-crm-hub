@@ -117,8 +117,6 @@ export function Quotes() {
         showNewQuote={showNewQuote}
         setShowNewQuote={setShowNewQuote}
         onQuoteCreated={fetchQuotes}
-        customers={formCustomers}
-        projects={formProjects}
       />
 
       <Card>
