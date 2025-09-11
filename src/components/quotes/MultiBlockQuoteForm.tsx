@@ -231,125 +231,154 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   }, [blocks, totalAmount, totalVAT, grandTotal]);
 
   const onSubmit = useCallback(async (values: z.infer<typeof formSchema>) => {
+    console.log('MultiBlockQuoteForm: Starting submit process with values:', values);
+    console.log('MultiBlockQuoteForm: Current blocks at submit:', blocks);
+    
     setSaving(true);
     
-    // Get the current blocks state at the time of submission
-    setBlocks(currentBlocks => {
-      console.log('MultiBlockQuoteForm: Current blocks at submit time:', JSON.stringify(currentBlocks, null, 2));
-      
-      // Continue with submission using current blocks
-      (async () => {
-        try {
-          const customer = customers.find(c => c.id === values.customer);
-          const project = projects?.find(p => p.id === values.project);
+    try {
+      // Validation checks
+      if (!values.customer) {
+        toast({
+          title: "Fout",
+          description: "Selecteer eerst een klant.",
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
 
-          // Generate public token
-          const { data: tokenData, error: tokenError } = await supabase
-            .rpc('generate_quote_public_token');
+      if (!values.quoteNumber) {
+        toast({
+          title: "Fout",
+          description: "Offertenummer ontbreekt.",
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
 
-          if (tokenError) {
-            console.error('Error generating token:', tokenError);
-            toast({
-              title: "Fout",
-              description: "Kon geen publieke link genereren.",
-              variant: "destructive",
-            });
-            setSaving(false);
-            return;
-          }
+      if (blocks.length === 0) {
+        toast({
+          title: "Fout",
+          description: "Voeg ten minste één blok toe aan de offerte.",
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
 
-          // Get the current quote number if empty
-          let quoteNumber = values.quoteNumber;
-          if (!quoteNumber) {
-            const { data: generatedNumber } = await supabase.rpc('generate_quote_number');
-            quoteNumber = generatedNumber || `OFF-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`;
-          }
+      const customer = customers.find(c => c.id === values.customer);
+      const project = projects?.find(p => p.id === values.project);
 
-          // Calculate totals from current blocks
-          const currentTotalAmount = currentBlocks.reduce((sum, block) => sum + (block.subtotal || 0), 0);
-          const currentTotalVAT = currentBlocks.reduce((sum, block) => sum + (block.vat_amount || 0), 0);
-          const currentGrandTotal = currentTotalAmount + currentTotalVAT;
+      console.log('MultiBlockQuoteForm: Found customer:', customer);
+      console.log('MultiBlockQuoteForm: Found project:', project);
 
-          console.log('MultiBlockQuoteForm: Saving blocks to database:', {
-            blocks: currentBlocks,
-            totalAmount: currentTotalAmount,
-            totalVAT: currentTotalVAT,
-            grandTotal: currentGrandTotal
-          });
+      // Generate public token
+      const { data: tokenData, error: tokenError } = await supabase
+        .rpc('generate_quote_public_token');
 
-          // Save quote to database with current block structure
-          const { data, error } = await supabase
-            .from('quotes')
-            .insert({
-              quote_number: quoteNumber,
-              customer_name: customer?.name || '',
-              customer_email: values.customerEmail || customer?.email || '',
-              project_title: project?.title || '',
-              quote_date: values.date,
-              valid_until: values.validUntil,
-              message: values.message || '',
-              items: JSON.parse(JSON.stringify(currentBlocks)) as any, // Save blocks as JSON
-              subtotal: currentTotalAmount,
-              vat_amount: currentTotalVAT,
-              total_amount: currentGrandTotal,
-              status: 'concept',
-              public_token: tokenData,
-              admin_signature_data: adminSignature || null
-            })
-            .select()
-            .single();
+      if (tokenError) {
+        console.error('Error generating token:', tokenError);
+        toast({
+          title: "Fout",
+          description: "Kon geen publieke link genereren.",
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
 
-          if (error) {
-            console.error('Error saving quote:', error);
-            toast({
-              title: "Fout bij opslaan",
-              description: "De offerte kon niet worden opgeslagen.",
-              variant: "destructive",
-            });
-            setSaving(false);
-            return;
-          }
+      console.log('MultiBlockQuoteForm: Generated token:', tokenData);
 
-          toast({
-            title: "Offerte opgeslagen",
-            description: `Offerte ${quoteNumber} is succesvol opgeslagen.`,
-          });
+      // Calculate totals from current blocks
+      const currentTotalAmount = blocks.reduce((sum, block) => sum + (block.subtotal || 0), 0);
+      const currentTotalVAT = blocks.reduce((sum, block) => sum + (block.vat_amount || 0), 0);
+      const currentGrandTotal = currentTotalAmount + currentTotalVAT;
 
-          // Create quote object for send dialog
-          const quoteForSend: Quote = {
-            id: data.id,
-            quote_number: quoteNumber,
-            customer_name: customer?.name || '',
-            customer_email: values.customerEmail || customer?.email || '',
-            project_title: project?.title || '',
-            quote_date: values.date,
-            valid_until: values.validUntil,
-            message: values.message || '',
-            blocks: currentBlocks,
-            total_amount: currentGrandTotal,
-            total_vat_amount: currentTotalVAT,
-            status: 'concept',
-            public_token: tokenData,
-            admin_signature_data: adminSignature
-          };
+      console.log('MultiBlockQuoteForm: Calculated totals:', {
+        totalAmount: currentTotalAmount,
+        totalVAT: currentTotalVAT,
+        grandTotal: currentGrandTotal
+      });
 
-          setSavedQuote(quoteForSend);
-          setShowSendDialog(true);
-        } catch (error) {
-          console.error('Error:', error);
-          toast({
-            title: "Fout",
-            description: "Er is een onverwachte fout opgetreden.",
-            variant: "destructive",
-          });
-        } finally {
-          setSaving(false);
-        }
-      })();
+      // Save quote to database with current block structure
+      const quoteData = {
+        quote_number: values.quoteNumber,
+        customer_name: customer?.name || '',
+        customer_email: values.customerEmail || customer?.email || '',
+        project_title: project?.title || '',
+        quote_date: values.date,
+        valid_until: values.validUntil,
+        message: values.message || '',
+        items: JSON.parse(JSON.stringify(blocks)),
+        subtotal: currentTotalAmount,
+        vat_amount: currentTotalVAT,
+        total_amount: currentGrandTotal,
+        status: 'concept',
+        public_token: tokenData,
+        admin_signature_data: adminSignature || null
+      };
 
-      return currentBlocks; // Return the same blocks, no change needed
-    });
-  }, [customers, projects, adminSignature, toast, onClose]);
+      console.log('MultiBlockQuoteForm: Inserting quote data:', quoteData);
+
+      const { data, error } = await supabase
+        .from('quotes')
+        .insert(quoteData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error saving quote:', error);
+        toast({
+          title: "Fout bij opslaan",
+          description: `De offerte kon niet worden opgeslagen: ${error.message}`,
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+
+      console.log('MultiBlockQuoteForm: Quote saved successfully:', data);
+
+      toast({
+        title: "Offerte opgeslagen!",
+        description: `Offerte ${values.quoteNumber} is succesvol opgeslagen.`,
+      });
+
+      // Create quote object for send dialog
+      const quoteForSend: Quote = {
+        id: data.id,
+        quote_number: values.quoteNumber,
+        customer_name: customer?.name || '',
+        customer_email: values.customerEmail || customer?.email || '',
+        project_title: project?.title || '',
+        quote_date: values.date,
+        valid_until: values.validUntil,
+        message: values.message || '',
+        blocks: blocks,
+        total_amount: currentGrandTotal,
+        total_vat_amount: currentTotalVAT,
+        status: 'concept',
+        public_token: tokenData,
+        admin_signature_data: adminSignature
+      };
+
+      console.log('MultiBlockQuoteForm: Opening send dialog with quote:', quoteForSend);
+      setSavedQuote(quoteForSend);
+      setShowSendDialog(true);
+
+    } catch (error: any) {
+      console.error('Unexpected error in onSubmit:', error);
+      toast({
+        title: "Onverwachte fout",
+        description: `Er is een fout opgetreden: ${error.message || 'Onbekende fout'}`,
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }, [customers, projects, adminSignature, toast, blocks]);
 
   const handleFormSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
