@@ -246,7 +246,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     console.log('MultiBlockQuoteForm: Total calculations - Amount:', totalAmount, 'VAT:', totalVAT, 'Grand:', grandTotal);
   }, [blocks, totalAmount, totalVAT, grandTotal]);
 
-  const saveAsDraft = useCallback(async (values: z.infer<typeof formSchema>, closeAfter: boolean = true) => {
+  const saveAsDraft = useCallback(async (values: z.infer<typeof formSchema>, closeAfter: boolean = true, existingQuoteId?: string) => {
     setSaving(true);
     
     try {
@@ -270,23 +270,41 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         vat_amount: currentTotalVAT,
         total_amount: currentGrandTotal,
         status: 'concept',
-        admin_signature_data: adminSignature || null
+        admin_signature_data: adminSignature || null,
+        updated_at: new Date().toISOString()
       };
 
-      const { error } = await supabase
-        .from('quotes')
-        .insert(quoteData);
+      let result;
+      if (existingQuoteId) {
+        // Update existing quote
+        console.log('🔄 Updating existing quote:', existingQuoteId);
+        result = await supabase
+          .from('quotes')
+          .update(quoteData)
+          .eq('id', existingQuoteId)
+          .select()
+          .single();
+      } else {
+        // Insert new quote
+        console.log('➕ Creating new quote');
+        result = await supabase
+          .from('quotes')
+          .insert(quoteData)
+          .select()
+          .single();
+      }
 
-      if (error) {
-        console.error('Database error saving draft:', error);
+      if (result.error) {
+        console.error('Database error saving draft:', result.error);
         toast({
           title: "Fout bij opslaan",
-          description: `Kon concept niet opslaan: ${error.message || 'Onbekende database fout'}`,
+          description: `Kon concept niet opslaan: ${result.error.message || 'Onbekende database fout'}`,
           variant: "destructive",
         });
         return false;
       }
 
+      console.log('✅ Quote saved successfully:', result.data?.id);
       toast({
         title: "Concept opgeslagen",
         description: `Offerte ${values.quoteNumber} is opgeslagen als concept.`,
@@ -295,7 +313,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       if (closeAfter) {
         onClose();
       }
-      return true;
+      return result.data?.id || true;
     } catch (error: any) {
       console.error('Unexpected error saving draft:', error);
       toast({
@@ -309,7 +327,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     }
   }, [customers, projects, adminSignature, toast, blocks, onClose]);
 
-  const saveAndPrepareToSend = useCallback(async (values: z.infer<typeof formSchema>) => {
+  const saveAndPrepareToSend = useCallback(async (values: z.infer<typeof formSchema>, existingQuoteId?: string) => {
     setSaving(true);
     
     try {
@@ -337,7 +355,19 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       const customer = customers.find(c => c.id === values.customer);
       const project = projects?.find(p => p.id === values.project);
 
-      // Generate token
+      // Check if customer has email for sending
+      const finalEmail = values.customerEmail || customer?.email || '';
+      if (!finalEmail) {
+        toast({
+          title: "Email vereist",
+          description: "Een geldig email adres van de klant is vereist om de offerte te versturen.",
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+
+      // Generate token if not exists
       let tokenData = null;
       try {
         const { data, error: tokenError } = await supabase.rpc('generate_quote_public_token');
@@ -353,7 +383,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       const quoteData = {
         quote_number: values.quoteNumber,
         customer_name: customer?.name || '',
-        customer_email: values.customerEmail || customer?.email || '',
+        customer_email: finalEmail,
         project_title: project?.title || '',
         quote_date: values.date,
         valid_until: values.validUntil,
@@ -362,30 +392,46 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         subtotal: currentTotalAmount,
         vat_amount: currentTotalVAT,
         total_amount: currentGrandTotal,
-        status: 'concept',
+        status: 'te-versturen',
         public_token: tokenData,
-        admin_signature_data: adminSignature || null
+        admin_signature_data: adminSignature || null,
+        updated_at: new Date().toISOString()
       };
 
-      const { data, error } = await supabase
-        .from('quotes')
-        .insert(quoteData)
-        .select()
-        .single();
+      let result;
+      if (existingQuoteId) {
+        // Update existing quote
+        console.log('🔄 Updating existing quote for send:', existingQuoteId);
+        result = await supabase
+          .from('quotes')
+          .update(quoteData)
+          .eq('id', existingQuoteId)
+          .select()
+          .single();
+      } else {
+        // Insert new quote
+        console.log('➕ Creating new quote for send');
+        result = await supabase
+          .from('quotes')
+          .insert(quoteData)
+          .select()
+          .single();
+      }
 
-      if (error) {
-        console.error('Database error saving quote for send:', error);
+      if (result.error) {
+        console.error('Database error saving quote for send:', result.error);
         toast({
           title: "Fout bij opslaan",
-          description: `Database fout: ${error.message || 'Kon offerte niet opslaan voor verzending'}`,
+          description: `Database fout: ${result.error.message || 'Kon offerte niet opslaan voor verzending'}`,
           variant: "destructive",
         });
+        setSaving(false);
         return;
       }
 
-      const finalEmail = values.customerEmail || customer?.email || '';
+      console.log('✅ Quote prepared for sending:', result.data.id);
       const quoteForSend: Quote = {
-        id: data.id,
+        id: result.data.id,
         quote_number: values.quoteNumber,
         customer_name: customer?.name || '',
         customer_email: finalEmail,
@@ -396,7 +442,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         blocks: blocks,
         total_amount: currentGrandTotal,
         total_vat_amount: currentTotalVAT,
-        status: 'concept',
+        status: 'te-versturen',
         public_token: tokenData,
         admin_signature_data: adminSignature
       };
@@ -405,11 +451,13 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       setShowConfirmDialog(true);
 
     } catch (error: any) {
+      console.error('Error preparing quote for send:', error);
       toast({
         title: "Kritieke fout",
         description: `Onverwachte fout: ${error.message}`,
         variant: "destructive",
       });
+      setSaving(false);
     } finally {
       setSaving(false);
     }
@@ -441,14 +489,14 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   const handleSaveDraft = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    form.handleSubmit((values) => saveAsDraft(values, true))();
-  }, [form, saveAsDraft]);
+    form.handleSubmit((values) => saveAsDraft(values, false, savedQuote?.id))();
+  }, [form, saveAsDraft, savedQuote?.id]);
 
   const handleSaveAndSend = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    form.handleSubmit(saveAndPrepareToSend)();
-  }, [form, saveAndPrepareToSend]);
+    form.handleSubmit((values) => saveAndPrepareToSend(values, savedQuote?.id))();
+  }, [form, saveAndPrepareToSend, savedQuote?.id]);
 
   const handleConfirmSend = () => {
     setShowConfirmDialog(false);
@@ -468,7 +516,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   };
 
   const handleSaveAndExit = () => {
-    form.handleSubmit((values) => saveAsDraft(values, true))();
+    form.handleSubmit((values) => saveAsDraft(values, true, savedQuote?.id))();
     setShowExitConfirmDialog(false);
   };
 
