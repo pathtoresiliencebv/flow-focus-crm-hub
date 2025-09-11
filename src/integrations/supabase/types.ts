@@ -2592,6 +2592,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_reset_user_password: {
+        Args: { p_new_password: string; p_user_id: string }
+        Returns: undefined
+      }
       cleanup_typing_indicators: {
         Args: Record<PropertyKey, never>
         Returns: undefined

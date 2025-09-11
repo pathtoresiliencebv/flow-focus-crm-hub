@@ -189,16 +189,9 @@ interface AuthFormContainerProps {
 }
 
 function AuthFormContainer({ onLogin, isLoading }: AuthFormContainerProps) {
-    const [isSignIn, setIsSignIn] = useState(true);
     return (
         <div className="mx-auto grid w-[350px] gap-2">
-            {isSignIn ? <SignInForm onSubmit={onLogin} isLoading={isLoading} /> : <SignUpForm onSubmit={onLogin} isLoading={isLoading} />}
-            <div className="text-center text-sm">
-                {isSignIn ? "Nog geen account?" : "Al een account?"}{" "}
-                <Button variant="link" className="pl-1 text-smans-primary hover:text-smans-primary/80" onClick={() => setIsSignIn(!isSignIn)}>
-                    {isSignIn ? "Registreren" : "Inloggen"}
-                </Button>
-            </div>
+            <SignInForm onSubmit={onLogin} isLoading={isLoading} />
         </div>
     )
 }

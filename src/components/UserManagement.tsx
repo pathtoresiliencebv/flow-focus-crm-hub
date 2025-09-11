@@ -6,10 +6,11 @@ import { UserPlus } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { CreateUserDialog } from './CreateUserDialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { fetchUsers, deleteUser } from '@/api/users';
+import { fetchUsers, deleteUser, resetUserPassword } from '@/api/users';
 import { EditUserDialog } from './users/EditUserDialog';
 import { UserTable } from './users/UserTable';
 import { DeleteUserDialog } from './users/DeleteUserDialog';
+import { ResetPasswordDialog } from './users/ResetPasswordDialog';
 import { Profile } from '@/types/user';
 
 const UserManagement = () => {
@@ -21,6 +22,7 @@ const UserManagement = () => {
   });
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
   const [deletingUser, setDeletingUser] = useState<Profile | null>(null);
+  const [resettingPasswordUser, setResettingPasswordUser] = useState<Profile | null>(null);
   const [isCreateUserOpen, setCreateUserOpen] = useState(false);
   const { hasPermission } = useAuth();
 
@@ -33,6 +35,14 @@ const UserManagement = () => {
     onError: () => {
       // Error handling is done in the deleteUser function
     }
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: ({ userId, password }: { userId: string; password: string }) => 
+      resetUserPassword(userId, password),
+    onSuccess: () => {
+      setResettingPasswordUser(null);
+    },
   });
 
   if (isLoading) {
@@ -69,6 +79,7 @@ const UserManagement = () => {
           users={Array.isArray(users) ? users : []} 
           onEdit={setEditingUser}
           onDelete={setDeletingUser}
+          onResetPassword={setResettingPasswordUser}
         />
       </Card>
       {editingUser && (
@@ -81,6 +92,20 @@ const UserManagement = () => {
           onClose={() => setDeletingUser(null)}
           onConfirm={() => deleteUserMutation.mutate(deletingUser.id)}
           isLoading={deleteUserMutation.isPending}
+        />
+      )}
+      {resettingPasswordUser && (
+        <ResetPasswordDialog
+          user={resettingPasswordUser}
+          open={!!resettingPasswordUser}
+          onClose={() => setResettingPasswordUser(null)}
+          onConfirm={(password) => 
+            resetPasswordMutation.mutate({ 
+              userId: resettingPasswordUser.id, 
+              password 
+            })
+          }
+          isLoading={resetPasswordMutation.isPending}
         />
       )}
       {hasPermission('users_edit') && (

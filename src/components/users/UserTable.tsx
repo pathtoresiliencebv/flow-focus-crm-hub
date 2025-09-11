@@ -8,7 +8,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, Key } from 'lucide-react';
 import { Profile } from '@/types/user';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -16,9 +16,10 @@ interface UserTableProps {
   users: (Profile & { email: string })[];
   onEdit: (user: Profile) => void;
   onDelete: (user: Profile) => void;
+  onResetPassword: (user: Profile) => void;
 }
 
-export const UserTable = ({ users, onEdit, onDelete }: UserTableProps) => {
+export const UserTable = ({ users, onEdit, onDelete, onResetPassword }: UserTableProps) => {
   const { hasPermission, user: currentUser } = useAuth();
   
   return (
@@ -48,6 +49,16 @@ export const UserTable = ({ users, onEdit, onDelete }: UserTableProps) => {
                 <Button variant="ghost" size="icon" onClick={() => onEdit(user)}>
                   <Edit className="h-4 w-4" />
                 </Button>
+                {hasPermission('users_edit') && user.id !== currentUser?.id && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => onResetPassword(user)}
+                    className="text-blue-600 hover:text-blue-700"
+                  >
+                    <Key className="h-4 w-4" />
+                  </Button>
+                )}
                 {hasPermission('users_delete') && user.id !== currentUser?.id && (
                   <Button 
                     variant="ghost" 

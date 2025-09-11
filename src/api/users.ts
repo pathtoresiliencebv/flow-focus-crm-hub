@@ -59,3 +59,23 @@ export async function deleteUser(userId: string) {
 
   toast({ title: 'Gebruiker Verwijderd', description: 'De gebruiker is succesvol verwijderd.', variant: 'default' });
 }
+
+export async function resetUserPassword(userId: string, newPassword: string) {
+  const { error } = await supabase.rpc('admin_reset_user_password', {
+    p_user_id: userId,
+    p_new_password: newPassword,
+  });
+  
+  if (error) {
+    if (error.message.includes('Use the normal password change process')) {
+      toast({ title: 'Fout', description: 'U kunt uw eigen wachtwoord niet via deze methode wijzigen.', variant: 'destructive' });
+    } else if (error.message.includes('Only Administrators can reset')) {
+      toast({ title: 'Geen Toegang', description: 'Alleen beheerders kunnen wachtwoorden resetten.', variant: 'destructive' });
+    } else {
+      toast({ title: 'Fout', description: `Het resetten van het wachtwoord is mislukt: ${error.message}`, variant: 'destructive' });
+    }
+    throw new Error(error.message);
+  }
+
+  toast({ title: 'Wachtwoord Gereset', description: 'Het wachtwoord is succesvol gewijzigd.', variant: 'default' });
+}
