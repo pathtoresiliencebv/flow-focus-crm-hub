@@ -1,4 +1,5 @@
 
+import React, { useState } from "react";
 import { 
   Table, 
   TableBody, 
@@ -11,7 +12,6 @@ import { Receipt, Send } from "lucide-react";
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from '@/hooks/use-toast';
-import { useState } from "react";
 import { SendInvoiceDialog } from "./SendInvoiceDialog";
 
 interface InvoiceItem {
