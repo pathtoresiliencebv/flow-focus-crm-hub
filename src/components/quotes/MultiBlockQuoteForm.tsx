@@ -20,6 +20,7 @@ import { ProjectQuickAdd } from '../ProjectQuickAdd';
 import { SendQuoteDialog } from './SendQuoteDialog';
 import { SaveTemplateDialog } from './SaveTemplateDialog';
 import { TemplateSelector } from './TemplateSelector';
+import { ConfirmSendDialog } from './ConfirmSendDialog';
 import { useCrmStore } from '@/hooks/useCrmStore';
 import { useQuoteTemplates } from '@/hooks/useQuoteTemplates';
 import { QuoteBlock, Quote } from '@/types/quote';
@@ -72,6 +73,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   const [showSendDialog, setShowSendDialog] = useState(false);
   const [savedQuote, setSavedQuote] = useState<Quote | null>(null);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   
   const { templates, loading: templatesLoading, saveTemplate } = useQuoteTemplates();
 
@@ -242,39 +244,81 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     console.log('MultiBlockQuoteForm: Total calculations - Amount:', totalAmount, 'VAT:', totalVAT, 'Grand:', grandTotal);
   }, [blocks, totalAmount, totalVAT, grandTotal]);
 
-  const onSubmit = useCallback(async (values: z.infer<typeof formSchema>) => {
-    console.log('🚀 QUOTE SUBMIT: Starting with values:', values);
-    console.log('🚀 QUOTE SUBMIT: Current blocks:', blocks);
-    
+  const saveAsDraft = useCallback(async (values: z.infer<typeof formSchema>) => {
+    console.log('💾 SAVING AS DRAFT:', values);
     setSaving(true);
     
     try {
-      // Enhanced validation with detailed feedback
+      const customer = customers.find(c => c.id === values.customer);
+      const project = projects?.find(p => p.id === values.project);
+      
+      const currentTotalAmount = blocks.reduce((sum, block) => sum + (block.subtotal || 0), 0);
+      const currentTotalVAT = blocks.reduce((sum, block) => sum + (block.vat_amount || 0), 0);
+      const currentGrandTotal = currentTotalAmount + currentTotalVAT;
+      
+      const quoteData = {
+        quote_number: values.quoteNumber,
+        customer_name: customer?.name || '',
+        customer_email: values.customerEmail || customer?.email || '',
+        project_title: project?.title || '',
+        quote_date: values.date,
+        valid_until: values.validUntil,
+        message: values.message || '',
+        items: JSON.parse(JSON.stringify(blocks)),
+        subtotal: currentTotalAmount,
+        vat_amount: currentTotalVAT,
+        total_amount: currentGrandTotal,
+        status: 'concept',
+        admin_signature_data: adminSignature || null
+      };
+
+      const { error } = await supabase
+        .from('quotes')
+        .insert(quoteData);
+
+      if (error) {
+        toast({
+          title: "Fout bij opslaan",
+          description: `Kon concept niet opslaan: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Concept opgeslagen",
+        description: `Offerte ${values.quoteNumber} is opgeslagen als concept.`,
+      });
+      
+      onClose();
+    } catch (error: any) {
+      toast({
+        title: "Fout",
+        description: `Er is een fout opgetreden: ${error.message}`,
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }, [customers, projects, adminSignature, toast, blocks, onClose]);
+
+  const saveAndPrepareToSend = useCallback(async (values: z.infer<typeof formSchema>) => {
+    console.log('📧 SAVE AND PREPARE TO SEND:', values);
+    setSaving(true);
+    
+    try {
+      // Validation
       const errors = [];
+      if (!values.customer) errors.push("Selecteer eerst een klant");
+      if (!values.quoteNumber) errors.push("Offertenummer ontbreekt");
+      if (blocks.length === 0) errors.push("Voeg ten minste één blok toe");
       
-      if (!values.customer) {
-        errors.push("Selecteer eerst een klant");
-      }
-      
-      if (!values.quoteNumber) {
-        errors.push("Offertenummer ontbreekt");
-      }
-      
-      if (blocks.length === 0) {
-        errors.push("Voeg ten minste één blok toe aan de offerte");
-      }
-      
-      // Check if blocks have items
       const blocksWithItems = blocks.filter(block => 
         block.type === 'textblock' || (block.items && block.items.length > 0)
       );
-      
-      if (blocksWithItems.length === 0) {
-        errors.push("Voeg items toe aan de blokken van de offerte");
-      }
+      if (blocksWithItems.length === 0) errors.push("Voeg items toe aan de blokken");
       
       if (errors.length > 0) {
-        console.log('❌ VALIDATION ERRORS:', errors);
         toast({
           title: "Validatie fouten",
           description: errors.join(". "),
@@ -287,40 +331,19 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       const customer = customers.find(c => c.id === values.customer);
       const project = projects?.find(p => p.id === values.project);
 
-      console.log('MultiBlockQuoteForm: Found customer:', customer);
-      console.log('MultiBlockQuoteForm: Found project:', project);
-
-      // Generate public token with fallback
+      // Generate token
       let tokenData = null;
       try {
-        const { data, error: tokenError } = await supabase
-          .rpc('generate_quote_public_token');
-        
-        if (tokenError) {
-          console.warn('⚠️ Token generation failed, using fallback:', tokenError);
-          tokenData = `quote_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        } else {
-          tokenData = data;
-        }
-        
-        console.log('✅ Generated token:', tokenData);
-      } catch (err) {
-        console.warn('⚠️ Token generation exception, using fallback:', err);
+        const { data, error: tokenError } = await supabase.rpc('generate_quote_public_token');
+        tokenData = tokenError ? `quote_${Date.now()}_${Math.random().toString(36).substr(2, 9)}` : data;
+      } catch {
         tokenData = `quote_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       }
 
-      // Calculate totals from current blocks
       const currentTotalAmount = blocks.reduce((sum, block) => sum + (block.subtotal || 0), 0);
       const currentTotalVAT = blocks.reduce((sum, block) => sum + (block.vat_amount || 0), 0);
       const currentGrandTotal = currentTotalAmount + currentTotalVAT;
 
-      console.log('MultiBlockQuoteForm: Calculated totals:', {
-        totalAmount: currentTotalAmount,
-        totalVAT: currentTotalVAT,
-        grandTotal: currentGrandTotal
-      });
-
-      // Save quote to database with current block structure
       const quoteData = {
         quote_number: values.quoteNumber,
         customer_name: customer?.name || '',
@@ -338,8 +361,6 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         admin_signature_data: adminSignature || null
       };
 
-      console.log('💾 SAVING: Quote data to insert:', quoteData);
-
       const { data, error } = await supabase
         .from('quotes')
         .insert(quoteData)
@@ -347,28 +368,15 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         .single();
 
       if (error) {
-        console.error('❌ DATABASE ERROR:', error);
-        const errorMessage = error.code === '23505' 
-          ? 'Er bestaat al een offerte met dit nummer. Probeer opnieuw.'
-          : `Database fout: ${error.message}`;
-          
         toast({
           title: "Fout bij opslaan",
-          description: errorMessage,
+          description: `Database fout: ${error.message}`,
           variant: "destructive",
         });
         setSaving(false);
         return;
       }
 
-      console.log('✅ QUOTE SAVED:', data);
-
-      toast({
-        title: "🎉 Offerte opgeslagen!",
-        description: `Offerte ${values.quoteNumber} is succesvol opgeslagen en klaar om te versturen.`,
-      });
-
-      // Create quote object for send dialog with proper email
       const finalEmail = values.customerEmail || customer?.email || '';
       const quoteForSend: Quote = {
         id: data.id,
@@ -386,23 +394,14 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         public_token: tokenData,
         admin_signature_data: adminSignature
       };
-
-      console.log('📧 OPENING SEND DIALOG with quote:', quoteForSend);
-      console.log('📧 Email for sending:', finalEmail);
       
       setSavedQuote(quoteForSend);
-      
-      // Small delay to ensure state is set before opening dialog
-      setTimeout(() => {
-        setShowSendDialog(true);
-      }, 100);
+      setShowConfirmDialog(true);
 
     } catch (error: any) {
-      console.error('💥 UNEXPECTED ERROR:', error);
-      console.error('💥 ERROR STACK:', error.stack);
       toast({
         title: "Kritieke fout",
-        description: `Er is een onverwachte fout opgetreden: ${error.message || 'Onbekende fout'}. Probeer het opnieuw.`,
+        description: `Onverwachte fout: ${error.message}`,
         variant: "destructive",
       });
     } finally {
@@ -433,12 +432,22 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     });
   };
 
-  const handleFormSubmit = useCallback((e: React.FormEvent) => {
+  const handleSaveDraft = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('MultiBlockQuoteForm: Form submitted - this should only happen when saving the quote');
-    form.handleSubmit(onSubmit)();
-  }, [form, onSubmit]);
+    form.handleSubmit(saveAsDraft)();
+  }, [form, saveAsDraft]);
+
+  const handleSaveAndSend = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    form.handleSubmit(saveAndPrepareToSend)();
+  }, [form, saveAndPrepareToSend]);
+
+  const handleConfirmSend = () => {
+    setShowConfirmDialog(false);
+    setShowSendDialog(true);
+  };
 
   // Get current form values only when needed
   const currentFormValues = form.getValues();
@@ -525,7 +534,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         </div>
 
         <Form {...form}>
-          <form onSubmit={handleFormSubmit} className="space-y-4">
+          <div className="space-y-4">
             {/* Template Selector */}
             <Card>
               <CardHeader className="pb-2">
@@ -826,15 +835,26 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
                 Opslaan als Template
               </Button>
               <Button 
-                type="submit" 
+                type="button" 
+                variant="secondary"
+                onClick={handleSaveDraft}
                 disabled={saving}
-                className="bg-blue-600 hover:bg-blue-700 text-white min-w-[180px]"
+                className="min-w-[140px]"
               >
                 <Save className="h-4 w-4 mr-2" />
-                {saving ? "💾 Opslaan..." : "💾 Opslaan en Versturen"}
+                {saving ? "Opslaan..." : "Opslaan als Concept"}
+              </Button>
+              <Button 
+                type="button"
+                onClick={handleSaveAndSend}
+                disabled={saving}
+                className="bg-blue-600 hover:bg-blue-700 text-white min-w-[160px]"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                {saving ? "Opslaan..." : "Opslaan en Versturen"}
               </Button>
             </div>
-          </form>
+          </div>
         </Form>
       </div>
 
@@ -846,6 +866,14 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         </div>
         <MultiBlockQuotePreview key={previewKey} quote={previewQuote} />
       </div>
+
+      {/* Confirm Send Dialog */}
+      <ConfirmSendDialog
+        isOpen={showConfirmDialog}
+        onClose={() => setShowConfirmDialog(false)}
+        onConfirm={handleConfirmSend}
+        quote={savedQuote}
+      />
 
       {/* Send Quote Dialog */}
       <SendQuoteDialog
