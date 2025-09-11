@@ -21,6 +21,7 @@ import { SendQuoteDialog } from './SendQuoteDialog';
 import { SaveTemplateDialog } from './SaveTemplateDialog';
 import { TemplateSelector } from './TemplateSelector';
 import { ConfirmSendDialog } from './ConfirmSendDialog';
+import { ExitConfirmDialog } from './ExitConfirmDialog';
 import { useCrmStore } from '@/hooks/useCrmStore';
 import { useQuoteTemplates } from '@/hooks/useQuoteTemplates';
 import { QuoteBlock, Quote } from '@/types/quote';
@@ -74,6 +75,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   const [savedQuote, setSavedQuote] = useState<Quote | null>(null);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showExitConfirmDialog, setShowExitConfirmDialog] = useState(false);
   
   const { templates, loading: templatesLoading, saveTemplate } = useQuoteTemplates();
 
@@ -244,8 +246,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     console.log('MultiBlockQuoteForm: Total calculations - Amount:', totalAmount, 'VAT:', totalVAT, 'Grand:', grandTotal);
   }, [blocks, totalAmount, totalVAT, grandTotal]);
 
-  const saveAsDraft = useCallback(async (values: z.infer<typeof formSchema>) => {
-    console.log('💾 SAVING AS DRAFT:', values);
+  const saveAsDraft = useCallback(async (values: z.infer<typeof formSchema>, closeAfter: boolean = true) => {
     setSaving(true);
     
     try {
@@ -290,7 +291,9 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         description: `Offerte ${values.quoteNumber} is opgeslagen als concept.`,
       });
       
-      onClose();
+      if (closeAfter) {
+        onClose();
+      }
     } catch (error: any) {
       toast({
         title: "Fout",
@@ -303,7 +306,6 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   }, [customers, projects, adminSignature, toast, blocks, onClose]);
 
   const saveAndPrepareToSend = useCallback(async (values: z.infer<typeof formSchema>) => {
-    console.log('📧 SAVE AND PREPARE TO SEND:', values);
     setSaving(true);
     
     try {
@@ -373,7 +375,6 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
           description: `Database fout: ${error.message}`,
           variant: "destructive",
         });
-        setSaving(false);
         return;
       }
 
@@ -435,7 +436,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   const handleSaveDraft = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    form.handleSubmit(saveAsDraft)();
+    form.handleSubmit((values) => saveAsDraft(values, true))();
   }, [form, saveAsDraft]);
 
   const handleSaveAndSend = useCallback((e: React.FormEvent) => {
@@ -447,6 +448,28 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   const handleConfirmSend = () => {
     setShowConfirmDialog(false);
     setShowSendDialog(true);
+  };
+
+  const handleExitWithConfirm = () => {
+    // Check if there are unsaved changes
+    const formValues = form.getValues();
+    const hasContent = blocks.length > 0 || formValues.customer || formValues.message;
+    
+    if (hasContent) {
+      setShowExitConfirmDialog(true);
+    } else {
+      onClose();
+    }
+  };
+
+  const handleSaveAndExit = () => {
+    form.handleSubmit((values) => saveAsDraft(values, true))();
+    setShowExitConfirmDialog(false);
+  };
+
+  const handleExitWithoutSaving = () => {
+    setShowExitConfirmDialog(false);
+    onClose();
   };
 
   // Get current form values only when needed
@@ -894,6 +917,14 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         open={showTemplateDialog}
         onOpenChange={setShowTemplateDialog}
         onSave={handleSaveAsTemplate}
+      />
+
+      {/* Exit Confirm Dialog */}
+      <ExitConfirmDialog
+        isOpen={showExitConfirmDialog}
+        onClose={() => setShowExitConfirmDialog(false)}
+        onSaveAndExit={handleSaveAndExit}
+        onExitWithoutSaving={handleExitWithoutSaving}
       />
     </div>
   );
