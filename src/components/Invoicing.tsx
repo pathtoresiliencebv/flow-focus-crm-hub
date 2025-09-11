@@ -70,7 +70,9 @@ export function Invoicing() {
     if (!invoiceToSend) return;
     
     try {
-      const response = await supabase.functions.invoke('send-invoice-email', {
+      console.log('Sending invoice email for invoice:', invoiceToSend.id);
+      
+      const { data, error } = await supabase.functions.invoke('send-invoice-email', {
         body: {
           invoiceId: invoiceToSend.id,
           recipientEmail: emailData.to,
@@ -80,19 +82,27 @@ export function Invoicing() {
         }
       });
 
-      if (response.error) {
-        throw new Error(response.error.message || 'Fout bij verzenden van factuur');
+      console.log('Response from send-invoice-email:', { data, error });
+
+      if (error) {
+        console.error('Error sending invoice:', error);
+        toast({
+          title: "Fout bij verzenden",
+          description: `Er is een fout opgetreden: ${error.message || 'Onbekende fout'}`,
+          variant: "destructive",
+        });
+        return;
       }
       
       toast({
         title: "Factuur verzonden",
-        description: `Factuur ${invoiceToSend.invoice_number} is verzonden naar ${emailData.to}.`,
+        description: `Factuur ${invoiceToSend.invoice_number} is succesvol per e-mail verzonden naar ${emailData.to}.`,
       });
     } catch (error: any) {
-      console.error('Error sending invoice:', error);
+      console.error('Unexpected error sending invoice:', error);
       toast({
         title: "Fout bij verzenden",
-        description: error.message || "Er is een fout opgetreden bij het verzenden van de factuur",
+        description: `Er is een onverwachte fout opgetreden: ${error.message || 'Onbekende fout'}`,
         variant: "destructive",
       });
     } finally {

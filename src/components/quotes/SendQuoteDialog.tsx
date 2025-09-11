@@ -57,7 +57,9 @@ SMANS BV`
 
     setIsLoading(true);
     try {
-      const response = await supabase.functions.invoke('send-quote-email', {
+      console.log('Sending quote email for quote:', quote.id);
+      
+      const { data, error } = await supabase.functions.invoke('send-quote-email', {
         body: {
           quoteId: quote.id,
           recipientEmail: formData.recipientEmail,
@@ -67,22 +69,30 @@ SMANS BV`
         }
       });
 
-      if (response.error) {
-        throw new Error(response.error.message || 'Fout bij verzenden van offerte');
+      console.log('Response from send-quote-email:', { data, error });
+
+      if (error) {
+        console.error('Error sending quote:', error);
+        toast({
+          title: "Fout bij versturen",
+          description: `Er is een fout opgetreden: ${error.message || 'Onbekende fout'}`,
+          variant: "destructive",
+        });
+        return;
       }
 
       toast({
         title: "Offerte verstuurd!",
-        description: `De offerte is succesvol verstuurd naar ${formData.recipientEmail}`,
+        description: `De offerte is succesvol per e-mail verstuurd naar ${formData.recipientEmail}`,
       });
 
       onSent?.();
       onClose();
-    } catch (error) {
-      console.error('Error sending quote:', error);
+    } catch (error: any) {
+      console.error('Unexpected error sending quote:', error);
       toast({
         title: "Fout bij versturen",
-        description: "Er ging iets mis bij het versturen van de offerte.",
+        description: `Er is een onverwachte fout opgetreden: ${error.message || 'Onbekende fout'}`,
         variant: "destructive",
       });
     } finally {

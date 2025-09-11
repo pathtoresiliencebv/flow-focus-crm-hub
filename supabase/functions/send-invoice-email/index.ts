@@ -64,15 +64,6 @@ const handler = async (req: Request): Promise<Response> => {
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
           .header { background-color: #dc2626; color: white; padding: 20px; text-align: center; }
           .content { padding: 20px; background-color: #f9f9f9; }
-          .button { 
-            display: inline-block; 
-            background-color: #dc2626; 
-            color: white; 
-            padding: 12px 24px; 
-            text-decoration: none; 
-            border-radius: 5px; 
-            margin: 20px 0;
-          }
           .invoice-details { background-color: white; padding: 15px; border-radius: 5px; margin: 15px 0; }
         </style>
       </head>
@@ -87,22 +78,16 @@ const handler = async (req: Request): Promise<Response> => {
           <div class="content">
             <p>Beste ${recipientName},</p>
             
-            <p>${message || 'Hierbij ontvangt u onze factuur. De betaling is binnen 14 dagen na factuurdatum gewenst.'}</p>
+            <p>${message || 'Hierbij ontvangt u onze factuur.'}</p>
             
             <div class="invoice-details">
               <h3>Factuur Details:</h3>
               <p><strong>Factuurnummer:</strong> ${invoice.invoice_number}</p>
-              <p><strong>Factuurdatum:</strong> ${new Date(invoice.invoice_date).toLocaleDateString('nl-NL')}</p>
+              <p><strong>Datum:</strong> ${new Date(invoice.invoice_date).toLocaleDateString('nl-NL')}</p>
               <p><strong>Vervaldatum:</strong> ${new Date(invoice.due_date).toLocaleDateString('nl-NL')}</p>
               <p><strong>Project:</strong> ${invoice.project_title || 'Niet gespecificeerd'}</p>
               <p><strong>Totaalbedrag:</strong> €${invoice.total_amount.toFixed(2)}</p>
             </div>
-            
-            <p><strong>Betalingsgegevens:</strong><br>
-            IBAN: NL91 ABNA 0417 1643 00<br>
-            BIC: ABNANL2A<br>
-            Ten name van: SMANS BV<br>
-            Onder vermelding van: ${invoice.invoice_number}</p>
             
             <p>Voor vragen over deze factuur kunt u contact met ons opnemen.</p>
             
@@ -120,7 +105,7 @@ const handler = async (req: Request): Promise<Response> => {
       from: "SMANS BV <factuur@smanscrm.nl>",
       to: [recipientEmail],
       subject: subject || `Factuur ${invoice.invoice_number} - SMANS BV`,
-      html: emailHtml,
+      html: emailHtml
     });
 
     if (emailResponse.error) {
