@@ -188,6 +188,8 @@ const handler = async (req: Request): Promise<Response> => {
       console.log('No payment terms found, using single invoice');
     }
 
+    let invoiceId = null;
+
     // Generate invoices based on payment terms
     if (paymentTerms && paymentTerms.length > 1) {
       // Create term invoices
@@ -203,8 +205,11 @@ const handler = async (req: Request): Promise<Response> => {
           sequence_num: sequenceNumber
         });
 
-        const termSubtotal = (quote.subtotal * term.percentage) / 100;
-        const termVatAmount = (quote.vat_amount * term.percentage) / 100;
+        // Calculate term amounts from quote totals
+        const quoteSubtotal = quote.total_amount / 1.21; // Assume 21% VAT
+        const quoteVatAmount = quote.total_amount - quoteSubtotal;
+        const termSubtotal = (quoteSubtotal * term.percentage) / 100;
+        const termVatAmount = (quoteVatAmount * term.percentage) / 100;
         const termTotal = (quote.total_amount * term.percentage) / 100;
 
         const { data: invoice, error: invoiceError } = await supabase
@@ -223,13 +228,15 @@ const handler = async (req: Request): Promise<Response> => {
             total_payment_terms: paymentTerms.length,
             original_quote_total: quote.total_amount,
             status: 'concept',
-            due_date: new Date(Date.now() + (30 + (term.daysAfter || 0)) * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+            due_date: new Date(Date.now() + (30 + (term.daysAfter || 0)) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            invoice_date: new Date().toISOString().split('T')[0]
           })
           .select('id')
           .single();
 
         if (!invoiceError && invoice) {
           invoiceIds.push(invoice.id);
+          if (i === 0) invoiceId = invoice.id; // First invoice for response
         }
       }
       
@@ -243,33 +250,52 @@ const handler = async (req: Request): Promise<Response> => {
         .from('invoices')
         .insert({
           invoice_number: invoiceNumber,
-        customer_name: quote.customer_name,
-        customer_email: quote.customer_email,
-        project_title: quote.project_title,
-        message: quote.message,
-        source_quote_id: quote_id,
-        subtotal: quote.subtotal,
-        vat_amount: quote.vat_amount,
-        total_amount: quote.total_amount,
-        status: 'concept',
-        due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // 30 days from now
-      })
-      .select('id')
-      .single();
+          customer_name: quote.customer_name,
+          customer_email: quote.customer_email,
+          project_title: quote.project_title,
+          message: quote.message,
+          source_quote_id: quote_id,
+          subtotal: quote.total_amount / 1.21,
+          vat_amount: quote.total_amount - (quote.total_amount / 1.21),
+          total_amount: quote.total_amount,
+          status: 'concept',
+          due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          invoice_date: new Date().toISOString().split('T')[0]
+        })
+        .select('id')
+        .single();
 
-    if (invoiceError) {
-      console.error('Error creating invoice:', invoiceError);
-    } else {
-      console.log('Created concept invoice:', invoice.id);
+      if (invoiceError) {
+        console.error('Error creating invoice:', invoiceError);
+      } else {
+        console.log('Created concept invoice:', invoice.id);
+        invoiceId = invoice.id;
 
-      // Create invoice items from quote items
-      const invoiceItemInserts = [];
-      orderIndex = 0;
+        // Create invoice items from quote items
+        const invoiceItemInserts = [];
+        orderIndex = 0;
 
-      if (parsedItems.length > 0 && parsedItems[0] && typeof parsedItems[0] === 'object' && parsedItems[0].items) {
-        // New blocks structure
-        for (const block of parsedItems) {
-          for (const item of block.items || []) {
+        if (parsedItems.length > 0 && parsedItems[0] && typeof parsedItems[0] === 'object' && parsedItems[0].items) {
+          // New blocks structure
+          for (const block of parsedItems) {
+            for (const item of block.items || []) {
+              if (item.type === 'product') {
+                invoiceItemInserts.push({
+                  invoice_id: invoice.id,
+                  description: item.description,
+                  quantity: item.quantity || 1,
+                  unit_price: item.unit_price || 0,
+                  vat_rate: item.vat_rate || 21,
+                  total: item.total || 0,
+                  type: item.type,
+                  order_index: orderIndex++
+                });
+              }
+            }
+          }
+        } else {
+          // Old flat structure
+          for (const item of parsedItems) {
             if (item.type === 'product') {
               invoiceItemInserts.push({
                 invoice_id: invoice.id,
@@ -284,33 +310,17 @@ const handler = async (req: Request): Promise<Response> => {
             }
           }
         }
-      } else {
-        // Old flat structure
-        for (const item of parsedItems) {
-          if (item.type === 'product') {
-            invoiceItemInserts.push({
-              invoice_id: invoice.id,
-              description: item.description,
-              quantity: item.quantity || 1,
-              unit_price: item.unit_price || 0,
-              vat_rate: item.vat_rate || 21,
-              total: item.total || 0,
-              type: item.type,
-              order_index: orderIndex++
-            });
+
+        if (invoiceItemInserts.length > 0) {
+          const { error: invoiceItemsError } = await supabase
+            .from('invoice_items')
+            .insert(invoiceItemInserts);
+
+          if (invoiceItemsError) {
+            console.error('Error creating invoice items:', invoiceItemsError);
+          } else {
+            console.log('Created', invoiceItemInserts.length, 'invoice items');
           }
-        }
-      }
-
-      if (invoiceItemInserts.length > 0) {
-        const { error: invoiceItemsError } = await supabase
-          .from('invoice_items')
-          .insert(invoiceItemInserts);
-
-        if (invoiceItemsError) {
-          console.error('Error creating invoice items:', invoiceItemsError);
-        } else {
-          console.log('Created', invoiceItemInserts.length, 'invoice items');
         }
       }
     }
@@ -358,7 +368,7 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(JSON.stringify({
       success: true,
       project_id: project.id,
-      invoice_id: invoice?.id,
+      invoice_id: invoiceId,
       message: 'Project and concept invoice created successfully, confirmation and notification emails sent'
     }), {
       status: 200,
