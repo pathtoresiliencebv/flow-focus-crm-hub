@@ -1033,11 +1033,14 @@ export type Database = {
           invoice_date: string
           invoice_number: string
           message: string | null
+          original_quote_total: number | null
+          payment_term_sequence: number | null
           project_title: string | null
           source_quote_id: string | null
           status: string
           subtotal: number
           total_amount: number
+          total_payment_terms: number | null
           updated_at: string
           vat_amount: number
         }
@@ -1050,11 +1053,14 @@ export type Database = {
           invoice_date?: string
           invoice_number: string
           message?: string | null
+          original_quote_total?: number | null
+          payment_term_sequence?: number | null
           project_title?: string | null
           source_quote_id?: string | null
           status?: string
           subtotal?: number
           total_amount?: number
+          total_payment_terms?: number | null
           updated_at?: string
           vat_amount?: number
         }
@@ -1067,11 +1073,14 @@ export type Database = {
           invoice_date?: string
           invoice_number?: string
           message?: string | null
+          original_quote_total?: number | null
+          payment_term_sequence?: number | null
           project_title?: string | null
           source_quote_id?: string | null
           status?: string
           subtotal?: number
           total_amount?: number
+          total_payment_terms?: number | null
           updated_at?: string
           vat_amount?: number
         }
@@ -2174,6 +2183,7 @@ export type Database = {
       quotes: {
         Row: {
           admin_signature_data: string | null
+          attachments: Json | null
           client_name: string | null
           client_signature_data: string | null
           client_signed_at: string | null
@@ -2183,6 +2193,7 @@ export type Database = {
           id: string
           items: Json
           message: string | null
+          payment_terms: Json | null
           project_title: string | null
           public_token: string | null
           quote_date: string
@@ -2196,6 +2207,7 @@ export type Database = {
         }
         Insert: {
           admin_signature_data?: string | null
+          attachments?: Json | null
           client_name?: string | null
           client_signature_data?: string | null
           client_signed_at?: string | null
@@ -2205,6 +2217,7 @@ export type Database = {
           id?: string
           items?: Json
           message?: string | null
+          payment_terms?: Json | null
           project_title?: string | null
           public_token?: string | null
           quote_date: string
@@ -2218,6 +2231,7 @@ export type Database = {
         }
         Update: {
           admin_signature_data?: string | null
+          attachments?: Json | null
           client_name?: string | null
           client_signature_data?: string | null
           client_signed_at?: string | null
@@ -2227,6 +2241,7 @@ export type Database = {
           id?: string
           items?: Json
           message?: string | null
+          payment_terms?: Json | null
           project_title?: string | null
           public_token?: string | null
           quote_date?: string
@@ -2646,6 +2661,10 @@ export type Database = {
       }
       generate_invoice_number: {
         Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_invoice_number_with_sequence: {
+        Args: { base_number?: string; sequence_num?: number }
         Returns: string
       }
       generate_project_tasks_from_quote: {

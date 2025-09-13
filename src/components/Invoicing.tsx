@@ -5,6 +5,7 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { useToast } from '@/hooks/use-toast';
 import { InvoiceDetails } from './InvoiceDetails';
 import { SendInvoiceDialog } from './SendInvoiceDialog';
@@ -14,6 +15,7 @@ import { InvoicingHeader } from './invoicing/InvoicingHeader';
 import { InvoiceFilters } from './invoicing/InvoiceFilters';
 import { InvoicesTable } from './invoicing/InvoicesTable';
 import { InvoicesSummary } from './invoicing/InvoicesSummary';
+import { GroupedInvoicesView } from './invoicing/GroupedInvoicesView';
 import { supabase } from '@/integrations/supabase/client';
 
 export function Invoicing() {
@@ -27,6 +29,7 @@ export function Invoicing() {
   const [showSendDialog, setShowSendDialog] = useState(false);
   const [invoiceToSend, setInvoiceToSend] = useState<any>(null);
   const [invoiceItems, setInvoiceItems] = useState<any[]>([]);
+  const [viewMode, setViewMode] = useState<'grouped' | 'table'>('grouped');
 
   // Filter invoices based on search term and status filter
   const filteredInvoices = invoices.filter(invoice => {
@@ -187,12 +190,41 @@ export function Invoicing() {
         setFilterStatus={setFilterStatus}
       />
       
-      <InvoicesTable
-        invoices={filteredInvoices}
-        onViewInvoice={handleViewInvoice}
-        onSendInvoice={handleSendInvoice}
-        getStatusBadge={getStatusBadge}
-      />
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Facturen</h2>
+        <div className="flex gap-2">
+          <Button
+            variant={viewMode === 'grouped' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('grouped')}
+          >
+            Gegroepeerd
+          </Button>
+          <Button
+            variant={viewMode === 'table' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('table')}
+          >
+            Tabel
+          </Button>
+        </div>
+      </div>
+
+      {viewMode === 'grouped' ? (
+        <GroupedInvoicesView
+          invoices={filteredInvoices}
+          onViewInvoice={handleViewInvoice}
+          onSendInvoice={handleSendInvoice}
+          getStatusBadge={getStatusBadge}
+        />
+      ) : (
+        <InvoicesTable
+          invoices={filteredInvoices}
+          onViewInvoice={handleViewInvoice}
+          onSendInvoice={handleSendInvoice}
+          getStatusBadge={getStatusBadge}
+        />
+      )}
       
       <InvoicesSummary invoices={filteredInvoices} />
 

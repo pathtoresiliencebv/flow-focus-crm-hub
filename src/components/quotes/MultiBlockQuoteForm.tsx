@@ -22,6 +22,8 @@ import { SaveTemplateDialog } from './SaveTemplateDialog';
 import { TemplateSelector } from './TemplateSelector';
 import { ConfirmSendDialog } from './ConfirmSendDialog';
 import { ExitConfirmDialog } from './ExitConfirmDialog';
+import { PaymentTermsSelector, PaymentTerm } from './PaymentTermsSelector';
+import { FileAttachmentsManager, QuoteAttachment } from './FileAttachmentsManager';
 import { useCrmStore } from '@/hooks/useCrmStore';
 import { useQuoteTemplates } from '@/hooks/useQuoteTemplates';
 import { QuoteBlock, Quote } from '@/types/quote';
@@ -76,6 +78,10 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showExitConfirmDialog, setShowExitConfirmDialog] = useState(false);
+  const [paymentTerms, setPaymentTerms] = useState<PaymentTerm[]>([
+    { id: crypto.randomUUID(), percentage: 100, description: "Volledige betaling" }
+  ]);
+  const [attachments, setAttachments] = useState<QuoteAttachment[]>([]);
   
   const { templates, loading: templatesLoading, saveTemplate } = useQuoteTemplates();
 
@@ -389,6 +395,8 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         valid_until: values.validUntil,
         message: values.message || '',
         items: JSON.parse(JSON.stringify(blocks)),
+        payment_terms: JSON.stringify(paymentTerms),
+        attachments: JSON.stringify(attachments),
         subtotal: currentTotalAmount,
         vat_amount: currentTotalVAT,
         total_amount: currentGrandTotal,
@@ -891,11 +899,30 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
               </CardContent>
             </Card>
 
-            {/* Admin Signature */}
-            <SignatureCanvas
-              title="Uw handtekening (SMANS BV)"
-              onSignature={setAdminSignature}
+            {/* Payment Terms */}
+            <PaymentTermsSelector
+              value={paymentTerms}
+              onChange={setPaymentTerms}
             />
+
+            {/* File Attachments */}
+            <FileAttachmentsManager
+              value={attachments}
+              onChange={setAttachments}
+            />
+
+            {/* Admin Signature */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Handtekening Administratie</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SignatureCanvas
+                  onSignature={setAdminSignature}
+                  title="Handtekening Administratie"
+                />
+              </CardContent>
+            </Card>
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={handleExitWithConfirm}>

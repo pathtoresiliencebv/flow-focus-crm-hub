@@ -176,14 +176,73 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // 6. Generate invoice number and create concept invoice
-    const { data: invoiceNumberResult } = await supabase.rpc('generate_invoice_number');
-    const invoiceNumber = invoiceNumberResult || `INV-${new Date().getFullYear()}-${Date.now()}`;
+    // 6. Check if quote has payment terms for enhanced invoice creation
+    let paymentTerms = [];
+    try {
+      if (quote.payment_terms && typeof quote.payment_terms === 'string') {
+        paymentTerms = JSON.parse(quote.payment_terms);
+      } else if (Array.isArray(quote.payment_terms)) {
+        paymentTerms = quote.payment_terms;
+      }
+    } catch (error) {
+      console.log('No payment terms found, using single invoice');
+    }
 
-    const { data: invoice, error: invoiceError } = await supabase
-      .from('invoices')
-      .insert({
-        invoice_number: invoiceNumber,
+    // Generate invoices based on payment terms
+    if (paymentTerms && paymentTerms.length > 1) {
+      // Create term invoices
+      const { data: baseInvoiceNumber } = await supabase.rpc('generate_invoice_number_with_sequence');
+      const invoiceIds = [];
+
+      for (let i = 0; i < paymentTerms.length; i++) {
+        const term = paymentTerms[i];
+        const sequenceNumber = i + 1;
+        
+        const { data: invoiceNumber } = await supabase.rpc('generate_invoice_number_with_sequence', {
+          base_number: baseInvoiceNumber,
+          sequence_num: sequenceNumber
+        });
+
+        const termSubtotal = (quote.subtotal * term.percentage) / 100;
+        const termVatAmount = (quote.vat_amount * term.percentage) / 100;
+        const termTotal = (quote.total_amount * term.percentage) / 100;
+
+        const { data: invoice, error: invoiceError } = await supabase
+          .from('invoices')
+          .insert({
+            invoice_number: invoiceNumber,
+            customer_name: quote.customer_name,
+            customer_email: quote.customer_email,
+            project_title: `${quote.project_title || 'Project'} - ${term.description}`,
+            message: `${term.description} (${term.percentage}% van totaal)`,
+            source_quote_id: quote_id,
+            subtotal: termSubtotal,
+            vat_amount: termVatAmount,
+            total_amount: termTotal,
+            payment_term_sequence: sequenceNumber,
+            total_payment_terms: paymentTerms.length,
+            original_quote_total: quote.total_amount,
+            status: 'concept',
+            due_date: new Date(Date.now() + (30 + (term.daysAfter || 0)) * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+          })
+          .select('id')
+          .single();
+
+        if (!invoiceError && invoice) {
+          invoiceIds.push(invoice.id);
+        }
+      }
+      
+      console.log('Created', invoiceIds.length, 'term invoices');
+    } else {
+      // Single invoice (original behavior)
+      const { data: invoiceNumberResult } = await supabase.rpc('generate_invoice_number');
+      const invoiceNumber = invoiceNumberResult || `INV-${new Date().getFullYear()}-${Date.now()}`;
+
+      const { data: invoice, error: invoiceError } = await supabase
+        .from('invoices')
+        .insert({
+          invoice_number: invoiceNumber,
         customer_name: quote.customer_name,
         customer_email: quote.customer_email,
         project_title: quote.project_title,

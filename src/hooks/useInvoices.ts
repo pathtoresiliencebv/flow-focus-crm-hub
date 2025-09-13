@@ -17,6 +17,9 @@ export interface Invoice {
   total_amount: number;
   status: string;
   source_quote_id?: string;
+  payment_term_sequence?: number;
+  total_payment_terms?: number;
+  original_quote_total?: number;
   created_at: string;
   updated_at: string;
 }
