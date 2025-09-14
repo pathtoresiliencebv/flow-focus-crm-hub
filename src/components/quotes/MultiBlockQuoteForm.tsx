@@ -587,18 +587,26 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     return selectedCustomer && project.customer === selectedCustomer.name;
   }) || [];
 
-  const handleCustomerAdded = (customerId: string) => {
-    console.log('Customer added, setting customerId to:', customerId);
-    form.setValue('customer', customerId);
+  const handleCustomerAdded = (customer: any) => {
+    console.log('Customer added:', customer);
+    
+    // Add to customers list immediately
+    const updatedCustomers = [...customers, customer];
+    
+    // Set the customer in the form
+    form.setValue('customer', customer.id);
+    
+    // Set email if available
+    if (customer.email) {
+      form.setValue('customerEmail', customer.email);
+    }
+    
     setShowCustomerAdd(false);
     
-    // Wait a bit for the data to refresh, then update email if available
-    setTimeout(() => {
-      const customer = customers.find(c => c.id === customerId);
-      if (customer?.email) {
-        form.setValue('customerEmail', customer.email);
-      }
-    }, 500);
+    toast({
+      title: "Klant toegevoegd",
+      description: `${customer.name} is succesvol toegevoegd en geselecteerd.`,
+    });
   };
 
   const handleProjectAdded = (projectId: string) => {

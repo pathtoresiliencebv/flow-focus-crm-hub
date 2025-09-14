@@ -1043,6 +1043,9 @@ export type Database = {
       }
       invoices: {
         Row: {
+          archived_at: string | null
+          archived_by: string | null
+          auto_saved_at: string | null
           created_at: string
           customer_email: string | null
           customer_name: string
@@ -1050,6 +1053,7 @@ export type Database = {
           id: string
           invoice_date: string
           invoice_number: string
+          is_archived: boolean | null
           message: string | null
           original_quote_total: number | null
           payment_term_sequence: number | null
@@ -1063,6 +1067,9 @@ export type Database = {
           vat_amount: number
         }
         Insert: {
+          archived_at?: string | null
+          archived_by?: string | null
+          auto_saved_at?: string | null
           created_at?: string
           customer_email?: string | null
           customer_name: string
@@ -1070,6 +1077,7 @@ export type Database = {
           id?: string
           invoice_date?: string
           invoice_number: string
+          is_archived?: boolean | null
           message?: string | null
           original_quote_total?: number | null
           payment_term_sequence?: number | null
@@ -1083,6 +1091,9 @@ export type Database = {
           vat_amount?: number
         }
         Update: {
+          archived_at?: string | null
+          archived_by?: string | null
+          auto_saved_at?: string | null
           created_at?: string
           customer_email?: string | null
           customer_name?: string
@@ -1090,6 +1101,7 @@ export type Database = {
           id?: string
           invoice_date?: string
           invoice_number?: string
+          is_archived?: boolean | null
           message?: string | null
           original_quote_total?: number | null
           payment_term_sequence?: number | null
