@@ -1,130 +1,170 @@
-
-
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useToast } from '@/hooks/use-toast';
-import { useInvoices } from '@/hooks/useInvoices';
-import { useCrmStore } from "@/hooks/useCrmStore";
-import { InvoicingHeader } from './invoicing/InvoicingHeader';
-import { InvoiceFilters } from './invoicing/InvoiceFilters';
-import { InvoicesTable } from './invoicing/InvoicesTable';
-import { InvoicesSummary } from './invoicing/InvoicesSummary';
-import { GroupedInvoicesView } from './invoicing/GroupedInvoicesView';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { InvoicesTable } from "./invoicing/InvoicesTable";
+import { InvoiceFilters } from "./invoicing/InvoiceFilters";
+import { InvoicesSummary } from "./invoicing/InvoicesSummary";
+import { InvoicingHeader } from "./invoicing/InvoicingHeader";
+import { SendInvoiceDialog } from "./SendInvoiceDialog";
+import { ArchivedInvoicesView } from "./invoicing/ArchivedInvoicesView";
+import { InvoiceFinalizationDialog } from "./invoicing/InvoiceFinalizationDialog";
+import { useInvoices } from "@/hooks/useInvoices";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
-export function Invoicing() {
+export const Invoicing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { customers, projects } = useCrmStore();
-  const { invoices, loading, fetchInvoiceItems, updateInvoiceStatus } = useInvoices();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'grouped' | 'table'>('grouped');
-
-  // Filter invoices based on search term and status filter
-  const filteredInvoices = invoices.filter(invoice => {
-    const matchesSearch = 
-      invoice.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (invoice.project_title && invoice.project_title.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesStatus = filterStatus === null || invoice.status === filterStatus;
-    
-    return matchesSearch && matchesStatus;
+  const { invoices, deleteInvoice, duplicateInvoice, archiveInvoice, refetch } = useInvoices();
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [showSendDialog, setShowSendDialog] = useState(false);
+  const [showFinalizationDialog, setShowFinalizationDialog] = useState(false);
+  const [filters, setFilters] = useState({
+    search: "",
+    status: "all",
+    dateRange: "all"
   });
 
-  // Function to get status badge color
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "betaald":
-        return "bg-green-100 text-green-800";
-      case "verzonden":
-        return "bg-blue-100 text-blue-800";
-      case "concept":
-        return "bg-gray-100 text-gray-800";
-      case "verlopen":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+  const handleSendInvoice = (invoice: any) => {
+    setSelectedInvoice(invoice);
+    setShowSendDialog(true);
+  };
+
+  const handleDeleteInvoice = async (invoice: any) => {
+    if (window.confirm(`Weet je zeker dat je factuur ${invoice.invoice_number} wilt verwijderen?`)) {
+      try {
+        await deleteInvoice(invoice.id);
+        toast({
+          title: "Factuur verwijderd",
+          description: `Factuur ${invoice.invoice_number} is succesvol verwijderd.`,
+        });
+        refetch();
+      } catch (error) {
+        toast({
+          title: "Fout bij verwijderen",
+          description: "Er is een fout opgetreden bij het verwijderen van de factuur.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
-  // Handler for sending invoice
-  const handleSendInvoice = (invoiceId: string) => {
-    navigate(`/invoices/${invoiceId}/send`);
+  const handleEditInvoice = (invoice: any) => {
+    navigate(`/invoices/${invoice.id}/edit`);
   };
 
-  // Handler for viewing invoice details
-  const handleViewInvoice = (invoiceId: string) => {
-    navigate(`/invoices/${invoiceId}/details`);
+  const handleDuplicateInvoice = async (invoice: any) => {
+    try {
+      const duplicated = await duplicateInvoice(invoice.id);
+      toast({
+        title: "Factuur gedupliceerd",
+        description: `Nieuwe factuur ${duplicated.invoice_number} is aangemaakt.`,
+      });
+      navigate(`/invoices/${duplicated.id}/edit`);
+    } catch (error) {
+      toast({
+        title: "Fout bij dupliceren",
+        description: "Er is een fout opgetreden bij het dupliceren van de factuur.",
+        variant: "destructive",
+      });
+    }
   };
 
-  // Convert customers and projects to the format expected by InvoicingHeader
-  const formCustomers = customers.map(customer => ({
-    id: customer.id, // Keep as string UUID
-    name: customer.name
-  }));
+  const handleArchiveInvoice = async (invoice: any) => {
+    if (window.confirm(`Weet je zeker dat je factuur ${invoice.invoice_number} wilt archiveren?`)) {
+      try {
+        await archiveInvoice(invoice.id);
+        toast({
+          title: "Factuur gearchiveerd",
+          description: `Factuur ${invoice.invoice_number} is gearchiveerd.`,
+        });
+        refetch();
+      } catch (error) {
+        toast({
+          title: "Fout bij archiveren",
+          description: "Er is een fout opgetreden bij het archiveren van de factuur.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
 
-  const formProjects = projects.map(project => ({
-    id: project.id, // Keep as string UUID
-    title: project.title,
-    value: project.value?.toString() || '0',
-    customer: project.customer
-  }));
+  const handleFinalizeInvoice = (invoice: any) => {
+    setSelectedInvoice(invoice);
+    setShowFinalizationDialog(true);
+  };
 
-  if (loading) {
-    return <div className="flex h-screen items-center justify-center">Loading...</div>;
-  }
+  // Filter invoices based on current filters - only active invoices
+  const filteredInvoices = invoices
+    .filter(invoice => !invoice.is_archived)
+    .filter((invoice) => {
+      const matchesSearch = invoice.customer_name.toLowerCase().includes(filters.search.toLowerCase()) ||
+                           invoice.invoice_number.toLowerCase().includes(filters.search.toLowerCase());
+      
+      const matchesStatus = filters.status === "all" || invoice.status === filters.status;
+      
+      // Add date filtering logic here if needed
+      
+      return matchesSearch && matchesStatus;
+    });
 
   return (
-    <div className="p-4 sm:p-6 space-y-6">
-      <InvoicingHeader customers={formCustomers} projects={formProjects} />
+    <div className="container mx-auto py-6">
+      <div className="space-y-6">
+        <InvoicingHeader customers={[]} projects={[]} />
+        
+        <Tabs defaultValue="active" className="w-full">
+          <div className="flex justify-between items-center">
+            <TabsList>
+              <TabsTrigger value="active">Actieve Facturen</TabsTrigger>
+              <TabsTrigger value="archived">Gearchiveerd</TabsTrigger>
+            </TabsList>
+            <Button onClick={() => navigate('/invoices/new')}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nieuwe Factuur
+            </Button>
+          </div>
 
-      <InvoiceFilters
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        filterStatus={filterStatus}
-        setFilterStatus={setFilterStatus}
-      />
-      
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Facturen</h2>
-        <div className="flex gap-2">
-          <Button
-            variant={viewMode === 'grouped' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('grouped')}
-          >
-            Gegroepeerd
-          </Button>
-          <Button
-            variant={viewMode === 'table' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setViewMode('table')}
-          >
-            Tabel
-          </Button>
-        </div>
+          <TabsContent value="active" className="space-y-6">
+            <InvoicesSummary invoices={filteredInvoices} />
+            <div className="flex gap-4">
+              <input
+                type="text"
+                placeholder="Zoeken..."
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                className="flex-1 px-3 py-2 border rounded-md"
+              />
+            </div>
+            <InvoicesTable 
+              invoices={filteredInvoices}
+              onSendInvoice={handleSendInvoice}
+              onDeleteInvoice={handleDeleteInvoice}
+              onEditInvoice={handleEditInvoice}
+              onDuplicateInvoice={handleDuplicateInvoice}
+              onArchiveInvoice={handleArchiveInvoice}
+              onFinalizeInvoice={handleFinalizeInvoice}
+            />
+          </TabsContent>
+
+          <TabsContent value="archived">
+            <ArchivedInvoicesView />
+          </TabsContent>
+        </Tabs>
       </div>
 
-      {viewMode === 'grouped' ? (
-        <GroupedInvoicesView
-          invoices={filteredInvoices}
-          onViewInvoice={handleViewInvoice}
-          onSendInvoice={handleSendInvoice}
-          getStatusBadge={getStatusBadge}
-        />
-      ) : (
-        <InvoicesTable
-          invoices={filteredInvoices}
-          onViewInvoice={handleViewInvoice}
-          onSendInvoice={handleSendInvoice}
-          getStatusBadge={getStatusBadge}
-        />
-      )}
-      
-      <InvoicesSummary invoices={filteredInvoices} />
+      <InvoiceFinalizationDialog
+        invoice={selectedInvoice}
+        isOpen={showFinalizationDialog}
+        onClose={() => {
+          setShowFinalizationDialog(false);
+          setSelectedInvoice(null);
+        }}
+        onSuccess={() => {
+          refetch();
+        }}
+      />
     </div>
   );
-}
-
+};

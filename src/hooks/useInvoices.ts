@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from '@/hooks/use-toast';
 
@@ -20,6 +19,10 @@ export interface Invoice {
   payment_term_sequence?: number;
   total_payment_terms?: number;
   original_quote_total?: number;
+  is_archived?: boolean;
+  archived_at?: string;
+  archived_by?: string;
+  auto_saved_at?: string;
   created_at: string;
   updated_at: string;
 }
@@ -37,31 +40,38 @@ export interface InvoiceItem {
 }
 
 export function useInvoices() {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const fetchInvoices = async () => {
-    try {
-      setLoading(true);
+  // Fetch active invoices
+  const { data: invoices = [], isLoading: loading, refetch } = useQuery({
+    queryKey: ['invoices'],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('invoices')
         .select('*')
+        .eq('is_archived', false)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setInvoices(data || []);
-    } catch (error) {
-      console.error('Error fetching invoices:', error);
-      toast({
-        title: "Fout bij ophalen facturen",
-        description: "Er is een fout opgetreden bij het ophalen van de facturen.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      return data as Invoice[];
     }
-  };
+  });
+
+  // Fetch archived invoices
+  const { data: archivedInvoices = [], isLoading: archivedLoading } = useQuery({
+    queryKey: ['invoices', 'archived'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('is_archived', true)
+        .order('archived_at', { ascending: false });
+
+      if (error) throw error;
+      return data as Invoice[];
+    }
+  });
 
   const fetchInvoiceItems = async (invoiceId: string): Promise<InvoiceItem[]> => {
     try {
@@ -88,7 +98,7 @@ export function useInvoices() {
 
       if (error) throw error;
       
-      await fetchInvoices();
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
       toast({
         title: "Status bijgewerkt",
         description: "De factuurstatus is succesvol bijgewerkt.",
@@ -103,15 +113,132 @@ export function useInvoices() {
     }
   };
 
-  useEffect(() => {
-    fetchInvoices();
-  }, []);
+  const addInvoice = async (invoiceData: any) => {
+    const { data, error } = await supabase
+      .from('invoices')
+      .insert([invoiceData])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  };
+
+  const updateInvoice = async (id: string, updates: any) => {
+    const { data, error } = await supabase
+      .from('invoices')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  };
+
+  const deleteInvoice = async (id: string) => {
+    const { error } = await supabase
+      .from('invoices')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  };
+
+  const duplicateInvoice = async (invoiceId: string) => {
+    // Get original invoice with items
+    const { data: original, error: fetchError } = await supabase
+      .from('invoices')
+      .select(`
+        *,
+        invoice_items (*)
+      `)
+      .eq('id', invoiceId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // Generate new invoice number
+    const { data: newNumber, error: numberError } = await supabase.rpc('generate_invoice_number');
+    if (numberError) throw numberError;
+
+    // Create duplicate invoice
+    const duplicateData = {
+      ...original,
+      id: undefined,
+      invoice_number: newNumber,
+      status: 'concept',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      sent_at: null,
+      paid_at: null
+    };
+
+    const { data: newInvoice, error: createError } = await supabase
+      .from('invoices')
+      .insert([duplicateData])
+      .select()
+      .single();
+
+    if (createError) throw createError;
+
+    // Duplicate invoice items
+    if (original.invoice_items?.length > 0) {
+      const duplicateItems = original.invoice_items.map((item: any) => ({
+        ...item,
+        id: undefined,
+        invoice_id: newInvoice.id
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('invoice_items')
+        .insert(duplicateItems);
+
+      if (itemsError) throw itemsError;
+    }
+
+    return newInvoice;
+  };
+
+  const archiveInvoice = async (invoiceId: string) => {
+    const { error } = await supabase
+      .from('invoices')
+      .update({ 
+        is_archived: true,
+        archived_at: new Date().toISOString(),
+        archived_by: (await supabase.auth.getUser()).data.user?.id
+      })
+      .eq('id', invoiceId);
+
+    if (error) throw error;
+  };
+
+  const restoreInvoice = async (invoiceId: string) => {
+    const { error } = await supabase
+      .from('invoices')
+      .update({ 
+        is_archived: false,
+        archived_at: null,
+        archived_by: null
+      })
+      .eq('id', invoiceId);
+
+    if (error) throw error;
+  };
 
   return {
     invoices,
     loading,
-    fetchInvoices,
+    archivedInvoices,
+    archivedLoading,
     fetchInvoiceItems,
-    updateInvoiceStatus
+    updateInvoiceStatus,
+    addInvoice,
+    updateInvoice,
+    deleteInvoice,
+    duplicateInvoice,
+    archiveInvoice,
+    restoreInvoice,
+    refetch
   };
 }

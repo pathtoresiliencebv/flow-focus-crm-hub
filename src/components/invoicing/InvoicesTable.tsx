@@ -1,94 +1,168 @@
-import React from 'react';
-import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Eye, Send } from "lucide-react";
-
-interface Invoice {
-  id: string;
-  invoice_number: string;
-  customer_name: string;
-  project_title?: string;
-  invoice_date: string;
-  due_date: string;
-  total_amount: number;
-  status: string;
-}
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { Eye, Send, Download, Trash2, MoreHorizontal, FileText, Printer, Pencil, Copy, Archive, CheckCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { formatDistanceToNow } from "date-fns";
+import { nl } from "date-fns/locale";
 
 interface InvoicesTableProps {
-  invoices: Invoice[];
-  onViewInvoice: (invoiceId: string) => void;
-  onSendInvoice: (invoiceId: string) => void;
-  getStatusBadge: (status: string) => string;
+  invoices: any[];
+  onSendInvoice?: (invoice: any) => void;
+  onDeleteInvoice?: (invoice: any) => void;
+  onEditInvoice?: (invoice: any) => void;
+  onDuplicateInvoice?: (invoice: any) => void;
+  onArchiveInvoice?: (invoice: any) => void;
+  onFinalizeInvoice?: (invoice: any) => void;
 }
 
-export const InvoicesTable: React.FC<InvoicesTableProps> = ({
-  invoices,
-  onViewInvoice,
-  onSendInvoice,
-  getStatusBadge,
-}) => {
-  if (invoices.length === 0) {
-    return (
-      <Card>
-        <CardContent className="p-6 text-center">
-          <p className="text-muted-foreground">Geen facturen gevonden</p>
-        </CardContent>
-      </Card>
-    );
-  }
+export const InvoicesTable = ({ 
+  invoices, 
+  onSendInvoice, 
+  onDeleteInvoice,
+  onEditInvoice,
+  onDuplicateInvoice,
+  onArchiveInvoice,
+  onFinalizeInvoice
+}: InvoicesTableProps) => {
+  const navigate = useNavigate();
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'concept':
+        return 'secondary';
+      case 'sent':
+        return 'default';
+      case 'paid':
+        return 'default';
+      case 'overdue':
+        return 'destructive';
+      default:
+        return 'secondary';
+    }
+  };
 
   return (
-    <div className="space-y-4">
-      {invoices.map((invoice) => (
-        <Card key={invoice.id}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-medium">{invoice.invoice_number}</h3>
-                  <Badge className={getStatusBadge(invoice.status)}>
-                    {invoice.status}
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {invoice.customer_name}
-                  {invoice.project_title && ` • ${invoice.project_title}`}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Vervaldatum: {new Date(invoice.due_date).toLocaleDateString('nl-NL')}
-                </p>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <div className="text-right">
-                  <p className="font-medium">€{invoice.total_amount.toFixed(2)}</p>
-                </div>
-                
-                <div className="flex gap-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onViewInvoice(invoice.id)}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                  
-                  {invoice.status !== 'betaald' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onSendInvoice(invoice.id)}
-                    >
-                      <Send className="h-4 w-4" />
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Factuurnummer</TableHead>
+            <TableHead>Klant</TableHead>
+            <TableHead>Project</TableHead>
+            <TableHead>Datum</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Totaal</TableHead>
+            <TableHead className="text-right">Acties</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {invoices.map((invoice) => (
+            <TableRow key={invoice.id}>
+              <TableCell className="font-medium">
+                {invoice.invoice_number}
+              </TableCell>
+              <TableCell>{invoice.customer_name}</TableCell>
+              <TableCell>{invoice.project_title || '-'}</TableCell>
+              <TableCell>
+                {new Date(invoice.invoice_date).toLocaleDateString('nl-NL')}
+              </TableCell>
+              <TableCell>
+                <Badge variant={getStatusBadge(invoice.status)}>
+                  {invoice.status}
+                </Badge>
+              </TableCell>
+              <TableCell>€{invoice.total_amount.toFixed(2)}</TableCell>
+              <TableCell className="text-right">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <MoreHorizontal className="h-4 w-4" />
                     </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => navigate(`/invoices/${invoice.id}`)}>
+                      <Eye className="mr-2 h-4 w-4" />
+                      Bekijken
+                    </DropdownMenuItem>
+                    
+                    {invoice.status === 'concept' && onEditInvoice && (
+                      <DropdownMenuItem onClick={() => onEditInvoice(invoice)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Bewerken
+                      </DropdownMenuItem>
+                    )}
+
+                    {invoice.status === 'concept' && onFinalizeInvoice && (
+                      <DropdownMenuItem onClick={() => onFinalizeInvoice(invoice)}>
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Finaliseren
+                      </DropdownMenuItem>
+                    )}
+                    
+                    {invoice.status === 'concept' && onSendInvoice && (
+                      <DropdownMenuItem onClick={() => onSendInvoice(invoice)}>
+                        <Send className="mr-2 h-4 w-4" />
+                        Versturen
+                      </DropdownMenuItem>
+                    )}
+
+                    {onDuplicateInvoice && (
+                      <DropdownMenuItem onClick={() => onDuplicateInvoice(invoice)}>
+                        <Copy className="mr-2 h-4 w-4" />
+                        Dupliceren
+                      </DropdownMenuItem>
+                    )}
+                    
+                    <DropdownMenuItem onClick={() => window.open(`/invoices/${invoice.id}/preview`, '_blank')}>
+                      <FileText className="mr-2 h-4 w-4" />
+                      PDF Preview
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem>
+                      <Download className="mr-2 h-4 w-4" />
+                      PDF Downloaden
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem>
+                      <Printer className="mr-2 h-4 w-4" />
+                      Printen
+                    </DropdownMenuItem>
+
+                    {onArchiveInvoice && (
+                      <DropdownMenuItem onClick={() => onArchiveInvoice(invoice)}>
+                        <Archive className="mr-2 h-4 w-4" />
+                        Archiveren
+                      </DropdownMenuItem>
+                    )}
+                    
+                    {onDeleteInvoice && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          onClick={() => onDeleteInvoice(invoice)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Verwijderen
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 };
