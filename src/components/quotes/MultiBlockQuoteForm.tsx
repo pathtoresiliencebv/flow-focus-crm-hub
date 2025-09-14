@@ -3,6 +3,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -17,11 +18,7 @@ import { MultiBlockQuotePreview } from './MultiBlockQuotePreview';
 import { SignatureCanvas } from '../SignatureCanvas';
 import { CustomerQuickAdd } from '../CustomerQuickAdd';
 import { ProjectQuickAdd } from '../ProjectQuickAdd';
-import { SendQuoteDialog } from './SendQuoteDialog';
-import { SaveTemplateDialog } from './SaveTemplateDialog';
 import { TemplateSelector } from './TemplateSelector';
-import { ConfirmSendDialog } from './ConfirmSendDialog';
-import { ExitConfirmDialog } from './ExitConfirmDialog';
 import { PaymentTermsSelector, PaymentTerm } from './PaymentTermsSelector';
 import { FileAttachmentsManager, QuoteAttachment } from './FileAttachmentsManager';
 import { useCrmStore } from '@/hooks/useCrmStore';
@@ -56,6 +53,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
 }) => {
   const { customers, projects, isLoading: crmLoading } = useCrmStore();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [blocks, setBlocks] = useState<QuoteBlock[]>([
     {
       id: crypto.randomUUID(),
@@ -73,11 +71,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   const [previewKey, setPreviewKey] = useState(0);
   const [showCustomerAdd, setShowCustomerAdd] = useState(false);
   const [showProjectAdd, setShowProjectAdd] = useState(false);
-  const [showSendDialog, setShowSendDialog] = useState(false);
   const [savedQuote, setSavedQuote] = useState<Quote | null>(null);
-  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [showExitConfirmDialog, setShowExitConfirmDialog] = useState(false);
   const [paymentTerms, setPaymentTerms] = useState<PaymentTerm[]>([
     { id: crypto.randomUUID(), percentage: 100, description: "Volledige betaling" }
   ]);
@@ -438,25 +432,14 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       }
 
       console.log('✅ Quote prepared for sending:', result.data.id);
-      const quoteForSend: Quote = {
-        id: result.data.id,
-        quote_number: values.quoteNumber,
-        customer_name: customer?.name || '',
-        customer_email: finalEmail,
-        project_title: project?.title || '',
-        quote_date: values.date,
-        valid_until: values.validUntil,
-        message: values.message || '',
-        blocks: blocks,
-        total_amount: currentGrandTotal,
-        total_vat_amount: currentTotalVAT,
-        status: 'te-versturen',
-        public_token: tokenData,
-        admin_signature_data: adminSignature
-      };
       
-      setSavedQuote(quoteForSend);
-      setShowConfirmDialog(true);
+      // Navigate to send page instead of opening dialog
+      toast({
+        title: "Offerte opgeslagen",
+        description: "Offerte is klaar om te versturen.",
+      });
+      
+      navigate(`/quotes/${result.data.id}/send`);
 
     } catch (error: any) {
       console.error('Error preparing quote for send:', error);
@@ -469,7 +452,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     } finally {
       setSaving(false);
     }
-  }, [customers, projects, adminSignature, toast, blocks]);
+  }, [customers, projects, adminSignature, toast, blocks, paymentTerms, attachments, navigate]);
 
   const handleSaveAsTemplate = async (templateData: {
     name: string;
@@ -480,6 +463,10 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       await saveTemplate({
         ...templateData,
         template_data: blocks,
+      });
+      toast({
+        title: "Template opgeslagen",
+        description: `Template "${templateData.name}" is opgeslagen.`,
       });
     } catch (error) {
       // Error already handled in saveTemplate
@@ -506,31 +493,18 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     form.handleSubmit((values) => saveAndPrepareToSend(values, savedQuote?.id))();
   }, [form, saveAndPrepareToSend, savedQuote?.id]);
 
-  const handleConfirmSend = () => {
-    setShowConfirmDialog(false);
-    setShowSendDialog(true);
-  };
-
   const handleExitWithConfirm = () => {
     // Check if there are unsaved changes
     const formValues = form.getValues();
     const hasContent = blocks.length > 0 || formValues.customer || formValues.message;
     
-    if (hasContent) {
-      setShowExitConfirmDialog(true);
+    if (hasContent && !savedQuote) {
+      if (confirm('Er zijn niet-opgeslagen wijzigingen. Weet je zeker dat je wilt sluiten zonder op te slaan?')) {
+        onClose();
+      }
     } else {
       onClose();
     }
-  };
-
-  const handleSaveAndExit = () => {
-    form.handleSubmit((values) => saveAsDraft(values, true, savedQuote?.id))();
-    setShowExitConfirmDialog(false);
-  };
-
-  const handleExitWithoutSaving = () => {
-    setShowExitConfirmDialog(false);
-    onClose();
   };
 
   // Get current form values only when needed
@@ -931,7 +905,15 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => setShowTemplateDialog(true)}
+                onClick={() => {
+                  const templateName = prompt('Naam voor template:');
+                  if (templateName) {
+                    handleSaveAsTemplate({
+                      name: templateName,
+                      category: 'general'
+                    });
+                  }
+                }}
                 disabled={blocks.length === 0}
               >
                 <BookmarkPlus className="mr-2 h-4 w-4" />
@@ -970,42 +952,6 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         <MultiBlockQuotePreview key={previewKey} quote={previewQuote} />
       </div>
 
-      {/* Confirm Send Dialog */}
-      <ConfirmSendDialog
-        isOpen={showConfirmDialog}
-        onClose={() => setShowConfirmDialog(false)}
-        onConfirm={handleConfirmSend}
-        quote={savedQuote}
-      />
-
-      {/* Send Quote Dialog */}
-      <SendQuoteDialog
-        isOpen={showSendDialog}
-        onClose={() => {
-          setShowSendDialog(false);
-          onClose();
-        }}
-        quote={savedQuote}
-        onSent={() => {
-          setShowSendDialog(false);
-          onClose();
-        }}
-      />
-
-      {/* Save Template Dialog */}
-      <SaveTemplateDialog
-        open={showTemplateDialog}
-        onOpenChange={setShowTemplateDialog}
-        onSave={handleSaveAsTemplate}
-      />
-
-      {/* Exit Confirm Dialog */}
-      <ExitConfirmDialog
-        isOpen={showExitConfirmDialog}
-        onClose={() => setShowExitConfirmDialog(false)}
-        onSaveAndExit={handleSaveAndExit}
-        onExitWithoutSaving={handleExitWithoutSaving}
-      />
     </div>
   );
 };
