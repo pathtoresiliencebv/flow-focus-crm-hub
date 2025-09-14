@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { PlusCircle, Trash2, Receipt, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
