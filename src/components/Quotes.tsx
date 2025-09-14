@@ -19,7 +19,6 @@ export function Quotes() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
-  const [showNewQuote, setShowNewQuote] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showSendEmail, setShowSendEmail] = useState(false);
   const [converting, setConverting] = useState(false);
@@ -114,8 +113,6 @@ export function Quotes() {
   return (
     <div className="space-y-6">
       <QuotesHeader
-        showNewQuote={showNewQuote}
-        setShowNewQuote={setShowNewQuote}
         onQuoteCreated={fetchQuotes}
       />
 

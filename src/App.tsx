@@ -5,6 +5,8 @@ import Index from "@/pages/Index";
 import Settings from "@/pages/Settings";
 import PublicQuote from "@/pages/PublicQuote";
 import NotFound from "@/pages/NotFound";
+import { NewQuote } from "@/pages/NewQuote";
+import { NewInvoice } from "@/pages/NewInvoice";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TranslationProvider } from "@/contexts/TranslationContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -32,6 +34,8 @@ function App() {
                   <Route path="/" element={<Index />} />
                   <Route path="/customers/:customerId" element={<Index />} />
                   <Route path="/projects/:projectId" element={<Index />} />
+                  <Route path="/quotes/new" element={<NewQuote />} />
+                  <Route path="/invoices/new" element={<NewInvoice />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/quote/:token" element={<PublicQuote />} />
                   <Route path="*" element={<NotFound />} />

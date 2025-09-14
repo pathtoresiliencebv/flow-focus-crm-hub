@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useCrmStore } from "@/hooks/useCrmStore";
 
 interface ProjectQuickAddProps {
   onProjectAdded: (projectId: string) => void;
@@ -21,6 +21,7 @@ export const ProjectQuickAdd = ({
   selectedCustomerName 
 }: ProjectQuickAddProps) => {
   const { toast } = useToast();
+  const { addProject } = useCrmStore();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -50,34 +51,26 @@ export const ProjectQuickAdd = ({
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('projects')
-        .insert({
-          title: formData.title,
-          description: formData.description || null,
-          value: formData.value ? parseFloat(formData.value) : null,
-          customer_id: selectedCustomerId,
-          status: 'te-plannen'
-        })
-        .select()
-        .single();
+      const projectData = {
+        title: formData.title,
+        description: formData.description || null,
+        value: formData.value ? parseFloat(formData.value) : null,
+        customer_id: selectedCustomerId,
+        status: 'te-plannen' as const,
+        date: null,
+      };
 
-      if (error) {
-        console.error('Error adding project:', error);
-        toast({
-          title: "Fout bij opslaan",
-          description: "Het project kon niet worden toegevoegd.",
-          variant: "destructive"
-        });
-        return;
-      }
-
+      const newProject = await addProject(projectData);
+      
       toast({
         title: "Project toegevoegd",
         description: `Project "${formData.title}" is succesvol toegevoegd.`,
       });
       
-      onProjectAdded(data.id);
+      // Wait a bit for the data to be properly added before calling the callback
+      setTimeout(() => {
+        onProjectAdded(newProject.id);
+      }, 100);
     } catch (error) {
       console.error("Failed to add project:", error);
       toast({

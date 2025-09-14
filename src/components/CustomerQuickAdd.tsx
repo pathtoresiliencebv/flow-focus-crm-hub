@@ -49,7 +49,10 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
         status: "Actief"
       });
       
-      onCustomerAdded(newCustomer.id);
+      // Wait a bit for the data to be properly added before calling the callback
+      setTimeout(() => {
+        onCustomerAdded(newCustomer.id);
+      }, 100);
     } catch (error) {
       // Error toast is already handled in useCrmStore
       console.error("Failed to add customer:", error);
