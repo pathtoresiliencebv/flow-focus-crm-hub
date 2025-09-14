@@ -544,39 +544,57 @@ export type Database = {
       customers: {
         Row: {
           address: string | null
+          btw_number: string | null
           city: string | null
+          company_name: string | null
           created_at: string
           email: string | null
+          email_addresses: Json | null
           id: string
+          invoice_address: Json | null
+          kvk_number: string | null
           name: string
           notes: string | null
           phone: string | null
+          shipping_address: Json | null
           status: Database["public"]["Enums"]["customer_status"] | null
           updated_at: string
           user_id: string | null
         }
         Insert: {
           address?: string | null
+          btw_number?: string | null
           city?: string | null
+          company_name?: string | null
           created_at?: string
           email?: string | null
+          email_addresses?: Json | null
           id?: string
+          invoice_address?: Json | null
+          kvk_number?: string | null
           name: string
           notes?: string | null
           phone?: string | null
+          shipping_address?: Json | null
           status?: Database["public"]["Enums"]["customer_status"] | null
           updated_at?: string
           user_id?: string | null
         }
         Update: {
           address?: string | null
+          btw_number?: string | null
           city?: string | null
+          company_name?: string | null
           created_at?: string
           email?: string | null
+          email_addresses?: Json | null
           id?: string
+          invoice_address?: Json | null
+          kvk_number?: string | null
           name?: string
           notes?: string | null
           phone?: string | null
+          shipping_address?: Json | null
           status?: Database["public"]["Enums"]["customer_status"] | null
           updated_at?: string
           user_id?: string | null
@@ -2183,7 +2201,10 @@ export type Database = {
       quotes: {
         Row: {
           admin_signature_data: string | null
+          archived_at: string | null
+          archived_by: string | null
           attachments: Json | null
+          auto_saved_at: string | null
           client_name: string | null
           client_signature_data: string | null
           client_signed_at: string | null
@@ -2191,6 +2212,7 @@ export type Database = {
           customer_email: string | null
           customer_name: string
           id: string
+          is_archived: boolean | null
           items: Json
           message: string | null
           payment_terms: Json | null
@@ -2207,7 +2229,10 @@ export type Database = {
         }
         Insert: {
           admin_signature_data?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           attachments?: Json | null
+          auto_saved_at?: string | null
           client_name?: string | null
           client_signature_data?: string | null
           client_signed_at?: string | null
@@ -2215,6 +2240,7 @@ export type Database = {
           customer_email?: string | null
           customer_name: string
           id?: string
+          is_archived?: boolean | null
           items?: Json
           message?: string | null
           payment_terms?: Json | null
@@ -2231,7 +2257,10 @@ export type Database = {
         }
         Update: {
           admin_signature_data?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           attachments?: Json | null
+          auto_saved_at?: string | null
           client_name?: string | null
           client_signature_data?: string | null
           client_signed_at?: string | null
@@ -2239,6 +2268,7 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string
           id?: string
+          is_archived?: boolean | null
           items?: Json
           message?: string | null
           payment_terms?: Json | null
