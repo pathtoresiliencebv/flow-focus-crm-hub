@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useCrmStore } from "@/hooks/useCrmStore";
 import { useQuotes } from "@/hooks/useQuotes";
@@ -7,20 +8,16 @@ import { useToast } from '@/hooks/use-toast';
 import { QuotesHeader } from './quotes/QuotesHeader';
 import { QuotesSearch } from './quotes/QuotesSearch';
 import { QuotesTable } from './quotes/QuotesTable';
-import { QuotesPreviewDialog } from './quotes/QuotesPreviewDialog';
-import { SendQuoteDialog } from './quotes/SendQuoteDialog';
 import { Quote } from '@/types/quote';
 import { convertQuoteToInvoice } from '@/services/quoteToInvoiceService';
 import { supabase } from "@/integrations/supabase/client";
 
 export function Quotes() {
+  const navigate = useNavigate();
   const { customers, projects } = useCrmStore();
   const { quotes, loading, fetchQuotes, deleteQuote, duplicateQuote } = useQuotes();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
-  const [showPreview, setShowPreview] = useState(false);
-  const [showSendEmail, setShowSendEmail] = useState(false);
   const [converting, setConverting] = useState(false);
 
   const filteredQuotes = quotes.filter(quote =>
@@ -30,8 +27,7 @@ export function Quotes() {
   );
 
   const handlePreview = (quote: Quote) => {
-    setSelectedQuote(quote);
-    setShowPreview(true);
+    navigate(`/quotes/${quote.id}/preview`);
   };
 
   const handleViewPublic = (publicToken: string) => {
@@ -40,13 +36,7 @@ export function Quotes() {
   };
 
   const handleSendEmail = (quote: Quote) => {
-    setSelectedQuote(quote);
-    setShowSendEmail(true);
-  };
-
-  const handleEmailSent = async () => {
-    // Refresh quotes to update status
-    await fetchQuotes();
+    navigate(`/quotes/${quote.id}/send`);
   };
 
   const handleApproveQuote = async (quote: Quote) => {
@@ -135,19 +125,6 @@ export function Quotes() {
         />
         </CardContent>
       </Card>
-
-      <QuotesPreviewDialog
-        open={showPreview}
-        onOpenChange={setShowPreview}
-        quote={selectedQuote}
-      />
-
-      <SendQuoteDialog
-        isOpen={showSendEmail}
-        onClose={() => setShowSendEmail(false)}
-        quote={selectedQuote}
-        onSent={handleEmailSent}
-      />
     </div>
   );
 }

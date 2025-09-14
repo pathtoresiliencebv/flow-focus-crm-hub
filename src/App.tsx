@@ -7,6 +7,10 @@ import PublicQuote from "@/pages/PublicQuote";
 import NotFound from "@/pages/NotFound";
 import { NewQuote } from "@/pages/NewQuote";
 import { NewInvoice } from "@/pages/NewInvoice";
+import { QuotePreview } from "@/pages/QuotePreview";
+import { QuoteSend } from "@/pages/QuoteSend";
+import { InvoiceDetailsPage } from "@/pages/InvoiceDetails";
+import { InvoiceSend } from "@/pages/InvoiceSend";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TranslationProvider } from "@/contexts/TranslationContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -35,7 +39,11 @@ function App() {
                   <Route path="/customers/:customerId" element={<Index />} />
                   <Route path="/projects/:projectId" element={<Index />} />
                   <Route path="/quotes/new" element={<NewQuote />} />
+                  <Route path="/quotes/:quoteId/preview" element={<QuotePreview />} />
+                  <Route path="/quotes/:quoteId/send" element={<QuoteSend />} />
                   <Route path="/invoices/new" element={<NewInvoice />} />
+                  <Route path="/invoices/:invoiceId/details" element={<InvoiceDetailsPage />} />
+                  <Route path="/invoices/:invoiceId/send" element={<InvoiceSend />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/quote/:token" element={<PublicQuote />} />
                   <Route path="*" element={<NotFound />} />
