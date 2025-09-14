@@ -11,6 +11,7 @@ import { QuoteItem, QuoteBlock } from '@/types/quote';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { AIEnhanceButton } from '@/components/ui/ai-enhance-button';
+import { useToast } from '@/hooks/use-toast';
 
 interface QuoteBlockFormProps {
   block: QuoteBlock;
@@ -27,6 +28,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
   canDelete,
   dragHandleProps
 }) => {
+  const { toast } = useToast();
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(block.title);
   const [showProductForm, setShowProductForm] = useState(false);
@@ -53,7 +55,11 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
 
   const handleAddTextBlock = useCallback(() => {
     if (!textBlockContent.trim()) {
-      alert('Voer tekst in voor het tekstblok');
+      toast({
+        title: "Tekst vereist",
+        description: "Voer tekst in om het tekstblok toe te voegen.",
+        variant: "destructive",
+      });
       return;
     }
 

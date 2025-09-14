@@ -8,12 +8,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Plus } from 'lucide-react';
 import { QuoteItem } from '@/types/quote';
 import { AIEnhanceButton } from '@/components/ui/ai-enhance-button';
+import { useToast } from '@/hooks/use-toast';
 
 interface QuoteItemFormProps {
   onAddItem: (item: Omit<QuoteItem, 'id'>) => void;
 }
 
 export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
+  const { toast } = useToast();
   const [description, setDescription] = useState('');
   const [quantity, setQuantity] = useState<number>(1);
   const [unitPrice, setUnitPrice] = useState<number>(0);
@@ -43,7 +45,11 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
     
     if (!description.trim()) {
       console.error('QuoteItemForm: Description is required');
-      alert('Beschrijving is verplicht');
+      toast({
+        title: "Beschrijving vereist",
+        description: "Voer een beschrijving in om het product toe te voegen.",
+        variant: "destructive",
+      });
       return;
     }
 
