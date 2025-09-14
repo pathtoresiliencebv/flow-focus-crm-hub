@@ -46,10 +46,12 @@ const formSchema = z.object({
 
 interface MultiBlockQuoteFormProps {
   onClose: () => void;
+  existingQuote?: Quote;
 }
 
 export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
-  onClose
+  onClose,
+  existingQuote
 }) => {
   const { customers, projects, isLoading: crmLoading } = useCrmStore();
   const { toast } = useToast();
@@ -92,22 +94,45 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     },
   });
 
-  // Generate quote number on mount
+  // Initialize form with existing quote data or generate new quote number
   useEffect(() => {
-    const generateQuoteNumber = async () => {
-      try {
-        const { data, error } = await supabase.rpc('generate_quote_number');
-        if (data && !error) {
-          form.setValue('quoteNumber', data);
-        }
-      } catch (err) {
-        console.error('Error generating quote number:', err);
-        // Fallback to timestamp-based number
-        form.setValue('quoteNumber', `OFF-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`);
+    if (existingQuote) {
+      // Load existing quote data
+      form.reset({
+        customer: '',  // Will need to find customer ID
+        customerEmail: existingQuote.customer_email || '',
+        quoteNumber: existingQuote.quote_number,
+        date: existingQuote.quote_date,
+        validUntil: existingQuote.valid_until,
+        project: '',  // Will need to find project ID
+        message: existingQuote.message || '',
+      });
+      
+      // Set blocks
+      if (existingQuote.blocks && existingQuote.blocks.length > 0) {
+        setBlocks(existingQuote.blocks);
       }
-    };
-    generateQuoteNumber();
-  }, [form]);
+      
+      // Set admin signature
+      if (existingQuote.admin_signature_data) {
+        setAdminSignature(existingQuote.admin_signature_data);
+      }
+    } else {
+      // Generate new quote number for new quotes
+      const generateQuoteNumber = async () => {
+        try {
+          const { data, error } = await supabase.rpc('generate_quote_number');
+          if (data && !error) {
+            form.setValue('quoteNumber', data);
+          }
+        } catch (err) {
+          console.error('Error generating quote number:', err);
+          form.setValue('quoteNumber', `OFF-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`);
+        }
+      };
+      generateQuoteNumber();
+    }
+  }, [form, existingQuote]);
 
   // Remove automatic watching to prevent false impression of auto-save
   // const watchedFields = form.watch();
@@ -246,7 +271,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     console.log('MultiBlockQuoteForm: Total calculations - Amount:', totalAmount, 'VAT:', totalVAT, 'Grand:', grandTotal);
   }, [blocks, totalAmount, totalVAT, grandTotal]);
 
-  const saveAsDraft = useCallback(async (values: z.infer<typeof formSchema>, closeAfter: boolean = true, existingQuoteId?: string) => {
+  const saveAsDraft = useCallback(async (values: z.infer<typeof formSchema>, closeAfter: boolean = true, quoteId?: string) => {
     setSaving(true);
     
     try {
@@ -274,14 +299,15 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         updated_at: new Date().toISOString()
       };
 
+      const quoteToUpdate = quoteId || existingQuote?.id;
       let result;
-      if (existingQuoteId) {
+      if (quoteToUpdate) {
         // Update existing quote
-        console.log('🔄 Updating existing quote:', existingQuoteId);
+        console.log('🔄 Updating existing quote:', quoteToUpdate);
         result = await supabase
           .from('quotes')
           .update(quoteData)
-          .eq('id', existingQuoteId)
+          .eq('id', quoteToUpdate)
           .select()
           .single();
       } else {
@@ -327,7 +353,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     }
   }, [customers, projects, adminSignature, toast, blocks, onClose]);
 
-  const saveAndPrepareToSend = useCallback(async (values: z.infer<typeof formSchema>, existingQuoteId?: string) => {
+  const saveAndPrepareToSend = useCallback(async (values: z.infer<typeof formSchema>, quoteId?: string) => {
     setSaving(true);
     
     try {
@@ -400,14 +426,15 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         updated_at: new Date().toISOString()
       };
 
+      const quoteToUpdate = quoteId || existingQuote?.id;
       let result;
-      if (existingQuoteId) {
+      if (quoteToUpdate) {
         // Update existing quote
-        console.log('🔄 Updating existing quote for send:', existingQuoteId);
+        console.log('🔄 Updating existing quote for send:', quoteToUpdate);
         result = await supabase
           .from('quotes')
           .update(quoteData)
-          .eq('id', existingQuoteId)
+          .eq('id', quoteToUpdate)
           .select()
           .single();
       } else {
@@ -481,17 +508,56 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     });
   };
 
+  // Auto-save functionality - save every 3 seconds after changes
+  const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [lastAutoSave, setLastAutoSave] = useState<number>(0);
+
+  const triggerAutoSave = useCallback(() => {
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout);
+    }
+
+    const timeout = setTimeout(() => {
+      const formValues = form.getValues();
+      if (formValues.customer && formValues.quoteNumber) {
+        console.log('🤖 Auto-saving draft...');
+        saveAsDraft(formValues, false);
+        setLastAutoSave(Date.now());
+      }
+    }, 3000); // 3 second delay
+
+    setAutoSaveTimeout(timeout);
+  }, [form, saveAsDraft, autoSaveTimeout]);
+
+  // Watch form changes for auto-save
+  const watchedCustomer = form.watch('customer');
+  const watchedEmail = form.watch('customerEmail');
+  const watchedMessage = form.watch('message');
+
+  useEffect(() => {
+    if (watchedCustomer || watchedEmail || watchedMessage) {
+      triggerAutoSave();
+    }
+  }, [watchedCustomer, watchedEmail, watchedMessage, triggerAutoSave]);
+
+  // Watch blocks changes for auto-save
+  useEffect(() => {
+    if (blocks.length > 0) {
+      triggerAutoSave();
+    }
+  }, [blocks, triggerAutoSave]);
+
   const handleSaveDraft = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    form.handleSubmit((values) => saveAsDraft(values, false, savedQuote?.id))();
-  }, [form, saveAsDraft, savedQuote?.id]);
+    form.handleSubmit((values) => saveAsDraft(values, false))();
+  }, [form, saveAsDraft]);
 
   const handleSaveAndSend = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    form.handleSubmit((values) => saveAndPrepareToSend(values, savedQuote?.id))();
-  }, [form, saveAndPrepareToSend, savedQuote?.id]);
+    form.handleSubmit((values) => saveAndPrepareToSend(values))();
+  }, [form, saveAndPrepareToSend]);
 
   const handleExitWithConfirm = () => {
     // Check if there are unsaved changes
@@ -904,53 +970,61 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
               </CardContent>
             </Card>
 
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={handleExitWithConfirm}>
-                Annuleren
-              </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => {
-                  // Generate a simple template name with timestamp
-                  const now = new Date();
-                  const timestamp = now.toLocaleString('nl-NL', { 
-                    day: '2-digit', 
-                    month: '2-digit', 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
-                  });
-                  const templateName = `Template ${timestamp}`;
-                  
-                  handleSaveAsTemplate({
-                    name: templateName,
-                    category: 'general'
-                  });
-                }}
-                disabled={blocks.length === 0}
-              >
-                <BookmarkPlus className="mr-2 h-4 w-4" />
-                Opslaan als Template
-              </Button>
-              <Button 
-                type="button" 
-                variant="secondary"
-                onClick={handleSaveDraft}
-                disabled={saving}
-                className="min-w-[140px]"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? "Opslaan..." : "Opslaan als Concept"}
-              </Button>
-              <Button 
-                type="button"
-                onClick={handleSaveAndSend}
-                disabled={saving}
-                className="bg-blue-600 hover:bg-blue-700 text-white min-w-[160px]"
-              >
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? "Opslaan..." : "Opslaan en Versturen"}
-              </Button>
+            <div className="space-y-2">
+              {lastAutoSave > 0 && (
+                <p className="text-sm text-muted-foreground text-right">
+                  ✅ Automatisch opgeslagen: {new Date(lastAutoSave).toLocaleTimeString('nl-NL')}
+                </p>
+              )}
+              
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={handleExitWithConfirm}>
+                  Annuleren
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    // Generate a simple template name with timestamp
+                    const now = new Date();
+                    const timestamp = now.toLocaleString('nl-NL', { 
+                      day: '2-digit', 
+                      month: '2-digit', 
+                      hour: '2-digit', 
+                      minute: '2-digit' 
+                    });
+                    const templateName = `Template ${timestamp}`;
+                    
+                    handleSaveAsTemplate({
+                      name: templateName,
+                      category: 'general'
+                    });
+                  }}
+                  disabled={blocks.length === 0}
+                >
+                  <BookmarkPlus className="mr-2 h-4 w-4" />
+                  Opslaan als Template
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="secondary"
+                  onClick={handleSaveDraft}
+                  disabled={saving}
+                  className="min-w-[140px]"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? "Opslaan..." : "Opslaan als Concept"}
+                </Button>
+                <Button 
+                  type="button"
+                  onClick={handleSaveAndSend}
+                  disabled={saving}
+                  className="bg-blue-600 hover:bg-blue-700 text-white min-w-[160px]"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? "Opslaan..." : "Opslaan en Versturen"}
+                </Button>
+              </div>
             </div>
           </div>
         </Form>

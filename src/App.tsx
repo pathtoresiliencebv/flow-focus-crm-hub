@@ -6,6 +6,7 @@ import Settings from "@/pages/Settings";
 import PublicQuote from "@/pages/PublicQuote";
 import NotFound from "@/pages/NotFound";
 import { NewQuote } from "@/pages/NewQuote";
+import { EditQuote } from "@/pages/EditQuote";
 import { NewInvoice } from "@/pages/NewInvoice";
 import { QuotePreview } from "@/pages/QuotePreview";
 import { QuoteSend } from "@/pages/QuoteSend";
@@ -39,6 +40,7 @@ function App() {
                   <Route path="/customers/:customerId" element={<Index />} />
                   <Route path="/projects/:projectId" element={<Index />} />
                   <Route path="/quotes/new" element={<NewQuote />} />
+                  <Route path="/quotes/:id/edit" element={<EditQuote />} />
                   <Route path="/quotes/:quoteId/preview" element={<QuotePreview />} />
                   <Route path="/quotes/:quoteId/send" element={<QuoteSend />} />
                   <Route path="/invoices/new" element={<NewInvoice />} />

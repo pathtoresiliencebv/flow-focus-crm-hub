@@ -1,9 +1,10 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye, ExternalLink, Trash2, CheckCircle, Mail, Copy } from "lucide-react";
+import { Eye, ExternalLink, Trash2, CheckCircle, Mail, Copy, Pencil } from "lucide-react";
 import { Quote } from '@/types/quote';
 
 interface QuotesTableProps {
@@ -25,6 +26,7 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
   onSendEmail,
   onDuplicate
 }) => {
+  const navigate = useNavigate();
   const getStatusBadge = (status: string) => {
     const statusColors = {
       'concept': 'bg-gray-100 text-gray-800',
@@ -67,6 +69,16 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
             <TableCell>{getStatusBadge(quote.status)}</TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end gap-1">
+                {quote.status === 'concept' && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate(`/quotes/${quote.id}/edit`)}
+                    title="Bewerk offerte"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"
