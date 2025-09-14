@@ -42,6 +42,7 @@ export async function updateUser(profile: Partial<Profile> & { id: string }) {
 }
 
 export async function deleteUser(userId: string) {
+  console.log('deleteUser function called with userId:', userId);
   const { error } = await supabase.rpc('delete_user_safely', {
     p_user_id: userId,
   });
