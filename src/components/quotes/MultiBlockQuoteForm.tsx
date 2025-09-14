@@ -499,9 +499,15 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     const hasContent = blocks.length > 0 || formValues.customer || formValues.message;
     
     if (hasContent && !savedQuote) {
-      if (confirm('Er zijn niet-opgeslagen wijzigingen. Weet je zeker dat je wilt sluiten zonder op te slaan?')) {
+      toast({
+        title: "Niet-opgeslagen wijzigingen",
+        description: "Je hebt niet-opgeslagen wijzigingen. Deze gaan verloren bij het sluiten.",
+        variant: "destructive",
+      });
+      // Give user 3 seconds to reconsider, then close anyway
+      setTimeout(() => {
         onClose();
-      }
+      }, 3000);
     } else {
       onClose();
     }
@@ -906,13 +912,20 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
                 type="button" 
                 variant="outline" 
                 onClick={() => {
-                  const templateName = prompt('Naam voor template:');
-                  if (templateName) {
-                    handleSaveAsTemplate({
-                      name: templateName,
-                      category: 'general'
-                    });
-                  }
+                  // Generate a simple template name with timestamp
+                  const now = new Date();
+                  const timestamp = now.toLocaleString('nl-NL', { 
+                    day: '2-digit', 
+                    month: '2-digit', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  });
+                  const templateName = `Template ${timestamp}`;
+                  
+                  handleSaveAsTemplate({
+                    name: templateName,
+                    category: 'general'
+                  });
                 }}
                 disabled={blocks.length === 0}
               >
