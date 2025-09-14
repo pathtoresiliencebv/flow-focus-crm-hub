@@ -44,4 +44,7 @@ export interface Quote {
   client_signature_data?: string;
   client_name?: string;
   client_signed_at?: string;
+  is_archived?: boolean;
+  archived_at?: string;
+  archived_by?: string;
 }

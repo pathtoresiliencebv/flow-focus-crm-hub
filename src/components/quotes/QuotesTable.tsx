@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye, ExternalLink, Trash2, CheckCircle, Mail, Copy, Pencil } from "lucide-react";
+import { Eye, ExternalLink, Trash2, CheckCircle, Mail, Copy, Pencil, FileSignature, RotateCcw } from "lucide-react";
 import { Quote } from '@/types/quote';
 
 interface QuotesTableProps {
@@ -15,6 +15,8 @@ interface QuotesTableProps {
   onApprove?: (quote: Quote) => void;
   onSendEmail?: (quote: Quote) => void;
   onDuplicate?: (quoteId: string) => void;
+  onRestore?: (quoteId: string) => void;
+  isArchived?: boolean;
 }
 
 export const QuotesTable: React.FC<QuotesTableProps> = ({
@@ -24,7 +26,9 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
   onDelete,
   onApprove,
   onSendEmail,
-  onDuplicate
+  onDuplicate,
+  onRestore,
+  isArchived = false
 }) => {
   const navigate = useNavigate();
   const getStatusBadge = (status: string) => {
@@ -60,7 +64,14 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
       <TableBody>
         {quotes.map((quote) => (
           <TableRow key={quote.id}>
-            <TableCell className="font-medium">{quote.quote_number}</TableCell>
+            <TableCell className="font-medium">
+              <div className="flex items-center gap-2">
+                {quote.quote_number}
+                {(quote.client_signature_data || quote.admin_signature_data) && (
+                  <FileSignature className="h-4 w-4 text-green-600" />
+                )}
+              </div>
+            </TableCell>
             <TableCell>{quote.customer_name}</TableCell>
             <TableCell>{quote.project_title || '-'}</TableCell>
             <TableCell>{new Date(quote.quote_date).toLocaleDateString('nl-NL')}</TableCell>
@@ -69,7 +80,7 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
             <TableCell>{getStatusBadge(quote.status)}</TableCell>
             <TableCell className="text-right">
               <div className="flex justify-end gap-1">
-                {quote.status === 'concept' && (
+                {!isArchived && quote.status === 'concept' && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -87,7 +98,7 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                 >
                   <Eye className="h-4 w-4" />
                 </Button>
-                {quote.public_token && (
+                {!isArchived && quote.public_token && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -97,7 +108,7 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                     <ExternalLink className="h-4 w-4" />
                   </Button>
                 )}
-                {quote.status === 'concept' && onSendEmail && (
+                {!isArchived && quote.status === 'concept' && onSendEmail && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -108,7 +119,7 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                     <Mail className="h-4 w-4" />
                   </Button>
                 )}
-                {(quote.status === 'concept' || quote.status === 'verstuurd') && onApprove && (
+                {!isArchived && (quote.status === 'concept' || quote.status === 'verstuurd') && onApprove && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -119,7 +130,7 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                     <CheckCircle className="h-4 w-4" />
                   </Button>
                 )}
-                {onDuplicate && (
+                {!isArchived && onDuplicate && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -130,11 +141,22 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                     <Copy className="h-4 w-4" />
                   </Button>
                 )}
+                {isArchived && onRestore && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onRestore(quote.id!)}
+                    title="Herstel offerte"
+                    className="text-green-600 hover:text-green-700"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => onDelete(quote.id!)}
-                  title="Verwijderen"
+                  title={isArchived ? "Permanent verwijderen" : "Naar prullenbak"}
                   className="text-red-600 hover:text-red-700"
                 >
                   <Trash2 className="h-4 w-4" />

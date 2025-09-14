@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCrmStore } from "@/hooks/useCrmStore";
 import { useQuotes } from "@/hooks/useQuotes";
 import { useToast } from '@/hooks/use-toast';
@@ -15,12 +16,22 @@ import { supabase } from "@/integrations/supabase/client";
 export function Quotes() {
   const navigate = useNavigate();
   const { customers, projects } = useCrmStore();
-  const { quotes, loading, fetchQuotes, deleteQuote, duplicateQuote } = useQuotes();
+  const { quotes, loading, fetchQuotes, deleteQuote, restoreQuote, permanentDeleteQuote, duplicateQuote } = useQuotes();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [converting, setConverting] = useState(false);
+  const [activeTab, setActiveTab] = useState("active");
 
-  const filteredQuotes = quotes.filter(quote =>
+  const activeQuotes = quotes.filter(quote => !quote.is_archived);
+  const archivedQuotes = quotes.filter(quote => quote.is_archived);
+
+  const filteredActiveQuotes = activeQuotes.filter(quote =>
+    quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (quote.project_title && quote.project_title.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const filteredArchivedQuotes = archivedQuotes.filter(quote =>
     quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
     quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (quote.project_title && quote.project_title.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -103,7 +114,7 @@ export function Quotes() {
   return (
     <div className="space-y-6">
       <QuotesHeader
-        onQuoteCreated={fetchQuotes}
+        onQuoteCreated={() => fetchQuotes(true)}
       />
 
       <Card>
@@ -114,15 +125,39 @@ export function Quotes() {
           />
         </CardHeader>
         <CardContent>
-        <QuotesTable
-          quotes={filteredQuotes}
-          onPreview={handlePreview}
-          onViewPublic={handleViewPublic}
-          onDelete={deleteQuote}
-          onApprove={handleApproveQuote}
-          onSendEmail={handleSendEmail}
-          onDuplicate={duplicateQuote}
-        />
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="active">
+                Actieve Offertes ({activeQuotes.length})
+              </TabsTrigger>
+              <TabsTrigger value="archived">
+                Verwijderde Offertes ({archivedQuotes.length})
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="active" className="mt-4">
+              <QuotesTable
+                quotes={filteredActiveQuotes}
+                onPreview={handlePreview}
+                onViewPublic={handleViewPublic}
+                onDelete={deleteQuote}
+                onApprove={handleApproveQuote}
+                onSendEmail={handleSendEmail}
+                onDuplicate={duplicateQuote}
+              />
+            </TabsContent>
+            
+            <TabsContent value="archived" className="mt-4">
+              <QuotesTable
+                quotes={filteredArchivedQuotes}
+                onPreview={handlePreview}
+                onViewPublic={handleViewPublic}
+                onDelete={permanentDeleteQuote}
+                onRestore={restoreQuote}
+                isArchived={true}
+              />
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>

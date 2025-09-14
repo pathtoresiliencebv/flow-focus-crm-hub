@@ -8,12 +8,17 @@ export const useQuotes = () => {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchQuotes = async () => {
+  const fetchQuotes = async (includeArchived = false) => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('quotes')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*');
+      
+      if (!includeArchived) {
+        query = query.eq('is_archived', false);
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching quotes:', error);
@@ -110,34 +115,99 @@ export const useQuotes = () => {
 
   const deleteQuote = async (quoteId: string) => {
     try {
+      // Soft delete: archive instead of delete
       const { error } = await supabase
         .from('quotes')
-        .delete()
+        .update({ 
+          is_archived: true, 
+          archived_at: new Date().toISOString(),
+          archived_by: 'auth.uid()' // Will be resolved by RLS
+        })
         .eq('id', quoteId);
 
       if (error) {
-        console.error('Error deleting quote:', error);
+        console.error('Error archiving quote:', error);
         toast({
           title: "Fout",
-          description: "Kon offerte niet verwijderen.",
+          description: "Kon offerte niet archiveren.",
           variant: "destructive",
         });
         return;
       }
 
       toast({
-        title: "Offerte verwijderd",
-        description: "De offerte is succesvol verwijderd.",
+        title: "Offerte gearchiveerd",
+        description: "De offerte is verplaatst naar de prullenbak.",
       });
 
-      fetchQuotes();
+      fetchQuotes(true);
     } catch (error) {
-      console.error('Error deleting quote:', error);
+      console.error('Error archiving quote:', error);
+    }
+  };
+
+  const restoreQuote = async (quoteId: string) => {
+    try {
+      const { error } = await supabase
+        .from('quotes')
+        .update({ 
+          is_archived: false, 
+          archived_at: null,
+          archived_by: null
+        })
+        .eq('id', quoteId);
+
+      if (error) {
+        console.error('Error restoring quote:', error);
+        toast({
+          title: "Fout",
+          description: "Kon offerte niet herstellen.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Offerte hersteld",
+        description: "De offerte is hersteld uit de prullenbak.",
+      });
+
+      fetchQuotes(true);
+    } catch (error) {
+      console.error('Error restoring quote:', error);
+    }
+  };
+
+  const permanentDeleteQuote = async (quoteId: string) => {
+    try {
+      const { error } = await supabase
+        .from('quotes')
+        .delete()
+        .eq('id', quoteId);
+
+      if (error) {
+        console.error('Error permanently deleting quote:', error);
+        toast({
+          title: "Fout",
+          description: "Kon offerte niet permanent verwijderen.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Offerte permanent verwijderd",
+        description: "De offerte is permanent verwijderd.",
+      });
+
+      fetchQuotes(true);
+    } catch (error) {
+      console.error('Error permanently deleting quote:', error);
     }
   };
 
   useEffect(() => {
-    fetchQuotes();
+    fetchQuotes(true); // Include archived quotes by default
   }, []);
 
   const duplicateQuote = async (quoteId: string) => {
@@ -186,7 +256,7 @@ export const useQuotes = () => {
         description: "Offerte gedupliceerd",
       });
 
-      await fetchQuotes();
+      await fetchQuotes(true);
     } catch (error) {
       console.error('Error duplicating quote:', error);
       toast({
@@ -202,6 +272,8 @@ export const useQuotes = () => {
     loading,
     fetchQuotes,
     deleteQuote,
+    restoreQuote,
+    permanentDeleteQuote,
     duplicateQuote,
   };
 };

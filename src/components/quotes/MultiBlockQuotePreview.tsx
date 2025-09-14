@@ -274,17 +274,51 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
         </div>
       </div>
 
-      {/* Admin Signature Preview */}
-      {quote.admin_signature_data && (
-        <div className="mt-12 pt-8 border-t border-gray-200">
-          <h4 className="font-medium text-gray-900 mb-4">{settings.company_name || 'SMANS BV'}</h4>
-          <div className="border rounded-lg p-4 bg-gray-50 inline-block">
-            <img 
-              src={quote.admin_signature_data} 
-              alt="SMANS Handtekening" 
-              className="max-w-xs h-24 object-contain"
-            />
-            <p className="text-sm text-gray-600 mt-2">Namens {settings.company_name || 'SMANS BV'}</p>
+      {/* Signatures Section */}
+      {(quote.client_signature_data || quote.admin_signature_data) && (
+        <div className="mt-12 pt-8 border-t-2 border-gray-200">
+          <h3 className="text-xl font-bold text-gray-900 mb-6">HANDTEKENINGEN</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            {/* Client Signature */}
+            {quote.client_signature_data && (
+              <div>
+                <h4 className="font-medium text-gray-900 mb-4">Klant Handtekening</h4>
+                <div className="border rounded-lg p-4 bg-gray-50">
+                  <img 
+                    src={quote.client_signature_data} 
+                    alt="Klant handtekening" 
+                    className="max-w-full h-24 object-contain mb-3"
+                  />
+                  <div className="text-sm text-gray-600 space-y-1">
+                    <p><strong>Naam:</strong> {quote.client_name || 'Niet opgegeven'}</p>
+                    {quote.client_signed_at && (
+                      <p><strong>Ondertekend op:</strong> {new Date(quote.client_signed_at).toLocaleDateString('nl-NL')} om {new Date(quote.client_signed_at).toLocaleTimeString('nl-NL')}</p>
+                    )}
+                  </div>
+                  {quote.status === 'approved' && (
+                    <div className="mt-3 p-2 bg-green-100 text-green-800 text-xs rounded font-medium">
+                      ✅ Goedgekeurd door klant
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Admin Signature */}
+            {quote.admin_signature_data && (
+              <div>
+                <h4 className="font-medium text-gray-900 mb-4">{settings.company_name || 'SMANS BV'}</h4>
+                <div className="border rounded-lg p-4 bg-gray-50">
+                  <img 
+                    src={quote.admin_signature_data} 
+                    alt="Bedrijf handtekening" 
+                    className="max-w-full h-24 object-contain mb-3"
+                  />
+                  <p className="text-sm text-gray-600">Namens {settings.company_name || 'SMANS BV'}</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

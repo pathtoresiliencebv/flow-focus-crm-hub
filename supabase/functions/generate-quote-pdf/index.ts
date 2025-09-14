@@ -285,19 +285,22 @@ const handler = async (req: Request): Promise<Response> => {
           </table>
         </div>
 
-        <!-- Client Signature (if signed and includeSigned is true) -->
-        ${includeSigned && quote.client_signature_data && quote.client_signed_at ? `
+        <!-- Signatures Section (always show if any signature exists) -->
+        ${(quote.client_signature_data || quote.admin_signature_data) ? `
         <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #dc2626;">
-          <h3 style="color: #dc2626; margin-bottom: 20px;">GOEDKEURING KLANT</h3>
+          <h3 style="color: #dc2626; margin-bottom: 20px;">HANDTEKENINGEN</h3>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+            ${quote.client_signature_data ? `
             <div>
               <h4>Klant handtekening:</h4>
               <div style="border: 1px solid #dee2e6; padding: 15px; background: #f8f9fa; margin: 10px 0;">
                 <img src="${quote.client_signature_data}" alt="Klant handtekening" style="max-width: 200px; height: 80px; object-fit: contain;" />
                 <p style="margin-top: 10px; font-size: 12px;"><strong>Naam:</strong> ${quote.client_name || 'Niet opgegeven'}</p>
-                <p style="font-size: 12px;"><strong>Ondertekend op:</strong> ${new Date(quote.client_signed_at).toLocaleDateString('nl-NL')} om ${new Date(quote.client_signed_at).toLocaleTimeString('nl-NL')}</p>
+                ${quote.client_signed_at ? `<p style="font-size: 12px;"><strong>Ondertekend op:</strong> ${new Date(quote.client_signed_at).toLocaleDateString('nl-NL')} om ${new Date(quote.client_signed_at).toLocaleTimeString('nl-NL')}</p>` : ''}
+                ${quote.status === 'approved' ? '<div style="background: #e8f5e8; padding: 8px; border-radius: 3px; margin-top: 10px; color: #2d5a2d; font-size: 11px; font-weight: bold;">✅ Goedgekeurd door klant</div>' : ''}
               </div>
             </div>
+            ` : ''}
             ${quote.admin_signature_data ? `
             <div>
               <h4>${settings?.company_name || 'SMANS BV'}:</h4>
@@ -307,9 +310,6 @@ const handler = async (req: Request): Promise<Response> => {
               </div>
             </div>
             ` : ''}
-          </div>
-          <div style="background: #e8f5e8; padding: 15px; border-radius: 5px; margin-top: 20px;">
-            <p style="color: #2d5a2d; font-weight: bold; margin: 0;">✅ Deze offerte is goedgekeurd en ondertekend door de klant.</p>
           </div>
         </div>
         ` : ''}
