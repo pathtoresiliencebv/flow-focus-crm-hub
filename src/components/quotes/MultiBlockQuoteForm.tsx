@@ -134,8 +134,25 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     }
   }, [form, existingQuote]);
 
-  // Remove automatic watching to prevent false impression of auto-save
-  // const watchedFields = form.watch();
+  // Auto-save functionality
+  const watchedFields = form.watch();
+  
+  // Auto-save after 3 seconds of inactivity
+  useEffect(() => {
+    if (!saveAsDraft) return; // Wait for saveAsDraft to be defined
+    
+    const saveTimer = setTimeout(() => {
+      const formValues = form.getValues();
+      
+      // Only auto-save if we have basic required data
+      if (formValues.customer && formValues.quoteNumber && blocks.length > 0) {
+        console.log('Auto-saving quote as draft...');
+        saveAsDraft(formValues, false).catch(console.error);
+      }
+    }, 3000);
+
+    return () => clearTimeout(saveTimer);
+  }, [watchedFields, blocks, form]);
 
   const forcePreviewUpdate = useCallback(() => {
     console.log('MultiBlockQuoteForm: Forcing preview update');
@@ -634,6 +651,21 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       }
     }
   }, [selectedCustomerId, customers, form]);
+
+  // Auto-save functionality
+  useEffect(() => {
+    const saveTimer = setTimeout(() => {
+      const formValues = form.getValues();
+      
+      // Only auto-save if we have basic required data
+      if (formValues.customer && formValues.quoteNumber && blocks.length > 0) {
+        console.log('Auto-saving quote as draft...');
+        saveAsDraft(formValues, false).catch(console.error);
+      }
+    }, 3000);
+
+    return () => clearTimeout(saveTimer);
+  }, [watchedFields, blocks, form, saveAsDraft]);
 
   // Create preview quote object - only update when blocks change, not on every form field change
   const previewQuote: Quote = useMemo(() => {

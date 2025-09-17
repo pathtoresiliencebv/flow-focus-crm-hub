@@ -303,7 +303,10 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
             <Button
               type="button"
               variant="outline"
-              onClick={() => setShowTextForm(!showTextForm)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowTextForm(!showTextForm);
+              }}
               className="flex-1 h-8 text-sm"
             >
               <Plus className="h-3 w-3 mr-2" />
@@ -318,7 +321,10 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
 
           {/* Quick Text Block Form */}
           {showTextForm && (
-            <div className="space-y-3 p-3 border rounded-lg bg-green-50">
+            <div 
+              className="space-y-3 p-3 border rounded-lg bg-green-50"
+              onClick={(e) => e.stopPropagation()}
+            >
               <h4 className="font-medium text-gray-900 text-sm">Tekstblok toevoegen</h4>
               <div className="space-y-2">
                 <div className="flex gap-1">
@@ -326,7 +332,10 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                     type="button"
                     variant={textFormatting.bold ? "default" : "outline"}
                     size="sm"
-                    onClick={() => toggleTextFormatting('bold')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleTextFormatting('bold');
+                    }}
                     className="h-7 w-7 p-0"
                   >
                     <strong>B</strong>
@@ -335,7 +344,10 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                     type="button"
                     variant={textFormatting.italic ? "default" : "outline"}
                     size="sm"
-                    onClick={() => toggleTextFormatting('italic')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleTextFormatting('italic');
+                    }}
                     className="italic h-7 w-7 p-0"
                   >
                     I
@@ -344,7 +356,10 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                     type="button"
                     variant={textFormatting.underline ? "default" : "outline"}
                     size="sm"
-                    onClick={() => toggleTextFormatting('underline')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleTextFormatting('underline');
+                    }}
                     className="underline h-7 w-7 p-0"
                   >
                     U
@@ -353,13 +368,17 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                 <Textarea
                   value={textBlockContent}
                   onChange={(e) => setTextBlockContent(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
                   placeholder="Voer tekst in..."
                   className="min-h-[80px] text-sm"
                 />
                 <div className="flex gap-2">
                   <Button
                     type="button"
-                    onClick={handleAddTextBlock}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddTextBlock();
+                    }}
                     className="flex-1 h-8 text-sm"
                   >
                     <Plus className="h-3 w-3 mr-2" />
@@ -368,7 +387,8 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setShowTextForm(false);
                       setTextBlockContent('');
                       setTextFormatting({ bold: false, italic: false, underline: false });
