@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Trash2 } from "lucide-react";
 import { useCrmStore } from "@/hooks/useCrmStore";
 import { useToast } from "@/hooks/use-toast";
 
@@ -17,6 +19,7 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    email_secondary: "",
     phone: "",
     address: "",
     city: "",
@@ -24,6 +27,7 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
     kvk_number: "",
     btw_number: "",
   });
+  const [emailAddresses, setEmailAddresses] = useState<Array<{email: string, type: "primary" | "secondary"}>>([{ email: "", type: "primary" }]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -31,12 +35,35 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
       ...prev,
       [name]: value,
     }));
+    
+    // Update primary email in emailAddresses array
+    if (name === 'email') {
+      setEmailAddresses(prev => prev.map((addr, index) => 
+        index === 0 ? { ...addr, email: value } : addr
+      ));
+    }
+  };
+
+  const addEmailAddress = () => {
+    setEmailAddresses(prev => [...prev, { email: "", type: "secondary" }]);
+  };
+
+  const removeEmailAddress = (index: number) => {
+    if (index > 0) { // Don't remove primary email
+      setEmailAddresses(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateEmailAddress = (index: number, email: string) => {
+    setEmailAddresses(prev => prev.map((addr, i) => 
+      i === index ? { ...addr, email } : addr
+    ));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email || !formData.phone) {
+    if (!formData.name || !emailAddresses[0]?.email || !formData.phone) {
       toast({
         title: "Vereiste velden",
         description: "Vul minimaal naam, email en telefoon in.",
@@ -50,7 +77,7 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
         ...formData,
         notes: "",
         status: "Actief" as const,
-        email_addresses: formData.email ? [{ email: formData.email, type: 'primary' }] : []
+        email_addresses: emailAddresses.filter(addr => addr.email.trim())
       };
 
       const newCustomer = await addCustomer(customerData);
@@ -70,6 +97,7 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
         setFormData({
           name: "",
           email: "",
+          email_secondary: "",
           phone: "",
           address: "",
           city: "",
@@ -77,6 +105,7 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
           kvk_number: "",
           btw_number: "",
         });
+        setEmailAddresses([{ email: "", type: "primary" }]);
       }
     } catch (error) {
       console.error('Error adding customer:', error);
@@ -117,28 +146,70 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
+          {/* Email Addresses Section */}
+          <div>
+            <Label className="text-sm font-medium">Email Adressen</Label>
+            <div className="space-y-2 mt-2">
+              {emailAddresses.map((addr, index) => (
+                <div key={index} className="flex gap-2 items-center">
+                  <Input
+                    type="email"
+                    placeholder={index === 0 ? "Primaire email *" : "Extra email adres"}
+                    value={addr.email}
+                    onChange={(e) => updateEmailAddress(index, e.target.value)}
+                    required={index === 0}
+                    className="flex-1"
+                  />
+                  <Select 
+                    value={addr.type} 
+                    onValueChange={(value: "primary" | "secondary") => 
+                      setEmailAddresses(prev => prev.map((a, i) => 
+                        i === index ? { ...a, type: value } : a
+                      ))
+                    }
+                  >
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="primary">Primair</SelectItem>
+                      <SelectItem value="secondary">Secundair</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {index > 0 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeEmailAddress(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addEmailAddress}
+                className="mt-2"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Email toevoegen
+              </Button>
             </div>
-            <div>
-              <Label htmlFor="phone">Telefoon *</Label>
-              <Input
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                required
-              />
-            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="phone">Telefoon *</Label>
+            <Input
+              id="phone"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              required
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">

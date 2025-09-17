@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Quote } from '@/types/quote';
+import { QuoteAttachment } from './FileAttachmentsManager';
 import { supabase } from "@/integrations/supabase/client";
 
 interface QuoteSettings {
@@ -16,9 +17,10 @@ interface QuoteSettings {
 
 interface MultiBlockQuotePreviewProps {
   quote: Quote;
+  attachments?: QuoteAttachment[];
 }
 
-export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ quote }) => {
+export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ quote, attachments = [] }) => {
   const [settings, setSettings] = useState<QuoteSettings>({});
 
   useEffect(() => {
@@ -296,11 +298,11 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
                       <p><strong>Ondertekend op:</strong> {new Date(quote.client_signed_at).toLocaleDateString('nl-NL')} om {new Date(quote.client_signed_at).toLocaleTimeString('nl-NL')}</p>
                     )}
                   </div>
-                  {quote.status === 'approved' && (
-                    <div className="mt-3 p-2 bg-green-100 text-green-800 text-xs rounded font-medium">
-                      ✅ Goedgekeurd door klant
-                    </div>
-                  )}
+                   {(quote.status === 'approved' || quote.status === 'goedgekeurd') && (
+                     <div className="mt-3 p-2 bg-green-100 text-green-800 text-xs rounded font-medium">
+                       ✅ Goedgekeurd door klant
+                     </div>
+                   )}
                 </div>
               </div>
             )}
@@ -323,6 +325,35 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
         </div>
       )}
 
+      {/* PDF Attachments Display */}
+      {attachments && attachments.length > 0 && (
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <h3 className="text-lg font-bold text-gray-900 mb-4">BIJLAGEN</h3>
+          <div className="space-y-2">
+            {attachments.map((attachment, index) => (
+              <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border">
+                <div className="w-8 h-8 bg-red-500 rounded flex items-center justify-center">
+                  <span className="text-white text-xs font-bold">PDF</span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">{attachment.name}</p>
+                  <p className="text-xs text-gray-500">
+                    {attachment.size ? `${(attachment.size / 1024 / 1024).toFixed(1)} MB` : 'Bijlage'}
+                  </p>
+                </div>
+                <a 
+                  href={attachment.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium px-3 py-1 border border-blue-200 rounded hover:bg-blue-50"
+                >
+                  Bekijken
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <div className="mt-12 pt-8 border-t border-gray-200">

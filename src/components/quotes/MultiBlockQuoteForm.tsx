@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -56,6 +57,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   const { customers, projects, isLoading: crmLoading, addCustomer } = useCrmStore();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [blocks, setBlocks] = useState<QuoteBlock[]>([
     {
       id: crypto.randomUUID(),
@@ -629,6 +631,12 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     console.log('Customer added:', customer);
     
     try {
+      // Update the customers query cache immediately
+      queryClient.setQueryData(['customers'], (oldData: any[]) => {
+        if (!oldData) return [customer];
+        return [customer, ...oldData];
+      });
+      
       // Immediately set the customer in the form
       form.setValue('customer', customer.id);
       
@@ -1102,7 +1110,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
           <h4 className="font-medium text-gray-700">Live Preview</h4>
           <p className="text-xs text-yellow-600 font-medium">⚠️ Dit is alleen een preview - offerte wordt pas opgeslagen bij 'Offerte Opslaan'</p>
         </div>
-        <MultiBlockQuotePreview key={previewKey} quote={previewQuote} />
+        <MultiBlockQuotePreview key={previewKey} quote={previewQuote} attachments={attachments} />
       </div>
 
     </div>
