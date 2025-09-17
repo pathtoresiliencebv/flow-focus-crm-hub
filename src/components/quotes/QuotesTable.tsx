@@ -4,7 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Eye, ExternalLink, Trash2, CheckCircle, Mail, Copy, Pencil, FileSignature, RotateCcw } from "lucide-react";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { Eye, ExternalLink, Trash2, CheckCircle, Mail, Copy, Pencil, FileSignature, RotateCcw, MoreHorizontal } from "lucide-react";
 import { Quote } from '@/types/quote';
 
 interface QuotesTableProps {
@@ -79,89 +86,73 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
             <TableCell>€{(quote.total_amount + quote.total_vat_amount).toFixed(2)}</TableCell>
             <TableCell>{getStatusBadge(quote.status)}</TableCell>
             <TableCell className="text-right">
-              <div className="flex justify-end gap-1">
-                {!isArchived && quote.status === 'concept' && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigate(`/quotes/${quote.id}/edit`)}
-                    title="Bewerk offerte"
-                  >
-                    <Pencil className="h-4 w-4" />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <MoreHorizontal className="h-4 w-4" />
                   </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onPreview(quote)}
-                  title="Preview"
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
-                {!isArchived && quote.public_token && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onViewPublic(quote.public_token!)}
-                    title="Bekijk publieke link"
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => onPreview(quote)}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    Bekijken
+                  </DropdownMenuItem>
+                  
+                  {!isArchived && quote.status === 'concept' && (
+                    <DropdownMenuItem onClick={() => navigate(`/quotes/${quote.id}/edit`)}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Bewerken
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {!isArchived && quote.public_token && (
+                    <DropdownMenuItem onClick={() => onViewPublic(quote.public_token!)}>
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Publieke link
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {!isArchived && quote.status === 'concept' && onSendEmail && (
+                    <DropdownMenuItem onClick={() => onSendEmail(quote)}>
+                      <Mail className="mr-2 h-4 w-4" />
+                      Versturen
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {!isArchived && (quote.status === 'concept' || quote.status === 'verstuurd') && onApprove && (
+                    <DropdownMenuItem onClick={() => onApprove(quote)}>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Goedkeuren
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {!isArchived && onDuplicate && (
+                    <DropdownMenuItem onClick={() => onDuplicate(quote.id!)}>
+                      <Copy className="mr-2 h-4 w-4" />
+                      Dupliceren
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {isArchived && onRestore && (
+                    <DropdownMenuItem onClick={() => onRestore(quote.id!)}>
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                      Herstellen
+                    </DropdownMenuItem>
+                  )}
+                  
+                  {((!isArchived && onDelete) || (isArchived && onRestore)) && (
+                    <DropdownMenuSeparator />
+                  )}
+                  
+                  <DropdownMenuItem 
+                    onClick={() => onDelete(quote.id!)}
+                    className="text-destructive"
                   >
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                )}
-                {!isArchived && quote.status === 'concept' && onSendEmail && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onSendEmail(quote)}
-                    title="Verstuur per email"
-                    className="text-blue-600 hover:text-blue-700"
-                  >
-                    <Mail className="h-4 w-4" />
-                  </Button>
-                )}
-                {!isArchived && (quote.status === 'concept' || quote.status === 'verstuurd') && onApprove && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onApprove(quote)}
-                    title="Goedkeuren en omzetten naar factuur"
-                    className="text-green-600 hover:text-green-700"
-                  >
-                    <CheckCircle className="h-4 w-4" />
-                  </Button>
-                )}
-                {!isArchived && onDuplicate && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onDuplicate(quote.id!)}
-                    title="Dupliceer offerte"
-                    className="text-blue-600 hover:text-blue-700"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                )}
-                {isArchived && onRestore && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onRestore(quote.id!)}
-                    title="Herstel offerte"
-                    className="text-green-600 hover:text-green-700"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                  </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onDelete(quote.id!)}
-                  title={isArchived ? "Permanent verwijderen" : "Naar prullenbak"}
-                  className="text-red-600 hover:text-red-700"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {isArchived ? "Permanent verwijderen" : "Verwijderen"}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </TableCell>
           </TableRow>
         ))}
