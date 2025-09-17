@@ -40,6 +40,7 @@ function App() {
                   <Route path="/customers/:customerId" element={<Index />} />
                   <Route path="/projects/:projectId" element={<Index />} />
                   <Route path="/quotes/new" element={<Index />} />
+                  <Route path="/invoices/new" element={<Index />} />
                   <Route path="/quotes/:id/edit" element={<EditQuote />} />
                   <Route path="/quotes/:quoteId/preview" element={<QuotePreview />} />
                   <Route path="/quotes/:quoteId/send" element={<QuoteSend />} />

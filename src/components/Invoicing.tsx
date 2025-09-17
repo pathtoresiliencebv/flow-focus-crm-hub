@@ -9,6 +9,7 @@ import { InvoicingHeader } from "./invoicing/InvoicingHeader";
 import { SendInvoiceDialog } from "./SendInvoiceDialog";
 import { ArchivedInvoicesView } from "./invoicing/ArchivedInvoicesView";
 import { InvoiceFinalizationDialog } from "./invoicing/InvoiceFinalizationDialog";
+import { MultiBlockInvoiceForm } from "./invoicing/MultiBlockInvoiceForm";
 import { useInvoices } from "@/hooks/useInvoices";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +21,7 @@ export const Invoicing = () => {
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [showSendDialog, setShowSendDialog] = useState(false);
   const [showFinalizationDialog, setShowFinalizationDialog] = useState(false);
+  const [showNewInvoiceForm, setShowNewInvoiceForm] = useState(window.location.pathname === "/invoices/new");
   const [filters, setFilters] = useState({
     search: "",
     status: "all",
@@ -95,6 +97,11 @@ export const Invoicing = () => {
     setShowFinalizationDialog(true);
   };
 
+  const handleCloseNewInvoice = () => {
+    setShowNewInvoiceForm(false);
+    navigate('/');
+  };
+
   // Filter invoices based on current filters - only active invoices
   const filteredInvoices = invoices
     .filter(invoice => !invoice.is_archived)
@@ -109,6 +116,17 @@ export const Invoicing = () => {
       return matchesSearch && matchesStatus;
     });
 
+  if (showNewInvoiceForm) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold">Nieuwe factuur aanmaken</h1>
+        </div>
+        <MultiBlockInvoiceForm onClose={handleCloseNewInvoice} />
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-6">
       <div className="space-y-6">
@@ -120,7 +138,7 @@ export const Invoicing = () => {
               <TabsTrigger value="active">Actieve Facturen</TabsTrigger>
               <TabsTrigger value="archived">Gearchiveerd</TabsTrigger>
             </TabsList>
-            <Button onClick={() => navigate('/invoices/new')}>
+            <Button onClick={() => setShowNewInvoiceForm(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Nieuwe Factuur
             </Button>
