@@ -9,10 +9,10 @@ import { useToast } from '@/hooks/use-toast';
 import { QuotesHeader } from './quotes/QuotesHeader';
 import { QuotesSearch } from './quotes/QuotesSearch';
 import { QuotesTable } from './quotes/QuotesTable';
+import { MultiBlockQuoteForm } from './quotes/MultiBlockQuoteForm';
 import { Quote } from '@/types/quote';
 import { convertQuoteToInvoice } from '@/services/quoteToInvoiceService';
 import { supabase } from "@/integrations/supabase/client";
-import { MultiBlockQuoteForm } from './quotes/MultiBlockQuoteForm';
 
 export function Quotes() {
   const navigate = useNavigate();
