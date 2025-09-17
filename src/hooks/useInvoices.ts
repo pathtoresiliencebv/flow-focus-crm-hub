@@ -73,6 +73,22 @@ export function useInvoices() {
     }
   });
 
+  const fetchInvoiceById = async (invoiceId: string): Promise<Invoice | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('id', invoiceId)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error fetching invoice:', error);
+      return null;
+    }
+  };
+
   const fetchInvoiceItems = async (invoiceId: string): Promise<InvoiceItem[]> => {
     try {
       const { data, error } = await supabase
@@ -231,6 +247,7 @@ export function useInvoices() {
     loading,
     archivedInvoices,
     archivedLoading,
+    fetchInvoiceById,
     fetchInvoiceItems,
     updateInvoiceStatus,
     addInvoice,

@@ -1,25 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft } from "lucide-react";
 import { MultiBlockInvoicePreview } from '@/components/invoicing/MultiBlockInvoicePreview';
-import { useInvoices } from '@/hooks/useInvoices';
+import { useInvoices, Invoice } from '@/hooks/useInvoices';
 
 export function InvoiceDetailsPage() {
   const { invoiceId, id } = useParams<{ invoiceId?: string; id?: string }>();
   const navigate = useNavigate();
-  const { invoices, fetchInvoiceItems } = useInvoices();
+  const { fetchInvoiceById, fetchInvoiceItems } = useInvoices();
+  const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [invoiceItems, setInvoiceItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Use either invoiceId or id parameter
   const currentInvoiceId = invoiceId || id;
-  const invoice = invoices.find(inv => inv.id === currentInvoiceId);
 
   useEffect(() => {
     if (currentInvoiceId) {
-      fetchInvoiceItems(currentInvoiceId).then(setInvoiceItems);
+      setLoading(true);
+      setError(null);
+      
+      Promise.all([
+        fetchInvoiceById(currentInvoiceId),
+        fetchInvoiceItems(currentInvoiceId)
+      ])
+      .then(([invoiceData, itemsData]) => {
+        if (invoiceData) {
+          setInvoice(invoiceData);
+          setInvoiceItems(itemsData);
+        } else {
+          setError('Factuur niet gevonden');
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching invoice:', err);
+        setError('Er is een fout opgetreden bij het laden van de factuur');
+      })
+      .finally(() => {
+        setLoading(false);
+      });
     }
-  }, [currentInvoiceId, fetchInvoiceItems]);
+  }, [currentInvoiceId, fetchInvoiceById, fetchInvoiceItems]);
 
   const handleBack = () => {
     navigate(-1);
@@ -29,7 +53,7 @@ export function InvoiceDetailsPage() {
     navigate(`/invoices/${currentInvoiceId}/send`);
   };
 
-  if (!invoice) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-7xl mx-auto">
@@ -43,7 +67,40 @@ export function InvoiceDetailsPage() {
               <ArrowLeft className="h-4 w-4" />
               Terug
             </Button>
-            <h1 className="text-2xl font-bold">Factuur niet gevonden</h1>
+            <Skeleton className="h-8 w-64" />
+          </div>
+          <div className="bg-card rounded-lg shadow-sm border p-6">
+            <div className="space-y-4">
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-6 w-1/2" />
+              <div className="space-y-2 mt-8">
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-4 w-3/4" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !invoice) {
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBack}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Terug
+            </Button>
+            <h1 className="text-2xl font-bold">{error || 'Factuur niet gevonden'}</h1>
           </div>
         </div>
       </div>
