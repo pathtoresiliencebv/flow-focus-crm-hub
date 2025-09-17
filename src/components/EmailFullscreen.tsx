@@ -319,36 +319,6 @@ export function EmailFullscreen({ onBackToDashboard }: EmailFullscreenProps) {
     );
   }
 
-  if (showCompose) {
-    return (
-      <div className="fixed inset-0 bg-background z-50 flex flex-col">
-        <div className="p-4 border-b flex items-center justify-between">
-          <h2 className="text-xl font-semibold">
-            {replyTo ? `Beantwoorden: ${replyTo.subject}` : 'Nieuwe e-mail'}
-          </h2>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => { setShowCompose(false); setReplyTo(null); }}>
-              Terug naar inbox
-            </Button>
-            <Button variant="outline" onClick={onBackToDashboard}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Dashboard
-            </Button>
-          </div>
-        </div>
-        <div className="flex-1 p-4">
-          <EmailCompose
-            onClose={() => { setShowCompose(false); setReplyTo(null); }}
-            replyTo={replyTo ? {
-              to: replyTo.from,
-              subject: replyTo.subject.startsWith('Re: ') ? replyTo.subject : `Re: ${replyTo.subject}`,
-              inReplyTo: replyTo.id
-            } : undefined}
-          />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="fixed inset-0 bg-background z-50 flex flex-col">
@@ -439,9 +409,39 @@ export function EmailFullscreen({ onBackToDashboard }: EmailFullscreenProps) {
             </ScrollArea>
           </div>
 
-          {/* Email Detail View - 40% */}
+          {/* Email Detail View or Compose - 40% */}
           <div className="w-2/5 flex flex-col">
-            {selectedEmailForView ? (
+            {showCompose ? (
+              <div className="flex flex-col h-full">
+                <div className="p-4 border-b bg-background">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-medium">
+                      {replyTo ? `Beantwoorden: ${replyTo.subject}` : 'Nieuwe e-mail'}
+                    </h3>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => { 
+                        setShowCompose(false); 
+                        setReplyTo(null); 
+                      }}
+                    >
+                      ×
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex-1 p-4 overflow-auto">
+                  <EmailCompose
+                    onClose={() => { setShowCompose(false); setReplyTo(null); }}
+                    replyTo={replyTo ? {
+                      to: replyTo.from,
+                      subject: replyTo.subject.startsWith('Re: ') ? replyTo.subject : `Re: ${replyTo.subject}`,
+                      inReplyTo: replyTo.id
+                    } : undefined}
+                  />
+                </div>
+              </div>
+            ) : selectedEmailForView ? (
               <ScrollArea className="flex-1">
                 <EmailDetailView
                   email={selectedEmailForView}
