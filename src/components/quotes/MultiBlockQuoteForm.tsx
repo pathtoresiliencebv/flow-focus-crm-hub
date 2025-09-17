@@ -53,7 +53,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   onClose,
   existingQuote
 }) => {
-  const { customers, projects, isLoading: crmLoading } = useCrmStore();
+  const { customers, projects, isLoading: crmLoading, addCustomer } = useCrmStore();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [blocks, setBlocks] = useState<QuoteBlock[]>([
@@ -136,23 +136,6 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
 
   // Auto-save functionality
   const watchedFields = form.watch();
-  
-  // Auto-save after 3 seconds of inactivity
-  useEffect(() => {
-    if (!saveAsDraft) return; // Wait for saveAsDraft to be defined
-    
-    const saveTimer = setTimeout(() => {
-      const formValues = form.getValues();
-      
-      // Only auto-save if we have basic required data
-      if (formValues.customer && formValues.quoteNumber && blocks.length > 0) {
-        console.log('Auto-saving quote as draft...');
-        saveAsDraft(formValues, false).catch(console.error);
-      }
-    }, 3000);
-
-    return () => clearTimeout(saveTimer);
-  }, [watchedFields, blocks, form]);
 
   const forcePreviewUpdate = useCallback(() => {
     console.log('MultiBlockQuoteForm: Forcing preview update');
@@ -369,6 +352,44 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       setSaving(false);
     }
   }, [customers, projects, adminSignature, toast, blocks, onClose]);
+
+  // Auto-save after 3 seconds of inactivity
+  useEffect(() => {
+    if (!saveAsDraft) return; // Wait for saveAsDraft to be defined
+    
+    const saveTimer = setTimeout(() => {
+      const formValues = form.getValues();
+      
+      // Only auto-save if we have basic required data
+      if (formValues.customer && formValues.quoteNumber && blocks.length > 0) {
+        console.log('Auto-saving quote as draft...');
+        saveAsDraft(formValues, false).catch(console.error);
+      }
+    }, 3000);
+
+    return () => clearTimeout(saveTimer);
+  }, [watchedFields, blocks, form, saveAsDraft]);
+
+  // Navigation protection - prevent data loss
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const formValues = form.getValues();
+      
+      // Check if there's unsaved data
+      if (formValues.customer && formValues.quoteNumber && blocks.length > 0) {
+        // Auto-save before unload
+        saveAsDraft && saveAsDraft(formValues, false).catch(console.error);
+        
+        // Show browser warning
+        e.preventDefault();
+        e.returnValue = 'Je hebt niet-opgeslagen wijzigingen. Weet je zeker dat je wilt vertrekken?';
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [form, blocks, saveAsDraft]);
 
   const saveAndPrepareToSend = useCallback(async (values: z.infer<typeof formSchema>, quoteId?: string) => {
     setSaving(true);
@@ -604,26 +625,34 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     return selectedCustomer && project.customer === selectedCustomer.name;
   }) || [];
 
-  const handleCustomerAdded = (customer: any) => {
+  const handleCustomerAdded = async (customer: any) => {
     console.log('Customer added:', customer);
     
-    // Add to customers list immediately
-    const updatedCustomers = [...customers, customer];
-    
-    // Set the customer in the form
-    form.setValue('customer', customer.id);
-    
-    // Set email if available
-    if (customer.email) {
-      form.setValue('customerEmail', customer.email);
+    try {
+      // Wait a bit for the database to be updated and customers to refetch
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Set the customer in the form
+      form.setValue('customer', customer.id);
+      
+      // Set email if available
+      if (customer.email) {
+        form.setValue('customerEmail', customer.email);
+      }
+      
+      setShowCustomerAdd(false);
+      
+      toast({
+        title: "Klant toegevoegd",
+        description: `${customer.name} is succesvol toegevoegd en geselecteerd.`,
+      });
+      
+      // Force a preview update
+      forcePreviewUpdate();
+    } catch (error) {
+      console.error('Error handling customer add:', error);
+      setShowCustomerAdd(false);
     }
-    
-    setShowCustomerAdd(false);
-    
-    toast({
-      title: "Klant toegevoegd",
-      description: `${customer.name} is succesvol toegevoegd en geselecteerd.`,
-    });
   };
 
   const handleProjectAdded = (projectId: string) => {
