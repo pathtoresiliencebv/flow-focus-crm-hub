@@ -1,15 +1,12 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trash2, GripVertical, Edit3, Plus } from 'lucide-react';
+import { Trash2, GripVertical, Edit3, Plus, Save, X } from 'lucide-react';
 import { QuoteItemForm } from './QuoteItemForm';
-import { QuoteItemDisplay } from './QuoteItemDisplay';
 import { QuoteItem, QuoteBlock } from '@/types/quote';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AIEnhanceButton } from '@/components/ui/ai-enhance-button';
 import { useToast } from '@/hooks/use-toast';
@@ -86,7 +83,6 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
       }
       return sum;
     }, 0);
-    console.log('QuoteBlockForm: Calculated subtotal:', subtotal, 'for items:', items);
     return subtotal;
   }, []);
 
@@ -99,21 +95,16 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
       }
       return sum;
     }, 0);
-    console.log('QuoteBlockForm: Calculated VAT:', vat, 'for items:', items);
     return vat;
   }, []);
 
   const handleAddItem = useCallback((newItem: Omit<QuoteItem, 'id'>) => {
-    console.log('QuoteBlockForm: Adding item to block:', block.id, newItem);
-    
     const item: QuoteItem = {
       ...newItem,
       id: crypto.randomUUID()
     };
 
     const updatedItems = [...block.items, item];
-    console.log('QuoteBlockForm: Updated items array:', updatedItems);
-    
     const subtotal = calculateBlockSubtotal(updatedItems);
     const vatAmount = calculateBlockVAT(updatedItems);
 
@@ -124,12 +115,11 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
       vat_amount: vatAmount
     };
 
-    console.log('QuoteBlockForm: Updating block with new item:', updatedBlock);
     onUpdateBlock(updatedBlock);
+    setShowProductForm(false);
   }, [block, calculateBlockSubtotal, calculateBlockVAT, onUpdateBlock]);
 
   const handleDeleteItem = useCallback((index: number) => {
-    console.log('QuoteBlockForm: Deleting item at index:', index);
     const updatedItems = block.items.filter((_, i) => i !== index);
     
     const subtotal = calculateBlockSubtotal(updatedItems);
@@ -168,24 +158,19 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
     onUpdateBlock(updatedBlock);
   }, [block, onUpdateBlock]);
 
-  // Debug effect to monitor block changes
-  useEffect(() => {
-    console.log('QuoteBlockForm: Block updated:', block);
-  }, [block]);
-
-  // Conditional rendering: completely different UI for text blocks vs product blocks
+  // For textblock type, render simple editor
   if (block.type === 'textblock') {
     return (
       <div className="w-full">
         <div {...dragHandleProps} className="flex items-center gap-2 mb-2">
-          <GripVertical className="h-4 w-4 text-gray-400 cursor-grab hover:text-gray-600 transition-colors" />
+          <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
           <span className="text-xs text-muted-foreground">Tekstblok</span>
           {canDelete && (
             <Button
               variant="ghost"
               size="sm"
               onClick={onDeleteBlock}
-              className="text-red-600 hover:text-red-700 h-6 w-6 p-0 ml-auto"
+              className="text-destructive hover:text-destructive h-6 w-6 p-0 ml-auto"
             >
               <Trash2 className="h-3 w-3" />
             </Button>
@@ -212,11 +197,11 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
 
   return (
     <Card className="w-full">
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 flex-1">
             <div {...dragHandleProps}>
-              <GripVertical className="h-4 w-4 text-gray-400 cursor-grab hover:text-gray-600 transition-colors" />
+              <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
             </div>
             
             {isEditingTitle ? (
@@ -233,10 +218,10 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                   autoFocus
                 />
                 <Button size="sm" onClick={handleTitleSave}>
-                  Opslaan
+                  <Save className="h-3 w-3" />
                 </Button>
                 <Button size="sm" variant="outline" onClick={handleTitleCancel}>
-                  Annuleren
+                  <X className="h-3 w-3" />
                 </Button>
               </div>
             ) : (
@@ -245,13 +230,10 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="opacity-50 group-hover:opacity-100 transition-opacity"
+                  className="opacity-50 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
                 >
                   <Edit3 className="h-3 w-3" />
                 </Button>
-                <span className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
-                  Klik om te bewerken
-                </span>
               </div>
             )}
           </div>
@@ -265,7 +247,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={onDeleteBlock}
-                className="text-red-600 hover:text-red-700 h-7 w-7 p-0"
+                className="text-destructive hover:text-destructive h-7 w-7 p-0"
               >
                 <Trash2 className="h-3 w-3" />
               </Button>
@@ -274,7 +256,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         {/* Items List - Compact Grid Layout */}
         {block.items.map((item, index) => (
           <div key={item.id || `item-${index}`} className="grid grid-cols-12 gap-2 items-center py-2 border-b border-border/50 last:border-b-0">
@@ -451,21 +433,29 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                         U
                       </Button>
                     </div>
-                    <Textarea
-                      value={item.description}
-                      onChange={(e) => {
-                        const updatedItems = [...block.items];
-                        updatedItems[index] = { ...item, description: e.target.value };
-                        onUpdateBlock({ ...block, items: updatedItems });
-                      }}
-                      placeholder="Tekst invoeren..."
-                      className="min-h-[60px] text-sm"
-                      style={{
-                        fontWeight: item.formatting?.bold ? 'bold' : 'normal',
-                        fontStyle: item.formatting?.italic ? 'italic' : 'normal',
-                        textDecoration: item.formatting?.underline ? 'underline' : 'none'
-                      }}
-                    />
+                    <div className="relative">
+                      <Textarea
+                        value={item.description}
+                        onChange={(e) => {
+                          const updatedItems = [...block.items];
+                          updatedItems[index] = { ...item, description: e.target.value };
+                          onUpdateBlock({ ...block, items: updatedItems });
+                        }}
+                        placeholder="Tekst invoeren..."
+                        className="min-h-[60px] text-sm pr-12"
+                      />
+                      <div className="absolute top-2 right-2">
+                        <AIEnhanceButton
+                          text={item.description}
+                          onEnhanced={(enhanced) => {
+                            const updatedItems = [...block.items];
+                            updatedItems[index] = { ...item, description: enhanced };
+                            onUpdateBlock({ ...block, items: updatedItems });
+                          }}
+                          context="textblock"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="col-span-2 text-right">
@@ -483,132 +473,102 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
           </div>
         ))}
 
-        {/* Add Item Options */}
-        <div className="space-y-3">
-          <div className="flex gap-2 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setShowProductForm(!showProductForm);
-              }}
-              className="h-8 text-sm"
-            >
-              <Plus className="h-3 w-3 mr-1" />
-              Product
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setShowTextForm(!showTextForm);
-              }}
-              className="h-8 text-sm"
-            >
-              <Plus className="h-3 w-3 mr-1" />
-              Tekst
-            </Button>
-          </div>
+        {/* Add Item Buttons */}
+        <div className="flex gap-2 pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setShowProductForm(true)}
+            className="h-8 text-sm"
+          >
+            <Plus className="h-3 w-3 mr-1" />
+            Product
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setShowTextForm(true)}
+            className="h-8 text-sm"
+          >
+            <Plus className="h-3 w-3 mr-1" />
+            Tekst
+          </Button>
+        </div>
 
-          {/* Product Form */}
-          {showProductForm && (
+        {/* Add Items Forms */}
+        {showProductForm && (
+          <div className="space-y-3 p-3 border border-border rounded-md bg-muted/20">
+            <h4 className="font-medium text-sm">Product toevoegen</h4>
             <QuoteItemForm onAddItem={handleAddItem} />
-          )}
+            <div className="flex justify-end">
+              <Button size="sm" variant="outline" onClick={() => setShowProductForm(false)}>
+                Annuleren
+              </Button>
+            </div>
+          </div>
+        )}
 
-          {/* Quick Text Block Form */}
-          {showTextForm && (
-            <div 
-              className="space-y-3 p-3 border rounded-lg bg-green-50"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h4 className="font-medium text-gray-900 text-sm">Tekstblok toevoegen</h4>
-              <div className="space-y-2">
-                <div className="flex gap-1">
-                  <Button
-                    type="button"
-                    variant={textFormatting.bold ? "default" : "outline"}
-                    size="sm"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      toggleTextFormatting('bold');
-                    }}
-                    className="h-7 w-7 p-0"
-                  >
-                    <strong>B</strong>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={textFormatting.italic ? "default" : "outline"}
-                    size="sm"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      toggleTextFormatting('italic');
-                    }}
-                    className="italic h-7 w-7 p-0"
-                  >
-                    I
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={textFormatting.underline ? "default" : "outline"}
-                    size="sm"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      toggleTextFormatting('underline');
-                    }}
-                    className="underline h-7 w-7 p-0"
-                  >
-                    U
-                  </Button>
-                </div>
+        {showTextForm && (
+          <div className="space-y-3 p-3 border border-border rounded-md bg-muted/20">
+            <h4 className="font-medium text-sm">Tekst toevoegen</h4>
+            <div className="space-y-2">
+              <div className="flex gap-1">
+                <Button
+                  type="button"
+                  variant={textFormatting.bold ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => toggleTextFormatting('bold')}
+                  className="h-7 w-7 p-0"
+                >
+                  <strong>B</strong>
+                </Button>
+                <Button
+                  type="button"
+                  variant={textFormatting.italic ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => toggleTextFormatting('italic')}
+                  className="italic h-7 w-7 p-0"
+                >
+                  I
+                </Button>
+                <Button
+                  type="button"
+                  variant={textFormatting.underline ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => toggleTextFormatting('underline')}
+                  className="underline h-7 w-7 p-0"
+                >
+                  U
+                </Button>
+              </div>
+              <div className="relative">
                 <Textarea
                   value={textBlockContent}
                   onChange={(e) => setTextBlockContent(e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  placeholder="Voer tekst in..."
-                  className="min-h-[80px] text-sm"
+                  placeholder="Voer uw tekst in..."
+                  className="min-h-[60px] text-sm pr-12"
                 />
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleAddTextBlock();
-                    }}
-                    className="flex-1 h-8 text-sm"
-                  >
-                    <Plus className="h-3 w-3 mr-2" />
-                    Tekstblok toevoegen
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setShowTextForm(false);
-                      setTextBlockContent('');
-                      setTextFormatting({ bold: false, italic: false, underline: false });
-                    }}
-                    className="h-8 text-sm"
-                  >
-                    Annuleren
-                  </Button>
+                <div className="absolute top-2 right-2">
+                  <AIEnhanceButton
+                    text={textBlockContent}
+                    onEnhanced={(enhanced) => setTextBlockContent(enhanced)}
+                    context="textblock"
+                  />
                 </div>
               </div>
+              <div className="flex justify-end gap-2">
+                <Button size="sm" onClick={handleAddTextBlock}>
+                  Toevoegen
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setShowTextForm(false)}>
+                  Annuleren
+                </Button>
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Block Totals */}
         {block.items.some(item => item.type === 'product') && (
