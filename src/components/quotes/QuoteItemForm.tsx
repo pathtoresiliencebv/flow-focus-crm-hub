@@ -74,30 +74,13 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
   }, [description, quantity, unitPrice, vatRate, onAddItem, resetForm]);
 
   return (
-    <div className="space-y-3 p-3 border rounded-lg bg-blue-50">
-      <h4 className="font-medium text-gray-900 text-sm">Product/Dienst toevoegen</h4>
+    <div className="space-y-2 p-2 border rounded-lg bg-blue-50/50">
+      <h4 className="font-medium text-gray-900 text-xs">Product/Dienst toevoegen</h4>
       
-      {/* Remove form wrapper entirely to prevent form submissions */}
-      <div className="space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-1 gap-3">
-          <div>
-            <Label htmlFor="vatRate" className="text-sm">BTW %</Label>
-            <Select value={vatRate.toString()} onValueChange={(value) => setVatRate(Number(value))}>
-              <SelectTrigger className="h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">0% BTW</SelectItem>
-                <SelectItem value="9">9% BTW</SelectItem>
-                <SelectItem value="21">21% BTW</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
+      <div className="space-y-2">
         <div>
           <div className="flex items-center justify-between">
-            <Label htmlFor="description" className="text-sm">Beschrijving</Label>
+            <Label htmlFor="description" className="text-xs">Werkzaamheden</Label>
             <AIEnhanceButton 
               text={description}
               onEnhanced={setDescription}
@@ -109,46 +92,80 @@ export const QuoteItemForm: React.FC<QuoteItemFormProps> = ({ onAddItem }) => {
           <Input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Beschrijving van product of dienst"
-            className="h-8 text-sm"
+            placeholder="bijv. sloopwerk"
+            className="h-7 text-xs"
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <div>
-            <Label htmlFor="quantity" className="text-sm">Aantal</Label>
-            <Input
-              type="number"
-              value={quantity}
-              onChange={(e) => setQuantity(Number(e.target.value))}
-              min="0"
-              step="0.01"
-              className="h-8 text-sm"
-            />
-          </div>
-          <div>
-            <Label htmlFor="unitPrice" className="text-sm">Prijs per stuk (€)</Label>
+            <Label htmlFor="unitPrice" className="text-xs">Prijs per stuk (€)</Label>
             <Input
               type="number"
               value={unitPrice}
               onChange={(e) => setUnitPrice(Number(e.target.value))}
               min="0"
               step="0.01"
-              className="h-8 text-sm"
+              className="h-7 text-xs"
             />
           </div>
+          <div>
+            <Label htmlFor="quantity" className="text-xs">Aantal</Label>
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={() => setQuantity(Math.max(0, quantity - 1))}
+              >
+                -
+              </Button>
+              <Input
+                type="number"
+                value={quantity}
+                onChange={(e) => setQuantity(Number(e.target.value))}
+                min="0"
+                step="0.01"
+                className="h-7 text-xs text-center"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={() => setQuantity(quantity + 1)}
+              >
+                +
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="vatRate" className="text-xs">BTW %</Label>
+          <Select value={vatRate.toString()} onValueChange={(value) => setVatRate(Number(value))}>
+            <SelectTrigger className="h-7">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">0% BTW</SelectItem>
+              <SelectItem value="9">9% BTW</SelectItem>
+              <SelectItem value="21">21% BTW</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <Button 
           type="button" 
           onClick={handleAddItem} 
-          className="w-full h-8 text-sm"
+          className="w-full h-7 text-xs"
           onMouseDown={(e) => {
             e.preventDefault();
             e.stopPropagation();
           }}
         >
-          <Plus className="h-3 w-3 mr-2" />
+          <Plus className="h-3 w-3 mr-1" />
           Product toevoegen
         </Button>
       </div>

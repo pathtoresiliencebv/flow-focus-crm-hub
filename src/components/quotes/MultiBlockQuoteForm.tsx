@@ -754,9 +754,10 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   }, [customers, projects, blocks, totalAmount, totalVAT, adminSignature, updateCounter, previewKey]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Left side - Form */}
-      <div className="space-y-4 pr-2">
+    <div className="w-full max-w-none -mx-4 -my-4 p-2">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        {/* Left side - Form (2/3 width) */}
+        <div className="lg:col-span-2 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium">Nieuwe offerte - Meerdere blokken</h3>
           <div className={`px-3 py-1 rounded-lg text-sm font-medium ${
@@ -1135,15 +1136,28 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         </Form>
       </div>
 
-      {/* Right side - Live Preview */}
-      <div className="overflow-y-auto pl-2">
-        <div className="sticky top-0 bg-white z-10 pb-2 mb-4 border-b">
-          <h4 className="font-medium text-gray-700">Live Preview</h4>
-          <p className="text-xs text-yellow-600 font-medium">⚠️ Dit is alleen een preview - offerte wordt pas opgeslagen bij 'Offerte Opslaan'</p>
+        {/* Right side - Live Preview (1/3 width) */}
+        <div className="lg:col-span-1">
+          <div className="sticky top-2">
+            <Card className="p-2">
+              <CardHeader className="p-0 pb-2">
+                <CardTitle className="text-sm">Live Preview</CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="h-[700px] overflow-y-auto border rounded-lg">
+                  <div className="transform scale-[0.6] origin-top-left w-[167%]">
+                    <MultiBlockQuotePreview 
+                      key={previewKey} 
+                      quote={previewQuote} 
+                      attachments={attachments} 
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-        <MultiBlockQuotePreview key={previewKey} quote={previewQuote} attachments={attachments} />
       </div>
-
     </div>
   );
 };

@@ -123,17 +123,15 @@ export const PaymentTermsSelector = ({ value, onChange }: PaymentTermsSelectorPr
                     onChange={(e) => updateTerm(term.id, { description: e.target.value })}
                   />
                 </div>
-                {index > 0 && (
-                  <div className="flex-1">
-                    <Input
-                      type="number"
-                      placeholder="Dagen na start"
-                      value={term.daysAfter || ''}
-                      onChange={(e) => updateTerm(term.id, { daysAfter: parseInt(e.target.value) || 0 })}
-                      className="w-24"
-                    />
-                  </div>
-                )}
+                <div className="flex-1">
+                  <Input
+                    type="number"
+                    placeholder="Dagen (optioneel)"
+                    value={term.daysAfter || ''}
+                    onChange={(e) => updateTerm(term.id, { daysAfter: parseInt(e.target.value) || undefined })}
+                    className="w-24"
+                  />
+                </div>
                 {selectedPreset === "custom" && (
                   <Button
                     type="button"
