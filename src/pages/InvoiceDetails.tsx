@@ -2,29 +2,31 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { InvoiceDetails as InvoiceDetailsComponent } from '@/components/InvoiceDetails';
+import { MultiBlockInvoicePreview } from '@/components/invoicing/MultiBlockInvoicePreview';
 import { useInvoices } from '@/hooks/useInvoices';
 
 export function InvoiceDetailsPage() {
-  const { invoiceId } = useParams<{ invoiceId: string }>();
+  const { invoiceId, id } = useParams<{ invoiceId?: string; id?: string }>();
   const navigate = useNavigate();
   const { invoices, fetchInvoiceItems } = useInvoices();
   const [invoiceItems, setInvoiceItems] = useState<any[]>([]);
 
-  const invoice = invoices.find(inv => inv.id === invoiceId);
+  // Use either invoiceId or id parameter
+  const currentInvoiceId = invoiceId || id;
+  const invoice = invoices.find(inv => inv.id === currentInvoiceId);
 
   useEffect(() => {
-    if (invoiceId) {
-      fetchInvoiceItems(invoiceId).then(setInvoiceItems);
+    if (currentInvoiceId) {
+      fetchInvoiceItems(currentInvoiceId).then(setInvoiceItems);
     }
-  }, [invoiceId, fetchInvoiceItems]);
+  }, [currentInvoiceId, fetchInvoiceItems]);
 
   const handleBack = () => {
     navigate(-1);
   };
 
   const handleSend = (id: number) => {
-    navigate(`/invoices/${invoiceId}/send`);
+    navigate(`/invoices/${currentInvoiceId}/send`);
   };
 
   if (!invoice) {
@@ -48,30 +50,39 @@ export function InvoiceDetailsPage() {
     );
   }
 
-  // Convert database invoice to InvoiceDetails expected format
-  const invoiceDetail = {
-    id: parseInt(invoice.id.slice(-8), 16),
-    number: invoice.invoice_number,
-    customer: invoice.customer_name,
-    project: invoice.project_title || 'Geen project',
-    date: new Date(invoice.invoice_date).toLocaleDateString('nl-NL'),
-    dueDate: new Date(invoice.due_date).toLocaleDateString('nl-NL'),
-    status: invoice.status === 'concept' ? 'Concept' : 
-            invoice.status === 'verzonden' ? 'Verzonden' :
-            invoice.status === 'betaald' ? 'Betaald' : 'Verlopen',
-    amount: invoice.total_amount.toFixed(2)
+  // Convert to multi-block format for preview
+  const convertedInvoice = {
+    id: invoice.id,
+    invoice_number: invoice.invoice_number,
+    customer_name: invoice.customer_name,
+    customer_email: invoice.customer_email,
+    project_title: invoice.project_title,
+    invoice_date: invoice.invoice_date,
+    due_date: invoice.due_date,
+    status: invoice.status,
+    message: invoice.message,
+    subtotal: invoice.subtotal,
+    vat_amount: invoice.vat_amount,
+    total_amount: invoice.total_amount,
+    total_vat_amount: invoice.vat_amount,
+    blocks: invoiceItems.length > 0 ? [{
+      id: '1',
+      title: 'Factuurregels',
+      type: 'product' as const,
+      subtotal: invoice.subtotal,
+      vat_amount: invoice.vat_amount,
+      items: invoiceItems.map((item, index) => ({
+        id: (index + 1).toString(),
+        type: (item.type || 'product') as 'product' | 'textblock',
+        description: item.description || '',
+        quantity: item.quantity || 1,
+        unit_price: item.unit_price || 0,
+        vat_rate: item.vat_rate || 21,
+        total: item.total || 0,
+        formatting: item.item_formatting
+      }))
+    }] : []
   };
-
-  // Convert invoice items to expected format
-  const convertedInvoiceItems = invoiceItems.map((item, index) => ({
-    id: index + 1,
-    invoiceId: 1,
-    description: item.description,
-    quantity: item.quantity || 1,
-    price: (item.unit_price || 0).toFixed(2),
-    vatRate: item.vat_rate,
-    total: (item.total || 0).toFixed(2)
-  }));
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -90,12 +101,15 @@ export function InvoiceDetailsPage() {
         </div>
         
         <div className="bg-card rounded-lg shadow-sm border p-6">
-          <InvoiceDetailsComponent
-            invoice={invoiceDetail}
-            items={convertedInvoiceItems}
-            onSend={handleSend}
-            onClose={handleBack}
-          />
+          <MultiBlockInvoicePreview invoice={convertedInvoice} />
+          <div className="mt-6 flex justify-between">
+            <Button variant="outline" onClick={handleBack}>
+              Terug
+            </Button>
+            <Button onClick={() => handleSend(1)}>
+              Versturen
+            </Button>
+          </div>
         </div>
       </div>
     </div>

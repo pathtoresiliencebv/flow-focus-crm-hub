@@ -45,6 +45,7 @@ function App() {
                   <Route path="/quotes/:quoteId/preview" element={<QuotePreview />} />
                   <Route path="/quotes/:quoteId/send" element={<QuoteSend />} />
                   <Route path="/invoices/new" element={<NewInvoice />} />
+                  <Route path="/invoices/:id" element={<InvoiceDetailsPage />} />
                   <Route path="/invoices/:invoiceId/details" element={<InvoiceDetailsPage />} />
                   <Route path="/invoices/:invoiceId/send" element={<InvoiceSend />} />
                   <Route path="/settings" element={<Settings />} />
