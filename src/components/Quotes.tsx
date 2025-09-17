@@ -16,13 +16,16 @@ import { MultiBlockQuoteForm } from './quotes/MultiBlockQuoteForm';
 
 export function Quotes() {
   const navigate = useNavigate();
-  const { customers, projects } = useCrmStore();
-  const { quotes, loading, fetchQuotes, deleteQuote, restoreQuote, permanentDeleteQuote, duplicateQuote } = useQuotes();
+  const { customers, projects, isLoading: crmLoading } = useCrmStore();
+  const { quotes, loading: quotesLoading, fetchQuotes, deleteQuote, restoreQuote, permanentDeleteQuote, duplicateQuote } = useQuotes();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [converting, setConverting] = useState(false);
   const [activeTab, setActiveTab] = useState("active");
   const [showNewQuoteForm, setShowNewQuoteForm] = useState(window.location.pathname === "/quotes/new");
+
+  // Combined loading state
+  const loading = quotesLoading || crmLoading;
 
   const activeQuotes = quotes.filter(quote => !quote.is_archived);
   const archivedQuotes = quotes.filter(quote => quote.is_archived);

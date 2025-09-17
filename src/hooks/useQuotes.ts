@@ -10,6 +10,9 @@ export const useQuotes = () => {
 
   const fetchQuotes = async (includeArchived = false) => {
     try {
+      setLoading(true);
+      console.log('Fetching quotes, includeArchived:', includeArchived);
+      
       let query = supabase
         .from('quotes')
         .select('*');
@@ -22,18 +25,24 @@ export const useQuotes = () => {
 
       if (error) {
         console.error('Error fetching quotes:', error);
+        toast({
+          title: "Fout",
+          description: "Kon offertes niet laden.",
+          variant: "destructive",
+        });
         return;
       }
 
       if (data) {
-        console.log('Raw quotes data from database:', data);
+        console.log(`Processing ${data.length} quotes from database`);
         
-        const quotesWithBlocks = data.map(quote => {
+        const quotesWithBlocks = data.map((quote, index) => {
+          console.log(`Processing quote ${index + 1}/${data.length}:`, quote.quote_number);
+          
           let blocks: QuoteBlock[] = [];
-          console.log('Processing quote:', quote.id, 'items:', quote.items);
           
           try {
-            // Parse the items from Json to actual objects
+            // Parse the items efficiently
             let parsedItems: any[] = [];
             if (quote.items) {
               if (typeof quote.items === 'string') {
@@ -47,39 +56,39 @@ export const useQuotes = () => {
               // Check if items contain blocks structure
               if (parsedItems[0] && typeof parsedItems[0] === 'object' && parsedItems[0].items) {
                 // New blocks structure
-                blocks = parsedItems.map((item: any) => ({
-                  id: item.id || crypto.randomUUID(),
+                blocks = parsedItems.map((item: any, blockIndex: number) => ({
+                  id: item.id || `block-${quote.id}-${blockIndex}`,
                   title: item.title || 'Untitled Block',
                   type: item.type || 'product',
-                  items: (item.items || []).map((blockItem: any) => ({
-                    id: blockItem.id || crypto.randomUUID(),
+                  items: (item.items || []).map((blockItem: any, itemIndex: number) => ({
+                    id: blockItem.id || `item-${quote.id}-${blockIndex}-${itemIndex}`,
                     type: blockItem.type || 'product',
                     description: blockItem.description || '',
-                    quantity: blockItem.quantity,
-                    unit_price: blockItem.unit_price,
+                    quantity: blockItem.quantity || 0,
+                    unit_price: blockItem.unit_price || 0,
                     vat_rate: blockItem.vat_rate || 21,
-                    total: blockItem.total,
+                    total: blockItem.total || 0,
                     formatting: blockItem.formatting
                   })),
                   subtotal: item.subtotal || 0,
                   vat_amount: item.vat_amount || 0,
-                  order_index: item.order_index || 0,
+                  order_index: item.order_index || blockIndex,
                   content: item.content
                 }));
               } else {
                 // Old flat structure - convert to single block
                 blocks = [{
-                  id: crypto.randomUUID(),
+                  id: `legacy-block-${quote.id}`,
                   title: 'Items',
                   type: 'product',
-                  items: parsedItems.map((item: any) => ({
-                    id: item.id || crypto.randomUUID(),
+                  items: parsedItems.map((item: any, itemIndex: number) => ({
+                    id: item.id || `legacy-item-${quote.id}-${itemIndex}`,
                     type: item.type || 'product',
                     description: item.description || '',
-                    quantity: item.quantity,
-                    unit_price: item.unit_price,
+                    quantity: item.quantity || 0,
+                    unit_price: item.unit_price || 0,
                     vat_rate: item.vat_rate || 21,
-                    total: item.total,
+                    total: item.total || 0,
                     formatting: item.formatting
                   })),
                   subtotal: quote.subtotal || 0,
@@ -93,23 +102,31 @@ export const useQuotes = () => {
             blocks = [];
           }
 
-          const processedQuote = {
+          return {
             ...quote,
             blocks,
             items: quote.items, // Keep raw items for service compatibility
             total_vat_amount: quote.vat_amount || 0
           } as Quote;
-          
-          console.log('Processed quote:', processedQuote.id, 'with blocks:', processedQuote.blocks);
-          return processedQuote;
         });
         
+        console.log(`Successfully processed ${quotesWithBlocks.length} quotes`);
         setQuotes(quotesWithBlocks);
+      } else {
+        console.log('No quotes data received');
+        setQuotes([]);
       }
     } catch (error) {
       console.error('Error fetching quotes:', error);
+      toast({
+        title: "Fout",
+        description: "Er is een fout opgetreden bij het laden van offertes.",
+        variant: "destructive",
+      });
+      setQuotes([]);
     } finally {
       setLoading(false);
+      console.log('Quotes loading completed');
     }
   };
 
