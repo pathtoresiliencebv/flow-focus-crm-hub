@@ -27,7 +27,9 @@ export function NewQuote() {
           <h1 className="text-2xl font-bold">Nieuwe offerte aanmaken</h1>
         </div>
         
-        <MultiBlockQuoteForm onClose={handleClose} />
+        <div className="bg-card rounded-lg shadow-sm border p-6">
+          <MultiBlockQuoteForm onClose={handleClose} />
+        </div>
       </div>
     </div>
   );

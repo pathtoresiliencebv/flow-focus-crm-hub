@@ -122,7 +122,9 @@ export const Invoicing = () => {
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold">Nieuwe factuur aanmaken</h1>
         </div>
-        <MultiBlockInvoiceForm onClose={handleCloseNewInvoice} />
+        <div className="bg-card rounded-lg shadow-sm border p-6">
+          <MultiBlockInvoiceForm onClose={handleCloseNewInvoice} />
+        </div>
       </div>
     );
   }
