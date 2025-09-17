@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useCrmStore } from '@/hooks/useCrmStore';
 import { MultiBlockInvoicePreview } from './MultiBlockInvoicePreview';
+import { InvoiceBlockForm } from './InvoiceBlockForm';
 import { supabase } from '@/integrations/supabase/client';
 
 interface InvoiceItem {
@@ -573,129 +574,20 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
                 <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
                   {blocks.map((block, index) => (
                     <Draggable key={block.id} draggableId={block.id} index={index}>
-                      {(provided) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          className="border rounded-lg p-4 bg-white"
-                        >
-                          <div className="flex items-center gap-2 mb-3">
-                            <div {...provided.dragHandleProps}>
-                              <GripVertical className="h-4 w-4 text-gray-400" />
-                            </div>
-                            <Input
-                              value={block.title}
-                              onChange={(e) => updateBlock(block.id, { title: e.target.value })}
-                              className="flex-1"
-                              placeholder="Blok titel"
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeBlock(block.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-
-                          {block.type === 'textblock' ? (
-                            <Textarea
-                              value={block.content || ''}
-                              onChange={(e) => updateBlock(block.id, { content: e.target.value })}
-                              placeholder="Voer uw tekst in..."
-                              rows={4}
-                            />
-                          ) : (
-                            <div className="space-y-2">
-                              {block.items.map(item => (
-                                <div key={item.id} className="grid grid-cols-12 gap-2 items-center">
-                                  <div className="col-span-5">
-                                    <Textarea
-                                      value={item.description}
-                                      onChange={(e) => updateItem(block.id, item.id, { description: e.target.value })}
-                                      placeholder="Beschrijving"
-                                      rows={2}
-                                    />
-                                  </div>
-                                  <div className="col-span-2">
-                                    <Input
-                                      type="number"
-                                      value={item.quantity || ''}
-                                      onChange={(e) => updateItem(block.id, item.id, { quantity: parseInt(e.target.value) || 0 })}
-                                      placeholder="Aantal"
-                                    />
-                                  </div>
-                                  <div className="col-span-2">
-                                    <Input
-                                      type="number"
-                                      step="0.01"
-                                      value={item.unit_price || ''}
-                                      onChange={(e) => updateItem(block.id, item.id, { unit_price: parseFloat(e.target.value) || 0 })}
-                                      placeholder="Prijs"
-                                    />
-                                  </div>
-                                  <div className="col-span-1">
-                                    <Select
-                                      value={item.vat_rate.toString()}
-                                      onValueChange={(value) => updateItem(block.id, item.id, { vat_rate: parseInt(value) })}
-                                    >
-                                      <SelectTrigger>
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="0">0%</SelectItem>
-                                        <SelectItem value="9">9%</SelectItem>
-                                        <SelectItem value="21">21%</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  <div className="col-span-1">
-                                    <Input
-                                      type="number"
-                                      value={(item.total || 0).toFixed(2)}
-                                      readOnly
-                                      className="bg-gray-50"
-                                    />
-                                  </div>
-                                  <div className="col-span-1">
-                                    <Button
-                                      type="button"
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => removeItemFromBlock(block.id, item.id)}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </div>
-                              ))}
-                              
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => addItemToBlock(block.id, 'product')}
-                                className="w-full mt-2"
-                              >
-                                <Plus className="h-4 w-4 mr-1" />
-                                Product toevoegen
-                              </Button>
-                            </div>
-                          )}
-
-                          {/* Block totals for product blocks */}
-                          {block.type === 'product' && block.items.length > 0 && (
-                            <div className="mt-3 pt-3 border-t flex justify-end">
-                              <div className="text-sm space-y-1">
-                                <div>Subtotaal: €{block.subtotal.toFixed(2)}</div>
-                                <div>BTW: €{block.vat_amount.toFixed(2)}</div>
-                                <div className="font-medium">Totaal: €{(block.subtotal + block.vat_amount).toFixed(2)}</div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                       {(provided) => (
+                         <div ref={provided.innerRef} {...provided.draggableProps}>
+                           <InvoiceBlockForm
+                             block={block}
+                             onUpdateBlock={(updatedBlock) => {
+                               setBlocks(blocks.map(b => b.id === updatedBlock.id ? updatedBlock : b));
+                               setUpdateCounter(prev => prev + 1);
+                             }}
+                             onDeleteBlock={() => removeBlock(block.id)}
+                             canDelete={blocks.length > 1}
+                             dragHandleProps={provided.dragHandleProps}
+                           />
+                         </div>
+                       )}
                     </Draggable>
                   ))}
                   {provided.placeholder}
@@ -737,6 +629,41 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
           </Button>
           
           <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={async () => {
+                if (invoiceId) {
+                  try {
+                    const { data, error } = await supabase.functions.invoke('generate-invoice-pdf', {
+                      body: { invoiceId }
+                    });
+                    if (error) throw error;
+                    toast({
+                      title: "PDF gegenereerd",
+                      description: "PDF is succesvol aangemaakt.",
+                    });
+                  } catch (error) {
+                    console.error('Error generating PDF:', error);
+                    toast({
+                      title: "Fout bij PDF generatie",
+                      description: "Er is een fout opgetreden bij het genereren van de PDF.",
+                      variant: "destructive",
+                    });
+                  }
+                } else {
+                  toast({
+                    title: "Factuur niet opgeslagen",
+                    description: "Sla eerst de factuur op voordat je een PDF genereert.",
+                    variant: "destructive",
+                  });
+                }
+              }}
+              disabled={!invoiceId}
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              PDF
+            </Button>
             <Button
               type="button"
               variant="outline"

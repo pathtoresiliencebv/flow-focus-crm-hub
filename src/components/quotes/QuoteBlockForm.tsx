@@ -10,6 +10,7 @@ import { QuoteItemDisplay } from './QuoteItemDisplay';
 import { QuoteItem, QuoteBlock } from '@/types/quote';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AIEnhanceButton } from '@/components/ui/ai-enhance-button';
 import { useToast } from '@/hooks/use-toast';
 
@@ -274,48 +275,244 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
       </CardHeader>
 
       <CardContent className="space-y-3">
-        {/* Items List */}
-        {block.items.length > 0 && (
-          <div className="space-y-2">
-            <h5 className="font-medium text-gray-700 text-sm">Items in dit blok:</h5>
-            {block.items.map((item, index) => (
-              <QuoteItemDisplay
-                key={item.id || `item-${index}`}
-                item={item}
-                onDelete={() => handleDeleteItem(index)}
-              />
-            ))}
+        {/* Items List - Compact Grid Layout */}
+        {block.items.map((item, index) => (
+          <div key={item.id || `item-${index}`} className="grid grid-cols-12 gap-2 items-center py-2 border-b border-border/50 last:border-b-0">
+            {item.type === 'product' ? (
+              <>
+                <div className="col-span-5">
+                  <Input
+                    value={item.description}
+                    onChange={(e) => {
+                      const updatedItems = [...block.items];
+                      updatedItems[index] = { ...item, description: e.target.value };
+                      const subtotal = calculateBlockSubtotal(updatedItems);
+                      const vatAmount = calculateBlockVAT(updatedItems);
+                      onUpdateBlock({
+                        ...block,
+                        items: updatedItems,
+                        subtotal,
+                        vat_amount: vatAmount
+                      });
+                    }}
+                    placeholder="Beschrijving"
+                    className="h-9 text-sm"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Input
+                    type="number"
+                    value={item.quantity || ''}
+                    onChange={(e) => {
+                      const quantity = Number(e.target.value) || 0;
+                      const total = quantity * (item.unit_price || 0);
+                      const updatedItems = [...block.items];
+                      updatedItems[index] = { ...item, quantity, total };
+                      const subtotal = calculateBlockSubtotal(updatedItems);
+                      const vatAmount = calculateBlockVAT(updatedItems);
+                      onUpdateBlock({
+                        ...block,
+                        items: updatedItems,
+                        subtotal,
+                        vat_amount: vatAmount
+                      });
+                    }}
+                    placeholder="Aantal"
+                    className="h-9 text-sm"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Input
+                    type="number"
+                    value={item.unit_price || ''}
+                    onChange={(e) => {
+                      const unit_price = Number(e.target.value) || 0;
+                      const total = (item.quantity || 0) * unit_price;
+                      const updatedItems = [...block.items];
+                      updatedItems[index] = { ...item, unit_price, total };
+                      const subtotal = calculateBlockSubtotal(updatedItems);
+                      const vatAmount = calculateBlockVAT(updatedItems);
+                      onUpdateBlock({
+                        ...block,
+                        items: updatedItems,
+                        subtotal,
+                        vat_amount: vatAmount
+                      });
+                    }}
+                    placeholder="Prijs"
+                    className="h-9 text-sm"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                <div className="col-span-1">
+                  <Select
+                    value={item.vat_rate?.toString() || '21'}
+                    onValueChange={(value) => {
+                      const vat_rate = Number(value);
+                      const updatedItems = [...block.items];
+                      updatedItems[index] = { ...item, vat_rate };
+                      const subtotal = calculateBlockSubtotal(updatedItems);
+                      const vatAmount = calculateBlockVAT(updatedItems);
+                      onUpdateBlock({
+                        ...block,
+                        items: updatedItems,
+                        subtotal,
+                        vat_amount: vatAmount
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">0%</SelectItem>
+                      <SelectItem value="9">9%</SelectItem>
+                      <SelectItem value="21">21%</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="col-span-1 text-right">
+                  <span className="text-sm font-medium">€{(item.total || 0).toFixed(2)}</span>
+                </div>
+                <div className="col-span-1 text-right">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteItem(index)}
+                    className="text-destructive hover:text-destructive h-6 w-6 p-0"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="col-span-10">
+                  <div className="space-y-2">
+                    <div className="flex gap-1">
+                      <Button
+                        type="button"
+                        variant={item.formatting?.bold ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          const updatedItems = [...block.items];
+                          updatedItems[index] = {
+                            ...item,
+                            formatting: {
+                              ...item.formatting,
+                              bold: !item.formatting?.bold
+                            }
+                          };
+                          onUpdateBlock({ ...block, items: updatedItems });
+                        }}
+                        className="h-7 w-7 p-0"
+                      >
+                        <strong>B</strong>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={item.formatting?.italic ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          const updatedItems = [...block.items];
+                          updatedItems[index] = {
+                            ...item,
+                            formatting: {
+                              ...item.formatting,
+                              italic: !item.formatting?.italic
+                            }
+                          };
+                          onUpdateBlock({ ...block, items: updatedItems });
+                        }}
+                        className="italic h-7 w-7 p-0"
+                      >
+                        I
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={item.formatting?.underline ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => {
+                          const updatedItems = [...block.items];
+                          updatedItems[index] = {
+                            ...item,
+                            formatting: {
+                              ...item.formatting,
+                              underline: !item.formatting?.underline
+                            }
+                          };
+                          onUpdateBlock({ ...block, items: updatedItems });
+                        }}
+                        className="underline h-7 w-7 p-0"
+                      >
+                        U
+                      </Button>
+                    </div>
+                    <Textarea
+                      value={item.description}
+                      onChange={(e) => {
+                        const updatedItems = [...block.items];
+                        updatedItems[index] = { ...item, description: e.target.value };
+                        onUpdateBlock({ ...block, items: updatedItems });
+                      }}
+                      placeholder="Tekst invoeren..."
+                      className="min-h-[60px] text-sm"
+                      style={{
+                        fontWeight: item.formatting?.bold ? 'bold' : 'normal',
+                        fontStyle: item.formatting?.italic ? 'italic' : 'normal',
+                        textDecoration: item.formatting?.underline ? 'underline' : 'none'
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="col-span-2 text-right">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDeleteItem(index)}
+                    className="text-destructive hover:text-destructive h-6 w-6 p-0"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
-        )}
+        ))}
 
         {/* Add Item Options */}
         <div className="space-y-3">
-          <div className="flex gap-2">
+          <div className="flex gap-2 pt-2">
             <Button
               type="button"
               variant="outline"
+              size="sm"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 setShowProductForm(!showProductForm);
               }}
-              className="flex-1 h-8 text-sm"
+              className="h-8 text-sm"
             >
-              <Plus className="h-3 w-3 mr-2" />
-              Product/Dienst toevoegen
+              <Plus className="h-3 w-3 mr-1" />
+              Product
             </Button>
             <Button
               type="button"
               variant="outline"
+              size="sm"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 setShowTextForm(!showTextForm);
               }}
-              className="flex-1 h-8 text-sm"
+              className="h-8 text-sm"
             >
-              <Plus className="h-3 w-3 mr-2" />
-              Tekstblok toevoegen
+              <Plus className="h-3 w-3 mr-1" />
+              Tekst
             </Button>
           </div>
 
@@ -415,27 +612,22 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
 
         {/* Block Totals */}
         {block.items.some(item => item.type === 'product') && (
-          <>
-            <Separator />
-            <div className="flex justify-end">
-              <div className="w-64 space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotaal blok:</span>
-                  <span className="font-medium">€{(block.subtotal || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">BTW:</span>
-                  <span className="font-medium">€{(block.vat_amount || 0).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between py-1 border-t">
-                  <span className="font-semibold">Totaal blok:</span>
-                  <span className="font-semibold text-smans-primary">
-                    €{((block.subtotal || 0) + (block.vat_amount || 0)).toFixed(2)}
-                  </span>
-                </div>
+          <div className="flex justify-end pt-2 border-t">
+            <div className="w-48 space-y-1 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Subtotaal:</span>
+                <span className="font-medium">€{(block.subtotal || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">BTW:</span>
+                <span className="font-medium">€{(block.vat_amount || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between py-1 border-t font-semibold">
+                <span>Totaal:</span>
+                <span className="text-primary">€{((block.subtotal || 0) + (block.vat_amount || 0)).toFixed(2)}</span>
               </div>
             </div>
-          </>
+          </div>
         )}
       </CardContent>
     </Card>
