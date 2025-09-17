@@ -295,6 +295,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
               type="button"
               variant="outline"
               onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 setShowProductForm(!showProductForm);
               }}
@@ -307,6 +308,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
               type="button"
               variant="outline"
               onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
                 setShowTextForm(!showTextForm);
               }}
@@ -336,6 +338,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                     variant={textFormatting.bold ? "default" : "outline"}
                     size="sm"
                     onClick={(e) => {
+                      e.preventDefault();
                       e.stopPropagation();
                       toggleTextFormatting('bold');
                     }}
@@ -348,6 +351,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                     variant={textFormatting.italic ? "default" : "outline"}
                     size="sm"
                     onClick={(e) => {
+                      e.preventDefault();
                       e.stopPropagation();
                       toggleTextFormatting('italic');
                     }}
@@ -360,6 +364,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                     variant={textFormatting.underline ? "default" : "outline"}
                     size="sm"
                     onClick={(e) => {
+                      e.preventDefault();
                       e.stopPropagation();
                       toggleTextFormatting('underline');
                     }}
@@ -379,6 +384,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                   <Button
                     type="button"
                     onClick={(e) => {
+                      e.preventDefault();
                       e.stopPropagation();
                       handleAddTextBlock();
                     }}
@@ -391,6 +397,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                     type="button"
                     variant="outline"
                     onClick={(e) => {
+                      e.preventDefault();
                       e.stopPropagation();
                       setShowTextForm(false);
                       setTextBlockContent('');

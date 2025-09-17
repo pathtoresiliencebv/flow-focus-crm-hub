@@ -631,19 +631,18 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     console.log('Customer added:', customer);
     
     try {
-      // Update the customers query cache immediately
-      queryClient.setQueryData(['customers'], (oldData: any[]) => {
-        if (!oldData) return [customer];
-        return [customer, ...oldData];
-      });
+      // Force invalidate and refetch customers query for immediate UI update
+      await queryClient.invalidateQueries({ queryKey: ['customers'] });
       
-      // Immediately set the customer in the form
-      form.setValue('customer', customer.id);
-      
-      // Set email if available
-      if (customer.email) {
-        form.setValue('customerEmail', customer.email);
-      }
+      // Small delay to ensure query refetch completes then set customer
+      setTimeout(() => {
+        form.setValue('customer', customer.id);
+        
+        // Set email if available
+        if (customer.email) {
+          form.setValue('customerEmail', customer.email);
+        }
+      }, 200);
       
       setShowCustomerAdd(false);
       
