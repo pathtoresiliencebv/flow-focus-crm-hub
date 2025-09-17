@@ -32,6 +32,36 @@ export const InvoiceFinalizationDialog = ({
     projectTitle: invoice?.project_title || ""
   });
 
+  const handleCreatePaymentLink = async () => {
+    if (!invoice) return;
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-invoice-payment', {
+        body: { invoice_id: invoice.id }
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.open(data.url, '_blank');
+        toast({
+          title: "Betaallink aangemaakt",
+          description: "De Stripe betaallink is geopend in een nieuw tabblad.",
+        });
+      }
+    } catch (error) {
+      console.error('Error creating payment link:', error);
+      toast({
+        title: "Fout bij betaallink",
+        description: "Er is een fout opgetreden bij het aanmaken van de betaallink.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleFinalize = async () => {
     if (!invoice) return;
 
@@ -182,6 +212,14 @@ export const InvoiceFinalizationDialog = ({
           <Button onClick={handleFinalize} disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Finaliseren
+          </Button>
+          <Button 
+            variant="secondary" 
+            onClick={handleCreatePaymentLink}
+            disabled={loading || !invoice?.customer_email}
+          >
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Betaallink Maken
           </Button>
           <Button variant="outline" onClick={onClose}>
             Annuleren

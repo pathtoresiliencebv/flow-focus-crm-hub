@@ -1,7 +1,6 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@14.21.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import Stripe from "https://esm.sh/stripe@18.5.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,105 +13,88 @@ serve(async (req) => {
   }
 
   try {
-    const { invoiceData } = await req.json();
+    const { invoice_id } = await req.json();
     
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2023-10-16",
-    });
+    if (!invoice_id) {
+      throw new Error("Invoice ID is required");
+    }
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Validate invoice exists and is unpaid
+    // Get invoice details
     const { data: invoice, error: invoiceError } = await supabase
-      .from("invoices")
-      .select("*")
-      .eq("invoice_number", invoiceData.invoiceNumber)
+      .from('invoices')
+      .select('*')
+      .eq('id', invoice_id)
       .single();
 
     if (invoiceError || !invoice) {
-      throw new Error(`Invoice not found: ${invoiceData.invoiceNumber}`);
+      throw new Error("Invoice not found");
     }
 
-    if (invoice.status === 'betaald') {
-      throw new Error("Invoice is already paid");
+    // Initialize Stripe
+    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+      apiVersion: "2025-08-27.basil",
+    });
+
+    // Check if customer exists in Stripe
+    let customerId = null;
+    if (invoice.customer_email) {
+      const customers = await stripe.customers.list({ 
+        email: invoice.customer_email, 
+        limit: 1 
+      });
+      
+      if (customers.data.length > 0) {
+        customerId = customers.data[0].id;
+      } else {
+        // Create new customer
+        const customer = await stripe.customers.create({
+          email: invoice.customer_email,
+          name: invoice.customer_name,
+        });
+        customerId = customer.id;
+      }
     }
 
-    // Create payment link for invoice
-    const paymentLink = await stripe.paymentLinks.create({
+    // Create Stripe payment session
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      customer_email: customerId ? undefined : invoice.customer_email,
       line_items: [
         {
           price_data: {
-            currency: "eur",
+            currency: 'eur',
             product_data: {
-              name: `Factuur ${invoiceData.invoiceNumber}`,
-              description: `Betaling voor factuur ${invoiceData.invoiceNumber} - ${invoiceData.customerName}`,
+              name: `Factuur ${invoice.invoice_number}`,
+              description: invoice.project_title || 'Factuur betaling',
             },
-            unit_amount: Math.round(invoiceData.total * 100), // Convert to cents
+            unit_amount: Math.round(invoice.total_amount * 100), // Convert to cents
           },
           quantity: 1,
         },
       ],
+      mode: "payment",
+      success_url: `${req.headers.get("origin")}/invoices/${invoice_id}?payment=success`,
+      cancel_url: `${req.headers.get("origin")}/invoices/${invoice_id}?payment=cancelled`,
       metadata: {
         invoice_id: invoice.id,
-        invoice_number: invoiceData.invoiceNumber,
-        customer_name: invoiceData.customerName,
-        customer_email: invoiceData.customerEmail || '',
-      },
-      after_completion: {
-        type: 'redirect',
-        redirect: {
-          url: `${Deno.env.get("SITE_URL") || 'https://smanscrm.nl'}/payment/success?invoice=${invoiceData.invoiceNumber}`
-        }
-      },
-      automatic_tax: {
-        enabled: true,
+        invoice_number: invoice.invoice_number,
       },
     });
 
-    // Create payment record in database
-    const { error: paymentError } = await supabase
-      .from("invoice_payments")
-      .insert({
-        invoice_id: invoice.id,
-        invoice_number: invoiceData.invoiceNumber,
-        amount: invoiceData.total,
-        payment_method: 'stripe',
-        stripe_payment_id: paymentLink.id,
-        status: 'pending',
-        metadata: {
-          stripe_payment_link_id: paymentLink.id,
-          customer_email: invoiceData.customerEmail
-        }
-      });
-
-    if (paymentError) {
-      console.error("Error creating payment record:", paymentError);
-      // Continue anyway, webhook will handle the payment tracking
-    }
-
-    // Update invoice status to 'verzonden' if not already
-    if (invoice.status === 'concept') {
-      await supabase
-        .from("invoices")
-        .update({ status: 'verzonden', updated_at: new Date().toISOString() })
-        .eq("id", invoice.id);
-    }
-
-    return new Response(JSON.stringify({ 
-      paymentUrl: paymentLink.url,
-      paymentLinkId: paymentLink.id,
-      invoiceId: invoice.id,
-      status: 'payment_link_created'
-    }), {
+    return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
-    console.error("Error creating payment link:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error("Error creating payment session:", error);
+    return new Response(JSON.stringify({ 
+      error: error instanceof Error ? error.message : "Payment session creation failed" 
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

@@ -26,15 +26,37 @@ export const FileAttachmentsManager = ({ value, onChange }: FileAttachmentsManag
   const handleFileUpload = useCallback(async (files: any[]) => {
     setUploading(true);
     try {
+      const { supabase } = await import("@/integrations/supabase/client");
       const newAttachments: QuoteAttachment[] = [];
 
       for (const file of files) {
-        // In een echte implementatie zou je hier de file uploaden naar Supabase Storage
-        // Voor nu simuleren we dit met een URL
+        // Generate unique filename
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `quotes/${fileName}`;
+
+        // Upload to Supabase Storage
+        const { data, error } = await supabase.storage
+          .from('quote-attachments')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (error) {
+          console.error('Storage upload error:', error);
+          throw new Error(`Fout bij uploaden van ${file.name}: ${error.message}`);
+        }
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('quote-attachments')
+          .getPublicUrl(filePath);
+
         const attachment: QuoteAttachment = {
           id: crypto.randomUUID(),
           name: file.name,
-          url: URL.createObjectURL(file), // Tijdelijke URL voor demo
+          url: urlData.publicUrl,
           size: file.size,
           type: file.type,
           uploadedAt: new Date().toISOString()
@@ -46,13 +68,13 @@ export const FileAttachmentsManager = ({ value, onChange }: FileAttachmentsManag
       
       toast({
         title: "Bestanden toegevoegd",
-        description: `${newAttachments.length} bestand(en) succesvol toegevoegd aan de offerte.`,
+        description: `${newAttachments.length} bestand(en) succesvol geüpload naar de offerte.`,
       });
     } catch (error) {
       console.error('Error uploading files:', error);
       toast({
         title: "Upload mislukt",
-        description: "Er is een fout opgetreden bij het uploaden van de bestanden.",
+        description: error instanceof Error ? error.message : "Er is een fout opgetreden bij het uploaden van de bestanden.",
         variant: "destructive",
       });
     } finally {
@@ -90,12 +112,21 @@ export const FileAttachmentsManager = ({ value, onChange }: FileAttachmentsManag
         <CardTitle>Bijlagen</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <FileUpload
-          onFilesSelected={handleFileUpload}
-          multiple
-          accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif"
-          maxSize={10 * 1024 * 1024} // 10MB max per file
-        />
+        {uploading ? (
+          <div className="border-2 border-dashed border-muted rounded-lg p-6 text-center">
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+              Bestanden uploaden...
+            </div>
+          </div>
+        ) : (
+          <FileUpload
+            onFilesSelected={handleFileUpload}
+            multiple
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.gif"
+            maxSize={10 * 1024 * 1024} // 10MB max per file
+          />
+        )}
 
         {value.length > 0 && (
           <div className="space-y-2">
