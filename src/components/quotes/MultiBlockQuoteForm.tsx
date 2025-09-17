@@ -722,9 +722,9 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   }, [customers, projects, blocks, totalAmount, totalVAT, adminSignature, updateCounter, previewKey]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-h-[80vh] overflow-hidden">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Left side - Form */}
-      <div className="space-y-4 overflow-y-auto pr-2">
+      <div className="space-y-4 pr-2">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium">Nieuwe offerte - Meerdere blokken</h3>
           <div className={`px-3 py-1 rounded-lg text-sm font-medium ${

@@ -12,6 +12,7 @@ import { QuotesTable } from './quotes/QuotesTable';
 import { Quote } from '@/types/quote';
 import { convertQuoteToInvoice } from '@/services/quoteToInvoiceService';
 import { supabase } from "@/integrations/supabase/client";
+import { MultiBlockQuoteForm } from './quotes/MultiBlockQuoteForm';
 
 export function Quotes() {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ export function Quotes() {
   const [searchTerm, setSearchTerm] = useState("");
   const [converting, setConverting] = useState(false);
   const [activeTab, setActiveTab] = useState("active");
+  const [showNewQuoteForm, setShowNewQuoteForm] = useState(window.location.pathname === "/quotes/new");
 
   const activeQuotes = quotes.filter(quote => !quote.is_archived);
   const archivedQuotes = quotes.filter(quote => quote.is_archived);
@@ -94,6 +96,11 @@ export function Quotes() {
     }
   };
 
+  const handleCloseNewQuote = () => {
+    setShowNewQuoteForm(false);
+    navigate('/');
+  };
+
   const formCustomers = customers.map(customer => ({
     id: customer.id,
     name: customer.name,
@@ -109,6 +116,17 @@ export function Quotes() {
 
   if (loading) {
     return <div className="flex h-screen items-center justify-center">Loading...</div>;
+  }
+
+  if (showNewQuoteForm) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-bold">Nieuwe offerte aanmaken</h1>
+        </div>
+        <MultiBlockQuoteForm onClose={handleCloseNewQuote} />
+      </div>
+    );
   }
 
   return (
