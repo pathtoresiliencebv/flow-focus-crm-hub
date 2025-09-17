@@ -294,7 +294,10 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
             <Button
               type="button"
               variant="outline"
-              onClick={() => setShowProductForm(!showProductForm)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowProductForm(!showProductForm);
+              }}
               className="flex-1 h-8 text-sm"
             >
               <Plus className="h-3 w-3 mr-2" />

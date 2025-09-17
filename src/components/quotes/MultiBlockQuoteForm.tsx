@@ -629,10 +629,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     console.log('Customer added:', customer);
     
     try {
-      // Wait a bit for the database to be updated and customers to refetch
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Set the customer in the form
+      // Immediately set the customer in the form
       form.setValue('customer', customer.id);
       
       // Set email if available
