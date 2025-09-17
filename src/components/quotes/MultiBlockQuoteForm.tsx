@@ -56,6 +56,20 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
 }) => {
   const { customers, projects, isLoading: crmLoading, addCustomer } = useCrmStore();
   const { toast } = useToast();
+  
+  // Early return with loading state if CRM data is still loading
+  if (crmLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center py-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Gegevens laden...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [blocks, setBlocks] = useState<QuoteBlock[]>([
@@ -98,6 +112,9 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
 
   // Initialize form with existing quote data or generate new quote number
   useEffect(() => {
+    // Only proceed if CRM data is loaded
+    if (crmLoading) return;
+    
     if (existingQuote) {
       // Load existing quote data
       form.reset({
@@ -120,21 +137,32 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         setAdminSignature(existingQuote.admin_signature_data);
       }
     } else {
-      // Generate new quote number for new quotes
+      // Generate new quote number for new quotes with timeout
       const generateQuoteNumber = async () => {
         try {
-          const { data, error } = await supabase.rpc('generate_quote_number');
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout')), 5000)
+          );
+          
+          const quoteNumberPromise = supabase.rpc('generate_quote_number');
+          
+          const { data, error } = await Promise.race([quoteNumberPromise, timeoutPromise]) as any;
+          
           if (data && !error) {
             form.setValue('quoteNumber', data);
+          } else {
+            throw new Error(error?.message || 'Database error');
           }
         } catch (err) {
           console.error('Error generating quote number:', err);
-          form.setValue('quoteNumber', `OFF-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`);
+          // Generate fallback quote number
+          const fallbackNumber = `OFF-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`;
+          form.setValue('quoteNumber', fallbackNumber);
         }
       };
       generateQuoteNumber();
     }
-  }, [form, existingQuote]);
+  }, [form, existingQuote, crmLoading]);
 
   // Auto-save functionality
   const watchedFields = form.watch();
@@ -355,22 +383,26 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     }
   }, [customers, projects, adminSignature, toast, blocks, onClose]);
 
-  // Auto-save after 3 seconds of inactivity
+  // Auto-save after 5 seconds of inactivity (disabled for new quotes initially)
   useEffect(() => {
-    if (!saveAsDraft) return; // Wait for saveAsDraft to be defined
+    if (!saveAsDraft || crmLoading) return; // Wait for dependencies
     
     const saveTimer = setTimeout(() => {
       const formValues = form.getValues();
       
-      // Only auto-save if we have basic required data
-      if (formValues.customer && formValues.quoteNumber && blocks.length > 0) {
+      // Only auto-save if we have comprehensive required data and it's not a completely new quote
+      if (formValues.customer && 
+          formValues.quoteNumber && 
+          blocks.length > 0 && 
+          blocks.some(block => block.items?.length > 0 || block.type === 'textblock') &&
+          (existingQuote || savedQuote)) {
         console.log('Auto-saving quote as draft...');
         saveAsDraft(formValues, false).catch(console.error);
       }
-    }, 3000);
+    }, 5000); // Increased to 5 seconds to reduce frequency
 
     return () => clearTimeout(saveTimer);
-  }, [watchedFields, blocks, form, saveAsDraft]);
+  }, [watchedFields, blocks, form, saveAsDraft, crmLoading, existingQuote, savedQuote]);
 
   // Navigation protection - prevent data loss
   useEffect(() => {
