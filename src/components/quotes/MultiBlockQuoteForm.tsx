@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Save, BookmarkPlus } from "lucide-react";
+import { Plus, Save, BookmarkPlus, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { QuoteBlockForm } from './QuoteBlockForm';
 import { MultiBlockQuotePreview } from './MultiBlockQuotePreview';
@@ -754,10 +754,10 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   }, [customers, projects, blocks, totalAmount, totalVAT, adminSignature, updateCounter, previewKey]);
 
   return (
-    <div className="w-full max-w-none -mx-4 -my-4 p-2">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        {/* Left side - Form (2/3 width) */}
-        <div className="lg:col-span-2 space-y-3">
+    <div className="w-full max-w-none p-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left side - Form (50% width) */}
+        <div className="space-y-4 pr-2">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium">Nieuwe offerte - Meerdere blokken</h3>
           <div className={`px-3 py-1 rounded-lg text-sm font-medium ${
@@ -1136,25 +1136,18 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         </Form>
       </div>
 
-        {/* Right side - Live Preview (1/3 width) */}
-        <div className="lg:col-span-1">
-          <div className="sticky top-2">
-            <Card className="p-2">
-              <CardHeader className="p-0 pb-2">
-                <CardTitle className="text-sm">Live Preview</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="h-[700px] overflow-y-auto border rounded-lg">
-                  <div className="transform scale-[0.6] origin-top-left w-[167%]">
-                    <MultiBlockQuotePreview 
-                      key={previewKey} 
-                      quote={previewQuote} 
-                      attachments={attachments} 
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+        {/* Right side - Live Preview (50% width) */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+            <Eye className="h-5 w-5" />
+            Live Preview
+          </h3>
+          <div className="w-full">
+            <MultiBlockQuotePreview 
+              key={previewKey} 
+              quote={previewQuote} 
+              attachments={attachments} 
+            />
           </div>
         </div>
       </div>

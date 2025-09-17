@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCrmStore } from "@/hooks/useCrmStore";
@@ -16,13 +16,19 @@ import { supabase } from "@/integrations/supabase/client";
 
 export function Quotes() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { customers, projects, isLoading: crmLoading } = useCrmStore();
   const { quotes, loading: quotesLoading, fetchQuotes, deleteQuote, restoreQuote, permanentDeleteQuote, duplicateQuote } = useQuotes();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [converting, setConverting] = useState(false);
   const [activeTab, setActiveTab] = useState("active");
-  const [showNewQuoteForm, setShowNewQuoteForm] = useState(window.location.pathname === "/quotes/new");
+  const [showNewQuoteForm, setShowNewQuoteForm] = useState(false);
+  
+  // Effect to detect route and show new quote form
+  useEffect(() => {
+    setShowNewQuoteForm(location.pathname === "/quotes/new");
+  }, [location.pathname]);
 
   // Combined loading state
   const loading = quotesLoading || crmLoading;
