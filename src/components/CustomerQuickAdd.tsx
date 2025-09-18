@@ -19,7 +19,6 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    email_secondary: "",
     phone: "",
     address: "",
     city: "",
@@ -78,8 +77,11 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
     setIsSubmitting(true);
 
     try {
+      // Clean formData to only include valid database columns
+      const {email_secondary, ...cleanFormData} = formData;
+      
       const customerData = {
-        ...formData,
+        ...cleanFormData,
         notes: "",
         status: "Actief" as const,
         email_addresses: emailAddresses.filter(addr => addr.email.trim())
@@ -103,7 +105,6 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
         setFormData({
           name: "",
           email: "",
-          email_secondary: "",
           phone: "",
           address: "",
           city: "",
