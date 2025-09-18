@@ -189,7 +189,6 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
 
   const forcePreviewUpdate = useCallback(() => {
     console.log('MultiBlockQuoteForm: Forcing preview update');
-    setUpdateCounter(prev => prev + 1);
     setPreviewKey(prev => prev + 1);
   }, []);
 
@@ -254,8 +253,8 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       return newBlocks;
     });
     
-    // Force re-render after state update
-    setTimeout(() => forcePreviewUpdate(), 0);
+    // Update preview without forcing component remount
+    setPreviewKey(prev => prev + 1);
   }, [forcePreviewUpdate]);
 
   const deleteBlock = useCallback((index: number) => {

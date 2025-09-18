@@ -242,6 +242,7 @@ export const InvoiceBlockForm: React.FC<InvoiceBlockFormProps> = ({
                   <Input
                     value={item.description}
                     onChange={(e) => handleItemUpdate(item.id, { description: e.target.value })}
+                    onBlur={() => {}}
                     placeholder="Beschrijving"
                     className="h-9 text-sm"
                   />
@@ -251,6 +252,7 @@ export const InvoiceBlockForm: React.FC<InvoiceBlockFormProps> = ({
                     type="number"
                     value={item.quantity || ''}
                     onChange={(e) => handleItemUpdate(item.id, { quantity: Number(e.target.value) || 0 })}
+                    onBlur={() => {}}
                     placeholder="Aantal"
                     className="h-9 text-sm"
                     min="0"
@@ -262,6 +264,7 @@ export const InvoiceBlockForm: React.FC<InvoiceBlockFormProps> = ({
                     type="number"
                     value={item.unit_price || ''}
                     onChange={(e) => handleItemUpdate(item.id, { unit_price: Number(e.target.value) || 0 })}
+                    onBlur={() => {}}
                     placeholder="Prijs"
                     className="h-9 text-sm"
                     min="0"
