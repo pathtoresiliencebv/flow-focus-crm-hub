@@ -141,26 +141,43 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         setAdminSignature(existingQuote.admin_signature_data);
       }
     } else {
-      // Generate new quote number for new quotes with timeout
+  // Generate unique quote number for new quotes
       const generateQuoteNumber = async () => {
         try {
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Timeout')), 5000)
-          );
+          // First try database function with retry logic
+          let attempts = 0;
+          let quoteNumber = null;
           
-          const quoteNumberPromise = supabase.rpc('generate_quote_number');
-          
-          const { data, error } = await Promise.race([quoteNumberPromise, timeoutPromise]) as any;
-          
-          if (data && !error) {
-            form.setValue('quoteNumber', data);
-          } else {
-            throw new Error(error?.message || 'Database error');
+          while (attempts < 3 && !quoteNumber) {
+            const { data, error } = await supabase.rpc('generate_quote_number');
+            if (data && !error) {
+              // Verify uniqueness
+              const { data: existing } = await supabase
+                .from('quotes')
+                .select('id')
+                .eq('quote_number', data)
+                .maybeSingle();
+                
+              if (!existing) {
+                quoteNumber = data;
+                break;
+              }
+            }
+            attempts++;
+            // Wait before retry
+            await new Promise(resolve => setTimeout(resolve, 100));
           }
+          
+          // Fallback to timestamp-based number if database fails
+          if (!quoteNumber) {
+            quoteNumber = `OFF-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+          }
+          
+          form.setValue('quoteNumber', quoteNumber);
         } catch (err) {
           console.error('Error generating quote number:', err);
-          // Generate fallback quote number
-          const fallbackNumber = `OFF-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`;
+          // Generate unique fallback quote number
+          const fallbackNumber = `OFF-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
           form.setValue('quoteNumber', fallbackNumber);
         }
       };
@@ -168,8 +185,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     }
   }, [form, existingQuote, crmLoading]);
 
-  // Auto-save functionality
-  const watchedFields = form.watch();
+  // Remove continuous auto-save - now using blur-based saving
 
   const forcePreviewUpdate = useCallback(() => {
     console.log('MultiBlockQuoteForm: Forcing preview update');
@@ -356,12 +372,37 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
 
       if (result.error) {
         console.error('Database error saving draft:', result.error);
-        toast({
-          title: "Fout bij opslaan",
-          description: `Kon concept niet opslaan: ${result.error.message || 'Onbekende database fout'}`,
-          variant: "destructive",
-        });
-        return false;
+        
+        // Handle duplicate quote number error specifically
+        if (result.error.message?.includes('duplicate key value') || 
+            result.error.message?.includes('quotes_quote_number_key')) {
+          // Generate new quote number and retry
+          const newQuoteNumber = `OFF-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+          const retryData = { ...quoteData, quote_number: newQuoteNumber };
+          
+          const retryResult = quoteToUpdate 
+            ? await supabase.from('quotes').update(retryData).eq('id', quoteToUpdate).select().single()
+            : await supabase.from('quotes').insert(retryData).select().single();
+            
+          if (retryResult.error) {
+            toast({
+              title: "Fout bij opslaan",
+              description: "Kon concept niet opslaan. Probeer het opnieuw.",
+              variant: "destructive",
+            });
+            return false;
+          } else {
+            form.setValue('quoteNumber', newQuoteNumber);
+            return retryResult.data?.id || true;
+          }
+        } else {
+          toast({
+            title: "Fout bij opslaan",
+            description: `Kon concept niet opslaan: ${result.error.message || 'Onbekende database fout'}`,
+            variant: "destructive",
+          });
+          return false;
+        }
       }
 
       console.log('✅ Quote saved successfully:', result.data?.id);
@@ -387,7 +428,54 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     }
   }, [customers, projects, adminSignature, toast, blocks, onClose]);
 
-  // Removed auto-save on every change - now only saves onBlur or manual save
+  // Blur-based auto-save with debouncing
+  const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [lastSaveData, setLastSaveData] = useState<string>('');
+  
+  const triggerAutoSave = useCallback(async () => {
+    const formValues = form.getValues();
+    const currentData = JSON.stringify({ ...formValues, blocks, adminSignature });
+    
+    // Only save if data has changed
+    if (currentData === lastSaveData) return;
+    
+    // Check if there's sufficient data to save
+    if (formValues.customer && formValues.quoteNumber && blocks.length > 0) {
+      try {
+        const savedId = await saveAsDraft(formValues, false);
+        if (savedId) {
+          setLastSaveData(currentData);
+          console.log('✅ Auto-save completed');
+        }
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+        // Don't show error toast for auto-save failures to avoid spam
+      }
+    }
+  }, [form, blocks, adminSignature, saveAsDraft, lastSaveData]);
+
+  const scheduleAutoSave = useCallback(() => {
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout);
+    }
+    
+    const newTimeout = setTimeout(triggerAutoSave, 1500); // 1.5 second delay
+    setAutoSaveTimeout(newTimeout);
+  }, [triggerAutoSave, autoSaveTimeout]);
+
+  // Handle field blur events
+  const handleFieldBlur = useCallback(() => {
+    scheduleAutoSave();
+  }, [scheduleAutoSave]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
+      }
+    };
+  }, [autoSaveTimeout]);
 
   // Navigation protection - prevent data loss
   useEffect(() => {
@@ -565,44 +653,9 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     });
   };
 
-  // Auto-save functionality - save every 3 seconds after changes
-  const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [lastAutoSave, setLastAutoSave] = useState<number>(0);
+  // Remove old auto-save - using blur-based saving now
 
-  const triggerAutoSave = useCallback(() => {
-    if (autoSaveTimeout) {
-      clearTimeout(autoSaveTimeout);
-    }
-
-    const timeout = setTimeout(() => {
-      const formValues = form.getValues();
-      if (formValues.customer && formValues.quoteNumber) {
-        console.log('🤖 Auto-saving draft...');
-        saveAsDraft(formValues, false);
-        setLastAutoSave(Date.now());
-      }
-    }, 3000); // 3 second delay
-
-    setAutoSaveTimeout(timeout);
-  }, [form, saveAsDraft, autoSaveTimeout]);
-
-  // Watch form changes for auto-save
-  const watchedCustomer = form.watch('customer');
-  const watchedEmail = form.watch('customerEmail');
-  const watchedMessage = form.watch('message');
-
-  useEffect(() => {
-    if (watchedCustomer || watchedEmail || watchedMessage) {
-      triggerAutoSave();
-    }
-  }, [watchedCustomer, watchedEmail, watchedMessage, triggerAutoSave]);
-
-  // Watch blocks changes for auto-save
-  useEffect(() => {
-    if (blocks.length > 0) {
-      triggerAutoSave();
-    }
-  }, [blocks, triggerAutoSave]);
+  // Old auto-save removed - now using blur-based saving
 
   const handleSaveDraft = useCallback(async (e?: React.FormEvent) => {
     if (e) {
@@ -869,9 +922,9 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Email klant</FormLabel>
-                        <FormControl>
-                           <Input {...field} type="email" placeholder="klant@example.com" onBlur={handleFormBlur} />
-                        </FormControl>
+                         <FormControl>
+                           <Input {...field} type="email" placeholder="klant@example.com" onBlur={handleFieldBlur} />
+                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -932,7 +985,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
                       <FormItem>
                         <FormLabel>Offertenummer *</FormLabel>
                          <FormControl>
-                           <Input {...field} onBlur={handleFormBlur} />
+                           <Input {...field} onBlur={handleFieldBlur} />
                          </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -946,7 +999,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
                       <FormItem>
                         <FormLabel>Datum *</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input type="date" {...field} onBlur={handleFieldBlur} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -960,7 +1013,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
                       <FormItem>
                         <FormLabel>Geldig tot *</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input type="date" {...field} onBlur={handleFieldBlur} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -974,14 +1027,14 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Bericht (optioneel)</FormLabel>
-                     <FormControl>
-                       <RichTextEditor 
-                         value={field.value || ''}
-                         onChange={field.onChange}
-                         placeholder="Voeg een persoonlijk bericht toe..."
-                         onBlur={handleFormBlur}
-                       />
-                     </FormControl>
+                      <FormControl>
+                        <RichTextEditor 
+                          value={field.value || ''}
+                          onChange={field.onChange}
+                          placeholder="Voeg een persoonlijk bericht toe..."
+                          onBlur={handleFieldBlur}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -1110,11 +1163,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
             </Card>
 
             <div className="space-y-2">
-              {lastAutoSave > 0 && (
-                <p className="text-sm text-muted-foreground text-right">
-                  ✅ Automatisch opgeslagen: {new Date(lastAutoSave).toLocaleTimeString('nl-NL')}
-                </p>
-              )}
+              {/* Auto-save status removed - now using blur-based saving */}
               
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={handleExitWithConfirm}>

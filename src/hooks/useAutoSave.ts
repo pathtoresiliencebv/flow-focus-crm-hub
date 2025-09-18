@@ -8,7 +8,7 @@ interface UseAutoSaveOptions {
   delay?: number;
 }
 
-export const useAutoSave = ({ onSave, data, enabled = true, delay = 2000 }: UseAutoSaveOptions) => {
+export const useAutoSave = ({ onSave, data, enabled = true, delay = 1500 }: UseAutoSaveOptions) => {
   const { toast } = useToast();
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
   const lastSavedDataRef = useRef<any>();
@@ -27,25 +27,22 @@ export const useAutoSave = ({ onSave, data, enabled = true, delay = 2000 }: UseA
 
     try {
       isSavingRef.current = true;
-      console.log('Auto-saving data...');
+      console.log('🔄 Auto-saving data...');
       
       const success = await onSave(data);
       
       if (success) {
         lastSavedDataRef.current = JSON.parse(currentDataString);
-        console.log('Auto-save completed successfully');
+        console.log('✅ Auto-save completed successfully');
       }
     } catch (error) {
-      console.error('Auto-save failed:', error);
-      toast({
-        title: "Auto-save gefaald",
-        description: "Kon wijzigingen niet automatisch opslaan",
-        variant: "destructive",
-      });
+      console.error('❌ Auto-save failed:', error);
+      // Don't show toast for auto-save failures to prevent spam
+      // Only log the error silently
     } finally {
       isSavingRef.current = false;
     }
-  }, [data, enabled, onSave, toast]);
+  }, [data, enabled, onSave]);
 
   const scheduleAutoSave = useCallback(() => {
     if (saveTimeoutRef.current) {
