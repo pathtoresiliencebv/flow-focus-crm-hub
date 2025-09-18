@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Plus } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TimeEntriesOverview } from './time-registration/TimeEntriesOverview';
 import { TimeCalendarView } from './time-registration/TimeCalendarView';
@@ -47,9 +48,19 @@ export const TimeRegistration = () => {
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Tijdsregistratie</h2>
-        <Button onClick={() => setActiveTab("register")}>Nieuwe registratie</Button>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Tijdsregistratie</h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">Registreer en beheer je werktijden</p>
+        </div>
+        <Button 
+          onClick={() => setTimeDialogOpen(true)}
+          className="bg-smans-primary hover:bg-smans-primary/90 text-white"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Nieuwe Tijdsregistratie
+        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

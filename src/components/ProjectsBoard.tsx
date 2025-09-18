@@ -214,7 +214,24 @@ export const ProjectsBoard: React.FC = () => {
   }, {});
 
   return (
-    <div className="p-4 sm:p-6">
+    <div className="p-4 sm:p-6 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Projecten</h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">Beheer je projecten en installaties</p>
+        </div>
+        {hasPermission('projects_create') && (
+          <Button 
+            onClick={() => handleAddProjectClick("te-plannen")}
+            className="bg-smans-primary hover:bg-smans-primary/90 text-white"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Nieuw Project
+          </Button>
+        )}
+      </div>
+
       <Dialog open={newProjectDialogOpen} onOpenChange={setNewProjectDialogOpen}>
         <DialogContent>
           <DialogHeader>
