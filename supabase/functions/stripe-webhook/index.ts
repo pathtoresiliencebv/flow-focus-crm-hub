@@ -13,8 +13,9 @@ serve(async (req) => {
   }
 
   try {
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2023-10-16",
+    console.log("Stripe webhook received, initializing with Live Key");
+    const stripe = new Stripe(Deno.env.get("STRIPE_LIVE_KEY") || "", {
+      apiVersion: "2025-08-27.basil",
     });
 
     const supabase = createClient(

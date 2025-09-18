@@ -35,10 +35,12 @@ serve(async (req) => {
       throw new Error("Invoice not found");
     }
 
-    // Initialize Stripe
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+    // Initialize Stripe with Live Key
+    const stripe = new Stripe(Deno.env.get("STRIPE_LIVE_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
+
+    console.log("Creating payment session for invoice:", invoice_id);
 
     // Check if customer exists in Stripe
     let customerId = null;

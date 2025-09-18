@@ -12,3 +12,6 @@ verify_jwt = false
 
 [functions.customers-mobile]
 verify_jwt = true
+
+[functions.stripe-config-test]
+verify_jwt = true
