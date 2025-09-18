@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AIEnhanceButton } from '@/components/ui/ai-enhance-button';
 import { useToast } from '@/hooks/use-toast';
+import { RichTextEditor } from './RichTextEditor';
 
 interface QuoteBlockFormProps {
   block: QuoteBlock;
@@ -151,12 +152,15 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
 
   const handleContentChange = useCallback((content: string) => {
     setBlockContent(content);
+  }, []);
+
+  const handleContentBlur = useCallback(() => {
     const updatedBlock: QuoteBlock = {
       ...block,
-      content
+      content: blockContent
     };
     onUpdateBlock(updatedBlock);
-  }, [block, onUpdateBlock]);
+  }, [block, blockContent, onUpdateBlock]);
 
   // For textblock type, render simple editor
   if (block.type === 'textblock') {
@@ -180,13 +184,17 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
           <Textarea
             value={blockContent}
             onChange={(e) => handleContentChange(e.target.value)}
+            onBlur={handleContentBlur}
             placeholder="Voer uw tekst in..."
             className="min-h-[60px] text-sm border-dashed pr-12"
           />
           <div className="absolute top-2 right-2">
             <AIEnhanceButton
               text={blockContent}
-              onEnhanced={(enhanced) => handleContentChange(enhanced)}
+              onEnhanced={(enhanced) => {
+                setBlockContent(enhanced);
+                handleContentBlur();
+              }}
               context="textblock"
             />
           </div>

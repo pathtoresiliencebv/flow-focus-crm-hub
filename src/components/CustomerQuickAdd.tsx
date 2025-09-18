@@ -109,11 +109,14 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
       }
     } catch (error) {
       console.error('Error adding customer:', error);
-      toast({
-        title: "Fout bij toevoegen",
-        description: "Er is een fout opgetreden bij het toevoegen van de klant.",
-        variant: "destructive"
-      });
+      // Don't show duplicate error notifications
+      if (!error?.message?.includes('already exists')) {
+        toast({
+          title: "Fout bij toevoegen",
+          description: "Er is een fout opgetreden bij het toevoegen van de klant.",
+          variant: "destructive"
+        });
+      }
     }
   };
 

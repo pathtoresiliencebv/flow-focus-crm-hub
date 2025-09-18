@@ -23,6 +23,7 @@ import { TemplateSelector } from './TemplateSelector';
 import { PaymentTermsSelector, PaymentTerm } from './PaymentTermsSelector';
 import { FileAttachmentsManager, QuoteAttachment } from './FileAttachmentsManager';
 import { SendQuoteDialog } from './SendQuoteDialog';
+import { RichTextEditor } from './RichTextEditor';
 import { useCrmStore } from '@/hooks/useCrmStore';
 import { useQuoteTemplates } from '@/hooks/useQuoteTemplates';
 import { QuoteBlock, Quote } from '@/types/quote';
@@ -386,26 +387,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     }
   }, [customers, projects, adminSignature, toast, blocks, onClose]);
 
-  // Auto-save after 5 seconds of inactivity (disabled for new quotes initially)
-  useEffect(() => {
-    if (!saveAsDraft || crmLoading) return; // Wait for dependencies
-    
-    const saveTimer = setTimeout(() => {
-      const formValues = form.getValues();
-      
-      // Only auto-save if we have comprehensive required data and it's not a completely new quote
-      if (formValues.customer && 
-          formValues.quoteNumber && 
-          blocks.length > 0 && 
-          blocks.some(block => block.items?.length > 0 || block.type === 'textblock') &&
-          (existingQuote || savedQuote)) {
-        console.log('Auto-saving quote as draft...');
-        saveAsDraft(formValues, false).catch(console.error);
-      }
-    }, 5000); // Increased to 5 seconds to reduce frequency
-
-    return () => clearTimeout(saveTimer);
-  }, [watchedFields, blocks, form, saveAsDraft, crmLoading, existingQuote, savedQuote]);
+  // Removed auto-save on every change - now only saves onBlur or manual save
 
   // Navigation protection - prevent data loss
   useEffect(() => {
@@ -622,17 +604,22 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     }
   }, [blocks, triggerAutoSave]);
 
-  const handleSaveDraft = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleSaveDraft = useCallback(async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     setSaving(true);
     try {
-      await form.handleSubmit((values) => saveAsDraft(values, false))();
-      toast({
-        title: "Concept opgeslagen",
-        description: "Je offerte is opgeslagen als concept.",
-      });
-      onClose(); // Navigate back to quotes list
+      const values = form.getValues();
+      const success = await saveAsDraft(values, false);
+      if (success) {
+        toast({
+          title: "Concept opgeslagen",
+          description: "Je offerte is opgeslagen als concept.",
+        });
+        onClose(); // Navigate back to quotes list
+      }
     } catch (error) {
       console.error('Error saving draft:', error);
       toast({
@@ -765,20 +752,16 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     }
   }, [selectedCustomerId, customers, form]);
 
-  // Auto-save functionality
-  useEffect(() => {
-    const saveTimer = setTimeout(() => {
-      const formValues = form.getValues();
-      
-      // Only auto-save if we have basic required data
-      if (formValues.customer && formValues.quoteNumber && blocks.length > 0) {
-        console.log('Auto-saving quote as draft...');
-        saveAsDraft(formValues, false).catch(console.error);
-      }
-    }, 3000);
-
-    return () => clearTimeout(saveTimer);
-  }, [watchedFields, blocks, form, saveAsDraft]);
+  // Manual blur-based auto-save instead of continuous auto-save
+  const handleFormBlur = useCallback(() => {
+    const formValues = form.getValues();
+    
+    // Only save if we have meaningful data
+    if (formValues.customer && formValues.quoteNumber && blocks.length > 0) {
+      console.log('Saving on form blur...');
+      saveAsDraft(formValues, false).catch(console.error);
+    }
+  }, [form, blocks, saveAsDraft]);
 
   // Create preview quote object - only update when blocks change, not on every form field change
   const previewQuote: Quote = useMemo(() => {
@@ -890,7 +873,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
                       <FormItem>
                         <FormLabel>Email klant</FormLabel>
                         <FormControl>
-                          <Input {...field} type="email" placeholder="klant@example.com" />
+                           <Input {...field} type="email" placeholder="klant@example.com" onBlur={handleFormBlur} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -951,9 +934,9 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Offertenummer *</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
+                         <FormControl>
+                           <Input {...field} onBlur={handleFormBlur} />
+                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -994,9 +977,14 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Bericht (optioneel)</FormLabel>
-                      <FormControl>
-                        <Textarea {...field} placeholder="Voeg een persoonlijk bericht toe..." />
-                      </FormControl>
+                     <FormControl>
+                       <RichTextEditor 
+                         value={field.value || ''}
+                         onChange={field.onChange}
+                         placeholder="Voeg een persoonlijk bericht toe..."
+                         onBlur={handleFormBlur}
+                       />
+                     </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
