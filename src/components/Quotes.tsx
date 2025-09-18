@@ -30,8 +30,23 @@ export function Quotes() {
     setShowNewQuoteForm(location.pathname === "/quotes/new");
   }, [location.pathname]);
 
-  // Combined loading state
+  // Combined loading state with timeout fallback
   const loading = quotesLoading || crmLoading;
+  
+  // Debug logging
+  console.log('Quotes loading states:', { quotesLoading, crmLoading, loading });
+  
+  // Fallback for stuck loading states
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn('Loading timeout reached, forcing reload...');
+        fetchQuotes(true);
+      }
+    }, 10000); // 10 second timeout
+    
+    return () => clearTimeout(timeout);
+  }, [loading, fetchQuotes]);
 
   const activeQuotes = quotes.filter(quote => !quote.is_archived);
   const archivedQuotes = quotes.filter(quote => quote.is_archived);
@@ -124,7 +139,17 @@ export function Quotes() {
   }));
 
   if (loading) {
-    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Offertes laden...</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Debug: quotes={quotesLoading ? 'loading' : 'loaded'}, crm={crmLoading ? 'loading' : 'loaded'}
+          </p>
+        </div>
+      </div>
+    );
   }
 
   if (showNewQuoteForm) {
