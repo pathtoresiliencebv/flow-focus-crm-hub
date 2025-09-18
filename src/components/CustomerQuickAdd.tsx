@@ -77,11 +77,15 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
     setIsSubmitting(true);
 
     try {
-      // Clean formData to only include valid database columns
-      const {email_secondary, ...cleanFormData} = formData;
-      
       const customerData = {
-        ...cleanFormData,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        company_name: formData.company_name,
+        kvk_number: formData.kvk_number,
+        btw_number: formData.btw_number,
         notes: "",
         status: "Actief" as const,
         email_addresses: emailAddresses.filter(addr => addr.email.trim())
