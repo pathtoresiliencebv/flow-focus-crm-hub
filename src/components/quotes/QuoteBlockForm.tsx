@@ -473,13 +473,32 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
           </div>
         ))}
 
-        {/* Add Item Buttons */}
+        {/* Add Item Buttons - Direct like Invoice */}
         <div className="flex gap-2 pt-2">
           <Button
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setShowProductForm(true)}
+            onClick={() => {
+              const newItem: QuoteItem = {
+                id: crypto.randomUUID(),
+                type: 'product',
+                description: '',
+                quantity: 1,
+                unit_price: 0,
+                vat_rate: 21,
+                total: 0,
+              };
+              const updatedItems = [...block.items, newItem];
+              const subtotal = calculateBlockSubtotal(updatedItems);
+              const vatAmount = calculateBlockVAT(updatedItems);
+              onUpdateBlock({
+                ...block,
+                items: updatedItems,
+                subtotal,
+                vat_amount: vatAmount
+              });
+            }}
             className="h-8 text-sm"
           >
             <Plus className="h-3 w-3 mr-1" />
@@ -489,86 +508,26 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => setShowTextForm(true)}
+            onClick={() => {
+              const newItem: QuoteItem = {
+                id: crypto.randomUUID(),
+                type: 'textblock',
+                description: '',
+                vat_rate: 0,
+                formatting: { bold: false, italic: false, underline: false },
+              };
+              const updatedItems = [...block.items, newItem];
+              onUpdateBlock({
+                ...block,
+                items: updatedItems,
+              });
+            }}
             className="h-8 text-sm"
           >
             <Plus className="h-3 w-3 mr-1" />
             Tekst
           </Button>
         </div>
-
-        {/* Add Items Forms */}
-        {showProductForm && (
-          <div className="space-y-3 p-3 border border-border rounded-md bg-muted/20">
-            <h4 className="font-medium text-sm">Product toevoegen</h4>
-            <QuoteItemForm onAddItem={handleAddItem} />
-            <div className="flex justify-end">
-              <Button size="sm" variant="outline" onClick={() => setShowProductForm(false)}>
-                Annuleren
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {showTextForm && (
-          <div className="space-y-3 p-3 border border-border rounded-md bg-muted/20">
-            <h4 className="font-medium text-sm">Tekst toevoegen</h4>
-            <div className="space-y-2">
-              <div className="flex gap-1">
-                <Button
-                  type="button"
-                  variant={textFormatting.bold ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => toggleTextFormatting('bold')}
-                  className="h-7 w-7 p-0"
-                >
-                  <strong>B</strong>
-                </Button>
-                <Button
-                  type="button"
-                  variant={textFormatting.italic ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => toggleTextFormatting('italic')}
-                  className="italic h-7 w-7 p-0"
-                >
-                  I
-                </Button>
-                <Button
-                  type="button"
-                  variant={textFormatting.underline ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => toggleTextFormatting('underline')}
-                  className="underline h-7 w-7 p-0"
-                >
-                  U
-                </Button>
-              </div>
-              <div className="relative">
-                <Textarea
-                  value={textBlockContent}
-                  onChange={(e) => setTextBlockContent(e.target.value)}
-                  placeholder="Voer uw tekst in..."
-                  className="min-h-[60px] text-sm pr-12"
-                />
-                <div className="absolute top-2 right-2">
-                  <AIEnhanceButton
-                    text={textBlockContent}
-                    onEnhanced={(enhanced) => setTextBlockContent(enhanced)}
-                    context="textblock"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button size="sm" onClick={handleAddTextBlock}>
-                  Toevoegen
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setShowTextForm(false)}>
-                  Annuleren
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Block Totals */}
         {block.items.some(item => item.type === 'product') && (
