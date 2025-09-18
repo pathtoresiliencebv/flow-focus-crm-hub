@@ -713,10 +713,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       
       setShowCustomerAdd(false);
       
-      toast({
-        title: "Klant toegevoegd",
-        description: `${customer.name} is succesvol toegevoegd en geselecteerd.`,
-      });
+      // Remove duplicate toast - CustomerQuickAdd handles its own notifications
       
       // Force a preview update
       forcePreviewUpdate();

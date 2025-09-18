@@ -28,6 +28,7 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
     btw_number: "",
   });
   const [emailAddresses, setEmailAddresses] = useState<Array<{email: string, type: "primary" | "secondary"}>>([{ email: "", type: "primary" }]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -63,6 +64,8 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (isSubmitting) return; // Prevent multiple submissions
+    
     if (!formData.name || !emailAddresses[0]?.email || !formData.phone) {
       toast({
         title: "Vereiste velden",
@@ -71,6 +74,8 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
       });
       return;
     }
+
+    setIsSubmitting(true);
 
     try {
       const customerData = {
@@ -83,9 +88,10 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
       const newCustomer = await addCustomer(customerData);
       
       if (newCustomer) {
+        // Single success toast
         toast({
           title: "Klant toegevoegd",
-          description: `${formData.name} is succesvol toegevoegd.`,
+          description: `${formData.name} is succesvol toegevoegd en geselecteerd.`,
         });
 
         // Call parent callback with full customer object
@@ -107,16 +113,16 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
         });
         setEmailAddresses([{ email: "", type: "primary" }]);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding customer:', error);
-      // Don't show duplicate error notifications
-      if (!error?.message?.includes('already exists')) {
-        toast({
-          title: "Fout bij toevoegen",
-          description: "Er is een fout opgetreden bij het toevoegen van de klant.",
-          variant: "destructive"
-        });
-      }
+      // Single error toast
+      toast({
+        title: "Fout bij toevoegen klant",
+        description: error?.message || "Er is een fout opgetreden bij het toevoegen van de klant.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -260,8 +266,8 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
           </div>
 
           <div className="flex gap-2 pt-4">
-            <Button type="submit">
-              Klant Toevoegen
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Toevoegen..." : "Klant Toevoegen"}
             </Button>
             {onCancel && (
               <Button type="button" variant="outline" onClick={onCancel}>

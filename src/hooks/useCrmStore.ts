@@ -87,17 +87,11 @@ export const useCrmStore = () => {
     },
     onSuccess: (newCustomer) => {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
-      toast({
-        title: "Klant toegevoegd",
-        description: `${newCustomer.name} is succesvol toegevoegd.`,
-      });
+      // Remove toast - let components handle their own notifications
     },
     onError: (error) => {
-      toast({
-        title: "Fout bij toevoegen klant",
-        description: error.message,
-        variant: "destructive",
-      });
+      // Remove toast - let components handle their own error notifications
+      throw error;
     },
   });
 
