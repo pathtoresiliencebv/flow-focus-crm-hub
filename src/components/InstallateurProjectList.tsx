@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Eye, User, Calendar, MapPin } from "lucide-react";
+import { Eye, User, Calendar, MapPin, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useCrmStore } from "@/hooks/useCrmStore";
 import { useUsers } from "@/hooks/useUsers";
@@ -11,6 +11,7 @@ import { useProjectTasks } from "@/hooks/useProjectTasks";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjectDelivery } from "@/hooks/useProjectDelivery";
 import { ProjectDeliveryDialog } from "./dashboard/ProjectDeliveryDialog";
+import { ProjectQuickAdd } from "./ProjectQuickAdd";
 
 type ProjectStatus = "te-plannen" | "gepland" | "in-uitvoering" | "herkeuring" | "afgerond";
 
@@ -38,6 +39,7 @@ export const InstallateurProjectList: React.FC = () => {
   const { startProject, completeProject, isStarting, isCompleting } = useProjectDelivery();
   const [showDelivery, setShowDelivery] = useState(false);
   const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [showProjectAdd, setShowProjectAdd] = useState(false);
 
   // Filter projects for current installateur
   const installateurProjects = projects.filter(p => p.assigned_user_id === user?.id);
@@ -172,9 +174,18 @@ export const InstallateurProjectList: React.FC = () => {
     <div className="p-4 sm:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Mijn Projecten</h2>
-        <Badge variant="outline" className="text-sm">
-          {installateurProjects.length} project{installateurProjects.length !== 1 ? 'en' : ''}
-        </Badge>
+        <div className="flex items-center gap-3">
+          <Button 
+            onClick={() => setShowProjectAdd(true)}
+            className="bg-primary hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nieuw Project
+          </Button>
+          <Badge variant="outline" className="text-sm">
+            {installateurProjects.length} project{installateurProjects.length !== 1 ? 'en' : ''}
+          </Badge>
+        </div>
       </div>
 
       {/* Status sections */}
@@ -214,6 +225,18 @@ export const InstallateurProjectList: React.FC = () => {
             setShowDelivery(false);
             setSelectedProject(null);
           }}
+        />
+      )}
+      
+      {/* Project Quick Add Dialog */}
+      {showProjectAdd && (
+        <ProjectQuickAdd
+          onCancel={() => setShowProjectAdd(false)}
+          onProjectAdded={() => {
+            setShowProjectAdd(false);
+          }}
+          selectedCustomerId=""
+          selectedCustomerName=""
         />
       )}
     </div>
