@@ -331,13 +331,24 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
               {item.type === 'product' ? (
                 <>
                   <div className="col-span-5">
-                    <Input
-                      value={localItem.description}
-                      onChange={(e) => handleLocalInputChange(item.id, 'description', e.target.value)}
-                      onBlur={() => handleInputBlur(item.id)}
-                      placeholder="Beschrijving"
-                      className="h-9 text-sm"
-                    />
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        value={localItem.description}
+                        onChange={(e) => handleLocalInputChange(item.id, 'description', e.target.value)}
+                        onBlur={() => handleInputBlur(item.id)}
+                        placeholder="Beschrijving"
+                        className="h-9 text-sm flex-1"
+                      />
+                      <AIEnhanceButton
+                        text={localItem.description}
+                        onEnhanced={(enhanced) => {
+                          handleLocalInputChange(item.id, 'description', enhanced);
+                          handleInputBlur(item.id);
+                        }}
+                        context="product"
+                        size="sm"
+                      />
+                    </div>
                   </div>
                   <div className="col-span-2">
                     <Input

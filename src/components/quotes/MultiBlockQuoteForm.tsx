@@ -775,20 +775,24 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     }
   };
 
-  const handleProjectAdded = (projectId: string) => {
+  const handleProjectAdded = useCallback((projectId: string) => {
     console.log('Project added, setting projectId to:', projectId);
+    
+    // Immediately set the project in the form
     form.setValue('project', projectId);
     setShowProjectAdd(false);
     
-    // Wait a bit for the data to refresh, then update project details
-    setTimeout(() => {
-      const project = projects.find(p => p.id === projectId);
-      if (project) {
-        // Project title is automatically filled in the form preview
-        console.log('Found new project:', project.title);
-      }
-    }, 500);
-  };
+    // Force form to re-validate project field
+    form.trigger('project');
+    
+    // Force preview update to ensure the new project shows up
+    forcePreviewUpdate();
+    
+    toast({
+      title: "Project toegevoegd",
+      description: "Het nieuwe project is toegevoegd en geselecteerd.",
+    });
+  }, [form, forcePreviewUpdate, toast]);
 
   // Watch customer changes to auto-fill email
   const selectedCustomerId = form.watch('customer');

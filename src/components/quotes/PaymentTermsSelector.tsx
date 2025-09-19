@@ -104,43 +104,50 @@ export const PaymentTermsSelector = ({ value, onChange }: PaymentTermsSelectorPr
             </div>
             
             {value.map((term, index) => (
-              <div key={term.id} className="flex items-center gap-2 p-3 border rounded-lg">
-                <div className="flex-1">
+              <div key={term.id} className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-3 border rounded-lg">
+                <div className="sm:col-span-3">
+                  <Label className="text-xs text-muted-foreground sm:hidden">Percentage</Label>
                   <Input
                     type="number"
                     placeholder="Percentage"
                     value={term.percentage || ''}
                     onChange={(e) => updateTerm(term.id, { percentage: parseInt(e.target.value) || 0 })}
-                    className="w-20"
+                    className="w-full"
                     min="0"
                     max="100"
                   />
                 </div>
-                <div className="flex-2">
+                <div className="sm:col-span-5">
+                  <Label className="text-xs text-muted-foreground sm:hidden">Omschrijving</Label>
                   <Input
                     placeholder="Omschrijving"
                     value={term.description}
                     onChange={(e) => updateTerm(term.id, { description: e.target.value })}
+                    className="w-full"
                   />
                 </div>
-                <div className="flex-1">
+                <div className="sm:col-span-3">
+                  <Label className="text-xs text-muted-foreground sm:hidden">Dagen (optioneel)</Label>
                   <Input
                     type="number"
                     placeholder="Dagen (optioneel)"
                     value={term.daysAfter || ''}
                     onChange={(e) => updateTerm(term.id, { daysAfter: parseInt(e.target.value) || undefined })}
-                    className="w-24"
+                    className="w-full"
                   />
                 </div>
                 {selectedPreset === "custom" && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeTerm(term.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  <div className="sm:col-span-1 flex justify-end">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeTerm(term.id)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 )}
               </div>
             ))}
