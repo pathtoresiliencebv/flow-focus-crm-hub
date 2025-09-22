@@ -181,7 +181,7 @@ export const Invoicing = () => {
           setShowFinalizationDialog(false);
           setSelectedInvoice(null);
         }}
-        onSuccess={() => {
+        onFinalized={() => {
           refetch();
         }}
       />

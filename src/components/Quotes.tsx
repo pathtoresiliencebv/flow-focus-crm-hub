@@ -10,6 +10,9 @@ import { QuotesHeader } from './quotes/QuotesHeader';
 import { QuotesSearch } from './quotes/QuotesSearch';
 import { QuotesTable } from './quotes/QuotesTable';
 import { MultiBlockQuoteForm } from './quotes/MultiBlockQuoteForm';
+import { QuotesPreviewDialog } from './quotes/QuotesPreviewDialog';
+import { SendQuoteDialog } from './quotes/SendQuoteDialog';
+import { ApproveQuoteDialog } from './quotes/ApproveQuoteDialog';
 import { Quote } from '@/types/quote';
 import { convertQuoteToInvoice } from '@/services/quoteToInvoiceService';
 import { supabase } from "@/integrations/supabase/client";
@@ -24,6 +27,10 @@ export function Quotes() {
   const [converting, setConverting] = useState(false);
   const [activeTab, setActiveTab] = useState("active");
   const [showNewQuoteForm, setShowNewQuoteForm] = useState(false);
+  const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
   
   // Effect to detect route and show new quote form
   useEffect(() => {
@@ -64,7 +71,8 @@ export function Quotes() {
   );
 
   const handlePreview = (quote: Quote) => {
-    navigate(`/quotes/${quote.id}/preview`);
+    setSelectedQuote(quote);
+    setPreviewDialogOpen(true);
   };
 
   const handleViewPublic = (publicToken: string) => {
@@ -73,7 +81,13 @@ export function Quotes() {
   };
 
   const handleSendEmail = (quote: Quote) => {
-    navigate(`/quotes/${quote.id}/send`);
+    setSelectedQuote(quote);
+    setSendDialogOpen(true);
+  };
+
+  const handleApprove = (quote: Quote) => {
+    setSelectedQuote(quote);
+    setApproveDialogOpen(true);
   };
 
   const handleApproveQuote = async (quote: Quote) => {
@@ -193,7 +207,7 @@ export function Quotes() {
                 onPreview={handlePreview}
                 onViewPublic={handleViewPublic}
                 onDelete={deleteQuote}
-                onApprove={handleApproveQuote}
+                onApprove={handleApprove}
                 onSendEmail={handleSendEmail}
                 onDuplicate={duplicateQuote}
               />
@@ -212,6 +226,32 @@ export function Quotes() {
           </Tabs>
         </CardContent>
       </Card>
+
+      <QuotesPreviewDialog
+        open={previewDialogOpen}
+        onOpenChange={setPreviewDialogOpen}
+        quote={selectedQuote}
+      />
+
+      <SendQuoteDialog
+        isOpen={sendDialogOpen}
+        onClose={() => setSendDialogOpen(false)}
+        quote={selectedQuote}
+        onSent={() => {
+          fetchQuotes();
+          setSendDialogOpen(false);
+        }}
+      />
+
+      <ApproveQuoteDialog
+        isOpen={approveDialogOpen}
+        onClose={() => setApproveDialogOpen(false)}
+        quote={selectedQuote}
+        onApproved={() => {
+          fetchQuotes();
+          setApproveDialogOpen(false);
+        }}
+      />
     </div>
   );
 }

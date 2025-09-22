@@ -1,229 +1,209 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import React, { useState } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { CheckCircle, Mail, FileText } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface InvoiceFinalizationDialogProps {
   isOpen: boolean;
   onClose: () => void;
   invoice: any;
-  onSuccess: () => void;
+  onFinalized?: () => void;
 }
 
-export const InvoiceFinalizationDialog = ({ 
-  isOpen, 
-  onClose, 
-  invoice, 
-  onSuccess 
-}: InvoiceFinalizationDialogProps) => {
+export const InvoiceFinalizationDialog: React.FC<InvoiceFinalizationDialogProps> = ({
+  isOpen,
+  onClose,
+  invoice,
+  onFinalized
+}) => {
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    sendEmail: true,
-    emailSubject: `Factuur ${invoice?.invoice_number} - ${invoice?.customer_name}`,
-    emailMessage: `Beste ${invoice?.customer_name},\n\nHierbij ontvangt u de factuur.\n\nMet vriendelijke groet`,
-    createProject: false,
-    projectTitle: invoice?.project_title || ""
-  });
-
-  const handleCreatePaymentLink = async () => {
-    if (!invoice) return;
-
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('create-invoice-payment', {
-        body: { invoice_id: invoice.id }
-      });
-
-      if (error) throw error;
-
-      if (data?.url) {
-        window.open(data.url, '_blank');
-        toast({
-          title: "Betaallink aangemaakt",
-          description: "De Stripe betaallink is geopend in een nieuw tabblad.",
-        });
-      }
-    } catch (error) {
-      console.error('Error creating payment link:', error);
-      toast({
-        title: "Fout bij betaallink",
-        description: "Er is een fout opgetreden bij het aanmaken van de betaallink.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [isLoading, setIsLoading] = useState(false);
+  const [emailCustomer, setEmailCustomer] = useState(true);
+  const [createProject, setCreateProject] = useState(false);
 
   const handleFinalize = async () => {
     if (!invoice) return;
 
-    setLoading(true);
+    setIsLoading(true);
     try {
-      // Update invoice status to sent
-      const { error: updateError } = await supabase
-        .from('invoices')
-        .update({ 
-          status: 'sent',
-          sent_at: new Date().toISOString()
-        })
-        .eq('id', invoice.id);
-
-      if (updateError) throw updateError;
-
-      // Send email if requested
-      if (formData.sendEmail && invoice.customer_email) {
-        const { error: emailError } = await supabase.functions.invoke('send-invoice-email', {
-          body: {
-            invoice_id: invoice.id,
-            recipient: invoice.customer_email,
-            subject: formData.emailSubject,
-            message: formData.emailMessage
-          }
-        });
-
-        if (emailError) {
-          console.error('Email error:', emailError);
-          toast({
-            title: "Email niet verzonden",
-            description: "Factuur is wel gefinaliseerd, maar email kon niet verzonden worden.",
-            variant: "destructive"
-          });
+      // Generate final invoice number if it's still a concept
+      let invoiceNumber = invoice.invoice_number;
+      if (invoice.status === 'concept') {
+        const { data: newNumber } = await supabase.rpc('generate_invoice_number');
+        if (newNumber) {
+          invoiceNumber = newNumber;
         }
       }
 
-      // Create project if requested
-      if (formData.createProject) {
-        const { error: projectError } = await supabase
-          .from('projects')
-          .insert({
-            title: formData.projectTitle,
-            customer_id: invoice.customer_id,
-            invoice_id: invoice.id,
-            status: 'te-plannen'
+      // Update invoice status and number
+      const { error: updateError } = await supabase
+        .from('invoices')
+        .update({
+          invoice_number: invoiceNumber,
+          status: 'sent',
+          sent_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', invoice.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Send email if requested
+      if (emailCustomer && invoice.customer_email) {
+        try {
+          const { error: emailError } = await supabase.functions.invoke('send-invoice-email', {
+            body: {
+              invoiceId: invoice.id,
+              to: invoice.customer_email,
+              subject: `Factuur ${invoiceNumber} - SMANS BV`,
+              message: `Beste ${invoice.customer_name},
+
+Hierbij ontvangt u factuur ${invoiceNumber} voor ${invoice.project_title || 'uw project'}.
+
+De factuur is te vinden in de bijlage van deze email.
+
+Voor vragen kunt u altijd contact met ons opnemen.
+
+Met vriendelijke groet,
+SMANS BV`
+            }
           });
 
-        if (projectError) {
+          if (emailError) {
+            console.error('Email error:', emailError);
+            toast({
+              title: "Factuur gefinaliseerd",
+              description: "Factuur is gefinaliseerd, maar email kon niet worden verzonden.",
+              variant: "destructive",
+            });
+          }
+        } catch (emailError) {
+          console.error('Email error:', emailError);
+        }
+      }
+
+      // Create project if requested (only if no project exists for source quote)
+      if (createProject && invoice.source_quote_id) {
+        try {
+          // Check if project already exists
+          const { data: existingProject } = await supabase
+            .from('projects')
+            .select('id')
+            .eq('quote_id', invoice.source_quote_id)
+            .maybeSingle();
+
+          if (!existingProject) {
+            // Trigger quote approval automation to create project
+            const { error: automationError } = await supabase.functions.invoke('quote-approval-automation', {
+              body: { quote_id: invoice.source_quote_id }
+            });
+
+            if (automationError) {
+              console.error('Project creation error:', automationError);
+            }
+          }
+        } catch (projectError) {
           console.error('Project creation error:', projectError);
-          toast({
-            title: "Project niet aangemaakt",
-            description: "Factuur is wel gefinaliseerd, maar project kon niet aangemaakt worden.",
-            variant: "destructive"
-          });
         }
       }
 
       toast({
-        title: "Factuur gefinaliseerd",
-        description: `Factuur ${invoice.invoice_number} is succesvol gefinaliseerd.`
+        title: "Factuur gefinaliseerd!",
+        description: `Factuur ${invoiceNumber} is succesvol gefinaliseerd${emailCustomer ? ' en verzonden' : ''}.`,
       });
 
-      onSuccess();
+      onFinalized?.();
       onClose();
     } catch (error) {
       console.error('Error finalizing invoice:', error);
       toast({
         title: "Fout bij finaliseren",
         description: "Er is een fout opgetreden bij het finaliseren van de factuur.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
+  if (!invoice) return null;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Factuur Finaliseren</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-green-600" />
+            Factuur finaliseren
+          </DialogTitle>
+          <DialogDescription>
+            Factuur {invoice.invoice_number} klaar maken voor verzending
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Factuur {invoice?.invoice_number} wordt gefinaliseerd en kan daarna niet meer aangepast worden.
-          </p>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="sendEmail"
-              checked={formData.sendEmail}
-              onCheckedChange={(checked) => 
-                setFormData({ ...formData, sendEmail: checked as boolean })
-              }
-            />
-            <Label htmlFor="sendEmail">Email versturen naar klant</Label>
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-medium mb-2">Wat gebeurt er bij finaliseren:</h4>
+            <ul className="text-sm text-gray-600 space-y-1">
+              <li>• Status wordt bijgewerkt naar "Verzonden"</li>
+              <li>• Definitief factuurnummer wordt gegenereerd</li>
+              <li>• Factuur kan niet meer worden bewerkt</li>
+              {emailCustomer && <li>• Email wordt verzonden naar klant</li>}
+              {createProject && <li>• Project wordt aangemaakt (indien nog niet bestaat)</li>}
+            </ul>
           </div>
 
-          {formData.sendEmail && (
-            <div className="space-y-3 pl-6">
-              <div>
-                <Label htmlFor="emailSubject">Email onderwerp</Label>
-                <Input
-                  id="emailSubject"
-                  value={formData.emailSubject}
-                  onChange={(e) => setFormData({ ...formData, emailSubject: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="emailMessage">Email bericht</Label>
-                <Textarea
-                  id="emailMessage"
-                  value={formData.emailMessage}
-                  onChange={(e) => setFormData({ ...formData, emailMessage: e.target.value })}
-                  rows={4}
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="createProject"
-              checked={formData.createProject}
-              onCheckedChange={(checked) => 
-                setFormData({ ...formData, createProject: checked as boolean })
-              }
-            />
-            <Label htmlFor="createProject">Project aanmaken</Label>
-          </div>
-
-          {formData.createProject && (
-            <div className="pl-6">
-              <Label htmlFor="projectTitle">Project titel</Label>
-              <Input
-                id="projectTitle"
-                value={formData.projectTitle}
-                onChange={(e) => setFormData({ ...formData, projectTitle: e.target.value })}
-                placeholder="Voer project titel in..."
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="email"
+                checked={emailCustomer}
+                onCheckedChange={(checked) => setEmailCustomer(checked === true)}
+                disabled={!invoice.customer_email}
               />
+              <Label htmlFor="email" className="flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                E-mail naar klant versturen
+                {!invoice.customer_email && (
+                  <span className="text-red-500 text-xs">(geen email adres)</span>
+                )}
+              </Label>
             </div>
-          )}
-        </div>
 
-        <div className="flex gap-2 pt-4">
-          <Button onClick={handleFinalize} disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Finaliseren
-          </Button>
-          <Button 
-            variant="secondary" 
-            onClick={handleCreatePaymentLink}
-            disabled={loading || !invoice?.customer_email}
-          >
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Betaallink Maken
-          </Button>
-          <Button variant="outline" onClick={onClose}>
-            Annuleren
-          </Button>
+            {invoice.source_quote_id && (
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="project"
+                  checked={createProject}
+                  onCheckedChange={(checked) => setCreateProject(checked === true)}
+                />
+                <Label htmlFor="project" className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Project aanmaken (indien nog niet bestaat)
+                </Label>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Annuleren
+            </Button>
+            <Button 
+              onClick={handleFinalize}
+              disabled={isLoading}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <CheckCircle className="h-4 w-4 mr-2" />
+              {isLoading ? 'Bezig met finaliseren...' : 'Finaliseren'}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
