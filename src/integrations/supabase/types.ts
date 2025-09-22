@@ -1810,6 +1810,50 @@ export type Database = {
         }
         Relationships: []
       }
+      project_personnel: {
+        Row: {
+          assigned_by: string
+          created_at: string | null
+          estimated_hours: number | null
+          hourly_rate: number | null
+          id: string
+          project_id: string
+          project_role: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          assigned_by: string
+          created_at?: string | null
+          estimated_hours?: number | null
+          hourly_rate?: number | null
+          id?: string
+          project_id: string
+          project_role?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          assigned_by?: string
+          created_at?: string | null
+          estimated_hours?: number | null
+          hourly_rate?: number | null
+          id?: string
+          project_id?: string
+          project_role?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_personnel_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_receipts: {
         Row: {
           added_by: string

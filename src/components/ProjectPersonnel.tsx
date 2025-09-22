@@ -4,19 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Lock } from "lucide-react";
+import { Plus, Trash2, Lock, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { useUserStore } from "@/hooks/useUserStore";
 import { useAuth } from "@/contexts/AuthContext";
-
-interface ProjectPersonnelAssignment {
-  id: string;
-  userId: number;
-  userName: string;
-  role: string;
-  hourlyRate: number;
-  estimatedHours: number;
-}
+import { useUsers } from "@/hooks/useUsers";
+import { useProjectPersonnel } from "@/hooks/useProjectPersonnel";
 
 interface ProjectPersonnelProps {
   projectId: string;
@@ -24,10 +16,8 @@ interface ProjectPersonnelProps {
 
 export const ProjectPersonnel = ({ projectId }: ProjectPersonnelProps) => {
   const { profile } = useAuth();
-  const { users } = useUserStore();
-  const installers = users.filter(user => user.role === "Installateur");
-  
-  const [assignments, setAssignments] = useState<ProjectPersonnelAssignment[]>([]);
+  const { monteurs, isLoading: usersLoading } = useUsers();
+  const { assignments, loading, addPersonnel, deletePersonnel } = useProjectPersonnel(projectId);
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -37,36 +27,36 @@ export const ProjectPersonnel = ({ projectId }: ProjectPersonnelProps) => {
     estimatedHours: 8
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const selectedUser = installers.find(u => u.id.toString() === formData.userId);
+    const selectedUser = monteurs.find(u => u.id === formData.userId);
     if (!selectedUser) return;
 
-    const newAssignment: ProjectPersonnelAssignment = {
-      id: Date.now().toString(),
-      userId: selectedUser.id,
-      userName: selectedUser.name,
-      role: formData.role,
-      hourlyRate: formData.hourlyRate,
-      estimatedHours: formData.estimatedHours
-    };
+    const success = await addPersonnel({
+      project_id: projectId,
+      user_id: selectedUser.id,
+      project_role: formData.role,
+      hourly_rate: formData.hourlyRate,
+      estimated_hours: formData.estimatedHours
+    });
     
-    setAssignments(prev => [...prev, newAssignment]);
-    setFormData({ userId: "", role: "Monteur", hourlyRate: 35.00, estimatedHours: 8 });
-    setIsDialogOpen(false);
+    if (success) {
+      setFormData({ userId: "", role: "Monteur", hourlyRate: 35.00, estimatedHours: 8 });
+      setIsDialogOpen(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setAssignments(prev => prev.filter(a => a.id !== id));
+  const handleDelete = async (id: string) => {
+    await deletePersonnel(id);
   };
 
   const totalLaborCost = assignments.reduce((sum, assignment) => 
-    sum + (assignment.hourlyRate * assignment.estimatedHours), 0
+    sum + (assignment.hourly_rate * assignment.estimated_hours), 0
   );
 
   const totalEstimatedHours = assignments.reduce((sum, assignment) => 
-    sum + assignment.estimatedHours, 0
+    sum + assignment.estimated_hours, 0
   );
   
   // Check if user has permission to manage personnel
@@ -100,11 +90,18 @@ export const ProjectPersonnel = ({ projectId }: ProjectPersonnelProps) => {
                     <SelectValue placeholder="Selecteer monteur" />
                   </SelectTrigger>
                   <SelectContent>
-                    {installers.map((installer) => (
-                      <SelectItem key={installer.id} value={installer.id.toString()}>
-                        {installer.name}
-                      </SelectItem>
-                    ))}
+                    {usersLoading ? (
+                      <div className="flex items-center justify-center p-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="ml-2">Laden...</span>
+                      </div>
+                    ) : (
+                      monteurs.map((monteur) => (
+                        <SelectItem key={monteur.id} value={monteur.id}>
+                          {monteur.full_name || monteur.email}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -182,6 +179,11 @@ export const ProjectPersonnel = ({ projectId }: ProjectPersonnelProps) => {
               </p>
             </div>
           </div>
+        ) : loading ? (
+          <div className="text-center py-8 space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+            <p className="text-muted-foreground">Personeel laden...</p>
+          </div>
         ) : assignments.length === 0 ? (
           <div className="text-center py-8 space-y-4">
             <p className="text-muted-foreground">
@@ -207,11 +209,11 @@ export const ProjectPersonnel = ({ projectId }: ProjectPersonnelProps) => {
               <TableBody>
                 {assignments.map((assignment) => (
                   <TableRow key={assignment.id}>
-                    <TableCell className="font-medium">{assignment.userName}</TableCell>
-                    <TableCell>{assignment.role}</TableCell>
-                    <TableCell>€{assignment.hourlyRate.toFixed(2)}</TableCell>
-                    <TableCell>{assignment.estimatedHours}h</TableCell>
-                    <TableCell>€{(assignment.hourlyRate * assignment.estimatedHours).toFixed(2)}</TableCell>
+                    <TableCell className="font-medium">{assignment.user_name}</TableCell>
+                    <TableCell>{assignment.project_role}</TableCell>
+                    <TableCell>€{assignment.hourly_rate.toFixed(2)}</TableCell>
+                    <TableCell>{assignment.estimated_hours}h</TableCell>
+                    <TableCell>€{(assignment.hourly_rate * assignment.estimated_hours).toFixed(2)}</TableCell>
                     <TableCell>
                       {canManagePersonnel && (
                         <Button
