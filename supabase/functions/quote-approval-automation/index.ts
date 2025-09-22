@@ -30,7 +30,7 @@ const handler = async (req: Request): Promise<Response> => {
       .from('quotes')
       .select('*')
       .eq('id', quote_id)
-      .eq('status', 'approved')
+      .in('status', ['approved', 'goedgekeurd'])
       .single();
 
     if (quoteError || !quote) {

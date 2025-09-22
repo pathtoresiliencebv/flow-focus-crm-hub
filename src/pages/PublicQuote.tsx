@@ -34,6 +34,8 @@ export default function PublicQuote() {
   const [signing, setSigning] = useState(false);
   const [clientName, setClientName] = useState('');
   const [clientSignature, setClientSignature] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isApproved, setIsApproved] = useState(false);
 
   useEffect(() => {
     if (token) {

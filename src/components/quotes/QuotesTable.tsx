@@ -11,8 +11,9 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Eye, ExternalLink, Trash2, CheckCircle, Mail, Copy, Pencil, FileSignature, RotateCcw, MoreHorizontal } from "lucide-react";
+import { Eye, ExternalLink, Trash2, CheckCircle, Mail, Copy, Pencil, FileSignature, RotateCcw, MoreHorizontal, Download, Printer } from "lucide-react";
 import { Quote } from '@/types/quote';
+import { supabase } from "@/integrations/supabase/client";
 
 interface QuotesTableProps {
   quotes: Quote[];
@@ -37,6 +38,49 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
   onRestore,
   isArchived = false
 }) => {
+  const handlePDFDownload = async (quoteId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-quote-pdf', {
+        body: { quoteId }
+      });
+
+      if (error) throw error;
+
+      if (data.pdfUrl) {
+        // Create download link
+        const link = document.createElement('a');
+        link.href = data.pdfUrl;
+        link.download = `offerte-${quotes.find(q => q.id === quoteId)?.quote_number || quoteId}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+    }
+  };
+
+  const handlePrint = async (quoteId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-quote-pdf', {
+        body: { quoteId }
+      });
+
+      if (error) throw error;
+
+      if (data.pdfUrl) {
+        // Open PDF in new window for printing
+        const printWindow = window.open(data.pdfUrl, '_blank');
+        if (printWindow) {
+          printWindow.onload = () => {
+            printWindow.print();
+          };
+        }
+      }
+    } catch (error) {
+      console.error('Error printing PDF:', error);
+    }
+  };
   const navigate = useNavigate();
   const getStatusBadge = (status: string) => {
     const statusColors = {
@@ -146,19 +190,31 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                       <RotateCcw className="mr-2 h-4 w-4" />
                       Herstellen
                     </DropdownMenuItem>
-                  )}
-                  
-                  {((!isArchived && onDelete) || (isArchived && onRestore)) && (
-                    <DropdownMenuSeparator />
-                  )}
-                  
-                  <DropdownMenuItem 
-                    onClick={() => onDelete(quote.id!)}
-                    className="text-destructive"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {isArchived ? "Permanent verwijderen" : "Verwijderen"}
-                  </DropdownMenuItem>
+                   )}
+                   
+                   <DropdownMenuSeparator />
+                   
+                   <DropdownMenuItem onClick={() => handlePDFDownload(quote.id!)}>
+                     <Download className="mr-2 h-4 w-4" />
+                     PDF downloaden
+                   </DropdownMenuItem>
+                   
+                   <DropdownMenuItem onClick={() => handlePrint(quote.id!)}>
+                     <Printer className="mr-2 h-4 w-4" />
+                     Printen
+                   </DropdownMenuItem>
+                   
+                   {((!isArchived && onDelete) || (isArchived && onRestore)) && (
+                     <DropdownMenuSeparator />
+                   )}
+                   
+                   <DropdownMenuItem 
+                     onClick={() => onDelete(quote.id!)}
+                     className="text-destructive"
+                   >
+                     <Trash2 className="mr-2 h-4 w-4" />
+                     {isArchived ? "Permanent verwijderen" : "Verwijderen"}
+                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </TableCell>
