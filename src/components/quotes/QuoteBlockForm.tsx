@@ -522,40 +522,17 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
 
         {showTextForm && (
           <div className="p-4 border rounded-lg bg-muted/50 space-y-3">
-            <div className="flex gap-1 mb-2">
-              <Button
-                type="button"
-                variant={textFormatting.bold ? "default" : "outline"}
-                size="sm"
-                onClick={() => toggleTextFormatting('bold')}
-                className="h-7 w-7 p-0"
-              >
-                <strong>B</strong>
-              </Button>
-              <Button
-                type="button"
-                variant={textFormatting.italic ? "default" : "outline"}
-                size="sm"
-                onClick={() => toggleTextFormatting('italic')}
-                className="italic h-7 w-7 p-0"
-              >
-                I
-              </Button>
-              <Button
-                type="button"
-                variant={textFormatting.underline ? "default" : "outline"}
-                size="sm"
-                onClick={() => toggleTextFormatting('underline')}
-                className="underline h-7 w-7 p-0"
-              >
-                U
-              </Button>
-            </div>
-            <Textarea
+            <RichTextEditor
               value={textBlockContent}
-              onChange={(e) => setTextBlockContent(e.target.value)}
+              onChange={(value, formatting) => {
+                setTextBlockContent(value);
+                if (formatting) {
+                  setTextFormatting(formatting);
+                }
+              }}
               placeholder="Voer tekst in..."
-              className="min-h-[80px]"
+              formatting={textFormatting}
+              onFormattingChange={setTextFormatting}
             />
             <div className="flex gap-2">
               <Button size="sm" onClick={handleAddTextBlock}>

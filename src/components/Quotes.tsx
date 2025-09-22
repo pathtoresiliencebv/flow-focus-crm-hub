@@ -238,7 +238,7 @@ export function Quotes() {
         onClose={() => setSendDialogOpen(false)}
         quote={selectedQuote}
         onSent={() => {
-          fetchQuotes();
+          fetchQuotes(true); // Force refresh including archived quotes
           setSendDialogOpen(false);
         }}
       />
@@ -248,7 +248,7 @@ export function Quotes() {
         onClose={() => setApproveDialogOpen(false)}
         quote={selectedQuote}
         onApproved={() => {
-          fetchQuotes();
+          fetchQuotes(true); // Force refresh including archived quotes
           setApproveDialogOpen(false);
         }}
       />
