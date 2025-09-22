@@ -43,9 +43,8 @@ export const useProjectPersonnel = (projectId: string) => {
         .from('project_personnel')
         .select(`
           *,
-          profiles!project_personnel_user_id_fkey (
-            full_name,
-            id
+          profiles (
+            full_name
           )
         `)
         .eq('project_id', projectId);
@@ -87,9 +86,8 @@ export const useProjectPersonnel = (projectId: string) => {
         })
         .select(`
           *,
-          profiles!project_personnel_user_id_fkey (
-            full_name,
-            id
+          profiles (
+            full_name
           )
         `)
         .single();
@@ -135,9 +133,8 @@ export const useProjectPersonnel = (projectId: string) => {
         .eq('id', id)
         .select(`
           *,
-          profiles!project_personnel_user_id_fkey (
-            full_name,
-            id
+          profiles (
+            full_name
           )
         `)
         .single();
