@@ -55,6 +55,17 @@ SMANS BV`
     e.preventDefault();
     if (!quote) return;
 
+    // Validate quote ID is a proper UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(quote.id)) {
+      toast({
+        title: "Offerte niet opgeslagen",
+        description: "Deze offerte moet eerst worden opgeslagen voordat deze kan worden verstuurd.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       console.log('📧 SENDING EMAIL for quote:', quote.id);

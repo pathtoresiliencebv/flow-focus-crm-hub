@@ -29,6 +29,22 @@ const handler = async (req: Request): Promise<Response> => {
     
     console.log('Sending quote email for ID:', quoteId, 'to:', recipientEmail);
 
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(quoteId)) {
+      console.error('Invalid UUID format for quoteId:', quoteId);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid quote ID format',
+          details: `Quote ID "${quoteId}" is not a valid UUID format`
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -44,7 +60,11 @@ const handler = async (req: Request): Promise<Response> => {
     if (quoteError || !quote) {
       console.error('Error fetching quote:', quoteError);
       return new Response(
-        JSON.stringify({ error: 'Quote not found' }),
+        JSON.stringify({ 
+          error: 'Quote not found',
+          details: quoteError ? quoteError.message : 'No quote found with this ID',
+          quoteId: quoteId
+        }),
         {
           status: 404,
           headers: { "Content-Type": "application/json", ...corsHeaders },
