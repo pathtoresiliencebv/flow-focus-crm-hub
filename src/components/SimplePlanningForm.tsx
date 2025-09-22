@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { MapPin, Clock, Calendar, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCrmStore } from "@/hooks/useCrmStore";
-import { useUserStore } from "@/hooks/useUserStore";
+import { useUsers } from "@/hooks/useUsers";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 
@@ -23,8 +23,7 @@ interface SimplePlanningFormProps {
 export const SimplePlanningForm = ({ selectedDate, onClose, onSubmit }: SimplePlanningFormProps) => {
   const { toast } = useToast();
   const { projects } = useCrmStore();
-  const { users } = useUserStore();
-  const installers = users.filter(user => user.role === "Installateur");
+  const { monteurs } = useUsers();
 
   const [formData, setFormData] = useState({
     title: '',
@@ -197,9 +196,9 @@ export const SimplePlanningForm = ({ selectedDate, onClose, onSubmit }: SimplePl
                 <SelectValue placeholder="Kies monteur" />
               </SelectTrigger>
               <SelectContent>
-                {installers.map((installer) => (
-                  <SelectItem key={installer.id} value={installer.id.toString()}>
-                    {installer.name}
+                {monteurs.map((monteur) => (
+                  <SelectItem key={monteur.id} value={monteur.id}>
+                    {monteur.full_name || monteur.email}
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -3,396 +3,346 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Package, Receipt, Camera, Trash2, Lock } from "lucide-react";
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-
-interface Material {
-  id?: string;
-  material_name: string;
-  quantity: number;
-  unit_price: number;
-  supplier: string;
-  receipt_photo_url?: string;
-}
-
-interface ReceiptData {
-  id?: string;
-  receipt_date: string;
-  supplier: string;
-  total_amount: number;
-  description: string;
-  receipt_photo_url: string;
-  category: string;
-}
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Plus, Camera, Receipt, Package, Trash2 } from "lucide-react";
+import { useProjectMaterials } from "@/hooks/useProjectMaterials";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface MobileMaterialsReceiptsProps {
   projectId: string;
 }
 
 export const MobileMaterialsReceipts: React.FC<MobileMaterialsReceiptsProps> = ({ projectId }) => {
-  const { user, profile } = useAuth();
-  const { toast } = useToast();
-  const [materials, setMaterials] = useState<Material[]>([]);
-  const [receipts, setReceipts] = useState<ReceiptData[]>([]);
-  const [showMaterialForm, setShowMaterialForm] = useState(false);
-  const [showReceiptForm, setShowReceiptForm] = useState(false);
+  const { profile } = useAuth();
+  const { 
+    materials, 
+    receipts, 
+    totalMaterialCost, 
+    totalReceiptCost, 
+    totalCost,
+    isLoading, 
+    addMaterial, 
+    addReceipt,
+    deleteMaterial 
+  } = useProjectMaterials(projectId);
 
-  const [newMaterial, setNewMaterial] = useState<Material>({
-    material_name: '',
+  const [materialDialogOpen, setMaterialDialogOpen] = useState(false);
+  const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
+  
+  const [materialForm, setMaterialForm] = useState({
+    material_name: "",
     quantity: 1,
     unit_price: 0,
-    supplier: ''
+    supplier: ""
   });
 
-  const [newReceipt, setNewReceipt] = useState<ReceiptData>({
-    receipt_date: new Date().toISOString().split('T')[0],
-    supplier: '',
+  const [receiptForm, setReceiptForm] = useState({
+    supplier: "",
     total_amount: 0,
-    description: '',
-    receipt_photo_url: '',
-    category: 'material'
+    description: "",
+    category: "material",
+    receipt_photo_url: ""
   });
 
-  const addMaterial = async () => {
-    if (!newMaterial.material_name || !user?.id) return;
+  const canManage = profile?.role !== 'Bekijker';
 
+  const handleMaterialSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      const { error } = await supabase
-        .from('project_materials')
-        .insert({
-          project_id: projectId,
-          material_name: newMaterial.material_name,
-          quantity: newMaterial.quantity,
-          unit_price: newMaterial.unit_price,
-          total_cost: newMaterial.quantity * newMaterial.unit_price,
-          supplier: newMaterial.supplier,
-          receipt_photo_url: newMaterial.receipt_photo_url,
-          added_by: user.id
-        });
-
-      if (error) throw error;
-
-      setMaterials([...materials, { ...newMaterial, id: Date.now().toString() }]);
-      setNewMaterial({ material_name: '', quantity: 1, unit_price: 0, supplier: '' });
-      setShowMaterialForm(false);
-      
-      toast({
-        title: "Materiaal toegevoegd",
-        description: "Het materiaal is succesvol toegevoegd aan het project.",
+      await addMaterial({
+        ...materialForm,
+        total_cost: materialForm.quantity * materialForm.unit_price
       });
+      setMaterialForm({ material_name: "", quantity: 1, unit_price: 0, supplier: "" });
+      setMaterialDialogOpen(false);
     } catch (error) {
-      toast({
-        title: "Fout",
-        description: "Kon materiaal niet toevoegen.",
-        variant: "destructive",
-      });
+      // Error handled by hook
     }
   };
 
-  const addReceipt = async () => {
-    if (!newReceipt.receipt_photo_url || !user?.id) return;
-
+  const handleReceiptSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      const { error } = await supabase
-        .from('project_receipts')
-        .insert({
-          project_id: projectId,
-          receipt_date: newReceipt.receipt_date,
-          supplier: newReceipt.supplier,
-          total_amount: newReceipt.total_amount,
-          description: newReceipt.description,
-          receipt_photo_url: newReceipt.receipt_photo_url,
-          category: newReceipt.category,
-          added_by: user.id
-        });
-
-      if (error) throw error;
-
-      setReceipts([...receipts, { ...newReceipt, id: Date.now().toString() }]);
-      setNewReceipt({
-        receipt_date: new Date().toISOString().split('T')[0],
-        supplier: '',
-        total_amount: 0,
-        description: '',
-        receipt_photo_url: '',
-        category: 'material'
+      await addReceipt({
+        ...receiptForm,
+        receipt_photo_url: receiptForm.receipt_photo_url || 'placeholder-url'
       });
-      setShowReceiptForm(false);
-      
-      toast({
-        title: "Bonnetje toegevoegd",
-        description: "Het bonnetje is succesvol toegevoegd aan het project.",
-      });
+      setReceiptForm({ supplier: "", total_amount: 0, description: "", category: "material", receipt_photo_url: "" });
+      setReceiptDialogOpen(false);
     } catch (error) {
-      toast({
-        title: "Fout",
-        description: "Kon bonnetje niet toevoegen.",
-        variant: "destructive",
-      });
+      // Error handled by hook
     }
   };
 
-  const captureReceiptPhoto = async () => {
-    // Simplified for now - would integrate with camera
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const url = URL.createObjectURL(file);
-        setNewReceipt({ ...newReceipt, receipt_photo_url: url });
+  const handleDeleteMaterial = async (materialId: string) => {
+    if (confirm('Weet je zeker dat je dit materiaal wilt verwijderen?')) {
+      try {
+        await deleteMaterial(materialId);
+      } catch (error) {
+        // Error handled by hook
       }
-    };
-    input.click();
+    }
   };
 
-  // Check if user has permission to manage materials and receipts
-  const canManageMaterials = profile?.role === 'Administrator' || profile?.role === 'Administratie';
-
-  if (!canManageMaterials) {
+  if (isLoading) {
     return (
-      <div className="text-center py-12 space-y-4">
-        <Lock className="h-12 w-12 text-muted-foreground mx-auto" />
-        <div>
-          <p className="text-lg font-medium text-muted-foreground">Geen toegang</p>
-          <p className="text-sm text-muted-foreground">
-            Materiaal beheer is alleen toegankelijk voor administrators en administratie medewerkers.
-          </p>
-        </div>
-      </div>
+      <Card>
+        <CardContent className="p-4">
+          <div className="text-center">Materialen laden...</div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-4">
+      {/* Summary Card */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Kosten Overzicht</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span>Materialen:</span>
+            <span>€{totalMaterialCost.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span>Bonnetjes:</span>
+            <span>€{totalReceiptCost.toFixed(2)}</span>
+          </div>
+          <hr />
+          <div className="flex justify-between font-medium">
+            <span>Totaal:</span>
+            <span>€{totalCost.toFixed(2)}</span>
+          </div>
+        </CardContent>
+      </Card>
+
       <Tabs defaultValue="materials" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="materials" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
-            Materialen ({materials.length})
+            <span className="text-xs">Materialen</span>
           </TabsTrigger>
           <TabsTrigger value="receipts" className="flex items-center gap-2">
             <Receipt className="h-4 w-4" />
-            Bonnetjes ({receipts.length})
+            <span className="text-xs">Bonnetjes</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="materials" className="space-y-4">
-          {materials.length === 0 && !showMaterialForm ? (
-            <div className="text-center py-8 space-y-4">
-              <p className="text-muted-foreground">
-                Nog geen materialen toegevoegd aan dit project.
-              </p>
-              <Button
-                onClick={() => setShowMaterialForm(true)}
-                variant="outline"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Eerste Materiaal Toevoegen
-              </Button>
-            </div>
-          ) : !showMaterialForm ? (
-            <Button
-              onClick={() => setShowMaterialForm(true)}
-              className="w-full"
-              variant="outline"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Materiaal Toevoegen
-            </Button>
-          ) : (
-            <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-base">Nieuw Materiaal</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="material-name">Materiaal naam *</Label>
-                  <Input
-                    id="material-name"
-                    value={newMaterial.material_name}
-                    onChange={(e) => setNewMaterial({ ...newMaterial, material_name: e.target.value })}
-                    placeholder="Naam van het materiaal"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="quantity">Aantal</Label>
-                    <Input
-                      id="quantity"
-                      type="number"
-                      value={newMaterial.quantity}
-                      onChange={(e) => setNewMaterial({ ...newMaterial, quantity: parseFloat(e.target.value) || 1 })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="unit-price">Eenheidsprijs (€)</Label>
-                    <Input
-                      id="unit-price"
-                      type="number"
-                      step="0.01"
-                      value={newMaterial.unit_price}
-                      onChange={(e) => setNewMaterial({ ...newMaterial, unit_price: parseFloat(e.target.value) || 0 })}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="supplier">Leverancier</Label>
-                  <Input
-                    id="supplier"
-                    value={newMaterial.supplier}
-                    onChange={(e) => setNewMaterial({ ...newMaterial, supplier: e.target.value })}
-                    placeholder="Naam leverancier"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={addMaterial} className="flex-1">
+        <TabsContent value="materials" className="space-y-4 mt-4">
+          <div className="flex justify-between items-center">
+            <h3 className="font-medium">Gebruikte Materialen</h3>
+            {canManage && (
+              <Dialog open={materialDialogOpen} onOpenChange={setMaterialDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Plus className="h-4 w-4 mr-1" />
                     Toevoegen
                   </Button>
-                  <Button variant="outline" onClick={() => setShowMaterialForm(false)}>
-                    Annuleren
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                </DialogTrigger>
+                <DialogContent className="w-[95vw] max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Materiaal Toevoegen</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleMaterialSubmit} className="space-y-4">
+                    <div>
+                      <Label htmlFor="material_name">Materiaal</Label>
+                      <Input
+                        id="material_name"
+                        value={materialForm.material_name}
+                        onChange={(e) => setMaterialForm(prev => ({ ...prev, material_name: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="supplier">Leverancier</Label>
+                      <Input
+                        id="supplier"
+                        value={materialForm.supplier}
+                        onChange={(e) => setMaterialForm(prev => ({ ...prev, supplier: e.target.value }))}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="quantity">Aantal</Label>
+                        <Input
+                          id="quantity"
+                          type="number"
+                          step="0.01"
+                          value={materialForm.quantity}
+                          onChange={(e) => setMaterialForm(prev => ({ ...prev, quantity: parseFloat(e.target.value) || 0 }))}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="unit_price">Prijs/stuk (€)</Label>
+                        <Input
+                          id="unit_price"
+                          type="number"
+                          step="0.01"
+                          value={materialForm.unit_price}
+                          onChange={(e) => setMaterialForm(prev => ({ ...prev, unit_price: parseFloat(e.target.value) || 0 }))}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Totaal: €{(materialForm.quantity * materialForm.unit_price).toFixed(2)}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" onClick={() => setMaterialDialogOpen(false)} className="flex-1">
+                        Annuleren
+                      </Button>
+                      <Button type="submit" className="flex-1">
+                        Toevoegen
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
 
-          {materials.map((material, index) => (
-            <Card key={material.id || index}>
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h4 className="font-medium">{material.material_name}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {material.quantity}x à €{material.unit_price.toFixed(2)} = €{(material.quantity * material.unit_price).toFixed(2)}
-                    </p>
-                    {material.supplier && (
-                      <p className="text-sm text-muted-foreground">Leverancier: {material.supplier}</p>
-                    )}
-                  </div>
-                  <Badge variant="outline">€{(material.quantity * material.unit_price).toFixed(2)}</Badge>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          <div className="space-y-3">
+            {materials.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Nog geen materialen toegevoegd</p>
+              </div>
+            ) : (
+              materials.map((material) => (
+                <Card key={material.id}>
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h4 className="font-medium">{material.material_name}</h4>
+                        {material.supplier && (
+                          <p className="text-sm text-muted-foreground">{material.supplier}</p>
+                        )}
+                        <p className="text-sm text-muted-foreground">
+                          {material.quantity} × €{material.unit_price?.toFixed(2)} = €{material.total_cost?.toFixed(2)}
+                        </p>
+                      </div>
+                      {canManage && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDeleteMaterial(material.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
         </TabsContent>
 
-        <TabsContent value="receipts" className="space-y-4">
-          {receipts.length === 0 && !showReceiptForm ? (
-            <div className="text-center py-8 space-y-4">
-              <p className="text-muted-foreground">
-                Nog geen bonnetjes toegevoegd aan dit project.
-              </p>
-              <Button
-                onClick={() => setShowReceiptForm(true)}
-                variant="outline"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Eerste Bonnetje Toevoegen
-              </Button>
-            </div>
-          ) : !showReceiptForm ? (
-            <Button
-              onClick={() => setShowReceiptForm(true)}
-              className="w-full"
-              variant="outline"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Bonnetje Toevoegen
-            </Button>
-          ) : (
-            <Card>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-base">Nieuw Bonnetje</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="receipt-date">Datum</Label>
-                  <Input
-                    id="receipt-date"
-                    type="date"
-                    value={newReceipt.receipt_date}
-                    onChange={(e) => setNewReceipt({ ...newReceipt, receipt_date: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="receipt-supplier">Leverancier</Label>
-                  <Input
-                    id="receipt-supplier"
-                    value={newReceipt.supplier}
-                    onChange={(e) => setNewReceipt({ ...newReceipt, supplier: e.target.value })}
-                    placeholder="Naam leverancier"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="receipt-amount">Bedrag (€)</Label>
-                  <Input
-                    id="receipt-amount"
-                    type="number"
-                    step="0.01"
-                    value={newReceipt.total_amount}
-                    onChange={(e) => setNewReceipt({ ...newReceipt, total_amount: parseFloat(e.target.value) || 0 })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="receipt-description">Omschrijving</Label>
-                  <Textarea
-                    id="receipt-description"
-                    value={newReceipt.description}
-                    onChange={(e) => setNewReceipt({ ...newReceipt, description: e.target.value })}
-                    placeholder="Wat is er gekocht?"
-                    rows={3}
-                  />
-                </div>
-                <div>
-                  <Label>Foto van bonnetje *</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={captureReceiptPhoto}
-                    className="w-full mt-2"
-                  >
-                    <Camera className="h-4 w-4 mr-2" />
-                    Foto Maken
-                  </Button>
-                  {newReceipt.receipt_photo_url && (
-                    <p className="text-sm text-green-600 mt-2">✓ Foto toegevoegd</p>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={addReceipt} className="flex-1" disabled={!newReceipt.receipt_photo_url}>
+        <TabsContent value="receipts" className="space-y-4 mt-4">
+          <div className="flex justify-between items-center">
+            <h3 className="font-medium">Bonnetjes</h3>
+            {canManage && (
+              <Dialog open={receiptDialogOpen} onOpenChange={setReceiptDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Plus className="h-4 w-4 mr-1" />
                     Toevoegen
                   </Button>
-                  <Button variant="outline" onClick={() => setShowReceiptForm(false)}>
-                    Annuleren
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                </DialogTrigger>
+                <DialogContent className="w-[95vw] max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Bonnetje Toevoegen</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleReceiptSubmit} className="space-y-4">
+                    <div>
+                      <Label htmlFor="receipt_supplier">Leverancier</Label>
+                      <Input
+                        id="receipt_supplier"
+                        value={receiptForm.supplier}
+                        onChange={(e) => setReceiptForm(prev => ({ ...prev, supplier: e.target.value }))}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="receipt_amount">Bedrag (€)</Label>
+                      <Input
+                        id="receipt_amount"
+                        type="number"
+                        step="0.01"
+                        value={receiptForm.total_amount}
+                        onChange={(e) => setReceiptForm(prev => ({ ...prev, total_amount: parseFloat(e.target.value) || 0 }))}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="category">Categorie</Label>
+                      <Select value={receiptForm.category} onValueChange={(value) => setReceiptForm(prev => ({ ...prev, category: value }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="material">Materiaal</SelectItem>
+                          <SelectItem value="tools">Gereedschap</SelectItem>
+                          <SelectItem value="other">Overig</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="receipt_description">Beschrijving</Label>
+                      <Input
+                        id="receipt_description"
+                        value={receiptForm.description}
+                        onChange={(e) => setReceiptForm(prev => ({ ...prev, description: e.target.value }))}
+                        placeholder="Wat is gekocht?"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="button" variant="outline" onClick={() => setReceiptDialogOpen(false)} className="flex-1">
+                        Annuleren
+                      </Button>
+                      <Button type="submit" className="flex-1">
+                        Toevoegen
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
 
-          {receipts.map((receipt, index) => (
-            <Card key={receipt.id || index}>
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h4 className="font-medium">{receipt.supplier}</h4>
-                    <p className="text-sm text-muted-foreground">{receipt.description}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(receipt.receipt_date).toLocaleDateString('nl-NL')}
-                    </p>
-                  </div>
-                  <Badge variant="outline">€{receipt.total_amount.toFixed(2)}</Badge>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          <div className="space-y-3">
+            {receipts.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Receipt className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Nog geen bonnetjes toegevoegd</p>
+              </div>
+            ) : (
+              receipts.map((receipt) => (
+                <Card key={receipt.id}>
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h4 className="font-medium">{receipt.supplier}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {receipt.category === 'material' ? 'Materiaal' : 
+                           receipt.category === 'tools' ? 'Gereedschap' : 'Overig'}
+                        </p>
+                        {receipt.description && (
+                          <p className="text-sm">{receipt.description}</p>
+                        )}
+                        <p className="text-sm font-medium">€{receipt.total_amount?.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
         </TabsContent>
       </Tabs>
     </div>

@@ -5,9 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WeekCalendar } from "./WeekCalendar";
 import { SimplePlanningForm } from "./SimplePlanningForm";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Calendar, Plus } from "lucide-react";
+import { Calendar, Plus, User } from "lucide-react";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
+import { usePlanningStore } from "@/hooks/usePlanningStore";
+import { useUsers } from "@/hooks/useUsers";
 
 interface ProjectPlanningEvent {
   id: string;
@@ -26,58 +28,56 @@ interface ProjectPlanningProps {
 }
 
 export const ProjectPlanning = ({ projectId, projectTitle }: ProjectPlanningProps) => {
-  const [events, setEvents] = useState<ProjectPlanningEvent[]>([
-    {
-      id: "1",
-      title: `Voormeting - ${projectTitle}`,
-      startTime: "09:00",
-      endTime: "11:00",
-      date: "2025-01-20",
-      type: "appointment",
-      description: "Opmeten voor kozijnvervangen",
-      projectId
-    },
-    {
-      id: "2",
-      title: `Installatie - ${projectTitle}`,
-      startTime: "08:00",
-      endTime: "16:00",
-      date: "2025-01-25",
-      type: "other",
-      description: "Installatie nieuwe kozijnen",
-      projectId
-    }
-  ]);
-  
+  const { planningItems, addPlanningItem, loading } = usePlanningStore();
+  const { monteurs } = useUsers();
   const [planningDialogOpen, setPlanningDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
+
+  // Filter planning items for this project
+  const projectPlanningItems = planningItems.filter(item => 
+    item.project_id === projectId
+  );
 
   const handleAddPlanning = (date: Date) => {
     setSelectedDate(date);
     setPlanningDialogOpen(true);
   };
 
-  const handlePlanningSubmit = (planningData: any) => {
-    const newEvent: ProjectPlanningEvent = {
-      id: Date.now().toString(),
-      title: `${planningData.title} - ${projectTitle}`,
-      startTime: planningData.startTime,
-      endTime: planningData.endTime,
-      date: planningData.date,
-      type: 'other',
-      description: planningData.description,
-      projectId
-    };
-    
-    setEvents(prev => [...prev, newEvent]);
-    setPlanningDialogOpen(false);
+  const handlePlanningSubmit = async (planningData: any) => {
+    try {
+      await addPlanningItem({
+        title: planningData.title,
+        description: planningData.description,
+        start_date: planningData.date,
+        start_time: planningData.startTime,
+        end_time: planningData.endTime,
+        location: planningData.location || '',
+        status: 'Gepland',
+        project_id: projectId,
+        assigned_user_id: planningData.assignedUserId || '',
+        user_id: '' // Will be set by the hook
+      });
+      setPlanningDialogOpen(false);
+    } catch (error) {
+      console.error('Error adding planning:', error);
+    }
   };
 
   const handleEventClick = (event: any) => {
     console.log('Event clicked:', event);
   };
 
-  const projectEvents = events.filter(event => event.projectId === projectId);
+  // Convert planning items to events format for calendar
+  const projectEvents = projectPlanningItems.map(item => ({
+    id: item.id,
+    title: item.title,
+    startTime: item.start_time,
+    endTime: item.end_time,
+    date: item.start_date,
+    type: 'other' as const,
+    description: item.description || '',
+    projectId: projectId
+  }));
 
   return (
     <div className="space-y-6">
@@ -93,7 +93,11 @@ export const ProjectPlanning = ({ projectId, projectTitle }: ProjectPlanningProp
           </Button>
         </CardHeader>
         <CardContent>
-          {projectEvents.length === 0 ? (
+          {loading ? (
+            <div className="text-center text-muted-foreground py-8">
+              <p>Planning laden...</p>
+            </div>
+          ) : projectPlanningItems.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
               <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <h3 className="font-medium mb-2">Nog geen planning beschikbaar</h3>
@@ -106,31 +110,44 @@ export const ProjectPlanning = ({ projectId, projectTitle }: ProjectPlanningProp
           ) : (
             <div className="space-y-4">
               <div className="grid gap-4">
-                {projectEvents.map((event) => (
-                  <div key={event.id} className="p-4 border rounded-lg">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-medium">{event.title}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {format(new Date(event.date), 'EEEE dd MMMM yyyy', { locale: nl })} 
-                          {' • '}
-                          {event.startTime} - {event.endTime}
-                        </p>
-                        {event.description && (
-                          <p className="text-sm mt-2">{event.description}</p>
-                        )}
+                {projectPlanningItems.map((item) => {
+                  const assignedMonteur = monteurs.find(m => m.id === item.assigned_user_id);
+                  
+                  return (
+                    <div key={item.id} className="p-4 border rounded-lg">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h4 className="font-medium">{item.title}</h4>
+                          <p className="text-sm text-muted-foreground">
+                            {format(new Date(item.start_date), 'EEEE dd MMMM yyyy', { locale: nl })} 
+                            {' • '}
+                            {item.start_time} - {item.end_time}
+                          </p>
+                          {item.description && (
+                            <p className="text-sm mt-2">{item.description}</p>
+                          )}
+                          {assignedMonteur && (
+                            <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                              <User className="h-4 w-4" />
+                              <span>{assignedMonteur.full_name || assignedMonteur.email}</span>
+                            </div>
+                          )}
+                          {item.location && (
+                            <p className="text-sm text-muted-foreground mt-1">📍 {item.location}</p>
+                          )}
+                        </div>
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          item.status === 'Gepland' ? 'bg-blue-100 text-blue-800' :
+                          item.status === 'In uitvoering' ? 'bg-orange-100 text-orange-800' :
+                          item.status === 'Voltooid' ? 'bg-green-100 text-green-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {item.status}
+                        </span>
                       </div>
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        event.type === 'appointment' ? 'bg-blue-100 text-blue-800' :
-                        event.type === 'meeting' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {event.type === 'appointment' ? 'Afspraak' :
-                         event.type === 'meeting' ? 'Vergadering' : 'Werkzaamheden'}
-                      </span>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
