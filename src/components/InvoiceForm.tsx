@@ -24,6 +24,9 @@ import { useToast } from "@/hooks/use-toast";
 import { InvoicePreview } from "./InvoicePreview";
 import { CustomerQuickAdd } from "./CustomerQuickAdd";
 import { useCrmStore } from "@/hooks/useCrmStore";
+import { useInvoices } from "@/hooks/useInvoices";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 interface InvoiceFormProps {
   onClose?: () => void;
@@ -44,10 +47,13 @@ interface InvoiceFormValues {
 export function InvoiceForm({ onClose, customers, projects }: InvoiceFormProps) {
   const { toast } = useToast();
   const { customers: allCustomers, projects: allProjects, addProject } = useCrmStore();
+  const { addInvoice } = useInvoices();
+  const navigate = useNavigate();
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [showCustomerAdd, setShowCustomerAdd] = useState(false);
   const [showProjectAdd, setShowProjectAdd] = useState(false);
   const [newProjectData, setNewProjectData] = useState({ title: "", description: "" });
+  const [isSaving, setIsSaving] = useState(false);
   
   const form = useForm<InvoiceFormValues>({
     defaultValues: {
@@ -125,18 +131,73 @@ export function InvoiceForm({ onClose, customers, projects }: InvoiceFormProps) 
     }
   };
 
-  const onSubmit = (data: InvoiceFormValues) => {
-    console.log("Invoice data:", data);
+  const onSubmit = async (data: InvoiceFormValues) => {
+    setIsSaving(true);
     
-    const customer = allCustomers.find(c => c.id === data.customer) || customers.find(c => c.id === data.customer);
-    
-    toast({
-      title: "Factuur aangemaakt",
-      description: `Factuur ${data.invoiceNumber} is aangemaakt voor ${customer?.name}.`,
-    });
-    
-    if (onClose) {
-      onClose();
+    try {
+      console.log('Saving invoice data:', data);
+      
+      const customer = allCustomers.find(c => c.id === data.customer) || customers.find(c => c.id === data.customer);
+      
+      // Calculate totals
+      const subtotal = data.items.reduce((sum, item) => sum + (item.total || 0), 0);
+      const vatAmount = data.items.reduce((sum, item) => sum + ((item.total || 0) * (item.vatRate / 100)), 0);
+      const totalAmount = subtotal + vatAmount;
+      
+      // Create invoice data structure
+      const invoiceData = {
+        customer_name: customer?.name || '',
+        customer_email: allCustomers.find(c => c.id === data.customer)?.email || '',
+        project_title: data.project ? allProjects.find(p => p.id === data.project)?.title || '' : '',
+        invoice_date: data.date,
+        due_date: data.dueDate,
+        message: data.message || '',
+        subtotal,
+        vat_amount: vatAmount,
+        total_amount: totalAmount,
+        status: 'concept'
+      };
+
+      // Add invoice to database
+      const result = await addInvoice(invoiceData);
+      
+      if (result?.id) {
+        // Add invoice items
+        for (const item of data.items) {
+          if (item.description.trim()) {
+            await supabase.from('invoice_items').insert({
+              invoice_id: result.id,
+              description: item.description,
+              quantity: item.quantity,
+              unit_price: item.price,
+              vat_rate: item.vatRate,
+              total: item.total || (item.quantity * item.price)
+            });
+          }
+        }
+
+        toast({
+          title: "Factuur opgeslagen",
+          description: `Factuur ${result.invoice_number} is succesvol opgeslagen.`,
+        });
+
+        // Navigate to invoice send page
+        if (onClose) {
+          onClose();
+        }
+        navigate(`/invoices/${result.id}/send`);
+      } else {
+        throw new Error('Failed to create invoice');
+      }
+    } catch (error) {
+      console.error('Error saving invoice:', error);
+      toast({
+        title: "Fout bij opslaan",
+        description: "Er is een fout opgetreden bij het opslaan van de factuur.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -473,9 +534,9 @@ export function InvoiceForm({ onClose, customers, projects }: InvoiceFormProps) 
                   Annuleren
                 </Button>
               )}
-              <Button type="submit">
+              <Button type="submit" disabled={isSaving}>
                 <Receipt className="mr-2 h-4 w-4" />
-                Factuur opslaan
+                {isSaving ? "Opslaan..." : "Factuur opslaan"}
               </Button>
             </div>
           </form>
