@@ -41,15 +41,23 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
   const getStatusBadge = (status: string) => {
     const statusColors = {
       'concept': 'bg-gray-100 text-gray-800',
-      'verstuurd': 'bg-blue-100 text-blue-800',
+      'sent': 'bg-blue-100 text-blue-800',
       'approved': 'bg-green-100 text-green-800',
-      'afgewezen': 'bg-red-100 text-red-800',
-      'verlopen': 'bg-orange-100 text-orange-800'
+      'rejected': 'bg-red-100 text-red-800',
+      'expired': 'bg-orange-100 text-orange-800'
+    };
+
+    const statusLabels = {
+      'concept': 'Concept',
+      'sent': 'Verzonden',
+      'approved': 'Goedgekeurd',
+      'rejected': 'Afgewezen',
+      'expired': 'Verlopen'
     };
 
     return (
       <Badge className={statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}>
-        {status}
+        {statusLabels[status as keyof typeof statusLabels] || status}
       </Badge>
     );
   };
@@ -119,7 +127,7 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                     </DropdownMenuItem>
                   )}
                   
-                  {!isArchived && (quote.status === 'concept' || quote.status === 'verstuurd') && onApprove && (
+                  {!isArchived && (quote.status === 'concept' || quote.status === 'sent') && onApprove && (
                     <DropdownMenuItem onClick={() => onApprove(quote)}>
                       <CheckCircle className="mr-2 h-4 w-4" />
                       Goedkeuren

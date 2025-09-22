@@ -159,12 +159,12 @@ export const Invoicing = () => {
             </div>
             <InvoicesTable 
               invoices={filteredInvoices}
-              onSendInvoice={handleSendInvoice}
-              onDeleteInvoice={handleDeleteInvoice}
-              onEditInvoice={handleEditInvoice}
-              onDuplicateInvoice={handleDuplicateInvoice}
-              onArchiveInvoice={handleArchiveInvoice}
-              onFinalizeInvoice={handleFinalizeInvoice}
+                    onSendInvoice={handleSendInvoice}
+                    onDeleteInvoice={handleDeleteInvoice}
+                    onEditInvoice={handleEditInvoice}
+                    onDuplicateInvoice={handleDuplicateInvoice}
+                    onArchiveInvoice={handleArchiveInvoice}
+                onFinalizeInvoice={handleFinalizeInvoice}
             />
           </TabsContent>
 

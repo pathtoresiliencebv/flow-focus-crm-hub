@@ -197,11 +197,19 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Update quote status to 'verzonden'
+    // Generate public token if not exists
+    let publicToken = quote.public_token;
+    if (!publicToken) {
+      const { data: tokenResult } = await supabase.rpc('generate_quote_public_token');
+      publicToken = tokenResult;
+    }
+
+    // Update quote status to 'sent' and ensure public token exists
     const { error: updateError } = await supabase
       .from('quotes')
       .update({ 
-        status: 'verzonden',
+        status: 'sent',
+        public_token: publicToken,
         updated_at: new Date().toISOString()
       })
       .eq('id', quoteId);
