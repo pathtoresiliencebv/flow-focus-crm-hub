@@ -301,23 +301,22 @@ export const ProjectsBoard: React.FC = () => {
                 )}
               </Droppable>
               
-              {hasPermission("projects_create") && (
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  className={`w-full mt-3 text-xs ${
-                    column.id === "te-plannen" ? "hover:bg-red-100" :
-                    column.id === "gepland" ? "hover:bg-orange-100" :
-                    column.id === "in-uitvoering" ? "hover:bg-blue-100" :
-                    column.id === "herkeuring" ? "hover:bg-gray-100" :
-                    "hover:bg-green-100"
-                  }`}
-                  onClick={() => handleAddProjectClick(column.id as ProjectStatus)}
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Project toevoegen
-                </Button>
-              )}
+              {/* Maak kolom knoppen ALTIJD zichtbaar */}
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                className={`w-full mt-3 text-xs font-medium border-2 border-dashed transition-all hover:border-solid ${
+                  column.id === "te-plannen" ? "border-red-300 hover:bg-red-100 hover:border-red-400" :
+                  column.id === "gepland" ? "border-orange-300 hover:bg-orange-100 hover:border-orange-400" :
+                  column.id === "in-uitvoering" ? "border-blue-300 hover:bg-blue-100 hover:border-blue-400" :
+                  column.id === "herkeuring" ? "border-gray-300 hover:bg-gray-100 hover:border-gray-400" :
+                  "border-green-300 hover:bg-green-100 hover:border-green-400"
+                }`}
+                onClick={() => handleAddProjectClick(column.id as ProjectStatus)}
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Project toevoegen
+              </Button>
             </div>
           ))}
         </div>

@@ -7,9 +7,10 @@ import { DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCrmStore, ProjectWithCustomerName as Project, NewProject, UpdateProject } from "@/hooks/useCrmStore";
 import { CustomerQuickAdd } from "./CustomerQuickAdd";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { useUsers } from "@/hooks/useUsers";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 type ProjectStatus = "te-plannen" | "gepland" | "in-uitvoering" | "herkeuring" | "afgerond";
 interface ProjectFormProps {
@@ -22,7 +23,9 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
   const { addProject, updateProject, customers } = useCrmStore();
   const { monteurs } = useUsers();
   const { hasPermission } = useAuth();
+  const { toast } = useToast();
   const [showCustomerAdd, setShowCustomerAdd] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     title: existingProject?.title || "",
     customerId: existingProject?.customer_id || "",
@@ -70,32 +73,68 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
     setShowCustomerAdd(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Verbeterde form validatie
     if (!formData.customerId) {
-      // Maybe show a toast?
-      console.error("Customer not selected");
+      toast({
+        title: "Fout",
+        description: "Selecteer een klant voor het project.",
+        variant: "destructive",
+      });
       return;
     }
 
-    const projectData: Omit<NewProject, 'id' | 'created_at' | 'updated_at' | 'user_id'> & { id?: string } = {
-      title: formData.title,
-      customer_id: formData.customerId,
-      date: formData.date || null,
-      value: Number(formData.value) || null,
-      status: formData.status as ProjectStatus,
-      description: formData.description || null,
-      assigned_user_id: formData.assignedUserId || null,
-    };
-
-    if (existingProject) {
-      updateProject(existingProject.id, projectData as UpdateProject);
-    } else {
-      addProject(projectData as NewProject);
+    if (!formData.title.trim()) {
+      toast({
+        title: "Fout", 
+        description: "Voer een projectnaam in.",
+        variant: "destructive",
+      });
+      return;
     }
-    
-    onClose();
+
+    setIsSubmitting(true);
+
+    try {
+      const projectData: Omit<NewProject, 'id' | 'created_at' | 'updated_at' | 'user_id'> & { id?: string } = {
+        title: formData.title.trim(),
+        customer_id: formData.customerId,
+        date: formData.date || null,
+        value: Number(formData.value) || null,
+        status: formData.status as ProjectStatus,
+        description: formData.description?.trim() || null,
+        assigned_user_id: formData.assignedUserId || null,
+      };
+
+      if (existingProject) {
+        await updateProject(existingProject.id, projectData as UpdateProject);
+        toast({
+          title: "Succes",
+          description: "Project succesvol bijgewerkt.",
+        });
+      } else {
+        await addProject(projectData as NewProject);
+        toast({
+          title: "Succes", 
+          description: "Project succesvol aangemaakt.",
+        });
+      }
+      
+      onClose();
+    } catch (error) {
+      console.error('Error saving project:', error);
+      toast({
+        title: "Fout",
+        description: existingProject 
+          ? "Er ging iets mis bij het bijwerken van het project."
+          : "Er ging iets mis bij het aanmaken van het project.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (showCustomerAdd) {
@@ -229,11 +268,18 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
       </div>
       
       <DialogFooter>
-        <Button variant="outline" type="button" onClick={onClose}>
+        <Button variant="outline" type="button" onClick={onClose} disabled={isSubmitting}>
           Annuleren
         </Button>
-        <Button type="submit">
-          {existingProject ? "Bijwerken" : "Aanmaken"}
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {existingProject ? "Bijwerken..." : "Aanmaken..."}
+            </>
+          ) : (
+            existingProject ? "Bijwerken" : "Aanmaken"
+          )}
         </Button>
       </DialogFooter>
     </form>
