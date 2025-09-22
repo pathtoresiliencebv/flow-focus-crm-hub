@@ -221,15 +221,16 @@ export const ProjectsBoard: React.FC = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Projecten</h1>
           <p className="text-gray-600 mt-1 text-sm sm:text-base">Beheer je projecten en installaties</p>
         </div>
-        {hasPermission('projects_create') && (
-          <Button 
-            onClick={() => handleAddProjectClick("te-plannen")}
-            className="bg-smans-primary hover:bg-smans-primary/90 text-white"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Nieuw Project
-          </Button>
-        )}
+        
+        {/* Maak knop ALTIJD zichtbaar en prominenter */}
+        <Button 
+          onClick={() => handleAddProjectClick("te-plannen")}
+          size="lg"
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 text-base shadow-lg hover:shadow-xl transition-all duration-200"
+        >
+          <Plus className="mr-2 h-5 w-5" />
+          Project Aanmaken
+        </Button>
       </div>
 
       <Dialog open={newProjectDialogOpen} onOpenChange={setNewProjectDialogOpen}>
