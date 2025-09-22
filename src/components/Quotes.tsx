@@ -113,8 +113,8 @@ export function Quotes() {
       // Convert to invoice
       const invoiceId = await convertQuoteToInvoice(quote);
       
-      // Refresh quotes
-      await fetchQuotes();
+      // Force refresh quotes including archived
+      await fetchQuotes(true);
       
       toast({
         title: "Offerte goedgekeurd",

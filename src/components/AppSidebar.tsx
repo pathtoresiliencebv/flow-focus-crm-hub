@@ -49,6 +49,12 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
       permission: "projects_view",
     },
     {
+      label: "Klanten & Projecten",
+      icon: <Users className="h-5 w-5" />,
+      key: "customers-projects",
+      permission: "customers_view",
+    },
+    {
       label: "Planning",
       icon: <Calendar className="h-5 w-5" />,
       key: "calendar",

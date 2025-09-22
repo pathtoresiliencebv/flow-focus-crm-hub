@@ -72,8 +72,31 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Generate public token if not exists BEFORE creating email content
+    let publicToken = quote.public_token;
+    if (!publicToken) {
+      console.log('Generating new public token for quote:', quoteId);
+      const { data: tokenResult } = await supabase.rpc('generate_quote_public_token');
+      publicToken = tokenResult;
+      
+      // Update the quote immediately with the new token
+      const { error: tokenUpdateError } = await supabase
+        .from('quotes')
+        .update({ public_token: publicToken })
+        .eq('id', quoteId);
+        
+      if (tokenUpdateError) {
+        console.error('Error updating quote with public token:', tokenUpdateError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to generate public token' }),
+          { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      console.log('Public token generated and saved:', publicToken);
+    }
+    
     // Generate public link for the quote
-    const publicUrl = `https://smanscrm.nl/quote/${quote.public_token}`;
+    const publicUrl = `https://smanscrm.nl/quote/${publicToken}`;
     
     // Create email HTML content
     const emailHtml = `
@@ -197,19 +220,11 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Generate public token if not exists
-    let publicToken = quote.public_token;
-    if (!publicToken) {
-      const { data: tokenResult } = await supabase.rpc('generate_quote_public_token');
-      publicToken = tokenResult;
-    }
-
-    // Update quote status to 'sent' and ensure public token exists
+    // Update quote status to 'sent' (token already generated above)
     const { error: updateError } = await supabase
       .from('quotes')
       .update({ 
         status: 'sent',
-        public_token: publicToken,
         updated_at: new Date().toISOString()
       })
       .eq('id', quoteId);

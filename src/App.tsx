@@ -39,6 +39,7 @@ function App() {
                   <Route path="/" element={<Index />} />
                   <Route path="/customers/:customerId" element={<Index />} />
                   <Route path="/projects/:projectId" element={<Index />} />
+                  <Route path="/customers-projects" element={<Index />} />
                   <Route path="/quotes/new" element={<Index />} />
                   <Route path="/invoices/new" element={<Index />} />
                   <Route path="/quotes/:id/edit" element={<EditQuote />} />

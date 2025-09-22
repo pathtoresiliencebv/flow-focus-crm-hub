@@ -3,6 +3,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Dashboard } from "@/components/Dashboard";
 import { Customers } from "@/components/Customers";
 import { ProjectsBoard } from "@/components/ProjectsBoard";
+import { CustomersAndProjects } from "@/components/CustomersAndProjects";
 import { PlanningManagement } from "@/components/PlanningManagement";
 import { TimeRegistration } from "@/components/TimeRegistration";
 import { Receipts } from "@/components/Receipts";
@@ -77,6 +78,7 @@ const Index = () => {
     dashboard: null,
     customers: "customers_view",
     projects: "projects_view",
+    "customers-projects": "customers_view",
     calendar: "projects_view",
     time: "projects_view",
     receipts: "invoices_view",
@@ -113,6 +115,8 @@ const Index = () => {
         return <Customers />;
       case "projects":
         return <ProjectsBoard />;
+      case "customers-projects":
+        return <CustomersAndProjects />;
       case "calendar":
         return <PlanningManagement />;
       case "time":
