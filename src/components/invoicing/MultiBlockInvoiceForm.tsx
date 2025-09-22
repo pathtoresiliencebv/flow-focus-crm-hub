@@ -730,7 +730,7 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
             <Button
               type="button"
               onClick={() => saveAndPrepareToSend()}
-              disabled={!selectedCustomerId}
+              disabled={!selectedCustomerId || blocks.length === 0}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               <Save className="h-4 w-4 mr-2" />

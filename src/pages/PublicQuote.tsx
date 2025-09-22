@@ -58,12 +58,15 @@ export default function PublicQuote() {
   };
 
   const fetchQuote = async () => {
+    console.log('Fetching quote with token:', token);
     try {
       const { data, error } = await supabase
         .from('quotes')
         .select('*')
         .eq('public_token', token)
         .single();
+
+      console.log('Quote fetch response:', { data, error });
 
       if (error) {
         console.error('Error fetching quote:', error);
@@ -72,28 +75,52 @@ export default function PublicQuote() {
           description: "De opgevraagde offerte kon niet worden gevonden.",
           variant: "destructive",
         });
+        setLoading(false);
         return;
       }
+
+      if (!data) {
+        console.error('No quote data received');
+        toast({
+          title: "Offerte niet gevonden",
+          description: "De opgevraagde offerte kon niet worden gevonden.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      console.log('Raw quote data:', data);
+      console.log('Raw items:', data.items);
 
       // Convert the data to Quote format
       let blocks: QuoteBlock[] = [];
       try {
-        if (Array.isArray(data.items)) {
-          blocks = data.items.map((item: any) => ({
-            id: item.id || crypto.randomUUID(),
-            title: item.title || 'Untitled Block',
-            type: item.type || 'product',
-            items: item.items || [],
-            subtotal: item.subtotal || 0,
-            vat_amount: item.vat_amount || 0,
-            order_index: item.order_index || 0,
-            content: item.content
-          }));
+        if (data.items && Array.isArray(data.items)) {
+          console.log('Processing blocks from items array');
+          blocks = data.items.map((item: any, index: number) => {
+            console.log(`Processing block ${index}:`, item);
+            return {
+              id: item.id || crypto.randomUUID(),
+              title: item.title || 'Untitled Block',
+              type: item.type || 'product',
+              items: item.items || [],
+              subtotal: item.subtotal || 0,
+              vat_amount: item.vat_amount || 0,
+              order_index: item.order_index || index,
+              content: item.content
+            };
+          });
+        } else {
+          console.log('No items array found, setting empty blocks');
+          blocks = [];
         }
       } catch (e) {
         console.error('Error parsing quote blocks:', e);
         blocks = [];
       }
+
+      console.log('Parsed blocks:', blocks);
 
       const typedQuote: Quote = {
         ...data,
@@ -101,9 +128,10 @@ export default function PublicQuote() {
         total_vat_amount: data.vat_amount || 0
       };
 
+      console.log('Final typed quote:', typedQuote);
       setQuote(typedQuote);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Unexpected error:', error);
       toast({
         title: "Fout",
         description: "Er is een fout opgetreden bij het laden van de offerte.",

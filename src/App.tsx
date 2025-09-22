@@ -8,6 +8,7 @@ import NotFound from "@/pages/NotFound";
 import { NewQuote } from "@/pages/NewQuote";
 import { EditQuote } from "@/pages/EditQuote";
 import { NewInvoice } from "@/pages/NewInvoice";
+import { EditInvoice } from "@/pages/EditInvoice";
 import { QuotePreview } from "@/pages/QuotePreview";
 import { QuoteSend } from "@/pages/QuoteSend";
 import { InvoiceDetailsPage } from "@/pages/InvoiceDetails";
@@ -47,6 +48,7 @@ function App() {
                   <Route path="/quotes/:quoteId/send" element={<QuoteSend />} />
                   <Route path="/invoices/new" element={<NewInvoice />} />
                   <Route path="/invoices/:id" element={<InvoiceDetailsPage />} />
+                  <Route path="/invoices/:id/edit" element={<EditInvoice />} />
                   <Route path="/invoices/:invoiceId/details" element={<InvoiceDetailsPage />} />
                   <Route path="/invoices/:invoiceId/send" element={<InvoiceSend />} />
                   <Route path="/settings" element={<Settings />} />
