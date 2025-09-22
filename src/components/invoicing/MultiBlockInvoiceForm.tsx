@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { Plus, GripVertical, Trash2, Save, Eye, ArrowLeft, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -44,6 +45,7 @@ interface MultiBlockInvoiceFormProps {
 
 export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceFormProps) {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { customers, projects } = useCrmStore();
   
   // Form state
@@ -341,87 +343,7 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
         ...(isAutoSave && { auto_saved_at: new Date().toISOString() })
       };
 
-      let savedInvoiceId = invoiceId;
-
-      if (invoiceId) {
-        // Update existing invoice
-        const { error } = await supabase
-          .from('invoices')
-          .update(invoiceData)
-          .eq('id', invoiceId);
-
-        if (error) throw error;
-
-        // Delete existing items
-        await supabase
-          .from('invoice_items')
-          .delete()
-          .eq('invoice_id', invoiceId);
-      } else {
-        // Create new invoice
-        const { data: invoice, error } = await supabase
-          .from('invoices')
-          .insert(invoiceData)
-          .select('id')
-          .single();
-
-        if (error) throw error;
-        savedInvoiceId = invoice.id;
-      }
-
-      // Insert invoice items
-      const invoiceItemInserts = [];
-      let orderIndex = 0;
-
-      for (const block of blocks) {
-        // Add block header
-        invoiceItemInserts.push({
-          invoice_id: savedInvoiceId,
-          type: 'block_header',
-          description: `=== ${block.title} ===`,
-          quantity: 1,
-          unit_price: 0,
-          vat_rate: 0,
-          total: 0,
-          order_index: orderIndex++,
-          block_title: block.title,
-          block_order: orderIndex
-        });
-
-        // Add block items
-        for (const item of block.items) {
-          invoiceItemInserts.push({
-            invoice_id: savedInvoiceId,
-            type: item.type,
-            description: item.description,
-            quantity: item.quantity || 1,
-            unit_price: item.unit_price || 0,
-            vat_rate: item.vat_rate || 0,
-            total: item.total || 0,
-            order_index: orderIndex++,
-            item_formatting: item.formatting,
-            block_title: block.title,
-            block_order: orderIndex
-          });
-        }
-      }
-
-      if (invoiceItemInserts.length > 0) {
-        const { error: itemsError } = await supabase
-          .from('invoice_items')
-          .insert(invoiceItemInserts);
-
-        if (itemsError) throw itemsError;
-      }
-
-      if (!isAutoSave) {
-        toast({
-          title: "Factuur opgeslagen",
-          description: `Factuur ${invoiceNumber} is succesvol opgeslagen.`,
-        });
-      }
-
-      return savedInvoiceId;
+      return await saveInvoiceData(invoiceData);
     } catch (error) {
       console.error('Error saving invoice:', error);
       if (!isAutoSave) {
@@ -433,6 +355,138 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
       }
       throw error;
     }
+  };
+
+  const saveAndPrepareToSend = async () => {
+    if (!selectedCustomerId) {
+      toast({
+        title: "Selecteer een klant",
+        description: "Een klant is verplicht voor het versturen van de factuur.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const customer = customers.find(c => c.id === selectedCustomerId);
+      const project = projects.find(p => p.id === selectedProjectId);
+      const { totalAmount, totalVAT } = calculateTotals();
+
+      const invoiceData = {
+        invoice_number: invoiceNumber,
+        customer_name: customer?.name || '',
+        customer_email: customer?.email || '',
+        project_title: project?.title || '',
+        invoice_date: invoiceDate,
+        due_date: dueDate,
+        message: message,
+        subtotal: totalAmount,
+        vat_amount: totalVAT,
+        total_amount: totalAmount + totalVAT,
+        status: 'te-versturen'
+      };
+
+      const savedInvoiceId = await saveInvoiceData(invoiceData);
+      
+      toast({
+        title: "Factuur opgeslagen",
+        description: "Factuur is klaar om te versturen.",
+      });
+      
+      // Navigate to send page
+      navigate(`/invoices/${savedInvoiceId}/send`);
+      
+    } catch (error) {
+      console.error('Error preparing invoice for send:', error);
+      toast({
+        title: "Fout bij opslaan",
+        description: "Er is een fout opgetreden bij het voorbereiden van de factuur.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const saveInvoiceData = async (invoiceData: any) => {
+
+    let savedInvoiceId = invoiceId;
+
+    if (invoiceId) {
+      // Update existing invoice
+      const { error } = await supabase
+        .from('invoices')
+        .update(invoiceData)
+        .eq('id', invoiceId);
+
+      if (error) throw error;
+
+      // Delete existing items
+      await supabase
+        .from('invoice_items')
+        .delete()
+        .eq('invoice_id', invoiceId);
+    } else {
+      // Create new invoice
+      const { data: invoice, error } = await supabase
+        .from('invoices')
+        .insert(invoiceData)
+        .select('id')
+        .single();
+
+      if (error) throw error;
+      savedInvoiceId = invoice.id;
+    }
+
+    // Insert invoice items
+    const invoiceItemInserts = [];
+    let orderIndex = 0;
+
+    for (const block of blocks) {
+      // Add block header
+      invoiceItemInserts.push({
+        invoice_id: savedInvoiceId,
+        type: 'block_header',
+        description: `=== ${block.title} ===`,
+        quantity: 1,
+        unit_price: 0,
+        vat_rate: 0,
+        total: 0,
+        order_index: orderIndex++,
+        block_title: block.title,
+        block_order: orderIndex
+      });
+
+      // Add block items
+      for (const item of block.items) {
+        invoiceItemInserts.push({
+          invoice_id: savedInvoiceId,
+          type: item.type,
+          description: item.description,
+          quantity: item.quantity || 1,
+          unit_price: item.unit_price || 0,
+          vat_rate: item.vat_rate || 0,
+          total: item.total || 0,
+          order_index: orderIndex++,
+          item_formatting: item.formatting,
+          block_title: block.title,
+          block_order: orderIndex
+        });
+      }
+    }
+
+    if (invoiceItemInserts.length > 0) {
+      const { error: itemsError } = await supabase
+        .from('invoice_items')
+        .insert(invoiceItemInserts);
+
+      if (itemsError) throw itemsError;
+    }
+
+    toast({
+      title: "Factuur opgeslagen",
+      description: `Factuur ${invoiceNumber} is succesvol opgeslagen.`,
+    });
+
+    return savedInvoiceId;
   };
 
   const { totalAmount, totalVAT } = calculateTotals();
@@ -671,7 +725,16 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
               disabled={!selectedCustomerId}
             >
               <Save className="h-4 w-4 mr-2" />
-              Opslaan
+              Opslaan als Concept
+            </Button>
+            <Button
+              type="button"
+              onClick={() => saveAndPrepareToSend()}
+              disabled={!selectedCustomerId}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              Opslaan en Versturen
             </Button>
           </div>
         </div>

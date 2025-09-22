@@ -22,7 +22,7 @@ import { ProjectQuickAdd } from '../ProjectQuickAdd';
 import { TemplateSelector } from './TemplateSelector';
 import { PaymentTermsSelector, PaymentTerm } from './PaymentTermsSelector';
 import { FileAttachmentsManager, QuoteAttachment } from './FileAttachmentsManager';
-import { SendQuoteDialog } from './SendQuoteDialog';
+
 import { RichTextEditor } from './RichTextEditor';
 import { useCrmStore } from '@/hooks/useCrmStore';
 import { useQuoteTemplates } from '@/hooks/useQuoteTemplates';
@@ -87,8 +87,6 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     { id: crypto.randomUUID(), percentage: 100, description: "Volledige betaling" }
   ]);
   const [attachments, setAttachments] = useState<QuoteAttachment[]>([]);
-  const [showSendDialog, setShowSendDialog] = useState(false);
-  const [savedQuoteForSending, setSavedQuoteForSending] = useState<any>(null);
   
   const { templates, loading: templatesLoading, saveTemplate } = useQuoteTemplates();
 
@@ -666,36 +664,11 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   const handleSaveAndSend = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setSaving(true);
-    try {
-      // First save as draft
-      await form.handleSubmit((values) => saveAsDraft(values, false))();
-      
-      // Create quote object for sending
-      const currentFormValues = form.getValues();
-      const quoteForSending = {
-        ...currentFormValues,
-        blocks: blocks,
-        status: 'concept',
-        total_amount: grandTotal,
-        vat_amount: totalVAT,
-        id: existingQuote?.id || savedQuote?.id || 'new'
-      };
-      
-      setSavedQuoteForSending(quoteForSending);
-      setShowSendDialog(true);
-      
-    } catch (error) {
-      console.error('Error saving quote:', error);
-      toast({
-        title: "Fout bij opslaan",
-        description: "Er is een fout opgetreden bij het opslaan van de offerte.",
-        variant: "destructive",
-      });
-    } finally {
-      setSaving(false);
-    }
-  }, [form, saveAsDraft, blocks, grandTotal, totalVAT, existingQuote, savedQuote, toast]);
+    
+    // Use saveAndPrepareToSend instead of saveAsDraft to correctly prepare quote for sending
+    await form.handleSubmit((values) => saveAndPrepareToSend(values))();
+    
+  }, [form, saveAndPrepareToSend]);
 
   const handleExitWithConfirm = () => {
     // Check if there are unsaved changes
@@ -1191,26 +1164,6 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         </div>
       </div>
 
-      {/* Send Quote Dialog */}
-      {showSendDialog && savedQuoteForSending && (
-        <SendQuoteDialog
-          isOpen={showSendDialog}
-          onClose={() => {
-            setShowSendDialog(false);
-            setSavedQuoteForSending(null);
-          }}
-          quote={savedQuoteForSending}
-          onSent={() => {
-            setShowSendDialog(false);
-            setSavedQuoteForSending(null);
-            toast({
-              title: "Offerte verzonden",
-              description: "De offerte is succesvol verzonden.",
-            });
-            onClose(); // Navigate back to quotes list
-          }}
-        />
-      )}
     </div>
   );
 };
