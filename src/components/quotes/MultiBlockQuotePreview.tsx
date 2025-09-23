@@ -125,7 +125,7 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
         </Button>
       </div>
       
-      <div className="p-4 max-h-[70vh] overflow-y-auto print:max-h-none print:overflow-visible">
+      <div className="p-2 max-h-[70vh] overflow-y-auto print:max-h-none print:overflow-visible text-xs">
       {/* Header with logo and company info */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center">

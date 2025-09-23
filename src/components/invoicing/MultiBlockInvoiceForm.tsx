@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useCrmStore } from '@/hooks/useCrmStore';
 import { MultiBlockInvoicePreview } from './MultiBlockInvoicePreview';
 import { InvoiceBlockForm } from './InvoiceBlockForm';
+import { PaymentTermsSelector, PaymentTerm } from '../quotes/PaymentTermsSelector';
 import { supabase } from '@/integrations/supabase/client';
 
 interface InvoiceItem {
@@ -57,6 +58,7 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
     new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   );
   const [message, setMessage] = useState<string>("");
+  const [paymentTerms, setPaymentTerms] = useState<PaymentTerm[]>([]);
   const [blocks, setBlocks] = useState<InvoiceBlock[]>([]);
   
   // UI state
@@ -502,6 +504,7 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
     invoice_date: invoiceDate,
     due_date: dueDate,
     message: message,
+    payment_terms: paymentTerms,
     blocks: blocks,
     total_amount: totalAmount,
     total_vat_amount: totalVAT,
@@ -509,9 +512,9 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
       {/* Left side - Form */}
-      <div className="space-y-4 pr-2">
+      <div className="lg:col-span-3 space-y-4 pr-2">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium">Nieuwe factuur - Meerdere blokken</h3>
           <div className={`px-3 py-1 rounded-lg text-sm font-medium ${
@@ -594,6 +597,15 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Extra bericht voor deze factuur"
             rows={3}
+          />
+        </div>
+
+        {/* Payment Terms */}
+        <div>
+          <label className="block text-sm font-medium mb-2">Betalingstermijnen</label>
+          <PaymentTermsSelector 
+            value={paymentTerms} 
+            onChange={setPaymentTerms} 
           />
         </div>
 
@@ -775,10 +787,10 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
       </div>
 
       {/* Right side - Preview */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <div className="flex items-center gap-2 mb-4">
+      <div className="lg:col-span-2 bg-gray-50 rounded-lg p-3">
+        <div className="flex items-center gap-2 mb-3">
           <Eye className="h-4 w-4" />
-          <h4 className="font-medium">Factuur Preview</h4>
+          <h4 className="text-sm font-medium">Preview</h4>
         </div>
         <MultiBlockInvoicePreview key={previewKey} invoice={invoiceForPreview} />
       </div>

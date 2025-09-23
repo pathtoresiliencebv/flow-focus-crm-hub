@@ -49,6 +49,12 @@ interface MultiBlockInvoicePreviewProps {
     total_amount: number;
     total_vat_amount: number;
     status: string;
+    payment_terms?: Array<{
+      id: string;
+      percentage: number;
+      description: string;
+      daysAfter?: number;
+    }>;
   };
 }
 
@@ -142,7 +148,7 @@ export const MultiBlockInvoicePreview: React.FC<MultiBlockInvoicePreviewProps> =
         </Button>
       </div>
       
-      <div className="p-4 max-h-[70vh] overflow-y-auto print:max-h-none print:overflow-visible">
+      <div className="p-2 max-h-[70vh] overflow-y-auto print:max-h-none print:overflow-visible text-xs">
       {/* Header with logo and company info */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center">
@@ -329,6 +335,21 @@ export const MultiBlockInvoicePreview: React.FC<MultiBlockInvoicePreviewProps> =
           </div>
         )}
       </div>
+
+      {/* Payment Terms */}
+      {invoice.payment_terms && invoice.payment_terms.length > 0 && (
+        <div className="mb-4 p-3 bg-orange-50 rounded-lg">
+          <h4 className="font-medium text-gray-700 mb-2">Betalingstermijnen:</h4>
+          <div className="space-y-1">
+            {invoice.payment_terms.map((term, index) => (
+              <div key={term.id || index} className="flex justify-between text-xs">
+                <span>{term.description}</span>
+                <span className="font-medium">{term.percentage}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Grand totals */}
       <div className="flex justify-end border-t-2 border-gray-200 pt-3 bg-gray-50 rounded-lg p-3 mt-4">
