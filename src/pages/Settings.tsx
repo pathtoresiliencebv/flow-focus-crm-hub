@@ -1,15 +1,21 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, Building2, FileText, Users, Mail, Wallet, Bot, ChevronRight } from "lucide-react";
+import { Settings as SettingsIcon, Building2, FileText, Users, Mail, Wallet, Bot, ChevronRight, CreditCard, Shield, Bell, FormInput, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CompanyDetailsSettings } from '@/components/settings/CompanyDetailsSettings';
-import { DocumentSettings } from '@/components/settings/DocumentSettings';
-import { UserRoleSettings } from '@/components/settings/UserRoleSettings';
-import { CommunicationSettings } from '@/components/settings/CommunicationSettings';
 import { ExternalIntegrationsSettings } from '@/components/settings/ExternalIntegrationsSettings';
+import { QuoteSettings } from '@/components/settings/QuoteSettings';
+import { InvoiceSettings } from '@/components/settings/InvoiceSettings';
+import { UserSettings } from '@/components/settings/UserSettings';
+import { RoleSettings } from '@/components/settings/RoleSettings';
+import { EmailSettings } from '@/components/settings/EmailSettings';
+import { EmailTemplateSettings } from '@/components/settings/EmailTemplateSettings';
+import { NotificationSettings } from '@/components/settings/NotificationSettings';
+import { LeadFormSettings } from '@/components/settings/LeadFormSettings';
+import { AIIntegrationSettings } from '@/components/settings/AIIntegrationSettings';
 
-type SettingPage = 'overview' | 'company' | 'documents' | 'users' | 'communication' | 'integrations';
+type SettingPage = 'overview' | 'company' | 'quotes' | 'invoices' | 'users' | 'roles' | 'email' | 'email-templates' | 'notifications' | 'lead-forms' | 'ai-integration' | 'integrations';
 
 const settingsCategories = [
   {
@@ -24,31 +30,85 @@ const settingsCategories = [
         color: "text-blue-600"
       },
       {
-        id: 'documents' as SettingPage,
-        title: "Document Instellingen",
-        description: "Configureer offertes en factuur instellingen",
+        id: 'quotes' as SettingPage,
+        title: "Offerte Instellingen",
+        description: "Configureer instellingen voor offertes",
         icon: FileText,
         color: "text-green-600"
       },
       {
-        id: 'users' as SettingPage,
-        title: "Gebruikers & Rechten",
-        description: "Beheer gebruikers en hun toegangsrechten",
-        icon: Users,
-        color: "text-purple-600"
+        id: 'invoices' as SettingPage,
+        title: "Factuur Instellingen",
+        description: "Configureer factuur en betalingsinstellingen",
+        icon: CreditCard,
+        color: "text-indigo-600"
       }
     ]
   },
   {
-    title: "Communicatie & Automatisering",
+    title: "Gebruikers & Toegang",
+    description: "Beheer gebruikers en hun toegangsrechten",
+    items: [
+      {
+        id: 'users' as SettingPage,
+        title: "Gebruikersbeheer",
+        description: "Beheer gebruikers van het systeem",
+        icon: Users,
+        color: "text-purple-600"
+      },
+      {
+        id: 'roles' as SettingPage,
+        title: "Rollen & Rechten",
+        description: "Configureer gebruikersrollen en toegangsrechten",
+        icon: Shield,
+        color: "text-red-600"
+      }
+    ]
+  },
+  {
+    title: "Communicatie",
     description: "E-mail, templates en notificatie instellingen",
     items: [
       {
-        id: 'communication' as SettingPage,
-        title: "E-mail & Notificaties",
-        description: "Configureer e-mail accounts, templates en notificaties",
+        id: 'email' as SettingPage,
+        title: "E-mail Accounts",
+        description: "Configureer e-mail accounts en webhooks",
         icon: Mail,
         color: "text-orange-600"
+      },
+      {
+        id: 'email-templates' as SettingPage,
+        title: "E-mail Templates",
+        description: "Beheer e-mail templates en automatisering",
+        icon: MessageSquare,
+        color: "text-cyan-600"
+      },
+      {
+        id: 'notifications' as SettingPage,
+        title: "Notificaties",
+        description: "Configureer push notificaties en meldingen",
+        icon: Bell,
+        color: "text-yellow-600"
+      }
+    ]
+  },
+  {
+    title: "Marketing & AI",
+    description: "Lead generatie en AI-functies",
+    items: [
+      {
+        id: 'lead-forms' as SettingPage,
+        title: "Lead Formulieren",
+        description: "Configureer website formulieren voor leadgeneratie",
+        icon: FormInput,
+        color: "text-pink-600"
+      },
+      {
+        id: 'ai-integration' as SettingPage,
+        title: "AI Integratie",
+        description: "Configureer AI-functies en automatisering",
+        icon: Bot,
+        color: "text-violet-600"
       }
     ]
   },
@@ -74,12 +134,24 @@ export default function Settings() {
     switch (currentPage) {
       case 'company':
         return <CompanyDetailsSettings />;
-      case 'documents':
-        return <DocumentSettings />;
+      case 'quotes':
+        return <QuoteSettings />;
+      case 'invoices':
+        return <InvoiceSettings />;
       case 'users':
-        return <UserRoleSettings />;
-      case 'communication':
-        return <CommunicationSettings />;
+        return <UserSettings />;
+      case 'roles':
+        return <RoleSettings />;
+      case 'email':
+        return <EmailSettings />;
+      case 'email-templates':
+        return <EmailTemplateSettings />;
+      case 'notifications':
+        return <NotificationSettings />;
+      case 'lead-forms':
+        return <LeadFormSettings />;
+      case 'ai-integration':
+        return <AIIntegrationSettings />;
       case 'integrations':
         return <ExternalIntegrationsSettings />;
       default:
