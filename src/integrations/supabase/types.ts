@@ -337,6 +337,54 @@ export type Database = {
           },
         ]
       }
+      company_settings: {
+        Row: {
+          address: string | null
+          btw_number: string | null
+          city: string | null
+          company_name: string | null
+          country: string | null
+          created_at: string
+          default_attachments: Json | null
+          general_terms: string | null
+          id: string
+          kvk_number: string | null
+          postal_code: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          btw_number?: string | null
+          city?: string | null
+          company_name?: string | null
+          country?: string | null
+          created_at?: string
+          default_attachments?: Json | null
+          general_terms?: string | null
+          id?: string
+          kvk_number?: string | null
+          postal_code?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          btw_number?: string | null
+          city?: string | null
+          company_name?: string | null
+          country?: string | null
+          created_at?: string
+          default_attachments?: Json | null
+          general_terms?: string | null
+          id?: string
+          kvk_number?: string | null
+          postal_code?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       compliance_events: {
         Row: {
           compliance_standard: string | null
@@ -1045,6 +1093,7 @@ export type Database = {
         Row: {
           archived_at: string | null
           archived_by: string | null
+          attachments: Json | null
           auto_saved_at: string | null
           created_at: string
           customer_email: string | null
@@ -1069,6 +1118,7 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           archived_by?: string | null
+          attachments?: Json | null
           auto_saved_at?: string | null
           created_at?: string
           customer_email?: string | null
@@ -1093,6 +1143,7 @@ export type Database = {
         Update: {
           archived_at?: string | null
           archived_by?: string | null
+          attachments?: Json | null
           auto_saved_at?: string | null
           created_at?: string
           customer_email?: string | null

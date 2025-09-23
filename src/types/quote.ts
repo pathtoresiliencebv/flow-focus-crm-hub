@@ -47,4 +47,5 @@ export interface Quote {
   is_archived?: boolean;
   archived_at?: string;
   archived_by?: string;
+  attachments?: any;
 }

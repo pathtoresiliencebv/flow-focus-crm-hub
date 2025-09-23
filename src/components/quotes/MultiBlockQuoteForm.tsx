@@ -26,6 +26,7 @@ import { FileAttachmentsManager, QuoteAttachment } from './FileAttachmentsManage
 import { RichTextEditor } from './RichTextEditor';
 import { useCrmStore } from '@/hooks/useCrmStore';
 import { useQuoteTemplates } from '@/hooks/useQuoteTemplates';
+import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { QuoteBlock, Quote } from '@/types/quote';
 import { supabase } from "@/integrations/supabase/client";
 
@@ -89,6 +90,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   const [attachments, setAttachments] = useState<QuoteAttachment[]>([]);
   
   const { templates, loading: templatesLoading, saveTemplate } = useQuoteTemplates();
+  const { settings: companySettings } = useCompanySettings();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -126,6 +128,11 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       // Set admin signature
       if (existingQuote.admin_signature_data) {
         setAdminSignature(existingQuote.admin_signature_data);
+      }
+      
+      // Set attachments
+      if (existingQuote.attachments) {
+        setAttachments(Array.isArray(existingQuote.attachments) ? existingQuote.attachments : []);
       }
     } else {
   // Generate unique quote number for new quotes
@@ -171,6 +178,16 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       generateQuoteNumber();
     }
   }, [form, existingQuote, crmLoading]);
+
+  // Add default attachments for new quotes
+  useEffect(() => {
+    if (!existingQuote && companySettings?.default_attachments && attachments.length === 0) {
+      const defaultAttachments = Array.isArray(companySettings.default_attachments) 
+        ? companySettings.default_attachments 
+        : [];
+      setAttachments(defaultAttachments);
+    }
+  }, [existingQuote, companySettings, attachments.length]);
 
   // Remove continuous auto-save - now using blur-based saving
 
