@@ -31,26 +31,6 @@ export const CustomersAndProjects = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Klanten en Projecten</h1>
           <p className="text-gray-600 mt-1 text-sm sm:text-base">Beheer je klanten en projecten vanaf één plek</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
-          {hasPermission('customers_edit') && (
-            <Button 
-              onClick={() => setNewCustomerDialogOpen(true)}
-              className="bg-smans-primary hover:bg-smans-primary/90 text-white"
-            >
-              <Users className="mr-2 h-4 w-4" />
-              Nieuwe Klant
-            </Button>
-          )}
-          {hasPermission('projects_edit') && (
-            <Button 
-              onClick={() => setNewProjectDialogOpen(true)}
-              className="bg-smans-primary hover:bg-smans-primary/90 text-white"
-            >
-              <FolderOpen className="mr-2 h-4 w-4" />
-              Nieuw Project
-            </Button>
-          )}
-        </div>
       </div>
 
       {/* Quick Add Cards */}
