@@ -19,7 +19,7 @@ export function useAutoEmailSync(options: AutoSyncOptions = {}) {
 
   const { user } = useAuth();
   const { syncEmails, isSyncing } = useEmailSync();
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const hasSyncedOnMount = useRef(false);
 
   // Fetch active email accounts
@@ -89,7 +89,7 @@ export function useAutoEmailSync(options: AutoSyncOptions = {}) {
     // Set up recurring sync
     intervalRef.current = setInterval(() => {
       performAutoSync();
-    }, intervalMinutes * 60 * 1000); // Convert minutes to milliseconds
+    }, intervalMinutes * 60 * 1000) as ReturnType<typeof setInterval>; // Convert minutes to milliseconds
 
     console.log(`Auto email sync enabled - will sync every ${intervalMinutes} minutes`);
 

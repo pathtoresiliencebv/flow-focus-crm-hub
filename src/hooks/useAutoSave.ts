@@ -10,7 +10,7 @@ interface UseAutoSaveOptions {
 
 export const useAutoSave = ({ onSave, data, enabled = true, delay = 1500 }: UseAutoSaveOptions) => {
   const { toast } = useToast();
-  const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const lastSavedDataRef = useRef<any>();
   const isSavingRef = useRef(false);
 
@@ -49,7 +49,7 @@ export const useAutoSave = ({ onSave, data, enabled = true, delay = 1500 }: UseA
       clearTimeout(saveTimeoutRef.current);
     }
 
-    saveTimeoutRef.current = setTimeout(debouncedSave, delay);
+    saveTimeoutRef.current = setTimeout(debouncedSave, delay) as ReturnType<typeof setTimeout>;
   }, [debouncedSave, delay]);
 
   const saveNow = useCallback(() => {

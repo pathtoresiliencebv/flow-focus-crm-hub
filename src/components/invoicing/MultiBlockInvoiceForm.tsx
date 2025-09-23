@@ -67,7 +67,7 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
   const [updateCounter, setUpdateCounter] = useState(0);
   
   // Auto-save timer
-  const autoSaveTimer = useRef<NodeJS.Timeout>();
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout>>();
   
   useEffect(() => {
     generateInvoiceNumber();
@@ -180,7 +180,7 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
       if (selectedCustomerId && blocks.length > 0) {
         handleAutoSave();
       }
-    }, 2000);
+    }, 2000) as ReturnType<typeof setTimeout>;
   };
 
   const handleAutoSave = async () => {

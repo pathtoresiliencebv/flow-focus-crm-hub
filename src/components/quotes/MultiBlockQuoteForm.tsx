@@ -432,7 +432,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   }, [customers, projects, adminSignature, toast, blocks, onClose]);
 
   // Blur-based auto-save with debouncing
-  const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [autoSaveTimeout, setAutoSaveTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [lastSaveData, setLastSaveData] = useState<string>('');
   
   const triggerAutoSave = useCallback(async () => {
@@ -462,7 +462,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       clearTimeout(autoSaveTimeout);
     }
     
-    const newTimeout = setTimeout(triggerAutoSave, 1500); // 1.5 second delay
+    const newTimeout = setTimeout(triggerAutoSave, 1500) as ReturnType<typeof setTimeout>; // 1.5 second delay
     setAutoSaveTimeout(newTimeout);
   }, [triggerAutoSave, autoSaveTimeout]);
 

@@ -52,7 +52,7 @@ export const useSimpleChat = () => {
   });
   
   const subscriptionRef = useRef<any>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Fetch available users based on role
   const fetchAvailableUsers = useCallback(async () => {
@@ -337,7 +337,7 @@ export const useSimpleChat = () => {
             
             reconnectTimeoutRef.current = setTimeout(() => {
               setupRealtimeSubscription();
-            }, delay);
+            }, delay) as ReturnType<typeof setTimeout>;
           } else {
             console.error('❌ Max reconnection attempts reached. Manual refresh may be required.');
           }

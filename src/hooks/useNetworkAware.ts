@@ -283,7 +283,7 @@ export const useNetworkAware = () => {
 
   // Initialize network monitoring
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
 
     const startMonitoring = async () => {
       // Initial assessment
