@@ -19,6 +19,8 @@ export const useEmailSync = () => {
 
   const syncEmailsMutation = useMutation({
     mutationFn: async ({ emailSettingsId }: SyncEmailsParams): Promise<SyncResult> => {
+      console.log(`Starting email sync for account: ${emailSettingsId}`);
+      
       const { data, error } = await supabase.functions.invoke('email-sync', {
         body: {
           action: 'sync',
@@ -27,12 +29,15 @@ export const useEmailSync = () => {
       });
 
       if (error) {
+        console.error('Email sync error:', error);
         throw new Error(error.message || 'Sync failed');
       }
 
+      console.log('Email sync result:', data);
       return data;
     },
     onSuccess: (result: SyncResult) => {
+      // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['email-accounts'] });
       queryClient.invalidateQueries({ queryKey: ['emails'] });
       
@@ -43,17 +48,26 @@ export const useEmailSync = () => {
         });
         // In production, open OAuth URL
         console.log('OAuth URL:', result.oauthUrl);
+        window.open(result.oauthUrl, '_blank');
       } else if (result.success) {
+        const emailsAdded = result.emailsAdded || 0;
+        const emailsProcessed = result.emailsProcessed || 0;
+        
         toast({
-          title: "Synchronisatie voltooid",
-          description: `${result.emailsAdded || 0} nieuwe e-mails toegevoegd van ${result.emailsProcessed || 0} verwerkt.`,
+          title: "E-mail synchronisatie voltooid",
+          description: emailsAdded > 0 
+            ? `${emailsAdded} nieuwe e-mails toegevoegd van ${emailsProcessed} verwerkt.`
+            : `Synchronisatie voltooid - geen nieuwe e-mails gevonden.`,
         });
+        
+        console.log(`Email sync completed: ${emailsAdded} added, ${emailsProcessed} processed`);
       }
     },
     onError: (error: Error) => {
+      console.error('Email sync failed:', error);
       toast({
-        title: "Synchronisatie mislukt",
-        description: error.message,
+        title: "E-mail synchronisatie mislukt",
+        description: error.message || "Er is een fout opgetreden tijdens de synchronisatie.",
         variant: "destructive",
       });
     },

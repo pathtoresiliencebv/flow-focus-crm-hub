@@ -12,10 +12,13 @@ import { EmailDetailView } from './EmailDetailView';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Badge } from './ui/badge';
 import { Plus, Search, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useEmailSync } from '@/hooks/useEmailSync';
 import { useEmailRealtime } from '@/hooks/useEmailRealtime';
+import { useAutoEmailSync } from '@/hooks/useAutoEmailSync';
+import { EmailSyncStatus } from './email/EmailSyncStatus';
 
 interface Email {
   id: string;
@@ -76,6 +79,13 @@ export function Email() {
   });
 
   const hasEmailAccounts = emailAccounts.length > 0;
+
+  // Enable automatic email synchronization
+  const { isAutoSyncEnabled, triggerSync } = useAutoEmailSync({
+    enabled: hasEmailAccounts,
+    intervalMinutes: 10, // Sync every 10 minutes
+    syncOnMount: true
+  });
 
   // Fetch emails from database
   const { data: fetchedEmails = [], refetch: refetchEmails } = useQuery<Email[]>({
@@ -389,7 +399,7 @@ export function Email() {
           />
         </div>
 
-        <div className="p-3 sm:p-4 border-b">
+        <div className="p-3 sm:p-4 border-b space-y-4">
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -418,22 +428,51 @@ export function Email() {
               </Button>
             </div>
           </div>
+          
+          {/* Sync Status Indicator */}
+          {hasEmailAccounts && (
+            <div className="border rounded-lg p-3 bg-muted/30">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium">E-mail Synchronisatie Status</h4>
+                {isAutoSyncEnabled && (
+                  <Badge variant="outline" className="text-xs">
+                    Auto-sync actief
+                  </Badge>
+                )}
+              </div>
+              <EmailSyncStatus />
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-hidden">
-          <EmailList
-            folder={currentFolder}
-            filteredEmails={filteredEmails}
-            selectedEmails={selectedEmails}
-            onSelectEmail={handleSelectEmail}
-            onViewEmail={handleViewEmail}
-            areAllSelected={areAllSelected}
-            onSelectAll={handleSelectAll}
-            onReply={handleReply}
-            onToggleStar={handleToggleStar}
-            onArchive={handleArchive}
-            onDelete={handleDelete}
-          />
+          {!hasEmailAccounts ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center p-8">
+                <h3 className="text-lg font-semibold mb-2">Geen e-mail accounts geconfigureerd</h3>
+                <p className="text-muted-foreground mb-4">
+                  Configureer eerst een e-mail account om e-mails te kunnen ontvangen en verzenden.
+                </p>
+                <Button onClick={handleNavigateToSettings}>
+                  E-mail account toevoegen
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <EmailList
+              folder={currentFolder}
+              filteredEmails={filteredEmails}
+              selectedEmails={selectedEmails}
+              onSelectEmail={handleSelectEmail}
+              onViewEmail={handleViewEmail}
+              areAllSelected={areAllSelected}
+              onSelectAll={handleSelectAll}
+              onReply={handleReply}
+              onToggleStar={handleToggleStar}
+              onArchive={handleArchive}
+              onDelete={handleDelete}
+            />
+          )}
         </div>
       </div>
     </div>

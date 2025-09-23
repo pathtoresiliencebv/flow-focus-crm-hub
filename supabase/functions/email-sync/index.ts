@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import Imap from "npm:imap";
+import { inspect } from "npm:util";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -33,139 +35,321 @@ async function detectEmailProvider(email: string): Promise<string> {
 }
 
 async function syncViaIMAP(emailSettings: any, supabase: any) {
-  console.log(`Starting IMAP sync for ${emailSettings.email_address}`);
-  
-  const startTime = Date.now();
-  const logEntry = {
-    email_settings_id: emailSettings.id,
-    sync_started_at: new Date().toISOString(),
-    sync_status: 'running'
-  };
-
-  // Insert sync log
-  const { data: syncLog } = await supabase
-    .from('email_sync_logs')
-    .insert(logEntry)
-    .select()
-    .single();
-
-  try {
-    // Update settings to indicate syncing
-    await supabase
-      .from('user_email_settings')
-      .update({ is_syncing: true })
-      .eq('id', emailSettings.id);
-
-    // Real IMAP sync implementation would go here
-    // For now, we'll create a more realistic demo with multiple emails
-    const simulatedEmails = [
-      {
-        user_id: emailSettings.user_id,
-        email_settings_id: emailSettings.id,
-        subject: 'Welkom bij Smans CRM Email Sync',
-        from_address: 'info@smansonderhoud.nl',
-        from_name: 'Smans Onderhoud',
-        to_addresses: [emailSettings.email_address],
-        body_text: 'Uw email synchronisatie is nu actief! U ontvangt vanaf nu automatisch uw emails in het CRM systeem.',
-        body_html: '<h2>Welkom bij Smans CRM</h2><p>Uw email synchronisatie is nu actief!</p><p>U ontvangt vanaf nu automatisch uw emails in het CRM systeem.</p>',
-        folder: 'inbox',
-        is_read: false,
-        received_at: new Date().toISOString(),
-        provider_message_id: `sync-welcome-${Date.now()}`,
-        sync_hash: `hash-${Date.now()}`
-      },
-      {
-        user_id: emailSettings.user_id,
-        email_settings_id: emailSettings.id,
-        subject: 'Test Email - Inkomende Post',
-        from_address: 'test@example.com',
-        from_name: 'Test Klant',
-        to_addresses: [emailSettings.email_address],
-        body_text: 'Dit is een test email om te controleren of de synchronisatie correct werkt.',
-        body_html: '<p>Dit is een test email om te controleren of de synchronisatie correct werkt.</p>',
-        folder: 'inbox',
-        is_read: false,
-        received_at: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-        provider_message_id: `sync-test-${Date.now()}`,
-        sync_hash: `hash-test-${Date.now()}`
-      }
-    ];
-
-    let emailsAdded = 0;
-    let emailsProcessed = 0;
-
-    for (const email of simulatedEmails) {
-      emailsProcessed++;
-      
-      // Check if email already exists
-      const { data: existingEmail } = await supabase
-        .from('emails')
-        .select('id')
-        .eq('provider_message_id', email.provider_message_id)
-        .eq('email_settings_id', emailSettings.id)
-        .single();
-
-      if (!existingEmail) {
-        await supabase
-          .from('emails')
-          .insert(email);
-        emailsAdded++;
-      }
-    }
-
-    const syncDuration = Date.now() - startTime;
-
-    // Update sync log
-    await supabase
-      .from('email_sync_logs')
-      .update({
-        sync_completed_at: new Date().toISOString(),
-        emails_processed: emailsProcessed,
-        emails_added: emailsAdded,
-        sync_status: 'completed',
-        sync_duration_ms: syncDuration
-      })
-      .eq('id', syncLog.id);
-
-    // Update settings
-    await supabase
-      .from('user_email_settings')
-      .update({
-        is_syncing: false,
-        last_sync_at: new Date().toISOString(),
-        sync_status: 'success',
-        sync_error_message: null
-      })
-      .eq('id', emailSettings.id);
-
-    return { success: true, emailsAdded, emailsProcessed };
-
-  } catch (error) {
-    console.error('IMAP sync error:', error);
+  return new Promise((resolve, reject) => {
+    console.log(`Starting IMAP sync for ${emailSettings.email_address}`);
     
-    // Update sync log with error
-    await supabase
-      .from('email_sync_logs')
-      .update({
-        sync_completed_at: new Date().toISOString(),
-        sync_status: 'failed',
-        error_message: error.message,
-        sync_duration_ms: Date.now() - startTime
-      })
-      .eq('id', syncLog.id);
+    const startTime = Date.now();
+    
+    // Create sync log entry
+    const logEntry = {
+      email_settings_id: emailSettings.id,
+      sync_started_at: new Date().toISOString(),
+      sync_status: 'running'
+    };
 
-    // Update settings
-    await supabase
+    // Update settings to indicate syncing
+    supabase
       .from('user_email_settings')
-      .update({
-        is_syncing: false,
-        sync_status: 'error',
-        sync_error_message: error.message
+      .update({ is_syncing: true, sync_status: 'running' })
+      .eq('id', emailSettings.id)
+      .then(() => {
+        return supabase
+          .from('email_sync_logs')
+          .insert(logEntry)
+          .select()
+          .single();
       })
-      .eq('id', emailSettings.id);
+      .then((logResult: any) => {
+        const syncLog = logResult.data;
 
-    throw error;
-  }
+        const imap = new Imap({
+          user: emailSettings.imap_username,
+          password: emailSettings.imap_password,
+          host: emailSettings.imap_host,
+          port: emailSettings.imap_port,
+          tls: true,
+          tlsOptions: { rejectUnauthorized: false },
+          connTimeout: 30000, // 30 seconds
+          authTimeout: 30000, // 30 seconds
+          keepalive: true
+        });
+
+    let emailsProcessed = 0;
+    let emailsAdded = 0;
+
+    imap.once('ready', () => {
+      console.log('Connected to IMAP server');
+      
+      imap.openBox('INBOX', false, (err: any, box: any) => {
+        if (err) {
+          console.error('Error opening INBOX:', err);
+          reject(err);
+          return;
+        }
+        
+        // Calculate date filter (last sync or last 7 days)
+        const sinceDate = emailSettings.last_sync_at 
+          ? new Date(emailSettings.last_sync_at)
+          : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days ago
+
+        console.log(`Searching for emails since: ${sinceDate.toISOString()}`);
+
+        // Search for recent emails
+        const searchCriteria = [
+          ['SINCE', sinceDate]
+        ];
+
+        imap.search(searchCriteria, (err: any, results: number[]) => {
+          if (err) {
+            console.error('Search error:', err);
+            reject(err);
+            return;
+          }
+
+          console.log(`Found ${results.length} messages`);
+          
+          if (results.length === 0) {
+            imap.end();
+            resolve({
+              success: true,
+              emailsProcessed: 0,
+              emailsAdded: 0
+            });
+            return;
+          }
+
+          // Fetch message details
+          const fetch = imap.fetch(results, {
+            bodies: ['HEADER.FIELDS (FROM TO SUBJECT DATE MESSAGE-ID IN-REPLY-TO)', 'TEXT'],
+            struct: true
+          });
+
+          fetch.on('message', (msg: any, seqno: number) => {
+            let headers: any = {};
+            let bodyText = '';
+            let bodyHtml = '';
+            let attachments: Array<{filename: string; content: Buffer; contentType: string}> = [];
+
+            msg.on('body', (stream: any, info: any) => {
+              let buffer = '';
+              stream.on('data', (chunk: any) => {
+                buffer += chunk.toString('ascii');
+              });
+              stream.once('end', () => {
+                if (info.which === 'TEXT') {
+                  bodyText = buffer;
+                } else {
+                  headers = Imap.parseHeader(buffer);
+                }
+              });
+            });
+
+            msg.once('attributes', (attrs: any) => {
+              // Process attachments if needed
+              if (attrs.struct) {
+                function processStruct(struct: any[], path: string = '') {
+                  struct.forEach((part: any, index: number) => {
+                    const partPath = path ? `${path}.${index + 1}` : `${index + 1}`;
+                    
+                    if (part.disposition?.type === 'attachment' || part.type === 'application' || part.type === 'image') {
+                      const filename = part.disposition?.params?.filename || 
+                                     part.params?.name || 
+                                     `attachment_${Date.now()}_${index}`;
+                      
+                      const contentType = part.type && part.subtype 
+                        ? `${part.type.toLowerCase()}/${part.subtype.toLowerCase()}`
+                        : 'application/octet-stream';
+
+                      attachments.push({
+                        filename,
+                        content: Buffer.alloc(0), // Placeholder - would fetch actual content
+                        contentType
+                      });
+                    } else if (Array.isArray(part)) {
+                      processStruct(part, partPath);
+                    }
+                  });
+                }
+
+                if (Array.isArray(attrs.struct)) {
+                  processStruct(attrs.struct);
+                }
+              }
+            });
+
+            msg.once('end', async () => {
+              try {
+                emailsProcessed++;
+
+                // Extract email data
+                const subject = headers.subject?.[0] || 'No Subject';
+                const fromHeader = headers.from?.[0] || 'Unknown';
+                const toHeader = headers.to?.[0] || emailSettings.email_address;
+                const messageId = headers['message-id']?.[0] || `imap-${seqno}-${Date.now()}`;
+                const inReplyTo = headers['in-reply-to']?.[0] || null;
+                const dateHeader = headers.date?.[0];
+                
+                // Parse from address and name
+                const fromMatch = fromHeader.match(/^(.+?)\s*<(.+)>$/) || fromHeader.match(/^(.+)$/);
+                const fromName = fromMatch && fromMatch.length > 2 ? fromMatch[1].trim().replace(/"/g, '') : null;
+                const fromAddress = fromMatch && fromMatch.length > 2 ? fromMatch[2].trim() : fromMatch?.[1]?.trim() || fromHeader;
+
+                // Parse date
+                let receivedAt = new Date();
+                if (dateHeader) {
+                  const parsedDate = new Date(dateHeader);
+                  if (!isNaN(parsedDate.getTime())) {
+                    receivedAt = parsedDate;
+                  }
+                }
+
+                const syncHash = `${messageId}-${emailSettings.id}`;
+
+                // Check if email already exists
+                const { data: existingEmail } = await supabase
+                  .from('emails')
+                  .select('id')
+                  .eq('sync_hash', syncHash)
+                  .single();
+
+                if (!existingEmail) {
+                  // Insert new email
+                  const emailData = {
+                    user_id: emailSettings.user_id,
+                    email_settings_id: emailSettings.id,
+                    subject: subject,
+                    from_address: fromAddress,
+                    from_name: fromName,
+                    to_addresses: [toHeader],
+                    body_text: bodyText.replace(/<[^>]*>/g, '').trim(),
+                    body_html: bodyText.includes('<') ? bodyText : null,
+                    folder: 'inbox',
+                    is_read: false,
+                    received_at: receivedAt.toISOString(),
+                    provider_message_id: messageId,
+                    sync_hash: syncHash,
+                    in_reply_to: inReplyTo,
+                    attachments: attachments.map(att => ({
+                      filename: att.filename,
+                      contentType: att.contentType,
+                      size: att.content.length
+                    }))
+                  };
+
+                  await supabase
+                    .from('emails')
+                    .insert(emailData);
+                  
+                  emailsAdded++;
+                  console.log(`Added email: ${subject} from ${fromAddress}`);
+                } else {
+                  console.log(`Email already exists: ${subject}`);
+                }
+
+                // Check if all messages are processed
+                if (emailsProcessed === results.length) {
+                  imap.end();
+                }
+              } catch (error) {
+                console.error(`Error processing email ${seqno}:`, error);
+                emailsProcessed++;
+                if (emailsProcessed === results.length) {
+                  imap.end();
+                }
+              }
+            });
+          });
+
+          fetch.once('error', (err: any) => {
+            console.error('Fetch error:', err);
+            imap.end();
+            reject(err);
+          });
+
+          fetch.once('end', () => {
+            console.log('Fetch completed');
+            setTimeout(() => {
+              const syncDuration = Date.now() - startTime;
+              
+              // Update sync log
+              supabase
+                .from('email_sync_logs')
+                .update({
+                  sync_completed_at: new Date().toISOString(),
+                  emails_processed: emailsProcessed,
+                  emails_added: emailsAdded,
+                  sync_status: 'completed',
+                  sync_duration_ms: syncDuration
+                })
+                .eq('id', syncLog?.id)
+                .then(() => {
+                  // Update settings
+                  return supabase
+                    .from('user_email_settings')
+                    .update({
+                      last_sync_at: new Date().toISOString(),
+                      sync_status: 'success',
+                      sync_error_message: null,
+                      is_syncing: false
+                    })
+                    .eq('id', emailSettings.id);
+                })
+                .then(() => {
+                  console.log(`IMAP sync completed: ${emailsProcessed} emails processed, ${emailsAdded} emails added`);
+                  resolve({
+                    success: true,
+                    emailsProcessed,
+                    emailsAdded
+                  });
+                });
+            }, 1000); // Wait 1 second for all processing to complete
+          });
+        });
+      });
+    });
+
+        imap.once('error', (err: any) => {
+          console.error('IMAP connection error:', err);
+          
+          const syncDuration = Date.now() - startTime;
+          
+          // Update sync log with error
+          supabase
+            .from('email_sync_logs')
+            .update({
+              sync_completed_at: new Date().toISOString(),
+              sync_status: 'failed',
+              error_message: err.message,
+              sync_duration_ms: syncDuration
+            })
+            .eq('id', syncLog?.id)
+            .then(() => {
+              // Update error status
+              return supabase
+                .from('user_email_settings')
+                .update({
+                  sync_status: 'error',
+                  sync_error_message: err.message,
+                  is_syncing: false
+                })
+                .eq('id', emailSettings.id);
+            })
+            .then(() => {
+              reject(err);
+            });
+        });
+
+        imap.once('end', () => {
+          console.log('IMAP connection ended');
+        });
+
+        imap.connect();
+      })
+      .catch((error: any) => {
+        console.error('Error initializing IMAP sync:', error);
+        reject(error);
+      });
+  });
 }
 
 async function initiateGmailOAuth(emailSettings: any, supabase: any) {
