@@ -1099,6 +1099,7 @@ export type Database = {
           customer_email: string | null
           customer_name: string
           due_date: string
+          expires_date: string | null
           id: string
           invoice_date: string
           invoice_number: string
@@ -1111,7 +1112,9 @@ export type Database = {
           payment_method: string | null
           payment_status: string | null
           payment_term_sequence: number | null
+          payment_terms: Json | null
           project_title: string | null
+          sent_date: string | null
           source_quote_id: string | null
           status: string
           stripe_checkout_session_id: string | null
@@ -1131,6 +1134,7 @@ export type Database = {
           customer_email?: string | null
           customer_name: string
           due_date: string
+          expires_date?: string | null
           id?: string
           invoice_date?: string
           invoice_number: string
@@ -1143,7 +1147,9 @@ export type Database = {
           payment_method?: string | null
           payment_status?: string | null
           payment_term_sequence?: number | null
+          payment_terms?: Json | null
           project_title?: string | null
+          sent_date?: string | null
           source_quote_id?: string | null
           status?: string
           stripe_checkout_session_id?: string | null
@@ -1163,6 +1169,7 @@ export type Database = {
           customer_email?: string | null
           customer_name?: string
           due_date?: string
+          expires_date?: string | null
           id?: string
           invoice_date?: string
           invoice_number?: string
@@ -1175,7 +1182,9 @@ export type Database = {
           payment_method?: string | null
           payment_status?: string | null
           payment_term_sequence?: number | null
+          payment_terms?: Json | null
           project_title?: string | null
+          sent_date?: string | null
           source_quote_id?: string | null
           status?: string
           stripe_checkout_session_id?: string | null

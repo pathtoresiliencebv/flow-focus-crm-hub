@@ -114,9 +114,17 @@ export function useInvoices() {
 
   const updateInvoiceStatus = async (invoiceId: string, status: string) => {
     try {
+      const updateData: any = { status, updated_at: new Date().toISOString() };
+      
+      // If marking as paid, also set payment_date
+      if (status === 'betaald') {
+        updateData.payment_date = new Date().toISOString();
+        updateData.payment_status = 'paid';
+      }
+
       const { error } = await supabase
         .from('invoices')
-        .update({ status, updated_at: new Date().toISOString() })
+        .update(updateData)
         .eq('id', invoiceId);
 
       if (error) throw error;
