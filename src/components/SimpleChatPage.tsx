@@ -2,6 +2,7 @@ import React from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ConversationList } from './chat/ConversationList';
 import { ChatArea } from './chat/ChatArea';
+import { ConnectionStatus } from './chat/ConnectionStatus';
 import { useSimpleChat } from '@/hooks/useSimpleChat';
 
 export const SimpleChatPage: React.FC = () => {
@@ -11,8 +12,10 @@ export const SimpleChatPage: React.FC = () => {
     selectedConversation,
     messages,
     loading,
+    connectionState,
     selectConversation,
-    sendMessage
+    sendMessage,
+    reconnectChat
   } = useSimpleChat();
 
   if (loading) {
@@ -33,37 +36,75 @@ export const SimpleChatPage: React.FC = () => {
     // Mobile: show either conversation list or chat area
     if (selectedConversation) {
       return (
-        <ChatArea
-          conversation={conversations.find(c => c.id === selectedConversation)}
-          messages={messages}
-          onSendMessage={(content) => sendMessage(content, selectedConversation)}
-          onBack={() => selectConversation('')}
-          isMobile={true}
-        />
+        <div className="flex flex-col h-full">
+          <div className="p-3 border-b border-border">
+            <ConnectionStatus
+              isConnected={connectionState.isConnected}
+              lastConnected={connectionState.lastConnected}
+              reconnectAttempts={connectionState.reconnectAttempts}
+              maxReconnectAttempts={connectionState.maxReconnectAttempts}
+              onReconnect={reconnectChat}
+            />
+          </div>
+          <div className="flex-1">
+            <ChatArea
+              conversation={conversations.find(c => c.id === selectedConversation)}
+              messages={messages}
+              onSendMessage={(content) => sendMessage(content, selectedConversation)}
+              onBack={() => selectConversation('')}
+              isMobile={true}
+            />
+          </div>
+        </div>
       );
     }
 
     return (
-      <ConversationList
-        conversations={conversations}
-        selectedConversation={selectedConversation}
-        onSelectConversation={selectConversation}
-        isMobile={true}
-      />
+      <div className="flex flex-col h-full">
+        <div className="p-3 border-b border-border">
+          <ConnectionStatus
+            isConnected={connectionState.isConnected}
+            lastConnected={connectionState.lastConnected}
+            reconnectAttempts={connectionState.reconnectAttempts}
+            maxReconnectAttempts={connectionState.maxReconnectAttempts}
+            onReconnect={reconnectChat}
+          />
+        </div>
+        <div className="flex-1">
+          <ConversationList
+            conversations={conversations}
+            selectedConversation={selectedConversation}
+            onSelectConversation={selectConversation}
+            isMobile={true}
+          />
+        </div>
+      </div>
     );
   }
 
   // Desktop: show both panels
   return (
-    <div className="flex h-full bg-background">
-      <div className="w-1/3 border-r border-border">
-        <ConversationList
-          conversations={conversations}
-          selectedConversation={selectedConversation}
-          onSelectConversation={selectConversation}
-          isMobile={false}
+    <div className="flex flex-col h-full bg-background">
+      {/* Connection Status Bar */}
+      <div className="p-3 border-b border-border">
+        <ConnectionStatus
+          isConnected={connectionState.isConnected}
+          lastConnected={connectionState.lastConnected}
+          reconnectAttempts={connectionState.reconnectAttempts}
+          maxReconnectAttempts={connectionState.maxReconnectAttempts}
+          onReconnect={reconnectChat}
         />
       </div>
+      
+      <div className="flex flex-1">
+        <div className="w-1/3 border-r border-border">
+          <ConversationList
+            conversations={conversations}
+            selectedConversation={selectedConversation}
+            onSelectConversation={selectConversation}
+            isMobile={false}
+          />
+        </div>
       <div className="flex-1">
         {selectedConversation ? (
           <ChatArea
@@ -84,6 +125,7 @@ export const SimpleChatPage: React.FC = () => {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 };

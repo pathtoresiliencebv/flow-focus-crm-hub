@@ -1,6 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+
+interface ConnectionState {
+  isConnected: boolean;
+  lastConnected: Date | null;
+  reconnectAttempts: number;
+  maxReconnectAttempts: number;
+}
 
 export interface DirectMessage {
   id: string;
@@ -37,6 +44,15 @@ export const useSimpleChat = () => {
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [availableUsers, setAvailableUsers] = useState<ChatUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [connectionState, setConnectionState] = useState<ConnectionState>({
+    isConnected: false,
+    lastConnected: null,
+    reconnectAttempts: 0,
+    maxReconnectAttempts: 5
+  });
+  
+  const subscriptionRef = useRef<any>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch available users based on role
   const fetchAvailableUsers = useCallback(async () => {
@@ -211,14 +227,32 @@ export const useSimpleChat = () => {
     }
   }, [availableUsers, generateConversations, user, profile, loading]);
 
-  // Real-time subscriptions
-  useEffect(() => {
+  // Setup stable real-time subscription with auto-reconnection
+  const setupRealtimeSubscription = useCallback(() => {
     if (!user) return;
 
-    console.log('Setting up chat realtime subscription for user:', user.id);
+    // Clean up existing subscription
+    if (subscriptionRef.current) {
+      console.log('Cleaning up existing subscription before creating new one');
+      subscriptionRef.current.unsubscribe();
+      subscriptionRef.current = null;
+    }
+
+    // Clear any pending reconnection
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
+    console.log(`Setting up chat realtime subscription for user: ${user.id} (attempt ${connectionState.reconnectAttempts + 1})`);
 
     const subscription = supabase
-      .channel(`direct_messages_user_${user.id}`)
+      .channel(`direct_messages_user_${user.id}_${Date.now()}`, {
+        config: {
+          broadcast: { ack: true },
+          presence: { key: user.id }
+        }
+      })
       .on(
         'postgres_changes',
         {
@@ -228,7 +262,7 @@ export const useSimpleChat = () => {
           filter: `or(from_user_id.eq.${user.id},to_user_id.eq.${user.id})`
         },
         (payload) => {
-          console.log('New message received via realtime:', payload);
+          console.log('✅ New message received via realtime:', payload);
           
           const newMessage = payload.new as DirectMessage;
           
@@ -262,7 +296,7 @@ export const useSimpleChat = () => {
         table: 'direct_messages',
         filter: `or(from_user_id.eq.${user.id},to_user_id.eq.${user.id})`
       }, (payload) => {
-        console.log('Message updated via realtime:', payload);
+        console.log('📝 Message updated via realtime:', payload);
         
         // Refresh current conversation if affected
         if (selectedConversation) {
@@ -274,14 +308,73 @@ export const useSimpleChat = () => {
         }
       })
       .subscribe((status) => {
-        console.log('Chat subscription status:', status);
+        console.log(`🔄 Chat subscription status: ${status}`);
+        
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Chat realtime connection established successfully');
+          setConnectionState(prev => ({
+            ...prev,
+            isConnected: true,
+            lastConnected: new Date(),
+            reconnectAttempts: 0
+          }));
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          console.warn(`❌ Chat connection failed with status: ${status}`);
+          setConnectionState(prev => ({
+            ...prev,
+            isConnected: false
+          }));
+          
+          // Attempt reconnection if within limits
+          if (connectionState.reconnectAttempts < connectionState.maxReconnectAttempts) {
+            const delay = Math.min(1000 * Math.pow(2, connectionState.reconnectAttempts), 30000);
+            console.log(`🔄 Attempting reconnection in ${delay}ms...`);
+            
+            setConnectionState(prev => ({
+              ...prev,
+              reconnectAttempts: prev.reconnectAttempts + 1
+            }));
+            
+            reconnectTimeoutRef.current = setTimeout(() => {
+              setupRealtimeSubscription();
+            }, delay);
+          } else {
+            console.error('❌ Max reconnection attempts reached. Manual refresh may be required.');
+          }
+        }
       });
 
+    subscriptionRef.current = subscription;
+  }, [user, selectedConversation, fetchMessages, generateConversations, connectionState.reconnectAttempts, connectionState.maxReconnectAttempts]);
+
+  // Real-time subscriptions with improved stability
+  useEffect(() => {
+    if (!user) return;
+
+    setupRealtimeSubscription();
+
     return () => {
-      console.log('Cleaning up chat subscription');
-      subscription.unsubscribe();
+      console.log('🧹 Cleaning up chat subscription and timers');
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
     };
-  }, [user, selectedConversation, fetchMessages, generateConversations]);
+  }, [user]); // Removed selectedConversation dependency to prevent constant reconnections
+
+  // Manual reconnection function
+  const reconnectChat = useCallback(() => {
+    console.log('🔄 Manual chat reconnection requested');
+    setConnectionState(prev => ({
+      ...prev,
+      reconnectAttempts: 0
+    }));
+    setupRealtimeSubscription();
+  }, [setupRealtimeSubscription]);
 
   return {
     conversations,
@@ -289,8 +382,10 @@ export const useSimpleChat = () => {
     messages,
     availableUsers,
     loading,
+    connectionState,
     selectConversation,
     sendMessage,
-    fetchMessages
+    fetchMessages,
+    reconnectChat
   };
 };
