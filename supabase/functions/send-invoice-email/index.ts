@@ -16,6 +16,7 @@ interface SendInvoiceEmailRequest {
   recipientName: string;
   subject?: string;
   message?: string;
+  includePaymentLink?: boolean;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -25,7 +26,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { invoiceId, recipientEmail, recipientName, subject, message }: SendInvoiceEmailRequest = await req.json();
+    const { invoiceId, recipientEmail, recipientName, subject, message, includePaymentLink = true }: SendInvoiceEmailRequest = await req.json();
     
     console.log('Sending invoice email for ID:', invoiceId, 'to:', recipientEmail);
 
@@ -52,6 +53,95 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Generate payment link if requested and not already exists
+    let paymentLinkUrl = invoice.payment_link_url;
+    
+    if (includePaymentLink && !paymentLinkUrl) {
+      try {
+        console.log('Generating payment link for invoice:', invoiceId);
+        
+        // Initialize Stripe
+        const stripe = (await import("https://esm.sh/stripe@18.5.0")).default;
+        const stripeClient = new stripe(Deno.env.get("STRIPE_LIVE_KEY") || "", {
+          apiVersion: "2025-08-27.basil",
+        });
+
+        // Check if customer exists in Stripe
+        let customerId = null;
+        if (invoice.customer_email) {
+          const customers = await stripeClient.customers.list({ 
+            email: invoice.customer_email, 
+            limit: 1 
+          });
+          
+          if (customers.data.length > 0) {
+            customerId = customers.data[0].id;
+          } else {
+            // Create new customer
+            const customer = await stripeClient.customers.create({
+              email: invoice.customer_email,
+              name: invoice.customer_name,
+            });
+            customerId = customer.id;
+          }
+        }
+
+        // Create checkout session
+        const session = await stripeClient.checkout.sessions.create({
+          customer: customerId,
+          customer_email: customerId ? undefined : invoice.customer_email,
+          line_items: [
+            {
+              price_data: {
+                currency: 'eur',
+                product_data: {
+                  name: `Factuur ${invoice.invoice_number}`,
+                  description: invoice.project_title || 'Factuur betaling',
+                },
+                unit_amount: Math.round(invoice.total_amount * 100),
+              },
+              quantity: 1,
+            },
+          ],
+          mode: "payment",
+          success_url: `${req.headers.get("origin") || "https://smanscrm.nl"}/invoices/${invoiceId}?payment=success`,
+          cancel_url: `${req.headers.get("origin") || "https://smanscrm.nl"}/invoices/${invoiceId}?payment=cancelled`,
+          metadata: {
+            invoice_id: invoice.id,
+            invoice_number: invoice.invoice_number,
+          },
+          payment_intent_data: {
+            metadata: {
+              invoice_id: invoice.id,
+              invoice_number: invoice.invoice_number,
+            }
+          }
+        });
+
+        paymentLinkUrl = session.url;
+
+        // Store payment link in database
+        const { error: updateError } = await supabase
+          .from('invoices')
+          .update({ 
+            payment_link_url: session.url,
+            stripe_checkout_session_id: session.id,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', invoiceId);
+
+        if (updateError) {
+          console.error('Error storing payment link:', updateError);
+        } else {
+          console.log('Payment link generated and stored successfully');
+        }
+
+      } catch (stripeError) {
+        console.error('Error generating payment link:', stripeError);
+        // Continue with email without payment link
+      }
+    }
+
     // Create email HTML content
     const emailHtml = `
       <!DOCTYPE html>
@@ -65,6 +155,8 @@ const handler = async (req: Request): Promise<Response> => {
           .header { background-color: #dc2626; color: white; padding: 20px; text-align: center; }
           .content { padding: 20px; background-color: #f9f9f9; }
           .invoice-details { background-color: white; padding: 15px; border-radius: 5px; margin: 15px 0; }
+          .payment-button { transition: all 0.3s ease; }
+          .payment-button:hover { transform: translateY(-2px); box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15) !important; }
         </style>
       </head>
       <body>
@@ -88,6 +180,26 @@ const handler = async (req: Request): Promise<Response> => {
               <p><strong>Project:</strong> ${invoice.project_title || 'Niet gespecificeerd'}</p>
               <p><strong>Totaalbedrag:</strong> €${invoice.total_amount.toFixed(2)}</p>
             </div>
+            
+            ${paymentLinkUrl ? `
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${paymentLinkUrl}" 
+                 style="background-color: #16a34a; 
+                        color: white; 
+                        padding: 15px 30px; 
+                        text-decoration: none; 
+                        border-radius: 8px; 
+                        font-weight: bold; 
+                        font-size: 16px; 
+                        display: inline-block;
+                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                💳 Betaal Nu Online
+              </a>
+              <p style="margin-top: 15px; font-size: 14px; color: #666;">
+                Klik op de knop hierboven om deze factuur veilig online te betalen via Stripe.
+              </p>
+            </div>
+            ` : ''}
             
             <p>Voor vragen over deze factuur kunt u contact met ons opnemen.</p>
             

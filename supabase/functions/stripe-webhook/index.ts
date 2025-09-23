@@ -37,16 +37,20 @@ serve(async (req) => {
     console.log(`Processing Stripe webhook: ${event.type}`);
 
     switch (event.type) {
-      case "payment_link.payment_succeeded":
-        await handlePaymentSuccess(supabase, event.data.object as Stripe.PaymentLink);
+      case "checkout.session.completed":
+        await handleCheckoutSessionCompleted(supabase, event.data.object as Stripe.Checkout.Session);
+        break;
+      
+      case "payment_intent.succeeded":
+        await handlePaymentIntentSuccess(supabase, event.data.object as Stripe.PaymentIntent);
         break;
       
       case "payment_intent.payment_failed":
         await handlePaymentFailed(supabase, event.data.object as Stripe.PaymentIntent);
         break;
       
-      case "payment_intent.succeeded":
-        await handlePaymentIntentSuccess(supabase, event.data.object as Stripe.PaymentIntent);
+      case "payment_link.payment_succeeded":
+        await handlePaymentSuccess(supabase, event.data.object as Stripe.PaymentLink);
         break;
       
       case "invoice.payment_succeeded":
@@ -115,48 +119,91 @@ async function handlePaymentSuccess(supabase: any, paymentLink: Stripe.PaymentLi
 }
 
 async function handlePaymentFailed(supabase: any, paymentIntent: Stripe.PaymentIntent) {
-  const invoiceNumber = paymentIntent.metadata?.invoice_number;
+  const invoiceId = paymentIntent.metadata?.invoice_id;
   
-  if (!invoiceNumber) {
-    console.error("No invoice number in payment intent metadata");
+  if (!invoiceId) {
+    console.error("No invoice_id in payment intent metadata");
     return;
   }
+
+  console.log(`Processing payment failure for invoice: ${invoiceId}`);
 
   // Update invoice status to payment failed
   const { error } = await supabase
     .from("invoices")
     .update({ 
-      status: "betaling_mislukt",
-      payment_failure_reason: paymentIntent.last_payment_error?.message
+      status: "concept", // Reset to draft so they can try again
+      payment_status: "failed",
+      payment_failure_reason: paymentIntent.last_payment_error?.message,
+      updated_at: new Date().toISOString()
     })
-    .eq("invoice_number", invoiceNumber);
+    .eq("id", invoiceId);
 
   if (error) {
     console.error("Error updating invoice for failed payment:", error);
+  } else {
+    console.log(`Successfully updated invoice ${invoiceId} with failure information`);
   }
-
-  console.log(`Payment failed for invoice: ${invoiceNumber}`);
 }
 
 async function handlePaymentIntentSuccess(supabase: any, paymentIntent: Stripe.PaymentIntent) {
-  const invoiceNumber = paymentIntent.metadata?.invoice_number;
+  const invoiceId = paymentIntent.metadata?.invoice_id;
   
-  if (!invoiceNumber) {
-    return; // This might be handled by payment_link.payment_succeeded
+  if (!invoiceId) {
+    console.log("No invoice_id in payment intent metadata");
+    return;
   }
 
-  // Update invoice status
+  console.log(`Processing payment success for invoice: ${invoiceId}`);
+
+  // Update invoice with payment information
   const { error } = await supabase
     .from("invoices")
     .update({ 
       status: "betaald",
+      payment_status: "paid",
       payment_date: new Date().toISOString(),
-      stripe_payment_intent_id: paymentIntent.id
+      payment_method: "stripe",
+      stripe_payment_intent_id: paymentIntent.id,
+      updated_at: new Date().toISOString()
     })
-    .eq("invoice_number", invoiceNumber);
+    .eq("id", invoiceId);
 
   if (error) {
     console.error("Error updating invoice for payment intent:", error);
+  } else {
+    console.log(`Successfully updated invoice ${invoiceId} with payment information`);
+  }
+}
+
+async function handleCheckoutSessionCompleted(supabase: any, session: Stripe.Checkout.Session) {
+  const invoiceId = session.metadata?.invoice_id;
+  
+  if (!invoiceId) {
+    console.log("No invoice_id in checkout session metadata");
+    return;
+  }
+
+  console.log(`Processing checkout completion for invoice: ${invoiceId}`);
+
+  // Update invoice with payment information
+  const { error } = await supabase
+    .from("invoices")
+    .update({ 
+      status: "betaald",
+      payment_status: "paid", 
+      payment_date: new Date().toISOString(),
+      payment_method: "stripe",
+      stripe_checkout_session_id: session.id,
+      stripe_payment_intent_id: session.payment_intent,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", invoiceId);
+
+  if (error) {
+    console.error("Error updating invoice for checkout session:", error);
+  } else {
+    console.log(`Successfully updated invoice ${invoiceId} with payment information`);
   }
 }
 

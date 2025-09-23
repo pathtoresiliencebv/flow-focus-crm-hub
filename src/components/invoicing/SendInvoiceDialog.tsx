@@ -4,18 +4,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, CreditCard } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Mail, CreditCard, CheckCircle, AlertCircle, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface SendInvoiceDialogProps {
   invoice: any;
-  onSend: (emailData: { to: string; subject: string; message: string }) => Promise<void>;
+  onSend: (emailData: { to: string; subject: string; message: string; includePaymentLink?: boolean }) => Promise<void>;
 }
 
 export function SendInvoiceDialog({ invoice, onSend }: SendInvoiceDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [showPaymentLink, setShowPaymentLink] = useState(false);
-  const [paymentLink, setPaymentLink] = useState('');
+  const [showPaymentLink, setShowPaymentLink] = useState(!!invoice.payment_link_url);
+  const [paymentLink, setPaymentLink] = useState(invoice.payment_link_url || '');
+  const [includePaymentLink, setIncludePaymentLink] = useState(true);
   
   const [formData, setFormData] = useState({
     to: invoice.customer_email || '',
@@ -39,7 +41,10 @@ Uw bedrijf`
 
     setIsLoading(true);
     try {
-      await onSend(formData);
+      await onSend({
+        ...formData,
+        includePaymentLink
+      });
     } finally {
       setIsLoading(false);
     }
@@ -70,16 +75,37 @@ Uw bedrijf`
     }
   };
 
+  const getPaymentStatusBadge = () => {
+    if (!invoice.payment_status || invoice.payment_status === 'pending') {
+      return <Badge variant="outline" className="flex items-center gap-1"><Clock className="h-3 w-3" />Nog niet betaald</Badge>;
+    }
+    if (invoice.payment_status === 'paid') {
+      return <Badge variant="default" className="bg-green-600 flex items-center gap-1"><CheckCircle className="h-3 w-3" />Betaald</Badge>;
+    }
+    if (invoice.payment_status === 'failed') {
+      return <Badge variant="destructive" className="flex items-center gap-1"><AlertCircle className="h-3 w-3" />Betaling mislukt</Badge>;
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5" />
-            Factuur verzenden via email
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Factuur verzenden via email
+            </div>
+            {getPaymentStatusBadge()}
           </CardTitle>
           <CardDescription>
             Verzend factuur {invoice.invoice_number} naar de klant
+            {invoice.payment_date && (
+              <span className="block text-green-600 mt-1">
+                Betaald op {new Date(invoice.payment_date).toLocaleDateString('nl-NL')}
+              </span>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -115,6 +141,19 @@ Uw bedrijf`
                 rows={10}
                 className="resize-none"
               />
+            </div>
+
+            <div className="flex items-center space-x-2 mb-4">
+              <input
+                type="checkbox"
+                id="includePaymentLink"
+                checked={includePaymentLink}
+                onChange={(e) => setIncludePaymentLink(e.target.checked)}
+                className="rounded"
+              />
+              <Label htmlFor="includePaymentLink" className="text-sm">
+                Betaallink automatisch toevoegen aan email
+              </Label>
             </div>
 
             <div className="flex gap-3">

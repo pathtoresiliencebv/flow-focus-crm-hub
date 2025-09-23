@@ -19,7 +19,7 @@ export function InvoiceSend() {
     navigate(-1);
   };
 
-  const handleSend = async (emailData: { to: string; subject: string; message: string }) => {
+  const handleSend = async (emailData: { to: string; subject: string; message: string; includePaymentLink?: boolean }) => {
     if (!invoice) return;
     
     try {
@@ -31,7 +31,8 @@ export function InvoiceSend() {
           recipientEmail: emailData.to,
           recipientName: invoice.customer_name,
           subject: emailData.subject,
-          message: emailData.message
+          message: emailData.message,
+          includePaymentLink: emailData.includePaymentLink ?? true
         }
       });
 

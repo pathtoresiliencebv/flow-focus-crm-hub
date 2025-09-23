@@ -86,7 +86,28 @@ serve(async (req) => {
         invoice_id: invoice.id,
         invoice_number: invoice.invoice_number,
       },
+      payment_intent_data: {
+        metadata: {
+          invoice_id: invoice.id,
+          invoice_number: invoice.invoice_number,
+        }
+      }
     });
+
+    // Store payment link in database
+    const { error: updateError } = await supabase
+      .from('invoices')
+      .update({ 
+        payment_link_url: session.url,
+        stripe_checkout_session_id: session.id,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', invoice_id);
+
+    if (updateError) {
+      console.error('Error storing payment link:', updateError);
+      // Continue anyway, don't fail the request
+    }
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

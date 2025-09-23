@@ -15,6 +15,13 @@ export interface Invoice {
   vat_amount: number;
   total_amount: number;
   status: string;
+  payment_status?: string;
+  payment_date?: string;
+  payment_method?: string;
+  stripe_checkout_session_id?: string;
+  stripe_payment_intent_id?: string;
+  payment_link_url?: string;
+  payment_failure_reason?: string;
   source_quote_id?: string;
   payment_term_sequence?: number;
   total_payment_terms?: number;

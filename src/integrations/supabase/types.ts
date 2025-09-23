@@ -1105,10 +1105,17 @@ export type Database = {
           is_archived: boolean | null
           message: string | null
           original_quote_total: number | null
+          payment_date: string | null
+          payment_failure_reason: string | null
+          payment_link_url: string | null
+          payment_method: string | null
+          payment_status: string | null
           payment_term_sequence: number | null
           project_title: string | null
           source_quote_id: string | null
           status: string
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
           subtotal: number
           total_amount: number
           total_payment_terms: number | null
@@ -1130,10 +1137,17 @@ export type Database = {
           is_archived?: boolean | null
           message?: string | null
           original_quote_total?: number | null
+          payment_date?: string | null
+          payment_failure_reason?: string | null
+          payment_link_url?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
           payment_term_sequence?: number | null
           project_title?: string | null
           source_quote_id?: string | null
           status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
           subtotal?: number
           total_amount?: number
           total_payment_terms?: number | null
@@ -1155,10 +1169,17 @@ export type Database = {
           is_archived?: boolean | null
           message?: string | null
           original_quote_total?: number | null
+          payment_date?: string | null
+          payment_failure_reason?: string | null
+          payment_link_url?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
           payment_term_sequence?: number | null
           project_title?: string | null
           source_quote_id?: string | null
           status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
           subtotal?: number
           total_amount?: number
           total_payment_terms?: number | null
