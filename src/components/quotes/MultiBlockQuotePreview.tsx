@@ -3,6 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { Quote } from '@/types/quote';
 import { QuoteAttachment } from './FileAttachmentsManager';
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Printer } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface QuoteSettings {
   terms_and_conditions?: string;
@@ -22,6 +25,8 @@ interface MultiBlockQuotePreviewProps {
 
 export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ quote, attachments = [] }) => {
   const [settings, setSettings] = useState<QuoteSettings>({});
+  const [printLoading, setPrintLoading] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchSettings();
@@ -52,6 +57,45 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
     }
   };
 
+  const handlePrint = async () => {
+    try {
+      setPrintLoading(true);
+      const { data, error } = await supabase.functions.invoke('generate-quote-pdf', {
+        body: { quoteId: quote.id }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        // Create a blob from the PDF data
+        const pdfBlob = new Blob([Buffer.from(data.pdfData, 'base64')], { type: 'application/pdf' });
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        
+        // Open PDF in new window for printing
+        const printWindow = window.open(pdfUrl);
+        if (printWindow) {
+          printWindow.onload = () => {
+            printWindow.print();
+          };
+        }
+        
+        toast({
+          title: "PDF geopend voor printen",
+          description: "Het PDF bestand is geopend in een nieuw venster voor printen.",
+        });
+      }
+    } catch (error) {
+      console.error('Error printing quote:', error);
+      toast({
+        title: "Fout bij printen",
+        description: "Er ging iets mis bij het genereren van de PDF voor printen.",
+        variant: "destructive",
+      });
+    } finally {
+      setPrintLoading(false);
+    }
+  };
+
   const getItemStyle = (item: any) => {
     if (item.type === 'textblock' && item.formatting) {
       let style: React.CSSProperties = {};
@@ -66,7 +110,22 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
   console.log('MultiBlockQuotePreview: Rendering with quote:', quote);
 
   return (
-    <div className="bg-white border rounded-lg p-4 shadow-sm max-h-[80vh] overflow-y-auto">
+    <div className="bg-white border rounded-lg shadow-sm">
+      {/* Print Button Header */}
+      <div className="flex justify-end p-4 border-b print:hidden">
+        <Button 
+          onClick={handlePrint}
+          disabled={printLoading}
+          variant="outline"
+          size="sm"
+          className="gap-2"
+        >
+          <Printer className="h-4 w-4" />
+          {printLoading ? 'Genereren...' : 'Print PDF'}
+        </Button>
+      </div>
+      
+      <div className="p-4 max-h-[70vh] overflow-y-auto print:max-h-none print:overflow-visible">
       {/* Header with logo and company info */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center">
@@ -374,6 +433,7 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
             </a>
           </p>
         </div>
+      </div>
       </div>
     </div>
   );

@@ -200,10 +200,33 @@ export const InvoicesTable = ({
                        PDF Downloaden
                      </DropdownMenuItem>
 
-                     <DropdownMenuItem onClick={() => window.print()}>
-                       <Printer className="mr-2 h-4 w-4" />
-                       Printen
-                     </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => {
+                        // Print PDF using edge function
+                        supabase.functions.invoke('generate-invoice-pdf', {
+                          body: { invoiceId: invoice.id }
+                        }).then(({ data, error }) => {
+                          if (data?.success && data?.pdfData) {
+                            const byteCharacters = atob(data.pdfData);
+                            const byteNumbers = new Array(byteCharacters.length);
+                            for (let i = 0; i < byteCharacters.length; i++) {
+                              byteNumbers[i] = byteCharacters.charCodeAt(i);
+                            }
+                            const byteArray = new Uint8Array(byteNumbers);
+                            const blob = new Blob([byteArray], { type: 'application/pdf' });
+                            
+                            const url = URL.createObjectURL(blob);
+                            const printWindow = window.open(url);
+                            if (printWindow) {
+                              printWindow.onload = () => {
+                                printWindow.print();
+                              };
+                            }
+                          }
+                        });
+                      }}>
+                        <Printer className="mr-2 h-4 w-4" />
+                        PDF Printen
+                      </DropdownMenuItem>
 
                     {onArchiveInvoice && (
                       <DropdownMenuItem onClick={() => onArchiveInvoice(invoice)}>

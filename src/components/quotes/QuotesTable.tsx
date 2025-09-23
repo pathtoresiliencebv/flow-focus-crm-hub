@@ -200,9 +200,9 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                    </DropdownMenuItem>
                    
                    <DropdownMenuItem onClick={() => handlePrint(quote.id!)}>
-                     <Printer className="mr-2 h-4 w-4" />
-                     Printen
-                   </DropdownMenuItem>
+                      <Printer className="mr-2 h-4 w-4" />
+                      PDF Printen
+                    </DropdownMenuItem>
                    
                    {((!isArchived && onDelete) || (isArchived && onRestore)) && (
                      <DropdownMenuSeparator />

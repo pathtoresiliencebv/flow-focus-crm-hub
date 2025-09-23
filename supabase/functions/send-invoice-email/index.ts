@@ -142,6 +142,30 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
+    // Generate PDF attachment
+    let attachments = [];
+    try {
+      const pdfResponse = await supabase.functions.invoke('generate-invoice-pdf', {
+        body: { invoiceId: invoiceId }
+      });
+      
+      if (pdfResponse.data && pdfResponse.data.success) {
+        const baseFilename = `factuur-${invoice.invoice_number}`;
+        
+        // Add main invoice PDF
+        attachments.push({
+          filename: pdfResponse.data.filename || `${baseFilename}.pdf`,
+          content: pdfResponse.data.pdfData,
+          type: pdfResponse.data.contentType
+        });
+        
+        console.log('PDF attachment generated successfully:', attachments.length, 'files');
+      }
+    } catch (pdfError) {
+      console.error('Failed to generate PDF attachment:', pdfError);
+      // Continue without attachment
+    }
+
     // Create email HTML content
     const emailHtml = `
       <!DOCTYPE html>
@@ -217,7 +241,8 @@ const handler = async (req: Request): Promise<Response> => {
       from: "SMANS BV <factuur@smanscrm.nl>",
       to: [recipientEmail],
       subject: subject || `Factuur ${invoice.invoice_number} - SMANS BV`,
-      html: emailHtml
+      html: emailHtml,
+      attachments: attachments
     });
 
     if (emailResponse.error) {

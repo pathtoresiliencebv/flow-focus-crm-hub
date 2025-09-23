@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Printer } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface InvoiceSettings {
   company_name?: string;
@@ -51,6 +54,8 @@ interface MultiBlockInvoicePreviewProps {
 
 export const MultiBlockInvoicePreview: React.FC<MultiBlockInvoicePreviewProps> = ({ invoice }) => {
   const [settings, setSettings] = useState<InvoiceSettings>({});
+  const [printLoading, setPrintLoading] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchSettings();
@@ -71,6 +76,45 @@ export const MultiBlockInvoicePreview: React.FC<MultiBlockInvoicePreviewProps> =
     }
   };
 
+  const handlePrint = async () => {
+    try {
+      setPrintLoading(true);
+      const { data, error } = await supabase.functions.invoke('generate-invoice-pdf', {
+        body: { invoiceId: invoice.id }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        // Create a blob from the PDF data
+        const pdfBlob = new Blob([Buffer.from(data.pdfData, 'base64')], { type: 'application/pdf' });
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        
+        // Open PDF in new window for printing
+        const printWindow = window.open(pdfUrl);
+        if (printWindow) {
+          printWindow.onload = () => {
+            printWindow.print();
+          };
+        }
+        
+        toast({
+          title: "PDF geopend voor printen",
+          description: "Het PDF bestand is geopend in een nieuw venster voor printen.",
+        });
+      }
+    } catch (error) {
+      console.error('Error printing invoice:', error);
+      toast({
+        title: "Fout bij printen",
+        description: "Er ging iets mis bij het genereren van de PDF voor printen.",
+        variant: "destructive",
+      });
+    } finally {
+      setPrintLoading(false);
+    }
+  };
+
   const getItemStyle = (item: any) => {
     if (item.type === 'textblock' && item.formatting) {
       let style: React.CSSProperties = {};
@@ -83,7 +127,22 @@ export const MultiBlockInvoicePreview: React.FC<MultiBlockInvoicePreviewProps> =
   };
 
   return (
-    <div className="bg-white border rounded-lg p-4 shadow-sm max-h-[80vh] overflow-y-auto">
+    <div className="bg-white border rounded-lg shadow-sm">
+      {/* Print Button Header */}
+      <div className="flex justify-end p-4 border-b print:hidden">
+        <Button 
+          onClick={handlePrint}
+          disabled={printLoading}
+          variant="outline"
+          size="sm"
+          className="gap-2"
+        >
+          <Printer className="h-4 w-4" />
+          {printLoading ? 'Genereren...' : 'Print PDF'}
+        </Button>
+      </div>
+      
+      <div className="p-4 max-h-[70vh] overflow-y-auto print:max-h-none print:overflow-visible">
       {/* Header with logo and company info */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center">
@@ -311,6 +370,7 @@ export const MultiBlockInvoicePreview: React.FC<MultiBlockInvoicePreviewProps> =
           <p>Gelieve bij betaling het factuurnummer te vermelden. Bij te late betaling worden rente en incassokosten in rekening gebracht.</p>
           <p className="mt-1">Vervaldatum: {new Date(invoice.due_date).toLocaleDateString('nl-NL')}</p>
         </div>
+      </div>
       </div>
     </div>
   );

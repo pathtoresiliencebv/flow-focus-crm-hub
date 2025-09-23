@@ -59,9 +59,53 @@
     --focus-ring: 2px solid hsl(var(--ring));
     --focus-ring-offset: 2px;
     
-    /* Dynamic accent color support */
-    --accent-dynamic: 262 83% 58%;
+  /* Dynamic accent color support */
+  --accent-dynamic: 262 83% 58%;
+}
+
+/* Print styles for optimal PDF printing */
+@media print {
+  body {
+    font-size: 12pt;
+    line-height: 1.4;
+    color: black;
   }
+  
+  .print\\:hidden {
+    display: none !important;
+  }
+  
+  .print\\:max-h-none {
+    max-height: none !important;
+  }
+  
+  .print\\:overflow-visible {
+    overflow: visible !important;
+  }
+  
+  /* Ensure proper page breaks */
+  .print\\:break-after-page {
+    page-break-after: always;
+  }
+  
+  .print\\:break-inside-avoid {
+    page-break-inside: avoid;
+  }
+  
+  /* Hide scrollbars and shadows for print */
+  * {
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+  }
+  
+  /* Ensure backgrounds print */
+  .bg-gray-50,
+  .bg-blue-50,
+  .bg-green-100 {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
 
   .dark {
     --background: 222.2 84% 4.9%;
