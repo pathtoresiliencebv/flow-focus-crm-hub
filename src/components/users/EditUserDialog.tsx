@@ -20,6 +20,9 @@ export const EditUserDialog = ({ user, onClose }: { user: Profile; onClose: () =
   const queryClient = useQueryClient();
   const [role, setRole] = useState(user.role);
   const [status, setStatus] = useState(user.status);
+  
+  // Check if this is the super admin (joery@smanscrm.nl)
+  const isSuperAdmin = user.email === 'joery@smanscrm.nl';
 
   const mutation = useMutation({
     mutationFn: updateUser,
@@ -44,9 +47,20 @@ export const EditUserDialog = ({ user, onClose }: { user: Profile; onClose: () =
           <DialogTitle>Edit User: {user.full_name}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
+          {isSuperAdmin && (
+            <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4">
+              <p className="text-sm text-amber-800">
+                🔒 <strong>Super Administrator</strong> - Deze gebruiker heeft permanente Administrator rechten en kan niet worden bewerkt.
+              </p>
+            </div>
+          )}
           <div>
             <Label htmlFor="role">Role</Label>
-            <Select value={role} onValueChange={(value) => setRole(value as Profile['role'])}>
+            <Select 
+              value={role} 
+              onValueChange={(value) => setRole(value as Profile['role'])}
+              disabled={isSuperAdmin}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
@@ -61,7 +75,11 @@ export const EditUserDialog = ({ user, onClose }: { user: Profile; onClose: () =
           </div>
           <div>
             <Label htmlFor="status">Status</Label>
-            <Select value={status} onValueChange={(value) => setStatus(value as Profile['status'])}>
+            <Select 
+              value={status} 
+              onValueChange={(value) => setStatus(value as Profile['status'])}
+              disabled={isSuperAdmin}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select a status" />
               </SelectTrigger>
@@ -76,7 +94,7 @@ export const EditUserDialog = ({ user, onClose }: { user: Profile; onClose: () =
           <DialogClose asChild>
             <Button variant="outline">Cancel</Button>
           </DialogClose>
-          <Button onClick={handleSave} disabled={mutation.isPending}>
+          <Button onClick={handleSave} disabled={mutation.isPending || isSuperAdmin}>
             {mutation.isPending ? 'Saving...' : 'Save'}
           </Button>
         </DialogFooter>

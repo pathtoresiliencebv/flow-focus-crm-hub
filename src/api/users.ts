@@ -22,6 +22,14 @@ export async function fetchUsers() {
 
 export async function updateUser(profile: Partial<Profile> & { id: string }) {
   const { id, ...updateData } = profile;
+  
+  // Check if trying to update super admin by getting user details via RPC
+  const { data: allUsers } = await supabase.rpc('get_all_user_details');
+  const targetUser = allUsers?.find((u: any) => u.id === id);
+  if (targetUser?.email === 'joery@smanscrm.nl') {
+    throw new Error('Super Administrator kan niet worden bewerkt.');
+  }
+  
   // remove email if it exists, as it's not in the profiles table
   delete (updateData as any).email; 
   const { data, error } = await supabase.from('profiles').update(updateData).eq('id', id).select().single();
@@ -43,6 +51,14 @@ export async function updateUser(profile: Partial<Profile> & { id: string }) {
 
 export async function deleteUser(userId: string) {
   console.log('deleteUser function called with userId:', userId);
+  
+  // Extra frontend check for super admin protection by getting user details via RPC
+  const { data: allUsers } = await supabase.rpc('get_all_user_details');
+  const targetUser = allUsers?.find((u: any) => u.id === userId);
+  if (targetUser?.email === 'joery@smanscrm.nl') {
+    throw new Error('Super Administrator kan niet worden verwijderd.');
+  }
+  
   const { error } = await supabase.rpc('delete_user_safely', {
     p_user_id: userId,
   });
@@ -62,6 +78,13 @@ export async function deleteUser(userId: string) {
 }
 
 export async function resetUserPassword(userId: string, newPassword: string) {
+  // Extra frontend check for super admin protection by getting user details via RPC
+  const { data: allUsers } = await supabase.rpc('get_all_user_details');
+  const targetUser = allUsers?.find((u: any) => u.id === userId);
+  if (targetUser?.email === 'joery@smanscrm.nl') {
+    throw new Error('Wachtwoord van Super Administrator kan niet worden gereset.');
+  }
+  
   const { error } = await supabase.rpc('admin_reset_user_password', {
     p_user_id: userId,
     p_new_password: newPassword,
