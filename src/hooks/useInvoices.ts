@@ -249,6 +249,32 @@ export function useInvoices() {
     if (error) throw error;
   };
 
+  const sendPaymentReminder = async (invoice: Invoice) => {
+    try {
+      const { error } = await supabase.functions.invoke('send-payment-reminder', {
+        body: {
+          invoiceNumber: invoice.invoice_number,
+          customerEmail: invoice.customer_email
+        }
+      });
+
+      if (error) throw error;
+      
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      toast({
+        title: "Herinnering verstuurd",
+        description: `Betalingsherinnering voor factuur ${invoice.invoice_number} is verstuurd.`,
+      });
+    } catch (error) {
+      console.error('Error sending payment reminder:', error);
+      toast({
+        title: "Fout bij versturen herinnering",
+        description: "Er is een fout opgetreden bij het versturen van de betalingsherinnering.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     invoices,
     loading,
@@ -263,6 +289,7 @@ export function useInvoices() {
     duplicateInvoice,
     archiveInvoice,
     restoreInvoice,
+    sendPaymentReminder,
     refetch
   };
 }

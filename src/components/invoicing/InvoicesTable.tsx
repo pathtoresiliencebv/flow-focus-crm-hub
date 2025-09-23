@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Eye, Send, Download, Trash2, MoreHorizontal, FileText, Printer, Pencil, Copy, Archive, CheckCircle } from "lucide-react";
+import { Eye, Send, Download, Trash2, MoreHorizontal, FileText, Printer, Pencil, Copy, Archive, CheckCircle, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { nl } from "date-fns/locale";
@@ -23,6 +23,7 @@ interface InvoicesTableProps {
   onDuplicateInvoice?: (invoice: any) => void;
   onArchiveInvoice?: (invoice: any) => void;
   onFinalizeInvoice?: (invoice: any) => void;
+  onSendReminder?: (invoice: any) => void;
 }
 
 export const InvoicesTable = ({ 
@@ -32,23 +33,47 @@ export const InvoicesTable = ({
   onEditInvoice,
   onDuplicateInvoice,
   onArchiveInvoice,
-  onFinalizeInvoice
+  onFinalizeInvoice,
+  onSendReminder
 }: InvoicesTableProps) => {
   const navigate = useNavigate();
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'concept':
-        return 'secondary';
+        return 'secondary'; // grijs
       case 'sent':
-        return 'default';
+      case 'verzonden':
+        return 'default'; // custom groen in CSS
+      case 'herinnering':
+        return 'outline'; // custom blauw in CSS  
       case 'paid':
-        return 'default';
+      case 'betaald':
+        return 'default'; // success groen
       case 'overdue':
-        return 'destructive';
+        return 'destructive'; // rood
       default:
         return 'secondary';
     }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'concept': return 'Concept';
+      case 'sent':
+      case 'verzonden': return 'Verzonden';
+      case 'herinnering': return 'Herinnering';
+      case 'paid':
+      case 'betaald': return 'Betaald';
+      case 'overdue': return 'Verlopen';
+      default: return status;
+    }
+  };
+
+  const isOverdue = (invoice: any) => {
+    const today = new Date();
+    const dueDate = new Date(invoice.due_date);
+    return invoice.status !== 'betaald' && invoice.status !== 'paid' && dueDate < today;
   };
 
   return (
@@ -77,8 +102,19 @@ export const InvoicesTable = ({
                 {new Date(invoice.invoice_date).toLocaleDateString('nl-NL')}
               </TableCell>
               <TableCell>
-                <Badge variant={getStatusBadge(invoice.status)}>
-                  {invoice.status}
+                <Badge 
+                  variant={getStatusBadge(isOverdue(invoice) ? 'overdue' : invoice.status)}
+                  className={
+                    invoice.status === 'verzonden' || invoice.status === 'sent' 
+                      ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-emerald-200' 
+                      : invoice.status === 'herinnering'
+                      ? 'bg-blue-100 text-blue-800 hover:bg-blue-100 border-blue-200'
+                      : (invoice.status === 'betaald' || invoice.status === 'paid')
+                      ? 'bg-green-100 text-green-800 hover:bg-green-100 border-green-200'
+                      : ''
+                  }
+                >
+                  {getStatusLabel(isOverdue(invoice) ? 'overdue' : invoice.status)}
                 </Badge>
               </TableCell>
               <TableCell>€{invoice.total_amount.toFixed(2)}</TableCell>
@@ -113,6 +149,13 @@ export const InvoicesTable = ({
                       <DropdownMenuItem onClick={() => onSendInvoice(invoice)}>
                         <Send className="mr-2 h-4 w-4" />
                         Versturen
+                      </DropdownMenuItem>
+                    )}
+
+                    {(invoice.status === 'verzonden' || invoice.status === 'sent') && onSendReminder && (
+                      <DropdownMenuItem onClick={() => onSendReminder(invoice)}>
+                        <Bell className="mr-2 h-4 w-4" />
+                        Betalingsherinnering
                       </DropdownMenuItem>
                     )}
 

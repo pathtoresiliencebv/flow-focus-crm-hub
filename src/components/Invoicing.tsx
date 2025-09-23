@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 export const Invoicing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { invoices, deleteInvoice, duplicateInvoice, archiveInvoice, refetch } = useInvoices();
+  const { invoices, deleteInvoice, duplicateInvoice, archiveInvoice, sendPaymentReminder, refetch } = useInvoices();
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [showSendDialog, setShowSendDialog] = useState(false);
   const [showFinalizationDialog, setShowFinalizationDialog] = useState(false);
@@ -97,6 +97,15 @@ export const Invoicing = () => {
     setShowFinalizationDialog(true);
   };
 
+  const handleSendReminder = async (invoice: any) => {
+    try {
+      await sendPaymentReminder(invoice);
+      refetch();
+    } catch (error) {
+      // Error handling is done in useInvoices hook
+    }
+  };
+
   const handleCloseNewInvoice = () => {
     setShowNewInvoiceForm(false);
     navigate('/');
@@ -159,12 +168,13 @@ export const Invoicing = () => {
             </div>
             <InvoicesTable 
               invoices={filteredInvoices}
-                    onSendInvoice={handleSendInvoice}
-                    onDeleteInvoice={handleDeleteInvoice}
-                    onEditInvoice={handleEditInvoice}
-                    onDuplicateInvoice={handleDuplicateInvoice}
-                    onArchiveInvoice={handleArchiveInvoice}
-                onFinalizeInvoice={handleFinalizeInvoice}
+              onSendInvoice={handleSendInvoice}
+              onDeleteInvoice={handleDeleteInvoice}
+              onEditInvoice={handleEditInvoice}
+              onDuplicateInvoice={handleDuplicateInvoice}
+              onArchiveInvoice={handleArchiveInvoice}
+              onFinalizeInvoice={handleFinalizeInvoice}
+              onSendReminder={handleSendReminder}
             />
           </TabsContent>
 

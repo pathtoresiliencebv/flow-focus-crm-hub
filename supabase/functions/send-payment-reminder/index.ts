@@ -123,7 +123,16 @@ serve(async (req) => {
       throw emailError;
     }
 
-    // Log the reminder
+    // Update invoice status to herinnering and log the reminder
+    await supabase
+      .from("invoices")
+      .update({ 
+        status: 'herinnering',
+        updated_at: new Date().toISOString()
+      })
+      .eq("invoice_number", invoiceNumber);
+
+    // Log the reminder in invoice_payments table
     await supabase
       .from("invoice_payments")
       .update({
