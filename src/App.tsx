@@ -41,12 +41,13 @@ function App() {
                   <Route path="/customers/:customerId" element={<Index />} />
                   <Route path="/projects/:projectId" element={<Index />} />
                   <Route path="/customers-projects" element={<Index />} />
-                  <Route path="/quotes/new" element={<Index />} />
-                  <Route path="/invoices/new" element={<Index />} />
+                  <Route path="/quotes" element={<Index />} />
+                  <Route path="/quotes/new" element={<NewQuote />} />
+                  <Route path="/invoices" element={<Index />} />
+                  <Route path="/invoices/new" element={<NewInvoice />} />
                   <Route path="/quotes/:id/edit" element={<EditQuote />} />
                   <Route path="/quotes/:quoteId/preview" element={<QuotePreview />} />
                   <Route path="/quotes/:quoteId/send" element={<QuoteSend />} />
-                  <Route path="/invoices/new" element={<NewInvoice />} />
                   <Route path="/invoices/:id" element={<InvoiceDetailsPage />} />
                   <Route path="/invoices/:id/edit" element={<EditInvoice />} />
                   <Route path="/invoices/:invoiceId/details" element={<InvoiceDetailsPage />} />

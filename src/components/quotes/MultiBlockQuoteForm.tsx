@@ -664,7 +664,8 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
           title: "Concept opgeslagen",
           description: "Je offerte is opgeslagen als concept.",
         });
-        onClose(); // Navigate back to quotes list
+        // Navigate back to quotes overview
+        window.location.href = '/?tab=quotes';
       }
     } catch (error) {
       console.error('Error saving draft:', error);
@@ -676,16 +677,38 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     } finally {
       setSaving(false);
     }
-  }, [form, saveAsDraft, onClose, toast]);
+  }, [form, saveAsDraft, toast]);
 
   const handleSaveAndSend = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    // Use saveAndPrepareToSend instead of saveAsDraft to correctly prepare quote for sending
-    await form.handleSubmit((values) => saveAndPrepareToSend(values))();
-    
-  }, [form, saveAndPrepareToSend]);
+    setSaving(true);
+    try {
+      // First validate the form
+      const isValid = await form.trigger();
+      if (!isValid) {
+        toast({
+          title: "Validatie fout",
+          description: "Controleer alle vereiste velden voordat je de offerte verstuurt.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Save the quote first, then navigate to send page
+      await form.handleSubmit((values) => saveAndPrepareToSend(values))();
+    } catch (error) {
+      console.error('Error saving and preparing to send:', error);
+      toast({
+        title: "Fout bij opslaan",
+        description: "Er is een fout opgetreden bij het voorbereiden voor verzending.",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }, [form, saveAndPrepareToSend, toast]);
 
   const handleExitWithConfirm = () => {
     // Check if there are unsaved changes

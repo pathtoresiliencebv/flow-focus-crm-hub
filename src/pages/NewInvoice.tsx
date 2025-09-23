@@ -10,7 +10,7 @@ export function NewInvoice() {
   const { customers, projects } = useCrmStore();
 
   const handleClose = () => {
-    navigate(-1); // Go back to previous page
+    navigate('/?tab=invoices'); // Go back to invoices list
   };
 
   const formCustomers = customers.map(customer => ({

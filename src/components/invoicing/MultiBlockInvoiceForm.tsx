@@ -489,6 +489,7 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
     return savedInvoiceId;
   };
 
+
   const { totalAmount, totalVAT } = calculateTotals();
 
   // Create invoice object for preview
@@ -721,7 +722,22 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
             <Button
               type="button"
               variant="outline"
-              onClick={() => saveInvoice(false)}
+              onClick={async () => {
+                try {
+                  await saveInvoice(false);
+                  toast({
+                    title: "Concept opgeslagen",
+                    description: "Je factuur is opgeslagen als concept.",
+                  });
+                  window.location.href = '/?tab=invoices';
+                } catch (error) {
+                  toast({
+                    title: "Fout bij opslaan",
+                    description: "Er is een fout opgetreden bij het opslaan van het concept.",
+                    variant: "destructive",
+                  });
+                }
+              }}
               disabled={!selectedCustomerId}
             >
               <Save className="h-4 w-4 mr-2" />
@@ -729,7 +745,25 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
             </Button>
             <Button
               type="button"
-              onClick={() => saveAndPrepareToSend()}
+              onClick={async () => {
+                if (!selectedCustomerId || blocks.length === 0) {
+                  toast({
+                    title: "Validatie fout",
+                    description: "Selecteer een klant en voeg ten minste één blok toe.",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                try {
+                  await saveAndPrepareToSend();
+                } catch (error) {
+                  toast({
+                    title: "Fout bij opslaan",
+                    description: "Er is een fout opgetreden bij het voorbereiden voor verzending.",
+                    variant: "destructive",
+                  });
+                }
+              }}
               disabled={!selectedCustomerId || blocks.length === 0}
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >

@@ -49,7 +49,9 @@ const Index = () => {
     if (customerId) return "customers";
     if (projectId) return "projects";
     if (window.location.pathname === "/invoices/new") return "invoices";
+    if (window.location.pathname === "/invoices") return "invoices";
     if (window.location.pathname === "/quotes/new") return "quotes";
+    if (window.location.pathname === "/quotes") return "quotes";
     return "dashboard";
   });
   

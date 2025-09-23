@@ -25,7 +25,7 @@ export function NewQuote() {
   const navigate = useNavigate();
 
   const handleClose = () => {
-    navigate('/quotes'); // Always go back to quotes list
+    navigate('/?tab=quotes'); // Always go back to quotes list
   };
 
   return (
