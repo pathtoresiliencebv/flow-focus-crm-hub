@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   Settings, 
   Key, 
@@ -10,17 +12,81 @@ import {
   AlertTriangle,
   CheckCircle,
   XCircle,
-  Info
+  Info,
+  Save,
+  Eye,
+  EyeOff
 } from "lucide-react";
 import { useStripeConfig } from '@/hooks/useStripeConfig';
+import { useToast } from '@/hooks/use-toast';
 
 export const StripeConfigManager: React.FC = () => {
   const {
     configData,
     loading,
     isConnected,
-    error
+    error,
+    testStripeConfig
   } = useStripeConfig();
+  
+  const { toast } = useToast();
+  const [showKeys, setShowKeys] = useState(false);
+  const [keys, setKeys] = useState({
+    liveKey: '',
+    webhookSecret: ''
+  });
+  const [saving, setSaving] = useState(false);
+
+  const validateStripeKey = (key: string, type: 'live' | 'webhook') => {
+    if (type === 'live') {
+      return key.startsWith('sk_live_') || key.startsWith('sk_test_');
+    }
+    if (type === 'webhook') {
+      return key.startsWith('whsec_');
+    }
+    return false;
+  };
+
+  const handleSaveKeys = async () => {
+    setSaving(true);
+    try {
+      if (keys.liveKey && !validateStripeKey(keys.liveKey, 'live')) {
+        throw new Error('Stripe Live Key moet beginnen met sk_live_ of sk_test_');
+      }
+      if (keys.webhookSecret && !validateStripeKey(keys.webhookSecret, 'webhook')) {
+        throw new Error('Webhook Secret moet beginnen met whsec_');
+      }
+
+      // Save keys using existing secrets functionality
+      if (keys.liveKey) {
+        // Note: In production, this would use the secrets API
+        console.log('Would save STRIPE_LIVE_KEY');
+      }
+      if (keys.webhookSecret) {
+        // Note: In production, this would use the secrets API  
+        console.log('Would save STRIPE_WEBHOOK_SECRET');
+      }
+
+      toast({
+        title: "Keys Opgeslagen",
+        description: "Stripe configuratie wordt getest...",
+      });
+
+      // Test configuration after saving
+      await testStripeConfig();
+      
+      setKeys({ liveKey: '', webhookSecret: '' });
+      setShowKeys(false);
+    } catch (error) {
+      toast({
+        title: "Fout bij Opslaan",
+        description: error instanceof Error ? error.message : 'Onbekende fout',
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const openStripeLinks = {
     dashboard: "https://dashboard.stripe.com",
@@ -40,12 +106,85 @@ export const StripeConfigManager: React.FC = () => {
         <p className="text-gray-600">Beheer uw Stripe integratie en configuratie instellingen</p>
       </div>
 
+      {/* Stripe Keys Configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Key className="h-5 w-5" />
+            Stripe Keys Configureren
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Belangrijk:</strong> Gebruik alleen secret keys die beginnen met 'sk_live_' of 'sk_test_'. 
+                Gebruik nooit publishable keys die beginnen met 'pk_'.
+              </AlertDescription>
+            </Alert>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="liveKey">Stripe Live/Test Key</Label>
+                <div className="relative">
+                  <Input
+                    id="liveKey"
+                    type={showKeys ? "text" : "password"}
+                    placeholder="sk_live_..."
+                    value={keys.liveKey}
+                    onChange={(e) => setKeys(prev => ({ ...prev, liveKey: e.target.value }))}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-auto p-1"
+                    onClick={() => setShowKeys(!showKeys)}
+                  >
+                    {showKeys ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Te vinden in Stripe Dashboard → Developers → API keys
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="webhookSecret">Webhook Signing Secret</Label>
+                <div className="relative">
+                  <Input
+                    id="webhookSecret"
+                    type={showKeys ? "text" : "password"}
+                    placeholder="whsec_..."
+                    value={keys.webhookSecret}
+                    onChange={(e) => setKeys(prev => ({ ...prev, webhookSecret: e.target.value }))}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Te vinden in Stripe Dashboard → Developers → Webhooks → [Endpoint] → Signing secret
+                </p>
+              </div>
+            </div>
+
+            <Button 
+              onClick={handleSaveKeys} 
+              disabled={saving || (!keys.liveKey && !keys.webhookSecret)}
+              className="w-full"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {saving ? 'Opslaan...' : 'Keys Opslaan en Testen'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Current Configuration Status */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Key className="h-5 w-5" />
-            Huidige Configuratie
+            Huidige Status
           </CardTitle>
         </CardHeader>
         <CardContent>

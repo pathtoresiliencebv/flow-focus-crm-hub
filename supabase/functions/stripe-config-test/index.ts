@@ -42,9 +42,19 @@ serve(async (req) => {
     // Test Stripe Live Key
     const stripeKey = Deno.env.get("STRIPE_LIVE_KEY");
     if (!stripeKey) {
-      throw new Error("STRIPE_LIVE_KEY is not configured");
+      throw new Error("STRIPE_LIVE_KEY is not configured. Please add your Stripe secret key.");
     }
-    logStep("STRIPE_LIVE_KEY found");
+    
+    // Validate key format
+    if (stripeKey.startsWith('pk_')) {
+      throw new Error("Invalid key: You're using a publishable key (pk_). Please use a secret key (sk_live_ or sk_test_) instead.");
+    }
+    
+    if (!stripeKey.startsWith('sk_live_') && !stripeKey.startsWith('sk_test_')) {
+      throw new Error("Invalid key format: Stripe key must start with sk_live_ or sk_test_");
+    }
+    
+    logStep("STRIPE_LIVE_KEY found and validated", { keyType: stripeKey.substring(0, 8) + '...' });
 
     const stripe = new Stripe(stripeKey, { 
       apiVersion: "2025-08-27.basil" 
