@@ -1,105 +1,163 @@
 
-import React from 'react';
-import { QuoteSettingsForm } from '@/components/QuoteSettingsForm';
-import { InvoiceSettingsForm } from '@/components/InvoiceSettingsForm';
-import { EmailTemplateManager } from '@/components/EmailTemplateManager';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, FileText, CreditCard, Mail, MessageSquareText, Bell, Activity, Wallet } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { EmailSettings } from '@/components/EmailSettings';
-import { NotificationTester } from '@/components/NotificationTester';
-import { StripeStatusDashboard } from '@/components/stripe/StripeStatusDashboard';
-import { StripeConfigManager } from '@/components/stripe/StripeConfigManager';
-// import { ChatTestingPanel } from '@/components/chat/ChatTestingPanel';
+import { Settings as SettingsIcon, Building2, FileText, Users, Mail, Wallet, Bot, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { CompanyDetailsSettings } from '@/components/settings/CompanyDetailsSettings';
+import { DocumentSettings } from '@/components/settings/DocumentSettings';
+import { UserRoleSettings } from '@/components/settings/UserRoleSettings';
+import { CommunicationSettings } from '@/components/settings/CommunicationSettings';
+import { ExternalIntegrationsSettings } from '@/components/settings/ExternalIntegrationsSettings';
+
+type SettingPage = 'overview' | 'company' | 'documents' | 'users' | 'communication' | 'integrations';
+
+const settingsCategories = [
+  {
+    title: "Algemeen Beheer",
+    description: "Basis configuratie van uw CRM systeem",
+    items: [
+      {
+        id: 'company' as SettingPage,
+        title: "Bedrijfsgegevens",
+        description: "Beheer uw bedrijfsinformatie en contactgegevens",
+        icon: Building2,
+        color: "text-blue-600"
+      },
+      {
+        id: 'documents' as SettingPage,
+        title: "Document Instellingen",
+        description: "Configureer offertes en factuur instellingen",
+        icon: FileText,
+        color: "text-green-600"
+      },
+      {
+        id: 'users' as SettingPage,
+        title: "Gebruikers & Rechten",
+        description: "Beheer gebruikers en hun toegangsrechten",
+        icon: Users,
+        color: "text-purple-600"
+      }
+    ]
+  },
+  {
+    title: "Communicatie & Automatisering",
+    description: "E-mail, templates en notificatie instellingen",
+    items: [
+      {
+        id: 'communication' as SettingPage,
+        title: "E-mail & Notificaties",
+        description: "Configureer e-mail accounts, templates en notificaties",
+        icon: Mail,
+        color: "text-orange-600"
+      }
+    ]
+  },
+  {
+    title: "Externe Integraties",
+    description: "Verbindingen met externe services en API's",
+    items: [
+      {
+        id: 'integrations' as SettingPage,
+        title: "Stripe Betalingen",
+        description: "Beheer Stripe configuratie en betalingsinstellingen",
+        icon: Wallet,
+        color: "text-emerald-600"
+      }
+    ]
+  }
+];
 
 export default function Settings() {
-  return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <div className="flex items-center gap-3 mb-2">
-          <SettingsIcon className="h-8 w-8 text-smans-primary" />
-          <h1 className="text-3xl font-bold text-gray-900">Instellingen</h1>
+  const [currentPage, setCurrentPage] = useState<SettingPage>('overview');
+
+  const renderCurrentPage = () => {
+    switch (currentPage) {
+      case 'company':
+        return <CompanyDetailsSettings />;
+      case 'documents':
+        return <DocumentSettings />;
+      case 'users':
+        return <UserRoleSettings />;
+      case 'communication':
+        return <CommunicationSettings />;
+      case 'integrations':
+        return <ExternalIntegrationsSettings />;
+      default:
+        return renderOverview();
+    }
+  };
+
+  const renderOverview = () => (
+    <div className="space-y-8">
+      <div className="flex items-center gap-3 mb-8">
+        <SettingsIcon className="h-8 w-8 text-primary" />
+        <div>
+          <h1 className="text-3xl font-bold">Instellingen</h1>
+          <p className="text-muted-foreground">Beheer uw CRM systeem configuratie</p>
         </div>
-        <p className="text-gray-600">Beheer uw bedrijfsgegevens, offerte en factuur instellingen</p>
       </div>
 
-      <Tabs defaultValue="quotes" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-7">
-          <TabsTrigger value="quotes" className="flex items-center gap-2 text-xs">
-            <FileText className="h-4 w-4" />
-            Offertes
-          </TabsTrigger>
-          <TabsTrigger value="invoices" className="flex items-center gap-2 text-xs">
-            <CreditCard className="h-4 w-4" />
-            Facturen
-          </TabsTrigger>
-          <TabsTrigger value="stripe" className="flex items-center gap-2 text-xs">
-            <Wallet className="h-4 w-4" />
-            Stripe Betalingen
-          </TabsTrigger>
-          <TabsTrigger value="email" className="flex items-center gap-2 text-xs">
-            <Mail className="h-4 w-4" />
-            E-mail
-          </TabsTrigger>
-          <TabsTrigger value="templates" className="flex items-center gap-2 text-xs">
-            <MessageSquareText className="h-4 w-4" />
-            Templates
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2 text-xs">
-            <Bell className="h-4 w-4" />
-            Notificaties
-          </TabsTrigger>
-          <TabsTrigger value="chat-testing" className="flex items-center gap-2 text-xs">
-            <Activity className="h-4 w-4" />
-            Testing
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="quotes" className="space-y-6">
-          <QuoteSettingsForm />
-        </TabsContent>
-
-        <TabsContent value="invoices" className="space-y-6">
-          <InvoiceSettingsForm />
-        </TabsContent>
-
-        <TabsContent value="stripe" className="space-y-6">
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <div className="space-y-6">
-              <StripeStatusDashboard />
-            </div>
-            <div>
-              <StripeConfigManager />
-            </div>
+      {settingsCategories.map((category, categoryIndex) => (
+        <div key={categoryIndex} className="space-y-4">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-2">{category.title}</h2>
+            <p className="text-muted-foreground text-sm">{category.description}</p>
           </div>
-        </TabsContent>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {category.items.map((item) => {
+              const IconComponent = item.icon;
+              return (
+                <Card 
+                  key={item.id} 
+                  className="cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-[1.02] group"
+                  onClick={() => setCurrentPage(item.id)}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg bg-muted ${item.color}`}>
+                          <IconComponent className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-base font-medium">{item.title}</CardTitle>
+                        </div>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <p className="text-sm text-muted-foreground">{item.description}</p>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
-        <TabsContent value="email" className="space-y-6">
-          <EmailSettings />
-        </TabsContent>
+  if (currentPage !== 'overview') {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="mb-6">
+          <Button 
+            variant="ghost" 
+            onClick={() => setCurrentPage('overview')}
+            className="mb-4 hover:bg-muted"
+          >
+            ← Terug naar Instellingen
+          </Button>
+          {renderCurrentPage()}
+        </div>
+      </div>
+    );
+  }
 
-        <TabsContent value="templates" className="space-y-6">
-          <EmailTemplateManager />
-        </TabsContent>
-
-        <TabsContent value="notifications" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Notificatie Systeem Tester</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                Test het enterprise notificatie systeem met push notificaties, real-time updates en meer.
-              </p>
-            </CardHeader>
-            <CardContent>
-              <NotificationTester />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="chat-testing" className="space-y-6">
-          <div>Chat Testing Panel tijdelijk uitgeschakeld voor debugging</div>
-        </TabsContent>
-      </Tabs>
+  return (
+    <div className="container mx-auto p-6">
+      {renderCurrentPage()}
     </div>
   );
 }
