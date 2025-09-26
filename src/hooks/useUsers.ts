@@ -15,7 +15,7 @@ const fetchUsers = async (): Promise<User[]> => {
 };
 
 export const useUsers = () => {
-  const { data: users = [], isLoading, error } = useQuery<User[]>({
+  const { data: users = [], isLoading, error, refetch } = useQuery<User[]>({
     queryKey: ['users'],
     queryFn: fetchUsers,
   });
@@ -23,10 +23,19 @@ export const useUsers = () => {
   // Filter monteurs (Installateur role)
   const monteurs = users.filter(user => user.role === 'Installateur');
 
+  // DEBUG LOGGING
+  console.log('🔍 [useUsers Debug]');
+  console.log('Total users fetched:', users.length);
+  console.log('All users:', users);
+  console.log('Filtered monteurs:', monteurs);
+  console.log('Loading state:', isLoading);
+  console.log('Error state:', error);
+
   return {
     users,
     monteurs,
     isLoading,
     error,
+    refreshUsers: refetch,
   };
 };
