@@ -17,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
 import { UserRole } from '@/types/permissions';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CreateUserDialogProps {
   open: boolean;
@@ -67,8 +68,25 @@ export const CreateUserDialog = ({ open, onOpenChange }: CreateUserDialogProps) 
 
     for (const user of predefinedUsers) {
       try {
-        await signUp(user.email, user.password, user.fullName, user.role);
-        successCount++;
+        console.log(`Creating user: ${user.email}`);
+        
+        // Use edge function for admin user creation
+        const { error } = await supabase.functions.invoke('create-admin-user', {
+          body: {
+            email: user.email,
+            password: user.password,
+            fullName: user.fullName,
+            role: user.role
+          }
+        });
+
+        if (error) {
+          console.error(`Failed to create user ${user.email}:`, error);
+          errorCount++;
+        } else {
+          successCount++;
+        }
+        
         // Small delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 500));
       } catch (error) {
