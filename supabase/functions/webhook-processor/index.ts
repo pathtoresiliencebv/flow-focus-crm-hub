@@ -54,10 +54,10 @@ serve(async (req) => {
           }
         );
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in webhook processor:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message || 'Unknown error' }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -188,7 +188,7 @@ async function handleSendWebhook(
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error sending webhook:', error);
     
     // Log failed delivery
@@ -200,7 +200,7 @@ async function handleSendWebhook(
           delivery_method: 'webhook',
           status: 'failed',
           endpoint: 'unknown',
-          error_message: error.message,
+          error_message: error.message || 'Unknown error',
           metadata: {
             webhook_id: webhookId,
             event_type: event.type,
@@ -259,7 +259,7 @@ async function handleBroadcastEvent(
 
     // Send to all matching webhooks
     const results = await Promise.allSettled(
-      webhooks.map(webhook => 
+      webhooks.map((webhook: any) => 
         handleSendWebhook(supabase, webhook.id, event)
       )
     );
