@@ -18,6 +18,7 @@ export const useUsers = () => {
   const { data: users = [], isLoading, error, refetch } = useQuery<User[]>({
     queryKey: ['users'],
     queryFn: fetchUsers,
+    retry: false, // Don't retry on permission errors
   });
 
   // Filter monteurs (Installateur role)

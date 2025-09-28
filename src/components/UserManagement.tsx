@@ -15,16 +15,22 @@ import { Profile } from '@/types/user';
 
 const UserManagement = () => {
   const queryClient = useQueryClient();
+  const { hasPermission, profile } = useAuth();
+  
+  // Check if user has permission to view users
+  const canViewUsers = hasPermission('users_view');
+  
   const { data: users, isLoading, error } = useQuery({ 
     queryKey: ['users'], 
     queryFn: fetchUsers,
-    retry: false
+    retry: false,
+    enabled: canViewUsers // Only fetch if user has permission
   });
+  
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
   const [deletingUser, setDeletingUser] = useState<Profile | null>(null);
   const [resettingPasswordUser, setResettingPasswordUser] = useState<Profile | null>(null);
   const [isCreateUserOpen, setCreateUserOpen] = useState(false);
-  const { hasPermission } = useAuth();
 
   const deleteUserMutation = useMutation({
     mutationFn: deleteUser,
@@ -45,6 +51,23 @@ const UserManagement = () => {
     },
   });
 
+  // Show permission error if user doesn't have access
+  if (!canViewUsers) {
+    return (
+      <div className="text-center py-8">
+        <div className="max-w-md mx-auto">
+          <h3 className="text-lg font-semibold mb-2">Geen Toegang</h3>
+          <p className="text-muted-foreground mb-4">
+            U heeft niet de benodigde rechten om gebruikers te beheren.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Huidige rol: <span className="font-medium">{profile?.role || 'Onbekend'}</span>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -57,8 +80,13 @@ const UserManagement = () => {
   if (error) {
     return (
       <div className="text-center py-8">
-        <p className="text-red-600 mb-4">Fout bij laden van gebruikers</p>
-        <p className="text-muted-foreground">{error.message}</p>
+        <div className="max-w-md mx-auto">
+          <h3 className="text-lg font-semibold mb-2 text-destructive">Fout bij laden van gebruikers</h3>
+          <p className="text-muted-foreground mb-4">{error.message}</p>
+          <p className="text-sm text-muted-foreground">
+            Controleer uw rechten of neem contact op met een administrator.
+          </p>
+        </div>
       </div>
     );
   }
