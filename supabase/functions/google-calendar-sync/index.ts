@@ -179,37 +179,358 @@ async function handleOAuthCallback(payload: any, req: Request) {
 }
 
 async function handleSyncPlanning(req: Request) {
-  // For now, return a simple success response
-  // This would be implemented to sync planning items to Google Calendar
-  return new Response(JSON.stringify({ 
-    success: true, 
-    syncedItems: 0,
-    message: 'Sync planning functionality will be implemented'
-  }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
+  try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Authorization header is required');
+    }
+
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    // Get user from auth header
+    const userResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { Authorization: authHeader },
+    });
+    
+    const user = await userResponse.json();
+    if (!user?.id) {
+      throw new Error('Failed to get user');
+    }
+
+    // Get user's calendar settings
+    const settingsResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/google_calendar_settings?user_id=eq.${user.id}&select=*`,
+      {
+        headers: {
+          'apikey': SUPABASE_SERVICE_ROLE_KEY!,
+          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+      }
+    );
+
+    const settings = await settingsResponse.json();
+    if (!settings || settings.length === 0) {
+      throw new Error('No calendar settings found');
+    }
+
+    const userSettings = settings[0];
+
+    // Get planning items to sync (for demo, we'll create a sample event)
+    const planningResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/planning_items?user_id=eq.${user.id}&google_event_id=is.null&limit=10`,
+      {
+        headers: {
+          'apikey': SUPABASE_SERVICE_ROLE_KEY!,
+          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+      }
+    );
+
+    const planningItems = await planningResponse.json();
+    let syncedCount = 0;
+    const selectedCalendars = userSettings.selected_calendars || [{ id: userSettings.calendar_id }];
+
+    for (const item of planningItems || []) {
+      for (const calendar of selectedCalendars) {
+        try {
+          // Create event in Google Calendar
+          const eventData = {
+            summary: item.title,
+            description: item.description,
+            start: {
+              dateTime: item.start_time,
+              timeZone: 'Europe/Amsterdam'
+            },
+            end: {
+              dateTime: item.end_time,
+              timeZone: 'Europe/Amsterdam'
+            },
+            location: item.location
+          };
+
+          const response = await fetch(
+            `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${userSettings.access_token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(eventData)
+            }
+          );
+
+          if (response.ok) {
+            const createdEvent = await response.json();
+            
+            // Update planning item with Google event ID
+            await fetch(`${SUPABASE_URL}/rest/v1/planning_items?id=eq.${item.id}`, {
+              method: 'PATCH',
+              headers: {
+                'apikey': SUPABASE_SERVICE_ROLE_KEY!,
+                'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                google_event_id: createdEvent.id,
+                calendar_id: calendar.id
+              })
+            });
+
+            syncedCount++;
+          }
+        } catch (error) {
+          console.error(`Failed to sync item ${item.id}:`, error);
+        }
+      }
+    }
+
+    return new Response(JSON.stringify({ syncedItems: syncedCount }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error syncing planning:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 }
 
 async function handleSyncFromGoogle(req: Request) {
-  // For now, return a simple success response
-  // This would be implemented to sync from Google Calendar to planning items
-  return new Response(JSON.stringify({ 
-    success: true, 
-    importedEvents: 0,
-    message: 'Import from Google functionality will be implemented'
-  }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
+  try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Authorization header is required');
+    }
+
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    // Get user from auth header
+    const userResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { Authorization: authHeader },
+    });
+    
+    const user = await userResponse.json();
+    if (!user?.id) {
+      throw new Error('Failed to get user');
+    }
+
+    // Get user's calendar settings
+    const settingsResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/google_calendar_settings?user_id=eq.${user.id}&select=*`,
+      {
+        headers: {
+          'apikey': SUPABASE_SERVICE_ROLE_KEY!,
+          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+      }
+    );
+
+    const settings = await settingsResponse.json();
+    if (!settings || settings.length === 0) {
+      throw new Error('No calendar settings found');
+    }
+
+    const userSettings = settings[0];
+    let importedCount = 0;
+    const selectedCalendars = userSettings.selected_calendars || [{ id: userSettings.calendar_id }];
+    const now = new Date();
+    const timeMin = now.toISOString();
+    const timeMax = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000)).toISOString(); // Next 30 days
+
+    for (const calendar of selectedCalendars) {
+      try {
+        // Fetch events from Google Calendar
+        const eventsResponse = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events?` +
+          `timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`,
+          {
+            headers: {
+              'Authorization': `Bearer ${userSettings.access_token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+
+        if (!eventsResponse.ok) continue;
+
+        const eventsData = await eventsResponse.json();
+        
+        for (const event of eventsData.items || []) {
+          if (!event.start?.dateTime || !event.end?.dateTime) continue;
+
+          // Check if event already exists
+          const existingResponse = await fetch(
+            `${SUPABASE_URL}/rest/v1/planning_items?google_event_id=eq.${event.id}&user_id=eq.${user.id}`,
+            {
+              headers: {
+                'apikey': SUPABASE_SERVICE_ROLE_KEY!,
+                'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+              },
+            }
+          );
+
+          const existing = await existingResponse.json();
+
+          if (!existing || existing.length === 0) {
+            // Import new event
+            const insertResponse = await fetch(`${SUPABASE_URL}/rest/v1/planning_items`, {
+              method: 'POST',
+              headers: {
+                'apikey': SUPABASE_SERVICE_ROLE_KEY!,
+                'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                user_id: user.id,
+                title: event.summary || 'Untitled Event',
+                description: event.description || '',
+                start_time: event.start.dateTime,
+                end_time: event.end.dateTime,
+                location: event.location || '',
+                google_event_id: event.id,
+                calendar_id: calendar.id,
+                status: event.status || 'confirmed'
+              })
+            });
+
+            if (insertResponse.ok) {
+              importedCount++;
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`Failed to sync from calendar ${calendar.id}:`, error);
+      }
+    }
+
+    return new Response(JSON.stringify({ importedEvents: importedCount }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error syncing from Google:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 }
 
 async function handleGetCalendars(req: Request) {
-  // For now, return empty calendars
-  // This would be implemented to fetch available calendars
-  return new Response(JSON.stringify({ 
-    calendars: [], 
-    connected: false,
-    message: 'Get calendars functionality will be implemented'
-  }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
+  try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Authorization header is required');
+    }
+
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    // Get user from auth header
+    const userResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { Authorization: authHeader },
+    });
+    
+    const user = await userResponse.json();
+    if (!user?.id) {
+      throw new Error('Failed to get user');
+    }
+
+    // Get user's calendar settings with access token
+    const settingsResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/google_calendar_settings?user_id=eq.${user.id}&select=access_token,refresh_token,token_expires_at`,
+      {
+        headers: {
+          'apikey': SUPABASE_SERVICE_ROLE_KEY!,
+          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        },
+      }
+    );
+
+    const settings = await settingsResponse.json();
+    if (!settings || settings.length === 0) {
+      throw new Error('No calendar settings found');
+    }
+
+    const userSettings = settings[0];
+    let accessToken = userSettings.access_token;
+
+    // Check if token needs refresh
+    if (userSettings.token_expires_at && new Date(userSettings.token_expires_at) <= new Date()) {
+      // Refresh token
+      const refreshResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: Deno.env.get('GOOGLE_CLIENT_ID') || '',
+          client_secret: Deno.env.get('GOOGLE_CLIENT_SECRET') || '',
+          refresh_token: userSettings.refresh_token || '',
+          grant_type: 'refresh_token'
+        })
+      });
+
+      const refreshData = await refreshResponse.json();
+      if (!refreshResponse.ok) {
+        throw new Error('Failed to refresh token: ' + refreshData.error_description);
+      }
+
+      accessToken = refreshData.access_token;
+      
+      // Update token in database
+      await fetch(`${SUPABASE_URL}/rest/v1/google_calendar_settings?user_id=eq.${user.id}`, {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_SERVICE_ROLE_KEY!,
+          'Authorization': `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          access_token: accessToken,
+          token_expires_at: new Date(Date.now() + (refreshData.expires_in * 1000)).toISOString()
+        })
+      });
+    }
+
+    // Fetch calendars from Google Calendar API
+    const calendarsResponse = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!calendarsResponse.ok) {
+      throw new Error('Failed to fetch calendars from Google');
+    }
+
+    const calendarsData = await calendarsResponse.json();
+    const calendars = calendarsData.items?.map((cal: any) => ({
+      id: cal.id,
+      summary: cal.summary,
+      description: cal.description,
+      primary: cal.primary,
+      accessRole: cal.accessRole,
+      backgroundColor: cal.backgroundColor,
+      foregroundColor: cal.foregroundColor
+    })) || [];
+
+    return new Response(JSON.stringify({ calendars }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error fetching calendars:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 }

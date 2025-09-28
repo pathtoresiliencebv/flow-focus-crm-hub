@@ -1095,6 +1095,7 @@ export type Database = {
           id: string
           last_sync_at: string | null
           refresh_token: string | null
+          selected_calendars: Json | null
           sync_enabled: boolean
           sync_status: string | null
           token_expires_at: string | null
@@ -1110,6 +1111,7 @@ export type Database = {
           id?: string
           last_sync_at?: string | null
           refresh_token?: string | null
+          selected_calendars?: Json | null
           sync_enabled?: boolean
           sync_status?: string | null
           token_expires_at?: string | null
@@ -1125,6 +1127,7 @@ export type Database = {
           id?: string
           last_sync_at?: string | null
           refresh_token?: string | null
+          selected_calendars?: Json | null
           sync_enabled?: boolean
           sync_status?: string | null
           token_expires_at?: string | null

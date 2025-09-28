@@ -14,6 +14,11 @@ interface CalendarSettings {
   last_sync_at: string | null;
   created_at: string;
   updated_at: string;
+  selected_calendars?: Array<{
+    id: string;
+    name: string;
+    primary?: boolean;
+  }>;
 }
 
 interface GoogleCalendar {
@@ -48,7 +53,24 @@ export const useGoogleCalendar = () => {
 
       if (error) throw error;
       
-      setCalendarSettings(data);
+      if (data) {
+        const settings: CalendarSettings = {
+          id: data.id,
+          user_id: data.user_id,
+          user_role: data.user_role,
+          calendar_id: data.calendar_id,
+          calendar_name: data.calendar_name,
+          sync_enabled: data.sync_enabled,
+          sync_status: data.sync_status,
+          last_sync_at: data.last_sync_at,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
+          selected_calendars: Array.isArray(data.selected_calendars) ? data.selected_calendars as any[] : []
+        };
+        setCalendarSettings(settings);
+      } else {
+        setCalendarSettings(null);
+      }
       setIsConnected(!!data);
 
       if (data) {
@@ -178,6 +200,37 @@ export const useGoogleCalendar = () => {
     }
   };
 
+  const selectCalendars = async (selectedCalendars: string[]) => {
+    try {
+      if (!calendarSettings) return;
+
+      const calendarsData = selectedCalendars.map(calId => {
+        const calendar = availableCalendars.find(cal => cal.id === calId);
+        return {
+          id: calId,
+          name: calendar?.summary || '',
+          primary: calendar?.primary || false
+        };
+      });
+
+      const { error } = await supabase
+        .from('google_calendar_settings')
+        .update({ 
+          selected_calendars: calendarsData
+        })
+        .eq('id', calendarSettings.id);
+
+      if (error) throw error;
+      
+      await fetchCalendarSettings();
+      toast.success(`${selectedCalendars.length} calendar(s) geselecteerd`);
+    } catch (error) {
+      console.error('Error selecting calendars:', error);
+      toast.error('Fout bij selecteren calendars');
+      throw error;
+    }
+  };
+
   const disconnectCalendar = async () => {
     try {
       if (!calendarSettings) return;
@@ -211,6 +264,7 @@ export const useGoogleCalendar = () => {
     syncPlanningToGoogle,
     syncFromGoogle,
     toggleSync,
+    selectCalendars,
     disconnectCalendar,
     refreshSettings: fetchCalendarSettings
   };

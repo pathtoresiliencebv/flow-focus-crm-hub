@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { CalendarIntegration } from '@/components/CalendarIntegration';
+import { PlanningDemo } from '@/components/PlanningDemo';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
@@ -32,6 +33,8 @@ export const CalendarSettings: React.FC = () => {
       </Alert>
       
       <CalendarIntegration />
+      
+      <PlanningDemo />
     </div>
   );
 };

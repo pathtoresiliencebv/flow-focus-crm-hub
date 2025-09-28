@@ -3,66 +3,34 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Calendar, RefreshCw, Settings, Users, CheckCircle, AlertCircle } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar, RefreshCw, Settings, Users, CheckCircle, AlertCircle, List } from "lucide-react";
+import { useGoogleCalendar } from "@/hooks/useGoogleCalendar";
+import { CalendarSelection } from "./CalendarSelection";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
-interface CalendarSettings {
-  id: string;
-  calendar_id: string;
-  calendar_name: string;
-  sync_enabled: boolean;
-  sync_status: string;
-  last_sync_at: string | null;
-}
-
 export const CalendarIntegration: React.FC = () => {
   const { user, profile } = useAuth();
-  const [calendarSettings, setCalendarSettings] = useState<CalendarSettings | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { 
+    calendarSettings, 
+    availableCalendars, 
+    isLoading, 
+    isConnected,
+    startOAuthFlow,
+    syncPlanningToGoogle,
+    syncFromGoogle,
+    toggleSync
+  } = useGoogleCalendar();
+  
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-      fetchCalendarSettings();
-    }
-  }, [user]);
-
-  const fetchCalendarSettings = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('google_calendar_settings')
-        .select('*')
-        .eq('user_id', user?.id)
-        .maybeSingle();
-
-      if (error) throw error;
-      setCalendarSettings(data);
-    } catch (error) {
-      console.error('Error fetching calendar settings:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleConnect = async () => {
     setIsConnecting(true);
     try {
-      const redirectUri = `${window.location.origin}/settings/calendar`;
-      
-      const { data, error } = await supabase.functions.invoke('google-calendar-sync', {
-        body: {
-          action: 'oauth_start',
-          redirectUri
-        }
-      });
-
-      if (error) throw error;
-      
-      // Redirect to Google OAuth
-      window.location.href = data.authUrl;
+      const authUrl = await startOAuthFlow();
+      window.location.href = authUrl;
     } catch (error) {
       console.error('Error starting OAuth:', error);
       toast.error('Fout bij verbinden met Google Calendar');
@@ -74,19 +42,20 @@ export const CalendarIntegration: React.FC = () => {
   const handleSync = async () => {
     setIsSyncing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('google-calendar-sync', {
-        body: {
-          action: 'sync_planning'
-        }
-      });
-
-      if (error) throw error;
-      
-      toast.success(`${data.syncedItems} planning items gesynchroniseerd`);
-      fetchCalendarSettings();
+      await syncPlanningToGoogle();
     } catch (error) {
       console.error('Error syncing:', error);
-      toast.error('Fout bij synchroniseren');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleImportFromGoogle = async () => {
+    setIsSyncing(true);
+    try {
+      await syncFromGoogle();
+    } catch (error) {
+      console.error('Error importing from Google:', error);
     } finally {
       setIsSyncing(false);
     }
@@ -145,39 +114,84 @@ export const CalendarIntegration: React.FC = () => {
           </Alert>
 
           {/* Connection Status */}
-          {calendarSettings ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <h3 className="font-medium">Verbonden met Google Calendar</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Calendar: {calendarSettings.calendar_name}
-                  </p>
+          {isConnected ? (
+            <Tabs defaultValue="overview" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="overview">Overzicht</TabsTrigger>
+                <TabsTrigger value="calendars">Agenda's</TabsTrigger>
+                <TabsTrigger value="sync">Synchronisatie</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="overview" className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <h3 className="font-medium">Verbonden met Google Calendar</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Primaire calendar: {calendarSettings?.calendar_name}
+                    </p>
+                    {calendarSettings?.selected_calendars && calendarSettings.selected_calendars.length > 0 && (
+                      <p className="text-sm text-muted-foreground">
+                        {calendarSettings.selected_calendars.length} agenda(s) geselecteerd
+                      </p>
+                    )}
+                  </div>
+                  <Badge className={getStatusColor(calendarSettings?.sync_status || 'pending')}>
+                    {calendarSettings?.sync_status === 'connected' && <CheckCircle className="h-3 w-3 mr-1" />}
+                    {calendarSettings?.sync_status === 'error' && <AlertCircle className="h-3 w-3 mr-1" />}
+                    {calendarSettings?.sync_status || 'pending'}
+                  </Badge>
                 </div>
-                <Badge className={getStatusColor(calendarSettings.sync_status)}>
-                  {calendarSettings.sync_status === 'connected' && <CheckCircle className="h-3 w-3 mr-1" />}
-                  {calendarSettings.sync_status === 'error' && <AlertCircle className="h-3 w-3 mr-1" />}
-                  {calendarSettings.sync_status}
-                </Badge>
-              </div>
 
-              {calendarSettings.last_sync_at && (
-                <p className="text-sm text-muted-foreground">
-                  Laatste synchronisatie: {new Date(calendarSettings.last_sync_at).toLocaleString('nl-NL')}
-                </p>
-              )}
+                {calendarSettings?.last_sync_at && (
+                  <p className="text-sm text-muted-foreground">
+                    Laatste synchronisatie: {new Date(calendarSettings.last_sync_at).toLocaleString('nl-NL')}
+                  </p>
+                )}
 
-              <div className="flex gap-2">
-                <Button onClick={handleSync} disabled={isSyncing}>
-                  {isSyncing && <RefreshCw className="h-4 w-4 mr-2 animate-spin" />}
-                  Nu synchroniseren
-                </Button>
-                <Button variant="outline" onClick={handleConnect}>
-                  <Settings className="h-4 w-4 mr-2" />
-                  Heropnieuw verbinding
-                </Button>
-              </div>
-            </div>
+                <div className="flex gap-2">
+                  <Button onClick={handleSync} disabled={isSyncing}>
+                    {isSyncing && <RefreshCw className="h-4 w-4 mr-2 animate-spin" />}
+                    Naar Google
+                  </Button>
+                  <Button variant="outline" onClick={handleImportFromGoogle} disabled={isSyncing}>
+                    {isSyncing && <RefreshCw className="h-4 w-4 mr-2 animate-spin" />}
+                    Van Google
+                  </Button>
+                  <Button variant="outline" onClick={handleConnect}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Heropnieuw
+                  </Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="calendars">
+                <CalendarSelection />
+              </TabsContent>
+
+              <TabsContent value="sync" className="space-y-4">
+                <div className="border-t pt-4">
+                  <h4 className="font-medium mb-3">Functies:</h4>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-3 w-3 text-green-600" />
+                      Automatische synchronisatie van planning items
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-3 w-3 text-green-600" />
+                      Meerdere agenda's selecteren
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-3 w-3 text-green-600" />
+                      Bidirectionele synchronisatie
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-3 w-3 text-green-600" />
+                      Team overzicht voor administrators
+                    </li>
+                  </ul>
+                </div>
+              </TabsContent>
+            </Tabs>
           ) : (
             <div className="space-y-4">
               <div className="text-center py-8">
@@ -193,29 +207,6 @@ export const CalendarIntegration: React.FC = () => {
               </div>
             </div>
           )}
-
-          {/* Features List */}
-          <div className="border-t pt-4">
-            <h4 className="font-medium mb-3">Functies:</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-center gap-2">
-                <CheckCircle className="h-3 w-3 text-green-600" />
-                Automatische synchronisatie van planning items
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle className="h-3 w-3 text-green-600" />
-                Rol-gebaseerde agenda toegang
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle className="h-3 w-3 text-green-600" />
-                Real-time updates tussen platforms
-              </li>
-              <li className="flex items-center gap-2">
-                <CheckCircle className="h-3 w-3 text-green-600" />
-                Team overzicht voor administrators
-              </li>
-            </ul>
-          </div>
         </CardContent>
       </Card>
     </div>
