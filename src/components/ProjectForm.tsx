@@ -61,7 +61,7 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
   const handleAssignedUserChange = (assignedUserId: string) => {
     setFormData((prev) => ({
       ...prev,
-      assignedUserId,
+      assignedUserId: assignedUserId === 'none' ? '' : assignedUserId,
     }));
   };
 
@@ -208,15 +208,15 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
           </div>
         </div>
 
-        {hasPermission('projects_edit') && (
+        {hasPermission('projects_edit') && hasPermission('users_view') && monteurs.length > 0 && (
           <div className="space-y-2">
             <Label htmlFor="assignedUser">Toegewezen aan</Label>
-            <Select value={formData.assignedUserId} onValueChange={handleAssignedUserChange}>
+            <Select value={formData.assignedUserId || 'none'} onValueChange={handleAssignedUserChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecteer installateur" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Geen toewijzing</SelectItem>
+                <SelectItem value="none">Geen toewijzing</SelectItem>
                 {monteurs.map((monteur) => (
                   <SelectItem key={monteur.id} value={monteur.id}>
                     {monteur.full_name || monteur.email}

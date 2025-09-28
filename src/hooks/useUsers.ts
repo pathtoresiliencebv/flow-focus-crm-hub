@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface User {
   id: string;
@@ -15,10 +16,14 @@ const fetchUsers = async (): Promise<User[]> => {
 };
 
 export const useUsers = () => {
+  const { hasPermission } = useAuth();
+  const canViewUsers = hasPermission('users_view');
+  
   const { data: users = [], isLoading, error, refetch } = useQuery<User[]>({
     queryKey: ['users'],
     queryFn: fetchUsers,
     retry: false, // Don't retry on permission errors
+    enabled: canViewUsers, // Only fetch if user has permission
   });
 
   // Filter monteurs (Installateur role)
