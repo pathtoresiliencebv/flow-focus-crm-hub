@@ -12,6 +12,7 @@ import { Invoicing } from "@/components/Invoicing";
 import { Email } from "@/components/Email";
 import { EmailFullscreen } from "@/components/EmailFullscreen";
 import { SimpleChatPage } from "@/components/SimpleChatPage";
+import { CalendarPage } from "@/components/calendar/CalendarPage";
 import Personnel from "@/components/Personnel";
 import UserManagement from "@/components/UserManagement";
 import { Salary } from "@/components/Salary";
@@ -52,6 +53,7 @@ const Index = () => {
     if (window.location.pathname === "/invoices") return "invoices";
     if (window.location.pathname === "/quotes/new") return "quotes";
     if (window.location.pathname === "/quotes") return "quotes";
+    if (window.location.pathname === "/calendar") return "calendar";
     return "dashboard";
   });
   
@@ -120,7 +122,7 @@ const Index = () => {
       case "customers-projects":
         return <CustomersAndProjects />;
       case "calendar":
-        return <PlanningManagement />;
+        return <CalendarPage />;
       case "time":
         return <TimeRegistration />;
       case "receipts":

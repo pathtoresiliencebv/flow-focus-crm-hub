@@ -125,6 +125,138 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_event_shares: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          permission_level: string
+          shared_with_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          permission_level?: string
+          shared_with_user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          permission_level?: string
+          shared_with_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_event_shares_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calendar_events: {
+        Row: {
+          category: Database["public"]["Enums"]["calendar_event_category"]
+          color_code: string | null
+          created_at: string
+          customer_id: string | null
+          description: string | null
+          end_datetime: string
+          id: string
+          is_all_day: boolean
+          is_recurring: boolean
+          location: string | null
+          parent_event_id: string | null
+          privacy_level: Database["public"]["Enums"]["calendar_privacy_level"]
+          project_id: string | null
+          recurrence_end_date: string | null
+          recurrence_interval: number | null
+          recurrence_pattern:
+            | Database["public"]["Enums"]["calendar_recurrence_pattern"]
+            | null
+          reminder_minutes_before: number[] | null
+          start_datetime: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["calendar_event_category"]
+          color_code?: string | null
+          created_at?: string
+          customer_id?: string | null
+          description?: string | null
+          end_datetime: string
+          id?: string
+          is_all_day?: boolean
+          is_recurring?: boolean
+          location?: string | null
+          parent_event_id?: string | null
+          privacy_level?: Database["public"]["Enums"]["calendar_privacy_level"]
+          project_id?: string | null
+          recurrence_end_date?: string | null
+          recurrence_interval?: number | null
+          recurrence_pattern?:
+            | Database["public"]["Enums"]["calendar_recurrence_pattern"]
+            | null
+          reminder_minutes_before?: number[] | null
+          start_datetime: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["calendar_event_category"]
+          color_code?: string | null
+          created_at?: string
+          customer_id?: string | null
+          description?: string | null
+          end_datetime?: string
+          id?: string
+          is_all_day?: boolean
+          is_recurring?: boolean
+          location?: string | null
+          parent_event_id?: string | null
+          privacy_level?: Database["public"]["Enums"]["calendar_privacy_level"]
+          project_id?: string | null
+          recurrence_end_date?: string | null
+          recurrence_interval?: number | null
+          recurrence_pattern?:
+            | Database["public"]["Enums"]["calendar_recurrence_pattern"]
+            | null
+          reminder_minutes_before?: number[] | null
+          start_datetime?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_events_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_events_parent_event_id_fkey"
+            columns: ["parent_event_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_channels: {
         Row: {
           created_at: string
@@ -2736,6 +2868,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_calendar_settings: {
+        Row: {
+          created_at: string
+          default_reminder_minutes: number
+          default_view: string
+          id: string
+          show_weekends: boolean
+          timezone: string
+          updated_at: string
+          user_id: string
+          work_days: number[]
+          work_hours_end: string
+          work_hours_start: string
+        }
+        Insert: {
+          created_at?: string
+          default_reminder_minutes?: number
+          default_view?: string
+          id?: string
+          show_weekends?: boolean
+          timezone?: string
+          updated_at?: string
+          user_id: string
+          work_days?: number[]
+          work_hours_end?: string
+          work_hours_start?: string
+        }
+        Update: {
+          created_at?: string
+          default_reminder_minutes?: number
+          default_view?: string
+          id?: string
+          show_weekends?: boolean
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+          work_days?: number[]
+          work_hours_end?: string
+          work_hours_start?: string
+        }
+        Relationships: []
+      }
       user_email_settings: {
         Row: {
           auto_add_signature: boolean | null
@@ -3038,6 +3212,21 @@ export type Database = {
         | "settings_edit"
         | "projects_create"
         | "planning_create"
+      calendar_event_category:
+        | "werk"
+        | "persoonlijk"
+        | "vakantie"
+        | "meeting"
+        | "project"
+        | "reminder"
+        | "deadline"
+      calendar_privacy_level: "private" | "shared" | "public"
+      calendar_recurrence_pattern:
+        | "none"
+        | "daily"
+        | "weekly"
+        | "monthly"
+        | "yearly"
       customer_status: "Actief" | "In behandeling" | "Inactief"
       project_status:
         | "te-plannen"
@@ -3196,6 +3385,23 @@ export const Constants = {
         "settings_edit",
         "projects_create",
         "planning_create",
+      ],
+      calendar_event_category: [
+        "werk",
+        "persoonlijk",
+        "vakantie",
+        "meeting",
+        "project",
+        "reminder",
+        "deadline",
+      ],
+      calendar_privacy_level: ["private", "shared", "public"],
+      calendar_recurrence_pattern: [
+        "none",
+        "daily",
+        "weekly",
+        "monthly",
+        "yearly",
       ],
       customer_status: ["Actief", "In behandeling", "Inactief"],
       project_status: [
