@@ -159,6 +159,9 @@ export default function Settings() {
     }
   };
 
+  // Get all items from all categories in a flat array
+  const allSettingsItems = settingsCategories.flatMap(category => category.items);
+
   const renderOverview = () => (
     <div className="space-y-8">
       <div className="flex items-center gap-3 mb-8">
@@ -169,44 +172,30 @@ export default function Settings() {
         </div>
       </div>
 
-      {settingsCategories.map((category, categoryIndex) => (
-        <div key={categoryIndex} className="space-y-4">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-2">{category.title}</h2>
-            <p className="text-muted-foreground text-sm">{category.description}</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {category.items.map((item) => {
-              const IconComponent = item.icon;
-              return (
-                <Card 
-                  key={item.id} 
-                  className="cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-[1.02] group"
-                  onClick={() => setCurrentPage(item.id)}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg bg-muted ${item.color}`}>
-                          <IconComponent className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <CardTitle className="text-base font-medium">{item.title}</CardTitle>
-                        </div>
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <p className="text-sm text-muted-foreground">{item.description}</p>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      ))}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        {allSettingsItems.map((item) => {
+          const IconComponent = item.icon;
+          return (
+            <Card 
+              key={item.id} 
+              className="cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.03] group border-2 hover:border-primary/20 bg-card/50 backdrop-blur-sm"
+              onClick={() => setCurrentPage(item.id)}
+            >
+              <CardContent className="p-6 text-center">
+                <div className="flex flex-col items-center space-y-4">
+                  <div className={`p-4 rounded-2xl bg-gradient-to-br from-background to-muted shadow-md group-hover:shadow-lg transition-all duration-300 ${item.color}`}>
+                    <IconComponent className="h-8 w-8" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-sm leading-tight">{item.title}</h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{item.description}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 
