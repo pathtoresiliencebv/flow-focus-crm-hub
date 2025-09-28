@@ -9,6 +9,8 @@ import { CalendarWeekView } from './CalendarWeekView';
 import { CalendarDayView } from './CalendarDayView';
 import { EventCreateDialog } from './EventCreateDialog';
 import { CalendarSettingsDialog } from './CalendarSettingsDialog';
+import { CalendarSidebar } from './CalendarSidebar';
+import { useCalendarFilters } from '@/hooks/useCalendarFilters';
 import { useCalendarEvents } from '@/hooks/useCalendarEvents';
 import { useCalendarSettings } from '@/hooks/useCalendarSettings';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +23,14 @@ export const CalendarPage: React.FC = () => {
   const { user, hasPermission } = useAuth();
   const { events, loading, fetchEventsForPeriod, createEvent, updateEvent, deleteEvent } = useCalendarEvents();
   const { settings } = useCalendarSettings();
+  const {
+    filters,
+    toggleRole,
+    toggleUser,
+    togglePersonalEvents,
+    isRoleActive,
+    isUserActive,
+  } = useCalendarFilters();
   
   const [currentDate, setCurrentDate] = useState(new Date());
   const [currentView, setCurrentView] = useState<CalendarView>(settings?.default_view || 'week');
@@ -66,7 +76,7 @@ export const CalendarPage: React.FC = () => {
   // Handle view change
   const handleViewChange = (view: CalendarView) => {
     setCurrentView(view);
-    fetchEventsForPeriod(currentDate, view);
+    fetchEventsForPeriod(currentDate, view, filters);
   };
 
   // Handle date selection from calendar
@@ -95,10 +105,12 @@ export const CalendarPage: React.FC = () => {
     }
   };
 
-  // Refresh events when date or view changes
+  // Refresh events when date, view, or filters change
   React.useEffect(() => {
-    fetchEventsForPeriod(currentDate, currentView);
-  }, [currentDate, currentView]);
+    if (user) {
+      fetchEventsForPeriod(currentDate, currentView, filters);
+    }
+  }, [currentDate, currentView, user, filters]);
 
   if (!user) {
     return (
@@ -115,76 +127,110 @@ export const CalendarPage: React.FC = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-        <div className="flex items-center gap-3">
-          <CalendarIcon className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold">Agenda</h1>
-            <p className="text-muted-foreground">
-              {isAdmin ? 'Beheer alle agenda\'s' : 'Beheer je persoonlijke agenda'}
-            </p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nieuw Item
-          </Button>
-          <Button variant="outline" onClick={() => setSettingsDialogOpen(true)}>
-            <Settings className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+    <div className="flex h-screen bg-background">
+      {/* Sidebar */}
+      <CalendarSidebar
+        filters={filters}
+        onToggleRole={toggleRole}
+        onToggleUser={toggleUser}
+        onTogglePersonalEvents={togglePersonalEvents}
+        isRoleActive={isRoleActive}
+        isUserActive={isUserActive}
+      />
 
-      {/* Navigation and View Controls */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={navigatePrevious}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm" onClick={navigateToday}>
-                Vandaag
-              </Button>
-              <Button variant="outline" size="sm" onClick={navigateNext}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <h2 className="text-xl font-semibold ml-4 capitalize">
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="bg-card border-b border-border px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-bold text-foreground">Agenda</h1>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={navigatePrevious}
+                  disabled={loading}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={navigateToday}
+                  disabled={loading}
+                >
+                  Vandaag
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={navigateNext}
+                  disabled={loading}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+              <h2 className="text-lg font-medium text-muted-foreground">
                 {getFormattedDate()}
               </h2>
             </div>
 
             <div className="flex items-center gap-2">
-              <Select value={currentView} onValueChange={(value: CalendarView) => handleViewChange(value)}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="month">Maand</SelectItem>
-                  <SelectItem value="week">Week</SelectItem>
-                  <SelectItem value="day">Dag</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              {isAdmin && (
-                <Badge variant="secondary" className="ml-2">
-                  Admin Weergave
-                </Badge>
-              )}
+              {/* View Toggle */}
+              <div className="flex bg-muted rounded-lg p-1">
+                <Button
+                  variant={currentView === 'month' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => handleViewChange('month')}
+                  disabled={loading}
+                >
+                  Maand
+                </Button>
+                <Button
+                  variant={currentView === 'week' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => handleViewChange('week')}
+                  disabled={loading}
+                >
+                  Week
+                </Button>
+                <Button
+                  variant={currentView === 'day' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => handleViewChange('day')}
+                  disabled={loading}
+                >
+                  Dag
+                </Button>
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSettingsDialogOpen(true)}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Instellingen
+              </Button>
+
+              <Button
+                onClick={() => setCreateDialogOpen(true)}
+                disabled={loading}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Nieuw Event
+              </Button>
             </div>
           </div>
-        </CardHeader>
+        </div>
 
-        <CardContent>
+        {/* Calendar Content */}
+        <div className="flex-1 overflow-hidden">
           {loading ? (
-            <div className="flex items-center justify-center h-96">
+            <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Agenda wordt geladen...</p>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                <p className="mt-2 text-muted-foreground">Agenda wordt geladen...</p>
               </div>
             </div>
           ) : (
@@ -194,42 +240,39 @@ export const CalendarPage: React.FC = () => {
                   currentDate={currentDate}
                   events={events}
                   onDateSelect={handleDateSelect}
-                  onEventClick={updateEvent}
+                  onEventClick={(event) => console.log('Event clicked:', event)}
                 />
               )}
-              
               {currentView === 'week' && (
                 <CalendarWeekView
                   currentDate={currentDate}
                   events={events}
                   onDateSelect={handleDateSelect}
                   onTimeSlotClick={handleTimeSlotClick}
-                  onEventClick={updateEvent}
+                  onEventClick={(event) => console.log('Event clicked:', event)}
                 />
               )}
-              
               {currentView === 'day' && (
                 <CalendarDayView
                   currentDate={currentDate}
                   events={events}
                   onTimeSlotClick={handleTimeSlotClick}
-                  onEventClick={updateEvent}
+                  onEventClick={(event) => console.log('Event clicked:', event)}
                 />
               )}
             </>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Event Create Dialog */}
+      {/* Dialogs */}
       <EventCreateDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
-        selectedDate={selectedDate}
         onEventCreate={createEvent}
+        selectedDate={selectedDate}
       />
 
-      {/* Calendar Settings Dialog */}
       <CalendarSettingsDialog
         open={settingsDialogOpen}
         onOpenChange={setSettingsDialogOpen}

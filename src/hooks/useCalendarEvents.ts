@@ -26,6 +26,9 @@ export interface CalendarEvent {
   reminder_minutes_before?: number[];
   created_at: string;
   updated_at: string;
+  assigned_to_role?: 'Administrator' | 'Verkoper' | 'Installateur' | 'Administratie' | 'Bekijker';
+  assigned_to_user?: string;
+  is_team_event: boolean;
 }
 
 export interface CreateCalendarEventData {
@@ -45,6 +48,9 @@ export interface CreateCalendarEventData {
   project_id?: string;
   customer_id?: string;
   reminder_minutes_before?: number[];
+  assigned_to_role?: CalendarEvent['assigned_to_role'];
+  assigned_to_user?: string;
+  is_team_event?: boolean;
 }
 
 export const useCalendarEvents = () => {
@@ -53,7 +59,7 @@ export const useCalendarEvents = () => {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchEvents = async (startDate?: Date, endDate?: Date) => {
+  const fetchEvents = async (startDate?: Date, endDate?: Date, filters?: { roles: string[], users: string[], showPersonalEvents: boolean }) => {
     if (!user) return;
 
     try {
@@ -72,14 +78,6 @@ export const useCalendarEvents = () => {
           .lte('end_datetime', endDate.toISOString());
       }
 
-      // Role-based filtering
-      const isAdmin = hasPermission('users_view');
-      
-      if (!isAdmin) {
-        // Non-admin users see their own events + shared events
-        query = query.or(`user_id.eq.${user.id},privacy_level.in.(shared,public)`);
-      }
-
       const { data, error } = await query;
 
       if (error) {
@@ -87,8 +85,37 @@ export const useCalendarEvents = () => {
         throw error;
       }
 
-      console.log('Fetched calendar events:', data?.length || 0);
-      setEvents(data || []);
+      let filteredEvents = data || [];
+
+      // Apply client-side filtering based on filters
+      if (filters) {
+        filteredEvents = filteredEvents.filter(event => {
+          // Personal events
+          if (event.user_id === user.id && filters.showPersonalEvents) {
+            return true;
+          }
+
+          // Team events by role
+          if (event.is_team_event && event.assigned_to_role && filters.roles.includes(event.assigned_to_role)) {
+            return true;
+          }
+
+          // Events assigned to specific users
+          if (event.assigned_to_user && filters.users.includes(event.assigned_to_user)) {
+            return true;
+          }
+
+          // Public/shared events (existing logic)
+          if (event.privacy_level === 'shared' || event.privacy_level === 'public') {
+            return true;
+          }
+
+          return false;
+        });
+      }
+
+      console.log('Fetched and filtered calendar events:', filteredEvents.length);
+      setEvents(filteredEvents);
     } catch (error) {
       console.error('Error in fetchEvents:', error);
       toast({
@@ -113,7 +140,10 @@ export const useCalendarEvents = () => {
         color_code: eventData.color_code || '#3b82f6',
         is_all_day: eventData.is_all_day || false,
         is_recurring: eventData.is_recurring || false,
-        reminder_minutes_before: eventData.reminder_minutes_before || [15]
+        reminder_minutes_before: eventData.reminder_minutes_before || [15],
+        assigned_to_role: eventData.assigned_to_role,
+        assigned_to_user: eventData.assigned_to_user,
+        is_team_event: eventData.is_team_event || false
       };
 
       const { data, error } = await supabase
@@ -214,7 +244,7 @@ export const useCalendarEvents = () => {
   };
 
   // Fetch events for current month/week view
-  const fetchEventsForPeriod = async (date: Date, view: 'month' | 'week' | 'day') => {
+  const fetchEventsForPeriod = async (date: Date, view: 'month' | 'week' | 'day', filters?: { roles: string[], users: string[], showPersonalEvents: boolean }) => {
     let startDate: Date;
     let endDate: Date;
 
@@ -238,7 +268,7 @@ export const useCalendarEvents = () => {
         endDate = endOfWeek(endOfMonth(date));
     }
 
-    await fetchEvents(startDate, endDate);
+    await fetchEvents(startDate, endDate, filters);
   };
 
   // Get events for a specific date

@@ -9,6 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CalendarEvent, CreateCalendarEventData } from '@/hooks/useCalendarEvents';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { useUsers } from '@/hooks/useUsers';
+import { useAuth } from '@/contexts/AuthContext';
+import { UserRole } from '@/types/permissions';
 
 interface EventCreateDialogProps {
   open: boolean;
@@ -42,7 +45,10 @@ export const EventCreateDialog: React.FC<EventCreateDialogProps> = ({
   editEvent
 }) => {
   const { toast } = useToast();
+  const { users } = useUsers();
+  const { hasPermission } = useAuth();
   const [loading, setLoading] = useState(false);
+  const isAdmin = hasPermission('users_view');
   
   const [formData, setFormData] = useState({
     title: '',
@@ -55,7 +61,10 @@ export const EventCreateDialog: React.FC<EventCreateDialogProps> = ({
     location: '',
     category: 'persoonlijk' as CalendarEvent['category'],
     privacy_level: 'private' as CalendarEvent['privacy_level'],
-    color_code: '#10b981'
+    color_code: '#10b981',
+    assigned_to_role: '' as UserRole | '',
+    assigned_to_user: '',
+    is_team_event: false
   });
 
   // Initialize form when dialog opens or edit event changes
@@ -75,7 +84,10 @@ export const EventCreateDialog: React.FC<EventCreateDialogProps> = ({
         location: editEvent.location || '',
         category: editEvent.category,
         privacy_level: editEvent.privacy_level,
-        color_code: editEvent.color_code
+        color_code: editEvent.color_code,
+        assigned_to_role: editEvent.assigned_to_role || '',
+        assigned_to_user: editEvent.assigned_to_user || '',
+        is_team_event: editEvent.is_team_event
       });
     } else if (selectedDate) {
       const date = format(selectedDate, 'yyyy-MM-dd');
@@ -94,7 +106,10 @@ export const EventCreateDialog: React.FC<EventCreateDialogProps> = ({
         location: '',
         category: 'persoonlijk',
         privacy_level: 'private',
-        color_code: '#10b981'
+        color_code: '#10b981',
+        assigned_to_role: '',
+        assigned_to_user: '',
+        is_team_event: false
       });
     }
   }, [editEvent, selectedDate, open]);
@@ -148,7 +163,10 @@ export const EventCreateDialog: React.FC<EventCreateDialogProps> = ({
         location: formData.location.trim() || undefined,
         category: formData.category,
         privacy_level: formData.privacy_level,
-        color_code: formData.color_code
+        color_code: formData.color_code,
+        assigned_to_role: formData.assigned_to_role || undefined,
+        assigned_to_user: formData.assigned_to_user || undefined,
+        is_team_event: formData.is_team_event
       };
 
       const result = await onEventCreate(eventData);
@@ -167,7 +185,10 @@ export const EventCreateDialog: React.FC<EventCreateDialogProps> = ({
           location: '',
           category: 'persoonlijk',
           privacy_level: 'private',
-          color_code: '#10b981'
+          color_code: '#10b981',
+          assigned_to_role: '',
+          assigned_to_user: '',
+          is_team_event: false
         });
       }
     } catch (error) {
@@ -324,6 +345,57 @@ export const EventCreateDialog: React.FC<EventCreateDialogProps> = ({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Team Assignment - Only for admins */}
+          {isAdmin && (
+            <>
+              {/* Team Event Toggle */}
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="team-event"
+                  checked={formData.is_team_event}
+                  onCheckedChange={(checked) => handleInputChange('is_team_event', checked)}
+                />
+                <Label htmlFor="team-event">Team Event</Label>
+              </div>
+
+              {/* Role Assignment */}
+              {formData.is_team_event && (
+                <div className="space-y-2">
+                  <Label htmlFor="assigned-role">Toegewezen aan Rol</Label>
+                  <Select value={formData.assigned_to_role} onValueChange={(value) => handleInputChange('assigned_to_role', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecteer rol" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Geen rol</SelectItem>
+                      <SelectItem value="Administrator">Administrator</SelectItem>
+                      <SelectItem value="Installateur">Installateur</SelectItem>
+                      <SelectItem value="Administratie">Administratie</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* User Assignment */}
+              <div className="space-y-2">
+                <Label htmlFor="assigned-user">Toegewezen aan Gebruiker</Label>
+                <Select value={formData.assigned_to_user} onValueChange={(value) => handleInputChange('assigned_to_user', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecteer gebruiker" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Geen gebruiker</SelectItem>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.full_name} ({user.role})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
 
           {/* Actions */}
           <div className="flex gap-2 pt-4">

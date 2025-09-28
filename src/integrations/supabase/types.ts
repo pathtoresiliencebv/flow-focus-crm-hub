@@ -159,6 +159,8 @@ export type Database = {
       }
       calendar_events: {
         Row: {
+          assigned_to_role: Database["public"]["Enums"]["user_role"] | null
+          assigned_to_user: string | null
           category: Database["public"]["Enums"]["calendar_event_category"]
           color_code: string | null
           created_at: string
@@ -168,6 +170,7 @@ export type Database = {
           id: string
           is_all_day: boolean
           is_recurring: boolean
+          is_team_event: boolean | null
           location: string | null
           parent_event_id: string | null
           privacy_level: Database["public"]["Enums"]["calendar_privacy_level"]
@@ -184,6 +187,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_to_role?: Database["public"]["Enums"]["user_role"] | null
+          assigned_to_user?: string | null
           category?: Database["public"]["Enums"]["calendar_event_category"]
           color_code?: string | null
           created_at?: string
@@ -193,6 +198,7 @@ export type Database = {
           id?: string
           is_all_day?: boolean
           is_recurring?: boolean
+          is_team_event?: boolean | null
           location?: string | null
           parent_event_id?: string | null
           privacy_level?: Database["public"]["Enums"]["calendar_privacy_level"]
@@ -209,6 +215,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_to_role?: Database["public"]["Enums"]["user_role"] | null
+          assigned_to_user?: string | null
           category?: Database["public"]["Enums"]["calendar_event_category"]
           color_code?: string | null
           created_at?: string
@@ -218,6 +226,7 @@ export type Database = {
           id?: string
           is_all_day?: boolean
           is_recurring?: boolean
+          is_team_event?: boolean | null
           location?: string | null
           parent_event_id?: string | null
           privacy_level?: Database["public"]["Enums"]["calendar_privacy_level"]
