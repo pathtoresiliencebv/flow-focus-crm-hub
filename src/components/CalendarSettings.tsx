@@ -1,30 +1,37 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock } from "lucide-react";
+import React, { useEffect } from 'react';
+import { CalendarIntegration } from '@/components/CalendarIntegration';
+import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Info } from "lucide-react";
 
 export const CalendarSettings: React.FC = () => {
+  const { handleOAuthCallback } = useGoogleCalendar();
+
+  useEffect(() => {
+    // Handle OAuth callback if code is present in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    
+    if (code) {
+      handleOAuthCallback(code).then(() => {
+        // Clean up URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }).catch(console.error);
+    }
+  }, [handleOAuthCallback]);
+
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Calendar Instellingen
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8">
-            <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">
-              Calendar integratie wordt geladen...
-            </p>
-            <Badge variant="secondary" className="mt-4">
-              In ontwikkeling
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
+      <Alert>
+        <Info className="h-4 w-4" />
+        <AlertDescription>
+          <strong>Google Calendar Team Integratie</strong><br />
+          Synchroniseer automatisch planning items met Google Calendar. Installateurs krijgen toegang tot de "Monteurs Agenda" 
+          terwijl administrators alle team agenda's kunnen beheren.
+        </AlertDescription>
+      </Alert>
+      
+      <CalendarIntegration />
     </div>
   );
 };
