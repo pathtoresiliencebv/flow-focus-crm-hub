@@ -1033,6 +1033,107 @@ export type Database = {
           },
         ]
       }
+      external_calendar_events: {
+        Row: {
+          attendees: Json | null
+          calendar_setting_id: string
+          created_at: string
+          description: string | null
+          end_time: string
+          external_event_id: string
+          id: string
+          location: string | null
+          start_time: string
+          status: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          attendees?: Json | null
+          calendar_setting_id: string
+          created_at?: string
+          description?: string | null
+          end_time: string
+          external_event_id: string
+          id?: string
+          location?: string | null
+          start_time: string
+          status?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          attendees?: Json | null
+          calendar_setting_id?: string
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          external_event_id?: string
+          id?: string
+          location?: string | null
+          start_time?: string
+          status?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_calendar_events_calendar_setting_id_fkey"
+            columns: ["calendar_setting_id"]
+            isOneToOne: false
+            referencedRelation: "google_calendar_settings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      google_calendar_settings: {
+        Row: {
+          access_token: string | null
+          calendar_id: string
+          calendar_name: string
+          created_at: string
+          id: string
+          last_sync_at: string | null
+          refresh_token: string | null
+          sync_enabled: boolean
+          sync_status: string | null
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+          user_role: Database["public"]["Enums"]["user_role"]
+        }
+        Insert: {
+          access_token?: string | null
+          calendar_id: string
+          calendar_name: string
+          created_at?: string
+          id?: string
+          last_sync_at?: string | null
+          refresh_token?: string | null
+          sync_enabled?: boolean
+          sync_status?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+          user_role: Database["public"]["Enums"]["user_role"]
+        }
+        Update: {
+          access_token?: string | null
+          calendar_id?: string
+          calendar_name?: string
+          created_at?: string
+          id?: string
+          last_sync_at?: string | null
+          refresh_token?: string | null
+          sync_enabled?: boolean
+          sync_status?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+          user_role?: Database["public"]["Enums"]["user_role"]
+        }
+        Relationships: []
+      }
       invoice_items: {
         Row: {
           block_order: number | null
@@ -1673,7 +1774,9 @@ export type Database = {
           created_at: string
           description: string | null
           end_time: string
+          google_calendar_event_id: string | null
           id: string
+          last_synced_at: string | null
           location: string | null
           project_id: string | null
           start_date: string
@@ -1688,7 +1791,9 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_time: string
+          google_calendar_event_id?: string | null
           id?: string
+          last_synced_at?: string | null
           location?: string | null
           project_id?: string | null
           start_date: string
@@ -1703,7 +1808,9 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_time?: string
+          google_calendar_event_id?: string | null
           id?: string
+          last_synced_at?: string | null
           location?: string | null
           project_id?: string | null
           start_date?: string
