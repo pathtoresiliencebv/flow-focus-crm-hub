@@ -42,7 +42,7 @@ function App() {
                   <Route path="/customers/:customerId" element={<Index />} />
                   <Route path="/projects/:projectId" element={<Index />} />
                   <Route path="/customers-projects" element={<Index />} />
-                  <Route path="/calendar" element={<Index />} />
+                  <Route path="/calendar" element={<CalendarPage />} />
                   <Route path="/quotes" element={<Index />} />
                   <Route path="/quotes/new" element={<NewQuote />} />
                   <Route path="/invoices" element={<Index />} />
