@@ -50,12 +50,6 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
       permission: "projects_view",
     },
     {
-      label: "Klanten & Projecten",
-      icon: <Users className="h-5 w-5" />,
-      key: "customers-projects",
-      permission: "customers_view",
-    },
-    {
       label: "Planning",
       icon: <Calendar className="h-5 w-5" />,
       key: "calendar",
@@ -91,8 +85,8 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
     },
   ];
 
-  // Settings submenu links
-  const settingsLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null}[] = [
+  // Personnel links (Personeel section)
+  const personnelLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null}[] = [
     {
       label: "Tijdregistratie",
       icon: <Clock className="h-5 w-5" />,
@@ -111,6 +105,10 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
       key: "personnel",
       permission: "users_view",
     },
+  ];
+
+  // Settings submenu links
+  const settingsLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null}[] = [
     {
       label: "Rapportages",
       icon: <BarChart className="h-5 w-5" />,
@@ -134,6 +132,10 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
     return link.permission === null || hasPermission(link.permission as Permission);
   });
 
+  const filteredPersonnelLinks = personnelLinks.filter(link => {
+    return link.permission === null || hasPermission(link.permission as Permission);
+  });
+
   const filteredSettingsLinks = settingsLinks.filter(link => {
     // Hide Reports completely for Installateurs
     if (link.key === "reports" && profile?.role === 'Installateur') {
@@ -143,7 +145,7 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
   });
 
   // Combine all links for the Sidebar component (maintaining backward compatibility)
-  const links = [...filteredMainLinks, ...filteredCommunicationLinks, ...filteredSettingsLinks];
+  const links = [...filteredMainLinks, ...filteredCommunicationLinks, ...filteredPersonnelLinks, ...filteredSettingsLinks];
 
 
   return (
@@ -151,6 +153,7 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
       links={links}
       mainLinks={filteredMainLinks}
       communicationLinks={filteredCommunicationLinks}
+      personnelLinks={filteredPersonnelLinks}
       settingsLinks={filteredSettingsLinks}
       user={user}
       profile={profile}

@@ -128,6 +128,7 @@ export const Sidebar = ({
   links, 
   mainLinks, 
   communicationLinks, 
+  personnelLinks,
   settingsLinks, 
   user, 
   profile, 
@@ -148,11 +149,13 @@ export const Sidebar = ({
   // Use passed links or fallback to old structure for backward compatibility
   const main = mainLinks || links.slice(0, 4);
   const communication = communicationLinks || links.filter(l => ["email", "chat"].includes(l.key));
-  const settings = settingsLinks || links.filter(l => ["time", "receipts", "personnel", "reports", "settings"].includes(l.key));
+  const personnel = personnelLinks || [];
+  const settings = settingsLinks || links.filter(l => ["reports", "settings"].includes(l.key));
 
   const createLinkHandler = (tabKey) => () => {
     setActiveTab(tabKey);
-    if (isOpen) {
+    // Close sidebar for mobile or when clicking on Planning
+    if (isOpen || tabKey === 'calendar') {
       toggleSidebar();
     }
   };
@@ -197,6 +200,15 @@ export const Sidebar = ({
               Communicatie
             </h3>
             <ul>{communication.map(link => renderLink(link))}</ul>
+          </div>
+        )}
+        
+        {/* Personnel Section */}
+        {personnel.length > 0 && (
+          <div className="mt-6">
+            <CollapsibleSection title="Personeel">
+              <ul>{personnel.map(link => renderLink(link, true))}</ul>
+            </CollapsibleSection>
           </div>
         )}
         
