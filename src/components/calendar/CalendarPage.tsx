@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CalendarIcon, Plus, Settings, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarIcon, Plus, Settings, ChevronLeft, ChevronRight, Menu } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { CalendarMonthView } from './CalendarMonthView';
@@ -37,6 +37,7 @@ export const CalendarPage: React.FC = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   const isAdmin = hasPermission('users_view');
 
@@ -136,6 +137,7 @@ export const CalendarPage: React.FC = () => {
         onTogglePersonalEvents={togglePersonalEvents}
         isRoleActive={isRoleActive}
         isUserActive={isUserActive}
+        collapsed={sidebarCollapsed}
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -143,6 +145,14 @@ export const CalendarPage: React.FC = () => {
         <div className="bg-card border-b border-border px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="p-2"
+              >
+                <Menu className="h-4 w-4" />
+              </Button>
               <h1 className="text-2xl font-bold text-foreground">Agenda</h1>
               <div className="flex items-center gap-2">
                 <Button

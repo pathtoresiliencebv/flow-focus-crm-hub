@@ -5,6 +5,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { UserRole } from '@/types/permissions';
 import { CalendarFilters } from '@/hooks/useCalendarFilters';
 import { useUsers } from '@/hooks/useUsers';
+import { cn } from '@/lib/utils';
 
 interface CalendarSidebarProps {
   filters: CalendarFilters;
@@ -13,6 +14,7 @@ interface CalendarSidebarProps {
   onTogglePersonalEvents: () => void;
   isRoleActive: (role: UserRole) => boolean;
   isUserActive: (userId: string) => boolean;
+  collapsed: boolean;
 }
 
 interface RoleSection {
@@ -34,6 +36,7 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
   onTogglePersonalEvents,
   isRoleActive,
   isUserActive,
+  collapsed,
 }) => {
   const { users } = useUsers();
   const [openSections, setOpenSections] = React.useState<UserRole[]>(['Administrator', 'Installateur', 'Administratie']);
@@ -51,11 +54,14 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
   };
 
   return (
-    <div className="w-80 bg-background border-r border-border h-full overflow-y-auto">
+    <div className={cn(
+      "bg-background border-r border-border h-full overflow-y-auto transition-all duration-300",
+      collapsed ? "w-16" : "w-80"
+    )}>
       <div className="p-4">
         <div className="flex items-center gap-2 mb-6">
           <Calendar className="h-5 w-5 text-primary" />
-          <h2 className="font-semibold text-foreground">Team Agenda's</h2>
+          {!collapsed && <h2 className="font-semibold text-foreground">Team Agenda's</h2>}
         </div>
 
         {/* Personal Events */}
@@ -68,19 +74,21 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
             />
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-purple-500" />
-              <label 
-                htmlFor="personal-events" 
-                className="text-sm font-medium cursor-pointer"
-              >
-                Mijn Agenda
-              </label>
+              {!collapsed && (
+                <label 
+                  htmlFor="personal-events" 
+                  className="text-sm font-medium cursor-pointer"
+                >
+                  Mijn Agenda
+                </label>
+              )}
             </div>
           </div>
         </div>
 
         {/* Team Sections */}
         <div className="space-y-2">
-          <h3 className="text-sm font-medium text-muted-foreground mb-3">Team Agenda's</h3>
+          {!collapsed && <h3 className="text-sm font-medium text-muted-foreground mb-3">Team Agenda's</h3>}
           
           {ROLE_SECTIONS.map((section) => {
             const roleUsers = getUsersForRole(section.role);
@@ -98,14 +106,16 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
                     />
                     <div className="flex items-center gap-2 flex-1">
                       <div className={`w-3 h-3 rounded-full ${section.color}`} />
-                      <label 
-                        htmlFor={`role-${section.role}`} 
-                        className="text-sm font-medium cursor-pointer flex-1"
-                      >
-                        {section.label}
-                      </label>
+                      {!collapsed && (
+                        <label 
+                          htmlFor={`role-${section.role}`} 
+                          className="text-sm font-medium cursor-pointer flex-1"
+                        >
+                          {section.label}
+                        </label>
+                      )}
                     </div>
-                    {roleUsers.length > 0 && (
+                    {roleUsers.length > 0 && !collapsed && (
                       <CollapsibleTrigger asChild>
                         <button className="p-1 hover:bg-muted rounded">
                           {isOpen ? 
@@ -118,31 +128,33 @@ export const CalendarSidebar: React.FC<CalendarSidebarProps> = ({
                   </div>
 
                   {/* Users in Role */}
-                  <CollapsibleContent>
-                    <div className="ml-6 space-y-1">
-                      {roleUsers.map((user) => (
-                        <div 
-                          key={user.id}
-                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
-                        >
-                          <Checkbox
-                            id={`user-${user.id}`}
-                            checked={isUserActive(user.id)}
-                            onCheckedChange={() => onToggleUser(user.id)}
-                          />
-                          <div className="flex items-center gap-2">
-                            <User className="h-3 w-3 text-muted-foreground" />
-                            <label 
-                              htmlFor={`user-${user.id}`} 
-                              className="text-sm cursor-pointer"
-                            >
-                              {user.full_name}
-                            </label>
+                  {!collapsed && (
+                    <CollapsibleContent>
+                      <div className="ml-6 space-y-1">
+                        {roleUsers.map((user) => (
+                          <div 
+                            key={user.id}
+                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                          >
+                            <Checkbox
+                              id={`user-${user.id}`}
+                              checked={isUserActive(user.id)}
+                              onCheckedChange={() => onToggleUser(user.id)}
+                            />
+                            <div className="flex items-center gap-2">
+                              <User className="h-3 w-3 text-muted-foreground" />
+                              <label 
+                                htmlFor={`user-${user.id}`} 
+                                className="text-sm cursor-pointer"
+                              >
+                                {user.full_name}
+                              </label>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CollapsibleContent>
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  )}
                 </div>
               </Collapsible>
             );
