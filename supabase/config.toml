@@ -18,3 +18,15 @@ verify_jwt = true
 
 [functions.create-admin-user]
 verify_jwt = true
+
+[functions.chat-mobile]
+verify_jwt = true
+
+[functions.projects-mobile]
+verify_jwt = true
+
+[functions.planning-mobile]
+verify_jwt = true
+
+[functions.time-registration-mobile]
+verify_jwt = true
