@@ -8,8 +8,9 @@ import { SimplePlanningForm } from './SimplePlanningForm';
 import { PlanningCalendarView } from './planning/PlanningCalendarView';
 import { PlanningListView } from './planning/PlanningListView';
 import { NewPlanningDialog } from './planning/NewPlanningDialog';
-import { QuickPlanningDialog } from './planning/QuickPlanningDialog';
-import { MultiDayPlanningDialog } from './planning/MultiDayPlanningDialog';
+import { QuickPlanningSlidePanel } from './planning/QuickPlanningSlidePanel';
+import { NewPlanningSlidePanel } from './planning/NewPlanningSlidePanel';
+import { MultiDayPlanningSlidePanel } from './planning/MultiDayPlanningSlidePanel';
 import { usePlanningStore } from '@/hooks/usePlanningStore';
 import { useRealUserStore } from '@/hooks/useRealUserStore';
 import { useCrmStore } from '@/hooks/useCrmStore';
@@ -411,25 +412,31 @@ export function PlanningManagement() {
         </TabsContent>
       </Tabs>
 
-      {/* Dialogs */}
-      <QuickPlanningDialog
-        open={showQuickPlanning}
-        onOpenChange={setShowQuickPlanning}
-        onSubmit={handleQuickPlanning}
-        installers={installers}
-        projects={projects}
-        quickPlanningData={quickPlanningData}
-        location={location}
-        onLocationChange={setLocation}
+      {/* Slide Panels */}
+      <QuickPlanningSlidePanel
+        isOpen={showQuickPlanning}
         onClose={() => {
           setShowQuickPlanning(false);
           setLocation('');
         }}
+        onSubmit={handleQuickPlanning}
+        installers={installers}
+        projects={projects}
+        quickPlanningData={{
+          installer: '',
+          project: '',
+          description: ''
+        }}
+        location={location}
+        onLocationChange={setLocation}
       />
       
-      <NewPlanningDialog
-        open={showNewPlanning}
-        onOpenChange={setShowNewPlanning}
+      <NewPlanningSlidePanel
+        isOpen={showNewPlanning}
+        onClose={() => {
+          setShowNewPlanning(false);
+          setLocation('');
+        }}
         onSubmit={handleNewPlanning}
         installers={installers}
         projects={projects}
@@ -438,16 +445,19 @@ export function PlanningManagement() {
         onLocationChange={setLocation}
       />
       
-      <MultiDayPlanningDialog
-        open={showMultiDayPlanning}
-        onOpenChange={setShowMultiDayPlanning}
+      <MultiDayPlanningSlidePanel
+        isOpen={showMultiDayPlanning}
+        onClose={() => {
+          setShowMultiDayPlanning(false);
+          setLocation('');
+        }}
         onSubmit={handleMultiDayPlanning}
         installers={installers}
         projects={projects}
         startDate={startDate}
-        onStartDateChange={setStartDate}
         endDate={endDate}
-        onEndDateChange={setEndDate}
+        onStartDateSelect={setStartDate}
+        onEndDateSelect={setEndDate}
         location={location}
         onLocationChange={setLocation}
       />

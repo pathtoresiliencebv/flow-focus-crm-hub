@@ -236,9 +236,12 @@ export const Sidebar = ({
         {/* Personnel Section - Team Agenda's always expanded */}
         {personnel.length > 0 && !mini && (
           <div className="mt-6">
-            <CollapsibleSection title="Team Agenda's" defaultOpen={true}>
-              <ul>{personnel.map(link => renderLink(link, true))}</ul>
-            </CollapsibleSection>
+            <div className="mb-3 px-4">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Team Agenda's
+              </h3>
+            </div>
+            <ul>{personnel.map(link => renderLink(link, true))}</ul>
           </div>
         )}
         
