@@ -53,10 +53,10 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Generate payment link if requested and not already exists
+    // Always generate payment link if not already exists
     let paymentLinkUrl = invoice.payment_link_url;
     
-    if (includePaymentLink && !paymentLinkUrl) {
+    if (!paymentLinkUrl) {
       try {
         console.log('Generating payment link for invoice:', invoiceId);
         
@@ -166,73 +166,174 @@ const handler = async (req: Request): Promise<Response> => {
       // Continue without attachment
     }
 
-    // Create email HTML content
+    // Create enhanced email HTML content with modern styling
     const emailHtml = `
       <!DOCTYPE html>
       <html>
-      <head>
-        <meta charset="utf-8">
-        <title>Factuur ${invoice.invoice_number}</title>
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background-color: #dc2626; color: white; padding: 20px; text-align: center; }
-          .content { padding: 20px; background-color: #f9f9f9; }
-          .invoice-details { background-color: white; padding: 15px; border-radius: 5px; margin: 15px 0; }
-          .payment-button { transition: all 0.3s ease; }
-          .payment-button:hover { transform: translateY(-2px); box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15) !important; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <img src="https://smanscrm.nl/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="SMANS" style="max-height: 60px; margin-bottom: 10px;">
-            <h1>SMANS BV</h1>
-            <h2>Factuur ${invoice.invoice_number}</h2>
-          </div>
-          
-          <div class="content">
-            <p>Beste ${recipientName},</p>
-            
-            <p>${message || 'Hierbij ontvangt u onze factuur.'}</p>
-            
-            <div class="invoice-details">
-              <h3>Factuur Details:</h3>
-              <p><strong>Factuurnummer:</strong> ${invoice.invoice_number}</p>
-              <p><strong>Datum:</strong> ${new Date(invoice.invoice_date).toLocaleDateString('nl-NL')}</p>
-              <p><strong>Vervaldatum:</strong> ${new Date(invoice.due_date).toLocaleDateString('nl-NL')}</p>
-              <p><strong>Project:</strong> ${invoice.project_title || 'Niet gespecificeerd'}</p>
-              <p><strong>Totaalbedrag:</strong> €${invoice.total_amount.toFixed(2)}</p>
+        <head>
+          <meta charset="utf-8">
+          <title>Factuur ${invoice.invoice_number}</title>
+          <style>
+            body { 
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+              line-height: 1.6; 
+              color: #333; 
+              max-width: 600px; 
+              margin: 0 auto; 
+              padding: 20px; 
+              background-color: #f8f9fa;
+            }
+            .container {
+              background: white;
+              border-radius: 12px;
+              overflow: hidden;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+            .header { 
+              background: linear-gradient(135deg, #dc2626, #ef4444);
+              color: white;
+              padding: 30px 20px; 
+              text-align: center;
+            }
+            .header img {
+              max-height: 50px;
+              margin-bottom: 15px;
+              filter: brightness(0) invert(1);
+            }
+            .header h1 {
+              margin: 0;
+              font-size: 28px;
+              font-weight: 600;
+            }
+            .header h2 {
+              margin: 10px 0 0 0;
+              font-size: 18px;
+              opacity: 0.9;
+            }
+            .content {
+              padding: 30px 20px;
+            }
+            .invoice-details { 
+              background: #f8fafc; 
+              border-left: 4px solid #dc2626;
+              padding: 20px; 
+              border-radius: 8px; 
+              margin-bottom: 25px; 
+            }
+            .invoice-details h3 {
+              margin-top: 0;
+              color: #1f2937;
+            }
+            .message-content {
+              background: #ffffff;
+              border: 1px solid #e5e7eb;
+              padding: 20px;
+              border-radius: 8px;
+              margin-bottom: 25px;
+              white-space: pre-line;
+            }
+            .payment-section { 
+              background: linear-gradient(135deg, #059669, #10b981);
+              color: white;
+              padding: 30px 20px; 
+              border-radius: 12px; 
+              text-align: center;
+              margin-bottom: 25px;
+            }
+            .payment-button { 
+              display: inline-block; 
+              background: #ffffff;
+              color: #059669;
+              padding: 16px 40px; 
+              text-decoration: none; 
+              border-radius: 8px; 
+              font-weight: 700;
+              font-size: 16px;
+              margin-top: 15px;
+              transition: all 0.3s ease;
+              border: 2px solid #ffffff;
+            }
+            .payment-button:hover {
+              background: #f0fff4;
+              transform: translateY(-1px);
+              box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            }
+            .footer { 
+              background: #f8fafc;
+              padding: 20px; 
+              text-align: center;
+              font-size: 14px; 
+              color: #6b7280;
+              border-top: 1px solid #e5e7eb;
+            }
+            .company-info {
+              margin-top: 15px;
+              font-weight: 600;
+              color: #374151;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <img src="https://smanscrm.nl/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="SMANS BV">
+              <h1>SMANS BV</h1>
+              <h2>📧 Factuur ${invoice.invoice_number}</h2>
             </div>
-            
-            ${paymentLinkUrl ? `
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${paymentLinkUrl}" 
-                 style="background-color: #16a34a; 
-                        color: white; 
-                        padding: 15px 30px; 
-                        text-decoration: none; 
-                        border-radius: 8px; 
-                        font-weight: bold; 
-                        font-size: 16px; 
-                        display: inline-block;
-                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-                💳 Betaal Nu Online
-              </a>
-              <p style="margin-top: 15px; font-size: 14px; color: #666;">
-                Klik op de knop hierboven om deze factuur veilig online te betalen via Stripe.
+
+            <div class="content">
+              <p><strong>Beste ${recipientName},</strong></p>
+
+              <div class="message-content">
+                ${message || 'Hierbij ontvangt u onze factuur. Bedankt voor uw vertrouwen in SMANS BV.'}
+              </div>
+
+              <div class="invoice-details">
+                <h3>📋 Factuurgegevens</h3>
+                <p><strong>Factuurnummer:</strong> ${invoice.invoice_number}</p>
+                <p><strong>Factuurdatum:</strong> ${new Date(invoice.invoice_date).toLocaleDateString('nl-NL')}</p>
+                <p><strong>Vervaldatum:</strong> ${new Date(invoice.due_date).toLocaleDateString('nl-NL')}</p>
+                <p><strong>Project:</strong> ${invoice.project_title || 'Niet gespecificeerd'}</p>
+                <p><strong>Totaalbedrag:</strong> <span style="font-size: 18px; color: #059669; font-weight: 700;">€${invoice.total_amount.toFixed(2)}</span></p>
+              </div>`;
+
+    if (paymentLinkUrl) {
+      emailHtml += `
+              <div class="payment-section">
+                <h3 style="margin-top: 0; font-size: 22px;">💳 Betaal Nu Online</h3>
+                <p style="margin: 15px 0; font-size: 16px; opacity: 0.95;">
+                  Betaal uw factuur direct en veilig online met iDEAL of creditcard.<br>
+                  Uw betaling wordt direct verwerkt en u ontvangt automatisch een bevestiging.
+                </p>
+                <a href="${paymentLinkUrl}" class="payment-button">
+                  🔒 Betaal €${invoice.total_amount.toFixed(2)}
+                </a>
+                <p style="font-size: 13px; margin-top: 20px; opacity: 0.8;">
+                  Beveiligd door Stripe • SSL versleuteld • 100% veilig
+                </p>
+              </div>`;
+    }
+
+    emailHtml += `
+              <p>Voor vragen over deze factuur kunt u altijd contact met ons opnemen.</p>
+              
+              <p style="margin-top: 25px;">
+                Met vriendelijke groet,<br>
+                <strong>SMANS BV</strong><br>
+                <span style="color: #6b7280;">Team Administratie</span>
               </p>
             </div>
-            ` : ''}
             
-            <p>Voor vragen over deze factuur kunt u contact met ons opnemen.</p>
-            
-            <p>Met vriendelijke groet,<br>
-            <strong>SMANS BV</strong><br>
-            Team Administratie</p>
+            <div class="footer">
+              <p>Deze email is automatisch gegenereerd vanuit ons factureringssysteem.</p>
+              <p>Voor vragen over deze factuur kunt u contact met ons opnemen.</p>
+              <div class="company-info">
+                <strong>SMANS BV</strong><br>
+                📧 info@smanscrm.nl • 📞 +31 (0)6 12345678
+              </div>
+            </div>
           </div>
-        </div>
-      </body>
+        </body>
       </html>
     `;
 

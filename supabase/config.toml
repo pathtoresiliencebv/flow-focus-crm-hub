@@ -1,6 +1,9 @@
 
 project_id = "pvesgvkyiaqmsudmmtkc"
 
+[functions.send-invoice-email]
+verify_jwt = false
+
 [functions.quote-approval-automation]
 verify_jwt = false
 

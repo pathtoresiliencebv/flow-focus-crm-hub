@@ -15,9 +15,6 @@ interface SendInvoiceDialogProps {
 
 export function SendInvoiceDialog({ invoice, onSend }: SendInvoiceDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [showPaymentLink, setShowPaymentLink] = useState(!!invoice.payment_link_url);
-  const [paymentLink, setPaymentLink] = useState(invoice.payment_link_url || '');
-  const [includePaymentLink, setIncludePaymentLink] = useState(true);
   
   const [formData, setFormData] = useState({
     to: invoice.customer_email || '',
@@ -29,10 +26,10 @@ Hierbij ontvangt u factuur ${invoice.invoice_number} voor het project "${invoice
 Factuurbedrag: €${invoice.total_amount?.toFixed(2)}
 Vervaldatum: ${new Date(invoice.due_date).toLocaleDateString('nl-NL')}
 
-U kunt deze factuur online betalen via de betaallink in deze email.
+U kunt deze factuur eenvoudig online betalen met de knop in deze email.
 
 Met vriendelijke groet,
-Uw bedrijf`
+SMANS BV`
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,37 +40,13 @@ Uw bedrijf`
     try {
       await onSend({
         ...formData,
-        includePaymentLink
+        includePaymentLink: true // Always include payment link
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const generatePaymentLink = async () => {
-    try {
-      setIsLoading(true);
-      const { data, error } = await supabase.functions.invoke('create-invoice-payment', {
-        body: { invoice_id: invoice.id }
-      });
-
-      if (error) throw error;
-
-      setPaymentLink(data.url);
-      setShowPaymentLink(true);
-      
-      // Add payment link to message
-      setFormData(prev => ({
-        ...prev,
-        message: prev.message + `\n\nBetaal deze factuur online: ${data.url}`
-      }));
-
-    } catch (error) {
-      console.error('Error creating payment link:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const getPaymentStatusBadge = () => {
     if (!invoice.payment_status || invoice.payment_status === 'pending') {
@@ -143,62 +116,27 @@ Uw bedrijf`
               />
             </div>
 
-            <div className="flex items-center space-x-2 mb-4">
-              <input
-                type="checkbox"
-                id="includePaymentLink"
-                checked={includePaymentLink}
-                onChange={(e) => setIncludePaymentLink(e.target.checked)}
-                className="rounded"
-              />
-              <Label htmlFor="includePaymentLink" className="text-sm">
-                Betaallink automatisch toevoegen aan email
-              </Label>
+            <div className="bg-muted/50 border border-border rounded-lg p-4 mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <CreditCard className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Online betaling</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Een betaallink wordt automatisch gegenereerd en toegevoegd aan de email zodat de klant direct online kan betalen.
+              </p>
             </div>
 
-            <div className="flex gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={generatePaymentLink}
-                disabled={isLoading || showPaymentLink}
-                className="flex items-center gap-2"
-              >
-                <CreditCard className="h-4 w-4" />
-                {showPaymentLink ? 'Betaallink toegevoegd' : 'Betaallink genereren'}
-              </Button>
-              
-              <Button 
-                type="submit" 
-                disabled={isLoading || !formData.to}
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                {isLoading ? 'Verzenden...' : 'Factuur verzenden'}
-              </Button>
-            </div>
+            <Button 
+              type="submit" 
+              disabled={isLoading || !formData.to}
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {isLoading ? 'Verzenden...' : 'Factuur verzenden'}
+            </Button>
           </form>
         </CardContent>
       </Card>
 
-      {showPaymentLink && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-green-600" />
-              Betaallink gegenereerd
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="bg-muted p-3 rounded-md">
-              <Label className="text-sm font-medium">Betaallink:</Label>
-              <p className="text-sm font-mono mt-1 break-all">{paymentLink}</p>
-            </div>
-            <p className="text-sm text-muted-foreground mt-2">
-              Deze link is automatisch toegevoegd aan het email bericht.
-            </p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
