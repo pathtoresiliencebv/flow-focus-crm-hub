@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, LogOut, Settings, MessageCircle } from "lucide-react";
 
@@ -138,6 +138,15 @@ export const Sidebar = ({
   children 
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  // Collapse sidebar automatically when on planning page
+  const [isCollapsed, setIsCollapsed] = useState(activeTab === 'calendar');
+
+  // Auto-collapse when activeTab changes to calendar (planning)
+  useEffect(() => {
+    if (activeTab === 'calendar') {
+      setIsCollapsed(true);
+    }
+  }, [activeTab]);
 
   const mobileSidebarVariants = {
     hidden: { x: "-100%" },
@@ -145,6 +154,7 @@ export const Sidebar = ({
   };
 
   const toggleSidebar = () => setIsOpen(!isOpen);
+  const toggleCollapse = () => setIsCollapsed(!isCollapsed);
 
   // Use passed links or fallback to old structure for backward compatibility
   const main = mainLinks || links.slice(0, 4);
@@ -154,25 +164,37 @@ export const Sidebar = ({
 
   const createLinkHandler = (tabKey) => () => {
     setActiveTab(tabKey);
-    // Close sidebar for mobile or when clicking on Planning
-    if (isOpen || tabKey === 'calendar' || tabKey === 'planning') {
+    // Auto-collapse sidebar when clicking on Planning
+    if (tabKey === 'calendar') {
+      setIsCollapsed(true);
+    }
+    // Close sidebar for mobile or when clicking on any menu item
+    if (isOpen) {
       toggleSidebar();
     }
   };
 
-  const renderLink = (link, isCollapsible = false) => {
-    const commonClasses = `flex gap-2 font-medium text-sm items-center w-full py-3 px-4 rounded-xl min-h-[44px]`;
+  const renderLink = (link, isCollapsible = false, mini = false) => {
+    const commonClasses = `flex gap-2 font-medium text-sm items-center w-full py-3 px-4 rounded-xl min-h-[44px] transition-all`;
     const activeClasses = activeTab === link.key ? 'bg-smans-primary text-smans-primary-foreground' : 'hover:bg-smans-primary hover:text-smans-primary-foreground';
     const collapsibleClasses = isCollapsible ? 'text-left p-3' : '';
+    const miniClasses = mini ? 'justify-center px-2' : '';
+    
     return (
       <li key={link.key} className={!isCollapsible ? "mb-2" : ""}>
         <button
           onClick={createLinkHandler(link.key)}
-          className={`${commonClasses} ${activeClasses} ${collapsibleClasses} relative`}
+          className={`${commonClasses} ${activeClasses} ${collapsibleClasses} ${miniClasses} relative group`}
+          title={mini ? link.label : undefined}
         >
           {!isCollapsible && link.icon}
-          {link.label}
-          {link.badge && link.badge > 0 && (
+          {!mini && link.label}
+          {mini && !isCollapsible && (
+            <span className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+              {link.label}
+            </span>
+          )}
+          {link.badge && link.badge > 0 && !mini && (
             <span className="ml-auto bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
               {link.badge > 99 ? '99+' : link.badge}
             </span>
@@ -182,19 +204,25 @@ export const Sidebar = ({
     );
   };
   
-  const SidebarContent = () => (
+  const SidebarContent = ({ mini = false }) => (
     <>
-      <div className="p-4 border-b border-gray-200">
+      <div className={`p-4 border-b border-gray-200 ${mini ? 'px-2' : ''}`}>
         <div className="flex items-center justify-center">
-          <img src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="SMANS Logo" className="h-10 w-auto" />
+          {!mini ? (
+            <img src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="SMANS Logo" className="h-10 w-auto" />
+          ) : (
+            <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center">
+              <span className="text-white font-bold text-sm">S</span>
+            </div>
+          )}
         </div>
       </div>
-      <nav className="flex-1 p-4 overflow-y-auto">
+      <nav className={`flex-1 p-4 overflow-y-auto ${mini ? 'px-2' : ''}`}>
         {/* Main Navigation */}
-        <ul>{main.map(link => renderLink(link))}</ul>
+        <ul>{main.map(link => renderLink(link, false, mini))}</ul>
         
         {/* Communication Section */}
-        {communication.length > 0 && (
+        {communication.length > 0 && !mini && (
           <div className="mt-6">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-4">
               Communicatie
@@ -204,7 +232,7 @@ export const Sidebar = ({
         )}
         
         {/* Personnel Section */}
-        {personnel.length > 0 && (
+        {personnel.length > 0 && !mini && (
           <div className="mt-6">
             <CollapsibleSection title="Personeel">
               <ul>{personnel.map(link => renderLink(link, true))}</ul>
@@ -213,26 +241,49 @@ export const Sidebar = ({
         )}
         
         {/* Settings Section with Collapsible Items */}
-        {settings.length > 0 && (
+        {settings.length > 0 && !mini && (
           <div className="mt-6">
             <CollapsibleSection title="Instellingen">
               <ul>{settings.map(link => renderLink(link, true))}</ul>
             </CollapsibleSection>
           </div>
         )}
+        
+        {/* Collapsed state - show only important communication and settings icons */}
+        {mini && (
+          <div className="space-y-2 mt-6">
+            {communication.map(link => renderLink(link, false, true))}
+            {settings.filter(link => link.key === 'settings').map(link => renderLink(link, false, true))}
+          </div>
+        )}
       </nav>
-      <div className="p-4 border-t border-gray-200">
-        <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
-          <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center shrink-0">
-            <User className="h-5 w-5" />
+      <div className={`p-4 border-t border-gray-200 ${mini ? 'px-2' : ''}`}>
+        {!mini && (
+          <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
+            <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center shrink-0">
+              <User className="h-5 w-5" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm truncate">{profile?.full_name || user?.email}</p>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm truncate">{profile?.full_name || user?.email}</p>
-          </div>
-        </div>
-        <button onClick={logout} className="flex gap-2 font-medium text-sm items-center w-full p-2 mt-4 text-center bg-red-100 rounded-xl hover:bg-red-200 text-red-700">
+        )}
+        <button 
+          onClick={logout} 
+          className={`flex gap-2 font-medium text-sm items-center w-full p-2 mt-4 text-center bg-red-100 rounded-xl hover:bg-red-200 text-red-700 ${mini ? 'justify-center' : ''}`}
+          title={mini ? 'Uitloggen' : undefined}
+        >
           <LogOut className="h-5 w-5" />
-          Uitloggen
+          {!mini && 'Uitloggen'}
+        </button>
+        
+        {/* Toggle button */}
+        <button
+          onClick={toggleCollapse}
+          className="w-full mt-2 p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors flex items-center justify-center"
+          title={isCollapsed ? 'Sidebar uitklappen' : 'Sidebar inklappen'}
+        >
+          {isCollapsed ? '→' : '←'}
         </button>
       </div>
     </>
@@ -261,21 +312,21 @@ export const Sidebar = ({
               </button>
             </div>
             <div className="flex-1 overflow-y-auto">
-              <SidebarContent />
+              <SidebarContent mini={false} />
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="hidden md:flex flex-col fixed top-0 left-0 h-full w-64 bg-white text-black shadow">
-        <SidebarContent />
+      <div className={`hidden md:flex flex-col fixed top-0 left-0 h-full bg-white text-black shadow-lg border-r-0 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
+        <SidebarContent mini={isCollapsed} />
       </div>
 
-      <div className="flex-1 ml-0 md:ml-64 transition-all duration-300 flex flex-col">
-      <div className="p-4 bg-white border-b border-gray-200 md:hidden flex justify-between items-center sticky top-0 z-50">
-        <img src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="SMANS Logo" className="h-8 w-auto" />
-        <AnimatedMenuToggle toggle={toggleSidebar} isOpen={isOpen} />
-      </div>
+      <div className={`flex-1 transition-all duration-300 flex flex-col ${isCollapsed ? 'ml-0 md:ml-20' : 'ml-0 md:ml-64'}`}>
+        <div className="p-4 bg-white border-b border-gray-200 md:hidden flex justify-between items-center sticky top-0 z-50">
+          <img src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="SMANS Logo" className="h-8 w-auto" />
+          <AnimatedMenuToggle toggle={toggleSidebar} isOpen={isOpen} />
+        </div>
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>
