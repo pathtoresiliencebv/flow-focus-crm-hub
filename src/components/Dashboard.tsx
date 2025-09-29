@@ -11,6 +11,7 @@ import { DashboardHeader } from "./dashboard/DashboardHeader";
 import { StatsGrid } from "./dashboard/StatsGrid";
 import { UpcomingAppointments } from "./dashboard/UpcomingAppointments";
 import { InstallateurProjectCard } from "./dashboard/InstallateurProjectCard";
+import { AdminDashboard } from "./dashboard/AdminDashboard";
 import { useAuth } from "@/contexts/AuthContext";
 
 export const Dashboard = () => {
@@ -19,6 +20,11 @@ export const Dashboard = () => {
   const { planningItems, getCalendarEvents } = usePlanningStore();
   const { toast } = useToast();
   const { profile, user } = useAuth();
+
+  // Show AdminDashboard for Administrator and Administratie roles
+  if (profile?.role === 'Administrator' || profile?.role === 'Administratie') {
+    return <AdminDashboard />;
+  }
 
   // Filter projects based on user role
   const filteredProjects = profile?.role === 'Installateur' 
