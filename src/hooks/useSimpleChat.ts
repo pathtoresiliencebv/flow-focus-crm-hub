@@ -243,14 +243,6 @@ export const useSimpleChat = () => {
       const conversationList: Conversation[] = [];
 
       for (const chatUser of availableUsers) {
-  // Generate conversations from available users
-  const generateConversations = useCallback(async () => {
-    if (!user || availableUsers.length === 0) return;
-
-    try {
-      const conversationList: Conversation[] = [];
-
-      for (const chatUser of availableUsers) {
         // Check if there's a direct channel between users
         const { data: channelData } = await supabase.rpc('get_or_create_direct_channel', {
           user1_id: user.id,
@@ -336,20 +328,7 @@ export const useSimpleChat = () => {
         return new Date(bTime).getTime() - new Date(aTime).getTime();
       });
 
-      setConversations(conversationList);
-    } catch (error) {
-      console.error('Error generating conversations:', error);
-    }
-  }, [user, availableUsers]);
-      }
-
-      // Sort by last message time
-      conversationList.sort((a, b) => {
-        const aTime = a.last_message?.created_at || '0';
-        const bTime = b.last_message?.created_at || '0';
-        return new Date(bTime).getTime() - new Date(aTime).getTime();
-      });
-
+      console.log('Generated conversations:', conversationList.length);
       setConversations(conversationList);
     } catch (error) {
       console.error('Error generating conversations:', error);
