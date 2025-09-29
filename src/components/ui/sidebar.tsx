@@ -130,8 +130,6 @@ export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
     { key: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" />, permission: null },
     { key: "customers", label: "Klanten", icon: <Users className="h-5 w-5" />, permission: "customers_view" },
     { key: "projects", label: "Projecten", icon: <FolderKanban className="h-5 w-5" />, permission: "projects_view" },
-    { key: "customers-projects", label: "Klanten & Projecten", icon: <BarChart className="h-5 w-5" />, permission: "customers_view" },
-    { key: "calendar", label: "Kalender", icon: <Calendar className="h-5 w-5" />, permission: "projects_view" },
     { key: "planning", label: "Planning", icon: <Calendar className="h-5 w-5" />, permission: "projects_view" },
     { key: "time", label: "Tijdregistratie", icon: <Clock className="h-5 w-5" />, permission: "projects_view" },
     { key: "receipts", label: "Bonnetjes", icon: <Receipt className="h-5 w-5" />, permission: "invoices_view" },
@@ -254,7 +252,7 @@ export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
         {/* Settings Section with Collapsible Items */}
         {settings.length > 0 && !mini && (
           <div className="mt-6">
-            <CollapsibleSection title="Instellingen">
+            <CollapsibleSection title="Instellingen" isExpanded={false}>
               <ul>{settings.map(link => renderLink(link, true))}</ul>
             </CollapsibleSection>
           </div>

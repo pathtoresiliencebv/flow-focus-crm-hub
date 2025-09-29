@@ -82,8 +82,6 @@ const Index = () => {
     dashboard: null,
     customers: "customers_view",
     projects: "projects_view",
-    "customers-projects": "customers_view",
-    calendar: "projects_view",
     planning: "projects_view",
     time: "projects_view",
     receipts: "invoices_view",
@@ -120,12 +118,8 @@ const Index = () => {
         return <Customers />;
       case "projects":
         return <ProjectsBoard />;
-      case "customers-projects":
-        return <CustomersAndProjects />;
-      case "calendar":
-        return <CalendarPage />;
       case "planning":
-        return <PlanningManagement />;
+        return <CalendarPage />;
       case "time":
         return <TimeRegistration />;
       case "receipts":
