@@ -4,7 +4,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import LocationMapInput from "../LocationMapInput";
-import { User } from "@/hooks/useUserStore";
+interface User {
+  id: string;
+  full_name: string | null;
+  role: string | null;
+  email: string;
+}
 import { ProjectWithCustomerName } from "@/hooks/useCrmStore";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
@@ -93,11 +98,11 @@ export const NewPlanningDialog = ({
                 <SelectValue placeholder="Kies monteur" />
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
-                {installers.map((installer) => (
-                  <SelectItem key={installer.id} value={installer.id.toString()}>
-                    {installer.name}
-                  </SelectItem>
-                ))}
+                  {installers.map((installer) => (
+                    <SelectItem key={installer.id} value={installer.id}>
+                      {installer.full_name || installer.email}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>

@@ -156,7 +156,7 @@ const handler = async (req: Request): Promise<Response> => {
         attachments.push({
           filename: pdfResponse.data.filename || `${baseFilename}.pdf`,
           content: pdfResponse.data.pdfData,
-          type: pdfResponse.data.contentType
+          type: pdfResponse.data.contentType || 'application/pdf'
         });
         
         console.log('PDF attachment generated successfully:', attachments.length, 'files');
@@ -206,21 +206,25 @@ const handler = async (req: Request): Promise<Response> => {
             </div>
             
             ${paymentLinkUrl ? `
-            <div style="text-align: center; margin: 30px 0;">
+            <div style="text-align: center; margin: 30px 0; padding: 25px; background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); border-radius: 12px; box-shadow: 0 8px 16px rgba(22, 163, 74, 0.3);">
+              <h3 style="color: white; margin-bottom: 15px; font-size: 18px;">💳 Online Betalen</h3>
               <a href="${paymentLinkUrl}" 
-                 style="background-color: #16a34a; 
-                        color: white; 
-                        padding: 15px 30px; 
+                 style="background-color: white; 
+                        color: #16a34a; 
+                        padding: 15px 35px; 
                         text-decoration: none; 
-                        border-radius: 8px; 
+                        border-radius: 50px; 
                         font-weight: bold; 
-                        font-size: 16px; 
+                        font-size: 18px; 
                         display: inline-block;
-                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-                💳 Betaal Nu Online
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                        transition: all 0.3s ease;">
+                Betaal €${(invoice.total_amount || 0).toFixed(2)} Nu
               </a>
-              <p style="margin-top: 15px; font-size: 14px; color: #666;">
-                Klik op de knop hierboven om deze factuur veilig online te betalen via Stripe.
+              <p style="margin-top: 15px; font-size: 14px; color: rgba(255,255,255,0.9);">
+                ✅ Veilig betalen met iDEAL, creditcard of bancontact<br>
+                ⚡ Direct verwerkt - geen wachttijden<br>
+                🔒 100% beveiligd via Stripe
               </p>
             </div>
             ` : ''}

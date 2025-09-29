@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { puppeteer } from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -650,16 +651,58 @@ const handler = async (req: Request): Promise<Response> => {
     const htmlContent = generateQuoteHTML(quote, settings);
     console.log('Generated HTML content length:', htmlContent.length);
 
-    // Return HTML as base64 data URL for viewing/printing
-    const base64Html = btoa(unescape(encodeURIComponent(htmlContent)));
-    const dataUrl = `data:text/html;base64,${base64Html}`;
+    // Generate PDF using Puppeteer
+    console.log('Launching browser for PDF generation...');
+    const browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
     
-    console.log('Returning HTML as data URL for direct viewing/printing');
+    const page = await browser.newPage();
+    await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+    
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '10mm',
+        bottom: '10mm',
+        left: '10mm',
+        right: '10mm'
+      }
+    });
+    
+    await browser.close();
+    
+    // Convert buffer to base64 for storage/transmission
+    const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
+    
+    // Store PDF in Supabase Storage
+    const fileName = `offerte-${quote.quote_number}-${Date.now()}.pdf`;
+    const { error: uploadError } = await supabase.storage
+      .from('quotes')
+      .upload(fileName, pdfBuffer, {
+        contentType: 'application/pdf',
+        upsert: true
+      });
+    
+    if (uploadError) {
+      console.error('Error uploading PDF:', uploadError);
+    }
+    
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from('quotes')
+      .getPublicUrl(fileName);
+    
+    console.log('PDF generated successfully:', fileName);
 
     return new Response(JSON.stringify({
       success: true,
-      pdfUrl: dataUrl,
-      message: 'Quote HTML generated for viewing/printing'
+      pdfUrl: urlData.publicUrl,
+      pdfData: pdfBase64,
+      filename: fileName,
+      contentType: 'application/pdf',
+      message: 'Quote PDF generated successfully'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });

@@ -11,7 +11,7 @@ import { NewPlanningDialog } from './planning/NewPlanningDialog';
 import { QuickPlanningDialog } from './planning/QuickPlanningDialog';
 import { MultiDayPlanningDialog } from './planning/MultiDayPlanningDialog';
 import { usePlanningStore } from '@/hooks/usePlanningStore';
-import { useUserStore } from '@/hooks/useUserStore';
+import { useUsers } from '@/hooks/useUsers';
 import { useCrmStore } from '@/hooks/useCrmStore';
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -42,32 +42,48 @@ export function PlanningManagement() {
     fetchPlanningItems 
   } = usePlanningStore();
 
-  const { users } = useUserStore();
+  const { users, monteurs: installers } = useUsers();
   const { projects } = useCrmStore();
-
-  // Get installers (users with installer role)
-  const installers = users.filter(user => 
-    user.role === 'Installateur' || user.role === 'Administrator'
-  );
 
   const handleQuickPlanning = async (formData: FormData) => {
     try {
+      console.log('🚀 Quick planning form data:', formData);
+      console.log('📅 Selected date:', selectedDate);
+      console.log('⏰ Selected hour:', selectedHour);
+      
+      const employeeId = formData.get('employee') as string;
+      const projectId = formData.get('project') as string;
+      const description = formData.get('description') as string;
+      
+      console.log('👤 Employee ID:', employeeId);
+      console.log('📋 Project ID:', projectId);
+      console.log('📝 Description:', description);
+      
+      // Validate required fields
+      if (!employeeId || !description) {
+        toast({
+          title: "Vereiste velden ontbreken",
+          description: "Selecteer een medewerker en voer een beschrijving in.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       const data = {
-        assigned_user_id: formData.get('employee') as string,
-        project_id: formData.get('project') as string,
-        title: formData.get('description') as string,
-        description: formData.get('description') as string,
+        assigned_user_id: employeeId,
+        project_id: projectId || null,
+        title: description,
+        description: description,
         start_date: selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-        start_time: selectedHour ? `${selectedHour}:00` : '09:00',
-        end_time: selectedHour ? `${selectedHour + 1}:00` : '10:00',
-        location: location,
+        start_time: selectedHour ? `${String(selectedHour).padStart(2, '0')}:00` : '09:00',
+        end_time: selectedHour ? `${String(selectedHour + 1).padStart(2, '0')}:00` : '10:00',
+        location: location || '',
         status: 'Gepland',
+        user_id: user?.id || ''
       };
 
-      await addPlanningItem({
-        ...data,
-        user_id: user?.id || ''
-      });
+      console.log('💾 Planning data to save:', data);
+      await addPlanningItem(data);
 
       toast({
         title: "Planning toegevoegd",
@@ -87,22 +103,42 @@ export function PlanningManagement() {
 
   const handleNewPlanning = async (formData: FormData) => {
     try {
+      console.log('📅 New planning form data:', formData);
+      
+      const employeeId = formData.get('employee') as string;
+      const projectId = formData.get('project') as string;
+      const description = formData.get('description') as string;
+      const time = formData.get('time') as string;
+      
+      // Validate required fields  
+      if (!employeeId || !description) {
+        toast({
+          title: "Vereiste velden ontbreken",
+          description: "Selecteer een medewerker en voer een beschrijving in.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       const data = {
-        assigned_user_id: formData.get('employee') as string,
-        project_id: formData.get('project') as string,
-        title: formData.get('description') as string,
-        description: formData.get('description') as string,
+        assigned_user_id: employeeId,
+        project_id: projectId || null,
+        title: description,
+        description: description,
         start_date: selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-        start_time: formData.get('time') as string || '09:00',
-        end_time: formData.get('time') as string || '10:00',
-        location: location,
+        start_time: time || '09:00',
+        end_time: time ? (() => {
+          const [hours, minutes] = time.split(':');
+          const endHour = parseInt(hours) + 1;
+          return `${String(endHour).padStart(2, '0')}:${minutes}`;
+        })() : '10:00',
+        location: location || '',
         status: 'Gepland',
+        user_id: user?.id || ''
       };
 
-      await addPlanningItem({
-        ...data,
-        user_id: user?.id || ''
-      });
+      console.log('💾 New planning data to save:', data);
+      await addPlanningItem(data);
 
       toast({
         title: "Planning toegevoegd",
@@ -179,7 +215,7 @@ export function PlanningManagement() {
     time: item.start_time,
     endTime: item.end_time,
     employee: item.assigned_user_id, // We'll need to map this to actual employee names
-    employeeId: parseInt(item.assigned_user_id) || 0, // Convert string to number
+    employeeId: item.assigned_user_id, // Keep as string UUID
     project: item.project_id || 'Geen project',
     projectId: item.project_id || '',
     status: item.status as "Gepland" | "Bevestigd" | "Afgerond" | "Geannuleerd",

@@ -4,7 +4,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import LocationMapInput from "../LocationMapInput";
-import { User } from "@/hooks/useUserStore";
+interface User {
+  id: string;
+  full_name: string | null;
+  role: string | null;
+  email: string;
+}
 import { ProjectWithCustomerName } from "@/hooks/useCrmStore";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
@@ -64,8 +69,8 @@ export const QuickPlanningDialog = ({
                 </SelectTrigger>
                 <SelectContent className="bg-white z-50">
                   {installers.map((installer) => (
-                    <SelectItem key={installer.id} value={installer.id.toString()}>
-                      {installer.name}
+                    <SelectItem key={installer.id} value={installer.id}>
+                      {installer.full_name || installer.email}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -73,11 +78,12 @@ export const QuickPlanningDialog = ({
             </div>
             <div>
               <label className="text-sm font-medium">Project</label>
-              <Select name="project" required>
+              <Select name="project">
                 <SelectTrigger className="mt-1">
                   <SelectValue placeholder="Kies project" />
                 </SelectTrigger>
                 <SelectContent className="bg-white z-50">
+                  <SelectItem value="">Geen project</SelectItem>
                   {projects.map((project) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.title} - {project.customer}

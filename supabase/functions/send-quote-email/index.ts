@@ -175,7 +175,7 @@ const handler = async (req: Request): Promise<Response> => {
         attachments.push({
           filename: pdfResponse.data.filename || `${baseFilename}.pdf`,
           content: pdfResponse.data.pdfData,
-          type: pdfResponse.data.contentType
+          type: pdfResponse.data.contentType || 'application/pdf'
         });
         
         // If quote is signed, also add signed version

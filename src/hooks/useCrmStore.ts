@@ -26,8 +26,37 @@ const fetchCustomers = async (): Promise<Customer[]> => {
 };
 
 const fetchProjects = async () => {
-  const { data, error } = await supabase.from('projects').select('*, customers(name)').order('created_at', { ascending: false });
-  if (error) throw error;
+  console.log('🔍 Fetching projects for user...');
+  
+  // First try using the RPC function for better role-based filtering
+  try {
+    const { data: rpcData, error: rpcError } = await supabase.rpc('get_user_projects');
+    
+    if (!rpcError && rpcData) {
+      console.log('✅ Successfully fetched projects via RPC:', rpcData.length);
+      return rpcData.map(p => ({
+        ...p,
+        customer: p.customer_name || 'Onbekende klant'
+      })) as ProjectWithCustomerName[];
+    }
+    
+    console.warn('⚠️ RPC failed, falling back to direct query:', rpcError?.message);
+  } catch (rpcError) {
+    console.warn('⚠️ RPC error, falling back to direct query:', rpcError);
+  }
+  
+  // Fallback to direct query with customer join
+  const { data, error } = await supabase
+    .from('projects')
+    .select('*, customers(name)')
+    .order('created_at', { ascending: false });
+    
+  if (error) {
+    console.error('❌ Error fetching projects:', error);
+    throw error;
+  }
+  
+  console.log('📊 Fetched projects via direct query:', data?.length || 0);
   
   // Transform the data to add a simple 'customer' name property
   const transformedData = data.map(p => {
@@ -37,6 +66,7 @@ const fetchProjects = async () => {
       customer: customers?.name ?? 'Onbekende klant'
     };
   });
+  
   return transformedData as ProjectWithCustomerName[];
 };
 
@@ -56,12 +86,27 @@ export const useCrmStore = () => {
     queryFn: fetchProjects,
   });
 
-  // Filter data based on user role
+  // Filter data based on user role (with improved logging)
   const filteredProjects = useMemo(() => {
+    console.log(`🎯 Filtering projects for role: ${profile?.role}, user: ${user?.id}`);
+    console.log(`📈 Total projects available: ${allProjects.length}`);
+    
     if (profile?.role === 'Installateur') {
       // Installateurs only see projects assigned to them
-      return allProjects.filter(p => p.assigned_user_id === user?.id);
+      const installerProjects = allProjects.filter(p => {
+        const isAssigned = p.assigned_user_id === user?.id;
+        const isCreated = p.user_id === user?.id;
+        return isAssigned || isCreated;
+      });
+      
+      console.log(`👷 Installer projects found: ${installerProjects.length}`);
+      console.log('📋 Assigned projects:', installerProjects.filter(p => p.assigned_user_id === user?.id).length);
+      console.log('🔨 Created projects:', installerProjects.filter(p => p.user_id === user?.id).length);
+      
+      return installerProjects;
     }
+    
+    console.log(`👤 User role "${profile?.role}" sees all ${allProjects.length} projects`);
     return allProjects;
   }, [allProjects, profile?.role, user?.id]);
 
