@@ -274,44 +274,8 @@ export const AdminDashboard = () => {
           </Card>
         </div>
 
-        {/* Bottom Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Activity */}
-          <Card className="border-0 shadow-sm bg-card/50 backdrop-blur-sm">
-            <CardHeader className="flex flex-row items-center gap-2 pb-4">
-              <Clock className="h-5 w-5 text-muted-foreground" />
-              <CardTitle className="text-lg font-semibold">
-                Recente Activiteit
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {recentActivities.map((activity) => (
-                <div key={activity.id} className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <activity.icon className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-foreground truncate">
-                        {activity.user}
-                      </p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{activity.department}</span>
-                        <span>{format(new Date(activity.date), 'd MMM.', { locale: nl })}</span>
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {activity.description}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              <Button variant="ghost" className="w-full mt-4 text-primary hover:text-primary/80">
-                Alle activiteit bekijken →
-              </Button>
-            </CardContent>
-          </Card>
-
+        {/* Performance Overview - Full Width */}
+        <div className="w-full">
           {/* Performance Overview */}
           <Card className="border-0 shadow-sm bg-card/50 backdrop-blur-sm">
             <CardHeader className="flex flex-row items-center gap-2 pb-4">

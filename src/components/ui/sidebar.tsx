@@ -241,7 +241,7 @@ export const Sidebar = ({
                 Team Agenda's
               </h3>
             </div>
-            <ul>{personnel.map(link => renderLink(link, true))}</ul>
+            <ul>{personnel.map(link => renderLink(link, false))}</ul>
           </div>
         )}
         
