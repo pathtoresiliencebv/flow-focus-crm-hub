@@ -98,7 +98,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Generate public link for the quote
     const publicUrl = `https://smanscrm.nl/quote/${publicToken}`;
     
-    // Create email HTML content
+    // Create email HTML content with prominent quote link
     const emailHtml = `
       <!DOCTYPE html>
       <html>
@@ -144,11 +144,35 @@ const handler = async (req: Request): Promise<Response> => {
               <p><strong>Totaalbedrag:</strong> €${quote.total_amount.toFixed(2)}</p>
             </div>
             
-            <div style="text-align: center;">
-              <a href="${publicUrl}" class="button">📄 Bekijk en Goedkeur Offerte</a>
+            <div style="text-align: center; margin: 30px 0; padding: 25px; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); border-radius: 12px; box-shadow: 0 8px 16px rgba(220, 38, 38, 0.3);">
+              <h3 style="color: white; margin-bottom: 15px; font-size: 18px;">📄 Online Offerte Bekijken</h3>
+              <a href="${publicUrl}" 
+                 style="background-color: white; 
+                        color: #dc2626; 
+                        padding: 15px 35px; 
+                        text-decoration: none; 
+                        border-radius: 50px; 
+                        font-weight: bold; 
+                        font-size: 18px; 
+                        display: inline-block;
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                        transition: all 0.3s ease;">
+                🔍 Bekijk Offerte & Onderteken
+              </a>
+              <p style="margin-top: 15px; font-size: 14px; color: rgba(255,255,255,0.9);">
+                ✅ Direct online inzien en goedkeuren<br>
+                ⚡ Digitaal ondertekenen mogelijk<br>
+                🔒 Veilig en betrouwbaar
+              </p>
             </div>
             
-            <p><strong>Let op:</strong> Deze offerte is geldig tot ${new Date(quote.valid_until).toLocaleDateString('nl-NL')}. Na deze datum vervalt de offerte automatisch.</p>
+            <div style="background-color: #fef3c7; border: 1px solid #fbbf24; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 0; color: #92400e;"><strong>⏰ Geldigheid:</strong> Deze offerte is geldig tot <strong>${new Date(quote.valid_until).toLocaleDateString('nl-NL')}</strong>. Na deze datum vervalt de offerte automatisch.</p>
+            </div>
+            
+            <div style="background-color: #e0f2fe; border: 1px solid #0288d1; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 0; color: #01579b;"><strong>💡 Tip:</strong> Klik op de knop hierboven om de offerte online in te zien en direct digitaal goed te keuren. U ontvangt dan automatisch een bevestiging.</p>
+            </div>
             
             <p>Voor vragen over deze offerte kunt u contact met ons opnemen.</p>
             
