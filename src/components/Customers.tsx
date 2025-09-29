@@ -14,6 +14,7 @@ import { CustomerForm } from './CustomerForm';
 import { useAuth } from '@/contexts/AuthContext';
 import { MobileCustomerCard } from './customers/MobileCustomerCard';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { SlidePanel } from '@/components/ui/slide-panel';
 
 export const Customers = () => {
   const navigate = useNavigate();
@@ -21,8 +22,8 @@ export const Customers = () => {
   const { hasPermission } = useAuth();
   const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState('');
-  const [newCustomerDialogOpen, setNewCustomerDialogOpen] = useState(false);
-  const [editCustomerDialogOpen, setEditCustomerDialogOpen] = useState(false);
+  const [newCustomerPanelOpen, setNewCustomerPanelOpen] = useState(false);
+  const [editCustomerPanelOpen, setEditCustomerPanelOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
   const filteredCustomers = customers.filter(customer =>
@@ -37,7 +38,7 @@ export const Customers = () => {
 
   const handleEditCustomer = (customer: Customer) => {
     setSelectedCustomer(customer);
-    setEditCustomerDialogOpen(true);
+    setEditCustomerPanelOpen(true);
   };
 
   const handleDeleteCustomer = (customerId: string, customerName: string) => {
@@ -47,11 +48,11 @@ export const Customers = () => {
   };
 
   const handleCustomerCreated = () => {
-    setNewCustomerDialogOpen(false);
+    setNewCustomerPanelOpen(false);
   };
 
   const handleCustomerUpdated = () => {
-    setEditCustomerDialogOpen(false);
+    setEditCustomerPanelOpen(false);
     setSelectedCustomer(null);
   };
 
@@ -78,7 +79,7 @@ export const Customers = () => {
         </div>
         {hasPermission('customers_edit') && (
           <Button 
-            onClick={() => setNewCustomerDialogOpen(true)}
+            onClick={() => setNewCustomerPanelOpen(true)}
             className="bg-smans-primary hover:bg-smans-primary/90 text-white"
           >
             <Plus className="mr-2 h-4 w-4" />
@@ -207,34 +208,28 @@ export const Customers = () => {
         </CardContent>
       </Card>
 
-      {/* New Customer Dialog */}
-      <Dialog open={newCustomerDialogOpen} onOpenChange={setNewCustomerDialogOpen}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Nieuwe klant toevoegen</DialogTitle>
-            <DialogDescription>
-              Vul de klantgegevens in om een nieuwe klant toe te voegen.
-            </DialogDescription>
-          </DialogHeader>
-          <CustomerForm onClose={handleCustomerCreated} />
-        </DialogContent>
-      </Dialog>
+      {/* New Customer Panel */}
+      <SlidePanel
+        isOpen={newCustomerPanelOpen}
+        onClose={() => setNewCustomerPanelOpen(false)}
+        title="Nieuwe klant toevoegen"
+        size="lg"
+      >
+        <CustomerForm onClose={handleCustomerCreated} />
+      </SlidePanel>
 
-      {/* Edit Customer Dialog */}
-      <Dialog open={editCustomerDialogOpen} onOpenChange={setEditCustomerDialogOpen}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Klant bewerken</DialogTitle>
-            <DialogDescription>
-              Wijzig de klantgegevens.
-            </DialogDescription>
-          </DialogHeader>
-          <CustomerForm 
-            onClose={handleCustomerUpdated} 
-            existingCustomer={selectedCustomer}
-          />
-        </DialogContent>
-      </Dialog>
+      {/* Edit Customer Panel */}
+      <SlidePanel
+        isOpen={editCustomerPanelOpen}
+        onClose={() => setEditCustomerPanelOpen(false)}
+        title="Klant bewerken"
+        size="lg"
+      >
+        <CustomerForm 
+          onClose={handleCustomerUpdated} 
+          existingCustomer={selectedCustomer}
+        />
+      </SlidePanel>
     </div>
   );
 };

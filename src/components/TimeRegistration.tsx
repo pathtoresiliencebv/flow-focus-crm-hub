@@ -8,10 +8,11 @@ import { TimeCalendarView } from './time-registration/TimeCalendarView';
 import { TimeRegistrationForm } from './time-registration/TimeRegistrationForm';
 import { TimeReportsView } from './time-registration/TimeReportsView';
 import { QuickTimeRegistrationDialog } from './time-registration/QuickTimeRegistrationDialog';
+import { SlidePanel } from '@/components/ui/slide-panel';
 
 export const TimeRegistration = () => {
   const [activeTab, setActiveTab] = useState("overview");
-  const [timeDialogOpen, setTimeDialogOpen] = useState(false);
+  const [timePanelOpen, setTimePanelOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [selectedStartHour, setSelectedStartHour] = useState<number>(9);
   const [selectedEndHour, setSelectedEndHour] = useState<number>(10);
@@ -19,7 +20,7 @@ export const TimeRegistration = () => {
   
   const handleSubmitTime = (e: React.FormEvent) => {
     e.preventDefault();
-    setTimeDialogOpen(false);
+    setTimePanelOpen(false);
   };
 
   const handleEventClick = (event: any) => {
@@ -43,7 +44,7 @@ export const TimeRegistration = () => {
     setSelectedDate(date);
     setSelectedStartHour(startHour);
     setSelectedEndHour(endHour);
-    setTimeDialogOpen(true);
+    setTimePanelOpen(true);
   };
 
   return (
@@ -55,7 +56,7 @@ export const TimeRegistration = () => {
           <p className="text-gray-600 mt-1 text-sm sm:text-base">Registreer en beheer je werktijden</p>
         </div>
         <Button 
-          onClick={() => setTimeDialogOpen(true)}
+          onClick={() => setTimePanelOpen(true)}
           className="bg-smans-primary hover:bg-smans-primary/90 text-white"
         >
           <Plus className="mr-2 h-4 w-4" />
@@ -100,14 +101,22 @@ export const TimeRegistration = () => {
         </TabsContent>
       </Tabs>
       
-      <QuickTimeRegistrationDialog
-        open={timeDialogOpen}
-        onOpenChange={setTimeDialogOpen}
-        onSubmit={handleSubmitTime}
-        selectedDate={selectedDate}
-        selectedStartHour={selectedStartHour}
-        selectedEndHour={selectedEndHour}
-      />
+      <SlidePanel
+        isOpen={timePanelOpen}
+        onClose={() => setTimePanelOpen(false)}
+        title="Nieuwe tijdsregistratie"
+        size="lg"
+      >
+        <TimeRegistrationForm
+          selectedDate={selectedDate}
+          setSelectedDate={setSelectedDate}
+          selectedStartHour={selectedStartHour}
+          setSelectedStartHour={setSelectedStartHour}
+          selectedEndHour={selectedEndHour}
+          setSelectedEndHour={setSelectedEndHour}
+          onSubmit={handleSubmitTime}
+        />
+      </SlidePanel>
     </div>
   );
 };

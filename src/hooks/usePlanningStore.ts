@@ -71,13 +71,21 @@ export const usePlanningStore = () => {
   };
 
   const addPlanningItem = async (newItem: Omit<PlanningItem, 'id' | 'created_at' | 'updated_at'>) => {
-    if (!user) return;
+    if (!user) {
+      console.error('No user found for adding planning item');
+      return;
+    }
 
     try {
+      console.log('Adding planning item:', newItem);
+      console.log('User ID:', user.id);
+
       const planningData = {
         ...newItem,
         user_id: user.id, // Set the creator
       };
+
+      console.log('Planning data to insert:', planningData);
 
       const { data, error } = await supabase
         .from('planning_items')
@@ -90,6 +98,7 @@ export const usePlanningStore = () => {
         throw error;
       }
 
+      console.log('Planning item created successfully:', data);
       setPlanningItems(prev => [...prev, data]);
       
       toast({
