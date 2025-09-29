@@ -55,8 +55,8 @@ export function PlanningManagement() {
         title: formData.get('description') as string,
         description: formData.get('description') as string,
         start_date: selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-        start_time: selectedHour ? `${selectedHour}:00` : '09:00',
-        end_time: selectedHour ? `${selectedHour + 1}:00` : '10:00',
+        start_time: selectedHour ? `${selectedHour.toString().padStart(2, '0')}:00:00` : '09:00:00',
+        end_time: selectedHour ? `${(selectedHour + 1).toString().padStart(2, '0')}:00:00` : '10:00:00',
         location: location,
         status: 'Gepland',
       };
@@ -84,14 +84,18 @@ export function PlanningManagement() {
 
   const handleNewPlanning = async (formData: FormData) => {
     try {
+      const selectedTime = formData.get('time') as string || '09:00';
+      const [hours, minutes] = selectedTime.split(':');
+      const endHours = (parseInt(hours) + 1).toString().padStart(2, '0');
+      
       const data = {
         assigned_user_id: formData.get('employee') as string,
         project_id: formData.get('project') as string,
         title: formData.get('description') as string,
         description: formData.get('description') as string,
         start_date: selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-        start_time: formData.get('time') as string || '09:00',
-        end_time: formData.get('time') as string || '10:00',
+        start_time: `${selectedTime}:00`,
+        end_time: `${endHours}:${minutes}:00`,
         location: location,
         status: 'Gepland',
       };
@@ -119,14 +123,18 @@ export function PlanningManagement() {
 
   const handleMultiDayPlanning = async (formData: FormData) => {
     try {
+      const selectedTime = formData.get('time') as string || '09:00';
+      const [hours, minutes] = selectedTime.split(':');
+      const endHours = (parseInt(hours) + 1).toString().padStart(2, '0');
+      
       const data = {
         assigned_user_id: formData.get('employee') as string,
         project_id: formData.get('project') as string,
         title: formData.get('description') as string,
         description: formData.get('description') as string,
         start_date: startDate ? startDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-        start_time: formData.get('time') as string || '09:00',
-        end_time: formData.get('time') as string || '10:00',
+        start_time: `${selectedTime}:00`,
+        end_time: `${endHours}:${minutes}:00`,
         location: location,
         status: 'Gepland',
       };
