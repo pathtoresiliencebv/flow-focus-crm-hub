@@ -111,7 +111,6 @@ const XIcon = () => (
 );
 
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, useLocation } from "react-router-dom";
 
 interface SidebarProps {
   children: React.ReactNode;
@@ -121,15 +120,8 @@ interface SidebarProps {
 
 export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
   const { user, profile, logout, hasPermission } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-
-  // Auto-collapse on calendar page
-  useEffect(() => {
-    setIsCollapsed(location.pathname.includes('calendar'));
-  }, [location.pathname]);
 
   const toggleSidebar = () => setIsOpen(!isOpen);
   const toggleCollapse = () => setIsCollapsed(!isCollapsed);
