@@ -150,14 +150,6 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
 
   return (
     <Sidebar 
-      links={links}
-      mainLinks={filteredMainLinks}
-      communicationLinks={filteredCommunicationLinks}
-      personnelLinks={filteredPersonnelLinks}
-      settingsLinks={filteredSettingsLinks}
-      user={user}
-      profile={profile}
-      logout={logout}
       activeTab={activeTab}
       setActiveTab={setActiveTab}
     >
