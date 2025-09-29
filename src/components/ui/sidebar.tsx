@@ -144,13 +144,7 @@ export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
     { key: "chat", label: "Chat", icon: <MessageCircle className="h-5 w-5" />, permission: null },
   ];
 
-  const personnel = [
-    { key: "Administrator", label: "Administrator", icon: <Crown className="h-5 w-5" />, permission: null, badge: 0 },
-    { key: "Administratie", label: "Administratie", icon: <FolderKanban className="h-5 w-5" />, permission: null, badge: 0 },
-    { key: "Installatieeur1", label: "Installateur 1", icon: <Wrench className="h-5 w-5" />, permission: null, badge: 0 },
-    { key: "Installatieeur2", label: "Installateur 2", icon: <Wrench className="h-5 w-5" />, permission: null, badge: 0 },
-    { key: "Installatieeur3", label: "Installateur 3", icon: <Wrench className="h-5 w-5" />, permission: null, badge: 0 },
-  ];
+  // Removed personnel (team agenda's) as requested
 
   const settings = [
     { key: "personnel", label: "Personeel", icon: <UserCheck className="h-5 w-5" />, permission: "users_view" },
@@ -255,17 +249,7 @@ export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
           </div>
         )}
         
-        {/* Personnel Section - Team Agenda's always expanded */}
-        {personnel.length > 0 && !mini && (
-          <div className="mt-6">
-            <div className="mb-3 px-4">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                Team Agenda's
-              </h3>
-            </div>
-            <ul>{personnel.map(link => renderLink(link, false))}</ul>
-          </div>
-        )}
+        {/* Team Agenda's section removed as requested */}
         
         {/* Settings Section with Collapsible Items */}
         {settings.length > 0 && !mini && (
