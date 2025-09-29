@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,7 @@ import { Profile } from '@/types/user';
 
 export const EditUserDialog = ({ user, onClose }: { user: Profile; onClose: () => void }) => {
   const queryClient = useQueryClient();
+  const [fullName, setFullName] = useState(user.full_name || '');
   const [role, setRole] = useState(user.role);
   const [status, setStatus] = useState(user.status);
   
@@ -37,14 +39,14 @@ export const EditUserDialog = ({ user, onClose }: { user: Profile; onClose: () =
   });
 
   const handleSave = () => {
-    mutation.mutate({ id: user.id, role, status });
+    mutation.mutate({ id: user.id, full_name: fullName, role, status });
   };
 
   return (
     <Dialog open onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit User: {user.full_name}</DialogTitle>
+          <DialogTitle>Edit User: {user.full_name || user.email}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
           {isSuperAdmin && (
@@ -54,6 +56,16 @@ export const EditUserDialog = ({ user, onClose }: { user: Profile; onClose: () =
               </p>
             </div>
           )}
+          <div>
+            <Label htmlFor="fullName">Naam</Label>
+            <Input
+              id="fullName"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              placeholder="Voer de volledige naam in"
+              disabled={isSuperAdmin}
+            />
+          </div>
           <div>
             <Label htmlFor="role">Role</Label>
             <Select 

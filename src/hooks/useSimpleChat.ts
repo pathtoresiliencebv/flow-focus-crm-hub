@@ -25,7 +25,7 @@ export interface DirectMessage {
 
 export interface ChatUser {
   id: string;
-  full_name: string;
+  full_name: string | null;
   role: string;
   is_online?: boolean;
 }
