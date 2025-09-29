@@ -2,7 +2,26 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, LogOut, Settings, MessageCircle } from "lucide-react";
+import { 
+  User, 
+  LogOut, 
+  Settings, 
+  MessageCircle,
+  LayoutDashboard,
+  Users,
+  FolderKanban,
+  BarChart,
+  Calendar,
+  Clock,
+  Receipt,
+  FileText,
+  CreditCard,
+  Mail,
+  Crown,
+  Wrench,
+  DollarSign,
+  UserCheck
+} from "lucide-react";
 
 const AnimatedMenuToggle = ({
   toggle,
@@ -116,37 +135,37 @@ export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
   const toggleCollapse = () => setIsCollapsed(!isCollapsed);
 
   const mainLinks = [
-    { key: "dashboard", label: "Dashboard", icon: "🏠", permission: null },
-    { key: "customers", label: "Klanten", icon: "👥", permission: "customers_view" },
-    { key: "projects", label: "Projecten", icon: "📋", permission: "projects_view" },
-    { key: "customers-projects", label: "Klanten & Projecten", icon: "📊", permission: "customers_view" },
-    { key: "calendar", label: "Kalender", icon: "📅", permission: "projects_view" },
-    { key: "planning", label: "Planning", icon: "🗓️", permission: "projects_view" },
-    { key: "time", label: "Tijdregistratie", icon: "⏰", permission: "projects_view" },
-    { key: "receipts", label: "Bonnetjes", icon: "🧾", permission: "invoices_view" },
-    { key: "quotes", label: "Offertes", icon: "📄", permission: "invoices_view" },
-    { key: "invoicing", label: "Facturatie", icon: "💰", permission: "invoices_view" },
+    { key: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" />, permission: null },
+    { key: "customers", label: "Klanten", icon: <Users className="h-5 w-5" />, permission: "customers_view" },
+    { key: "projects", label: "Projecten", icon: <FolderKanban className="h-5 w-5" />, permission: "projects_view" },
+    { key: "customers-projects", label: "Klanten & Projecten", icon: <BarChart className="h-5 w-5" />, permission: "customers_view" },
+    { key: "calendar", label: "Kalender", icon: <Calendar className="h-5 w-5" />, permission: "projects_view" },
+    { key: "planning", label: "Planning", icon: <Calendar className="h-5 w-5" />, permission: "projects_view" },
+    { key: "time", label: "Tijdregistratie", icon: <Clock className="h-5 w-5" />, permission: "projects_view" },
+    { key: "receipts", label: "Bonnetjes", icon: <Receipt className="h-5 w-5" />, permission: "invoices_view" },
+    { key: "quotes", label: "Offertes", icon: <FileText className="h-5 w-5" />, permission: "invoices_view" },
+    { key: "invoicing", label: "Facturatie", icon: <CreditCard className="h-5 w-5" />, permission: "invoices_view" },
   ];
 
   const communication = [
-    { key: "email", label: "E-mail", icon: "✉️", permission: null },
-    { key: "chat", label: "Chat", icon: "💬", permission: null },
+    { key: "email", label: "E-mail", icon: <Mail className="h-5 w-5" />, permission: null },
+    { key: "chat", label: "Chat", icon: <MessageCircle className="h-5 w-5" />, permission: null },
   ];
 
   const personnel = [
-    { key: "Administrator", label: "Administrator", icon: "👑", permission: null, badge: 0 },
-    { key: "Administratie", label: "Administratie", icon: "📋", permission: null, badge: 0 },
-    { key: "Installatieeur1", label: "Installateur 1", icon: "🔧", permission: null, badge: 0 },
-    { key: "Installatieeur2", label: "Installateur 2", icon: "🔧", permission: null, badge: 0 },
-    { key: "Installatieeur3", label: "Installateur 3", icon: "🔧", permission: null, badge: 0 },
+    { key: "Administrator", label: "Administrator", icon: <Crown className="h-5 w-5" />, permission: null, badge: 0 },
+    { key: "Administratie", label: "Administratie", icon: <FolderKanban className="h-5 w-5" />, permission: null, badge: 0 },
+    { key: "Installatieeur1", label: "Installateur 1", icon: <Wrench className="h-5 w-5" />, permission: null, badge: 0 },
+    { key: "Installatieeur2", label: "Installateur 2", icon: <Wrench className="h-5 w-5" />, permission: null, badge: 0 },
+    { key: "Installatieeur3", label: "Installateur 3", icon: <Wrench className="h-5 w-5" />, permission: null, badge: 0 },
   ];
 
   const settings = [
-    { key: "personnel", label: "Personeel", icon: "👥", permission: "users_view" },
-    { key: "users", label: "Gebruikers", icon: "👤", permission: "users_view" },
-    { key: "salary", label: "Salaris", icon: "💵", permission: "users_view" },
-    { key: "reports", label: "Rapportages", icon: "📊", permission: "reports_view" },
-    { key: "settings", label: "Instellingen", icon: "⚙️", permission: "settings_edit" },
+    { key: "personnel", label: "Personeel", icon: <UserCheck className="h-5 w-5" />, permission: "users_view" },
+    { key: "users", label: "Gebruikers", icon: <User className="h-5 w-5" />, permission: "users_view" },
+    { key: "salary", label: "Salaris", icon: <DollarSign className="h-5 w-5" />, permission: "users_view" },
+    { key: "reports", label: "Rapportages", icon: <BarChart className="h-5 w-5" />, permission: "reports_view" },
+    { key: "settings", label: "Instellingen", icon: <Settings className="h-5 w-5" />, permission: "settings_edit" },
   ];
 
   const CollapsibleSection = ({ 
