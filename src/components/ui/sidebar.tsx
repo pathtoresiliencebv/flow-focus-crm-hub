@@ -121,7 +121,7 @@ interface SidebarProps {
 export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
   const { user, profile, logout, hasPermission } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
   const toggleSidebar = () => setIsOpen(!isOpen);
   const toggleCollapse = () => setIsCollapsed(!isCollapsed);

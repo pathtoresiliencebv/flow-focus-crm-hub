@@ -208,8 +208,12 @@ const CurrentTimeLine: React.FC = () => {
 
   return (
     <div
-      className="absolute left-0 right-0 h-0.5 bg-red-500 z-30 pointer-events-none"
-      style={{ top: `${top + 84}px` }} // Offset for headers
+      className="absolute h-0.5 bg-red-500 z-30 pointer-events-none"
+      style={{ 
+        top: `${top + 84}px`, // Offset for headers
+        left: '12.5%', // Start after the time column (1/8th of grid)
+        right: '0'
+      }}
     >
       <div className="absolute -left-1 -top-1 w-2 h-2 bg-red-500 rounded-full" />
     </div>
