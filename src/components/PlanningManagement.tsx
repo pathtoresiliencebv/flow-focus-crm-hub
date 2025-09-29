@@ -54,9 +54,9 @@ export function PlanningManagement() {
   const handleQuickPlanning = async (formData: FormData) => {
     try {
       const data = {
-        assigned_user_id: formData.get('employee') as string,
+        assigned_user_id: formData.get('installer') as string,
         project_id: formData.get('project') as string,
-        title: formData.get('description') as string,
+        title: formData.get('description') as string || 'Snelle Planning',
         description: formData.get('description') as string,
         start_date: selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
         start_time: selectedHour ? `${selectedHour.toString().padStart(2, '0')}:00:00` : '09:00:00',
@@ -88,14 +88,14 @@ export function PlanningManagement() {
 
   const handleNewPlanning = async (formData: FormData) => {
     try {
-      const selectedTime = formData.get('time') as string || '09:00';
+      const selectedTime = formData.get('startTime') as string || '09:00';
       const [hours, minutes] = selectedTime.split(':');
       const endHours = (parseInt(hours) + 1).toString().padStart(2, '0');
       
       const data = {
-        assigned_user_id: formData.get('employee') as string,
+        assigned_user_id: formData.get('installer') as string,
         project_id: formData.get('project') as string,
-        title: formData.get('description') as string,
+        title: formData.get('description') as string || 'Nieuwe Planning',
         description: formData.get('description') as string,
         start_date: selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
         start_time: `${selectedTime}:00`,
