@@ -34,7 +34,7 @@ export const SendQuoteDialog: React.FC<SendQuoteDialogProps> = ({
   React.useEffect(() => {
     if (quote && isOpen) {
       setFormData({
-        recipientEmail: '',
+        recipientEmail: quote.customer_email || '',
         recipientName: quote.customer_name || '',
         subject: `Offerte ${quote.quote_number} - SMANS BV`,
         message: `Beste ${quote.customer_name || 'klant'},
