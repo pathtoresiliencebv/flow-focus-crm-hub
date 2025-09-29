@@ -140,25 +140,24 @@ export const CalendarPage: React.FC = () => {
         collapsed={sidebarCollapsed}
       />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="bg-card border-b border-border px-6 py-4">
+        <div className="bg-background border-b border-border px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="p-2"
+                className="p-2 hover:bg-muted rounded-xl transition-colors"
               >
-                <Menu className="h-4 w-4" />
-              </Button>
-              <h1 className="text-2xl font-bold text-foreground">Agenda</h1>
-              <div className="flex items-center gap-2">
+                <Menu className="h-5 w-5" />
+              </button>
+              
+              <div className="flex items-center gap-3">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={navigatePrevious}
+                  className="h-9"
                   disabled={loading}
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -166,33 +165,36 @@ export const CalendarPage: React.FC = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={navigateToday}
-                  disabled={loading}
-                >
-                  Vandaag
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
                   onClick={navigateNext}
+                  className="h-9"
                   disabled={loading}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={navigateToday}
+                  className="h-9 px-4"
+                  disabled={loading}
+                >
+                  Vandaag
+                </Button>
               </div>
-              <h2 className="text-lg font-medium text-muted-foreground">
+
+              <h1 className="text-xl font-semibold text-foreground">
                 {getFormattedDate()}
-              </h2>
+              </h1>
             </div>
 
-            <div className="flex items-center gap-2">
-              {/* View Toggle */}
+            <div className="flex items-center gap-3">
               <div className="flex bg-muted rounded-lg p-1">
                 <Button
                   variant={currentView === 'month' ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => handleViewChange('month')}
                   disabled={loading}
+                  className="h-8"
                 >
                   Maand
                 </Button>
@@ -201,6 +203,7 @@ export const CalendarPage: React.FC = () => {
                   size="sm"
                   onClick={() => handleViewChange('week')}
                   disabled={loading}
+                  className="h-8"
                 >
                   Week
                 </Button>
@@ -209,6 +212,7 @@ export const CalendarPage: React.FC = () => {
                   size="sm"
                   onClick={() => handleViewChange('day')}
                   disabled={loading}
+                  className="h-8"
                 >
                   Dag
                 </Button>
@@ -216,16 +220,17 @@ export const CalendarPage: React.FC = () => {
 
               <Button
                 variant="outline"
-                size="sm"
+                size="icon"
                 onClick={() => setSettingsDialogOpen(true)}
+                className="h-9 w-9"
               >
-                <Settings className="h-4 w-4 mr-2" />
-                Instellingen
+                <Settings className="h-4 w-4" />
               </Button>
 
               <Button
                 onClick={() => setCreateDialogOpen(true)}
                 disabled={loading}
+                className="h-9"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Nieuw Event
