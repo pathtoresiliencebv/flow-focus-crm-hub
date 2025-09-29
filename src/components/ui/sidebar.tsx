@@ -92,11 +92,13 @@ const XIcon = () => (
 const CollapsibleSection = ({
   title,
   children,
+  defaultOpen = false,
 }: {
   title: string;
   children: React.ReactNode;
+  defaultOpen?: boolean;
 }) => {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
 
   return (
     <div className="mb-4">
@@ -206,7 +208,7 @@ export const Sidebar = ({
   
   const SidebarContent = ({ mini = false }) => (
     <>
-      <div className={`p-4 border-b border-gray-200 ${mini ? 'px-2' : ''}`}>
+      <div className={`p-4 ${mini ? 'px-2' : ''}`}>
         <div className="flex items-center justify-center">
           {!mini ? (
             <img src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="SMANS Logo" className="h-10 w-auto" />
@@ -231,10 +233,10 @@ export const Sidebar = ({
           </div>
         )}
         
-        {/* Personnel Section */}
+        {/* Personnel Section - Team Agenda's always expanded */}
         {personnel.length > 0 && !mini && (
           <div className="mt-6">
-            <CollapsibleSection title="Personeel">
+            <CollapsibleSection title="Team Agenda's" defaultOpen={true}>
               <ul>{personnel.map(link => renderLink(link, true))}</ul>
             </CollapsibleSection>
           </div>
@@ -318,7 +320,7 @@ export const Sidebar = ({
         )}
       </AnimatePresence>
 
-      <div className={`hidden md:flex flex-col fixed top-0 left-0 h-full bg-white text-black shadow-lg border-r-0 transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
+      <div className={`hidden md:flex flex-col fixed top-0 left-0 h-full bg-white text-black shadow-lg transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
         <SidebarContent mini={isCollapsed} />
       </div>
 

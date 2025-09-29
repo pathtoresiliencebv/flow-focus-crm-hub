@@ -22,6 +22,7 @@ export function PlanningManagement() {
   const { toast } = useToast();
   const { user, hasPermission } = useAuth();
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
+  const [calendarView, setCalendarView] = useState<'week' | 'month' | 'day'>('week');
   const [showNewPlanning, setShowNewPlanning] = useState(false);
   const [showQuickPlanning, setShowQuickPlanning] = useState(false);
   const [showMultiDayPlanning, setShowMultiDayPlanning] = useState(false);
@@ -387,12 +388,19 @@ export function PlanningManagement() {
         
         <TabsContent value="calendar" className="mt-4">
           <PlanningCalendarView
-            calendarView="week"
-            onCalendarViewChange={() => {}}
+            calendarView={calendarView}
+            onCalendarViewChange={(newView) => {
+              console.log('Calendar view changed to:', newView);
+              setCalendarView(newView);
+            }}
             events={calendarEvents}
             onEventClick={handleEventClick}
             onTimeSlotClick={handleTimeSlotClick}
-            onEventCreate={handleEventCreate}
+            onEventCreate={(date, startHour, endHour) => {
+              setSelectedDate(date);
+              setSelectedHour(startHour);
+              setShowQuickPlanning(true);
+            }}
           />
         </TabsContent>
         
