@@ -31,7 +31,9 @@ export function PlanningManagement() {
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
-  const [location, setLocation] = useState('');
+  const [quickPlanningLocation, setQuickPlanningLocation] = useState('');
+  const [newPlanningLocation, setNewPlanningLocation] = useState('');
+  const [multiDayLocation, setMultiDayLocation] = useState('');
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
@@ -59,7 +61,7 @@ export function PlanningManagement() {
         start_date: selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
         start_time: selectedHour ? `${selectedHour.toString().padStart(2, '0')}:00:00` : '09:00:00',
         end_time: selectedHour ? `${(selectedHour + 1).toString().padStart(2, '0')}:00:00` : '10:00:00',
-        location: location,
+        location: quickPlanningLocation,
         status: 'Gepland',
       };
 
@@ -73,7 +75,7 @@ export function PlanningManagement() {
         description: "De planning is succesvol toegevoegd.",
       });
       setShowQuickPlanning(false);
-      setLocation('');
+      setQuickPlanningLocation('');
     } catch (error) {
       console.error('Error adding planning:', error);
       toast({
@@ -98,7 +100,7 @@ export function PlanningManagement() {
         start_date: selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
         start_time: `${selectedTime}:00`,
         end_time: `${endHours}:${minutes}:00`,
-        location: location,
+        location: newPlanningLocation,
         status: 'Gepland',
       };
 
@@ -112,7 +114,7 @@ export function PlanningManagement() {
         description: "De planning is succesvol toegevoegd.",
       });
       setShowNewPlanning(false);
-      setLocation('');
+      setNewPlanningLocation('');
     } catch (error) {
       console.error('Error adding planning:', error);
       toast({
@@ -137,7 +139,7 @@ export function PlanningManagement() {
         start_date: startDate ? startDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
         start_time: `${selectedTime}:00`,
         end_time: `${endHours}:${minutes}:00`,
-        location: location,
+        location: multiDayLocation,
         status: 'Gepland',
       };
 
@@ -151,7 +153,7 @@ export function PlanningManagement() {
         description: "De meerdaagse planning is succesvol toegevoegd.",
       });
       setShowMultiDayPlanning(false);
-      setLocation('');
+      setMultiDayLocation('');
     } catch (error) {
       console.error('Error adding multi-day planning:', error);
       toast({
@@ -417,7 +419,7 @@ export function PlanningManagement() {
         isOpen={showQuickPlanning}
         onClose={() => {
           setShowQuickPlanning(false);
-          setLocation('');
+          setQuickPlanningLocation('');
         }}
         onSubmit={handleQuickPlanning}
         installers={installers}
@@ -427,29 +429,29 @@ export function PlanningManagement() {
           project: '',
           description: ''
         }}
-        location={location}
-        onLocationChange={setLocation}
+        location={quickPlanningLocation}
+        onLocationChange={setQuickPlanningLocation}
       />
       
       <NewPlanningSlidePanel
         isOpen={showNewPlanning}
         onClose={() => {
           setShowNewPlanning(false);
-          setLocation('');
+          setNewPlanningLocation('');
         }}
         onSubmit={handleNewPlanning}
         installers={installers}
         projects={projects}
         selectedDate={selectedDate}
-        location={location}
-        onLocationChange={setLocation}
+        location={newPlanningLocation}
+        onLocationChange={setNewPlanningLocation}
       />
       
       <MultiDayPlanningSlidePanel
         isOpen={showMultiDayPlanning}
         onClose={() => {
           setShowMultiDayPlanning(false);
-          setLocation('');
+          setMultiDayLocation('');
         }}
         onSubmit={handleMultiDayPlanning}
         installers={installers}
@@ -458,8 +460,8 @@ export function PlanningManagement() {
         endDate={endDate}
         onStartDateSelect={setStartDate}
         onEndDateSelect={setEndDate}
-        location={location}
-        onLocationChange={setLocation}
+        location={multiDayLocation}
+        onLocationChange={setMultiDayLocation}
       />
     </div>
   );
