@@ -124,7 +124,18 @@ const CollapsibleSection = ({
   );
 };
 
-export const Sidebar = ({ links, user, profile, logout, activeTab, setActiveTab, children }) => {
+export const Sidebar = ({ 
+  links, 
+  mainLinks, 
+  communicationLinks, 
+  settingsLinks, 
+  user, 
+  profile, 
+  logout, 
+  activeTab, 
+  setActiveTab, 
+  children 
+}) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const mobileSidebarVariants = {
@@ -134,10 +145,10 @@ export const Sidebar = ({ links, user, profile, logout, activeTab, setActiveTab,
 
   const toggleSidebar = () => setIsOpen(!isOpen);
 
-  const mainLinks = links.slice(0, 4);
-  const werkLinks = links.filter(l => ["time", "receipts", "quotes", "invoicing", "email", "chat"].includes(l.key));
-  const beheerLinks = links.filter(l => ["personnel", "users", "salary", "reports"].includes(l.key));
-  const settingsLink = links.find(l => l.key === 'settings');
+  // Use passed links or fallback to old structure for backward compatibility
+  const main = mainLinks || links.slice(0, 4);
+  const communication = communicationLinks || links.filter(l => ["email", "chat"].includes(l.key));
+  const settings = settingsLinks || links.filter(l => ["time", "receipts", "personnel", "reports", "settings"].includes(l.key));
 
   const createLinkHandler = (tabKey) => () => {
     setActiveTab(tabKey);
@@ -176,26 +187,29 @@ export const Sidebar = ({ links, user, profile, logout, activeTab, setActiveTab,
         </div>
       </div>
       <nav className="flex-1 p-4 overflow-y-auto">
-        <ul>{mainLinks.map(link => renderLink(link))}</ul>
-        <div className="mt-4">
-          <CollapsibleSection title="Werk">
-            <ul>{werkLinks.map(link => renderLink(link, true))}</ul>
-          </CollapsibleSection>
-          <CollapsibleSection title="Beheer">
-            <ul>{beheerLinks.map(link => renderLink(link, true))}</ul>
-          </CollapsibleSection>
-        </div>
+        {/* Main Navigation */}
+        <ul>{main.map(link => renderLink(link))}</ul>
+        
+        {/* Communication Section */}
+        {communication.length > 0 && (
+          <div className="mt-6">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-4">
+              Communicatie
+            </h3>
+            <ul>{communication.map(link => renderLink(link))}</ul>
+          </div>
+        )}
+        
+        {/* Settings Section with Collapsible Items */}
+        {settings.length > 0 && (
+          <div className="mt-6">
+            <CollapsibleSection title="Instellingen">
+              <ul>{settings.map(link => renderLink(link, true))}</ul>
+            </CollapsibleSection>
+          </div>
+        )}
       </nav>
       <div className="p-4 border-t border-gray-200">
-        {settingsLink && (
-           <button
-             onClick={createLinkHandler(settingsLink.key)}
-             className={`flex gap-2 font-medium text-sm items-center w-full py-2 px-4 rounded-xl mb-4 ${activeTab === settingsLink.key ? 'bg-smans-primary text-smans-primary-foreground' : 'hover:bg-smans-primary hover:text-smans-primary-foreground'}`}
-           >
-             <Settings className="h-5 w-5" />
-             {settingsLink.label}
-           </button>
-         )}
         <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
           <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center shrink-0">
             <User className="h-5 w-5" />
