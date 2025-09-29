@@ -141,8 +141,9 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
           // First try database function with retry logic
           let attempts = 0;
           let quoteNumber = null;
+          const maxAttempts = 5;
           
-          while (attempts < 3 && !quoteNumber) {
+          while (attempts < maxAttempts && !quoteNumber) {
             const { data, error } = await supabase.rpc('generate_quote_number');
             if (data && !error) {
               // Verify uniqueness
@@ -158,20 +159,33 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
               }
             }
             attempts++;
-            // Wait before retry
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Exponential backoff
+            await new Promise(resolve => setTimeout(resolve, 200 * attempts));
           }
           
           // Fallback to timestamp-based number if database fails
           if (!quoteNumber) {
-            quoteNumber = `OFF-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+            const timestamp = Date.now();
+            quoteNumber = `OFF-${new Date().getFullYear()}-${timestamp.toString().slice(-6)}`;
+            
+            // Double-check fallback uniqueness
+            const { data: existing } = await supabase
+              .from('quotes')
+              .select('id')
+              .eq('quote_number', quoteNumber)
+              .maybeSingle();
+              
+            if (existing) {
+              quoteNumber = `OFF-${new Date().getFullYear()}-${(timestamp + Math.random() * 1000).toString().slice(-6)}`;
+            }
           }
           
           form.setValue('quoteNumber', quoteNumber);
         } catch (err) {
           console.error('Error generating quote number:', err);
-          // Generate unique fallback quote number
-          const fallbackNumber = `OFF-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+          // Generate unique fallback quote number with random suffix
+          const timestamp = Date.now();
+          const fallbackNumber = `OFF-${new Date().getFullYear()}-${(timestamp + Math.random() * 1000).toString().slice(-6)}`;
           form.setValue('quoteNumber', fallbackNumber);
         }
       };
