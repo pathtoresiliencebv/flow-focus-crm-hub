@@ -11,7 +11,7 @@ import { NewPlanningDialog } from './planning/NewPlanningDialog';
 import { QuickPlanningDialog } from './planning/QuickPlanningDialog';
 import { MultiDayPlanningDialog } from './planning/MultiDayPlanningDialog';
 import { usePlanningStore } from '@/hooks/usePlanningStore';
-import { useUserStore } from '@/hooks/useUserStore';
+import { useRealUserStore } from '@/hooks/useRealUserStore';
 import { useCrmStore } from '@/hooks/useCrmStore';
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -42,13 +42,10 @@ export function PlanningManagement() {
     fetchPlanningItems 
   } = usePlanningStore();
 
-  const { users } = useUserStore();
+  const { installers } = useRealUserStore();
   const { projects } = useCrmStore();
 
-  // Get installers (users with installer role)
-  const installers = users.filter(user => 
-    user.role === 'Installateur' || user.role === 'Administrator'
-  );
+  // Installers are now fetched from the hook
 
   const handleQuickPlanning = async (formData: FormData) => {
     try {

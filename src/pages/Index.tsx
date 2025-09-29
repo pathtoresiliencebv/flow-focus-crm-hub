@@ -84,6 +84,7 @@ const Index = () => {
     projects: "projects_view",
     "customers-projects": "customers_view",
     calendar: "projects_view",
+    planning: "projects_view",
     time: "projects_view",
     receipts: "invoices_view",
     quotes: "invoices_view",
@@ -123,6 +124,8 @@ const Index = () => {
         return <CustomersAndProjects />;
       case "calendar":
         return <CalendarPage />;
+      case "planning":
+        return <PlanningManagement />;
       case "time":
         return <TimeRegistration />;
       case "receipts":

@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import LocationMapInput from "../LocationMapInput";
-import { User } from "@/hooks/useUserStore";
+import { RealUser } from "@/hooks/useRealUserStore";
 import { ProjectWithCustomerName } from "@/hooks/useCrmStore";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
@@ -16,7 +16,7 @@ interface NewPlanningDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (formData: FormData) => void;
-  installers: User[];
+  installers: RealUser[];
   projects: ProjectWithCustomerName[];
   selectedDate: Date | undefined;
   location: string;
@@ -94,8 +94,8 @@ export const NewPlanningDialog = ({
               </SelectTrigger>
               <SelectContent className="bg-white z-50">
                 {installers.map((installer) => (
-                  <SelectItem key={installer.id} value={installer.id.toString()}>
-                    {installer.name}
+                  <SelectItem key={installer.id} value={installer.id}>
+                    {installer.full_name || installer.email || 'Naamloze Gebruiker'}
                   </SelectItem>
                 ))}
               </SelectContent>

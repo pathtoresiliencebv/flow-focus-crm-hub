@@ -155,7 +155,7 @@ export const Sidebar = ({
   const createLinkHandler = (tabKey) => () => {
     setActiveTab(tabKey);
     // Close sidebar for mobile or when clicking on Planning
-    if (isOpen || tabKey === 'calendar') {
+    if (isOpen || tabKey === 'calendar' || tabKey === 'planning') {
       toggleSidebar();
     }
   };
