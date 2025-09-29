@@ -580,30 +580,102 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
 
       const quoteToUpdate = quoteId || existingQuote?.id;
       let result;
-      if (quoteToUpdate) {
-        // Update existing quote
-        console.log('🔄 Updating existing quote for send:', quoteToUpdate);
-        result = await supabase
-          .from('quotes')
-          .update(quoteData)
-          .eq('id', quoteToUpdate)
-          .select()
-          .single();
-      } else {
-        // Insert new quote
-        console.log('➕ Creating new quote for send');
-        result = await supabase
-          .from('quotes')
-          .insert(quoteData)
-          .select()
-          .single();
+      let maxRetries = 3;
+      let retryCount = 0;
+      
+      while (retryCount < maxRetries) {
+        try {
+          if (quoteToUpdate) {
+            // Update existing quote
+            console.log('🔄 Updating existing quote for send:', quoteToUpdate);
+            result = await supabase
+              .from('quotes')
+              .update(quoteData)
+              .eq('id', quoteToUpdate)
+              .select()
+              .single();
+          } else {
+            // Insert new quote
+            console.log('➕ Creating new quote for send');
+            result = await supabase
+              .from('quotes')
+              .insert(quoteData)
+              .select()
+              .single();
+          }
+
+          if (result.error) {
+            throw result.error;
+          }
+          
+          // Success, break out of retry loop
+          break;
+          
+        } catch (error: any) {
+          console.error(`Attempt ${retryCount + 1} failed:`, error);
+          
+          // Check if it's a duplicate key error for quote_number
+          if (error?.code === '23505' && error?.constraint_name === 'quotes_quote_number_key') {
+            retryCount++;
+            
+            if (retryCount >= maxRetries) {
+              toast({
+                title: "Fout bij opslaan",
+                description: "Er is een probleem met het offertenummer na meerdere pogingen. Probeer het opnieuw.",
+                variant: "destructive",
+              });
+              setSaving(false);
+              return;
+            }
+            
+            // Generate a new quote number and retry
+            try {
+              const { data: newQuoteNumber, error: numberError } = await supabase.rpc('generate_quote_number');
+              if (numberError) {
+                console.error('Error generating new quote number:', numberError);
+                throw numberError;
+              }
+              
+              // Update the quote data with the new number
+              quoteData.quote_number = newQuoteNumber;
+              
+              // Update the form with the new quote number
+              form.setValue('quoteNumber', newQuoteNumber);
+              
+              console.log(`Retrying with new quote number: ${newQuoteNumber}`);
+              
+              // Small delay before retry
+              await new Promise(resolve => setTimeout(resolve, 500));
+              continue;
+              
+            } catch (numberError) {
+              console.error('Failed to generate new quote number:', numberError);
+              toast({
+                title: "Fout bij opslaan",
+                description: "Er is een fout opgetreden bij het genereren van een nieuw offertenummer.",
+                variant: "destructive",
+              });
+              setSaving(false);
+              return;
+            }
+          } else {
+            // Non-duplicate error, don't retry
+            console.error('Database error saving quote for send:', error);
+            toast({
+              title: "Fout bij opslaan",
+              description: `Database fout: ${error.message || 'Kon offerte niet opslaan voor verzending'}`,
+              variant: "destructive",
+            });
+            setSaving(false);
+            return;
+          }
+        }
       }
 
-      if (result.error) {
-        console.error('Database error saving quote for send:', result.error);
+      if (!result || result.error) {
         toast({
           title: "Fout bij opslaan",
-          description: `Database fout: ${result.error.message || 'Kon offerte niet opslaan voor verzending'}`,
+          description: "Er is een fout opgetreden bij het opslaan van de offerte na meerdere pogingen.",
           variant: "destructive",
         });
         setSaving(false);
