@@ -60,7 +60,11 @@ export const useCrmStore = () => {
   const filteredProjects = useMemo(() => {
     if (profile?.role === 'Installateur') {
       // Installateurs only see projects assigned to them
-      return allProjects.filter(p => p.assigned_user_id === user?.id);
+      console.log('Filtering projects for installateur:', user?.id);
+      console.log('All projects:', allProjects);
+      const userProjects = allProjects.filter(p => p.assigned_user_id === user?.id);
+      console.log('Filtered projects for installateur:', userProjects);
+      return userProjects;
     }
     return allProjects;
   }, [allProjects, profile?.role, user?.id]);
@@ -144,13 +148,32 @@ export const useCrmStore = () => {
     mutationFn: async (projectData: NewProject) => {
       const { data, error } = await supabase.from('projects').insert(projectData).select().single();
       if (error) throw error;
+      
+      // Create planning if user is assigned
+      if (projectData.assigned_user_id) {
+        const planningData = {
+          project_id: data.id,
+          assigned_user_id: projectData.assigned_user_id,
+          user_id: projectData.assigned_user_id,
+          title: `Project: ${data.title}`,
+          description: data.description || 'Project uitvoering',
+          start_date: data.date,
+          start_time: '08:00:00',
+          end_time: '17:00:00',
+          status: 'gepland',
+        };
+        
+        await supabase.from('planning_items').insert([planningData]);
+      }
+      
       return data;
     },
     onSuccess: (newProject) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['planning'] });
       toast({
         title: "Project aangemaakt",
-        description: `${newProject.title} is succesvol aangemaakt.`,
+        description: `${newProject.title} is succesvol aangemaakt. ${newProject.assigned_user_id ? 'Planning is automatisch aangemaakt.' : ''}`,
       });
     },
     onError: (error) => {
@@ -164,17 +187,53 @@ export const useCrmStore = () => {
 
   const updateProjectMutation = useMutation({
     mutationFn: async ({ id, ...projectData }: UpdateProject & { id: string }) => {
+      // Store old assigned_user_id for planning logic
+      const oldProject = allProjects.find(p => p.id === id);
+      const oldAssignedUserId = oldProject?.assigned_user_id;
+      const newAssignedUserId = projectData.assigned_user_id;
+      
       // Ensure 'customer' field is not sent to Supabase
       const { customer, ...restData } = projectData as any;
       const { data, error } = await supabase.from('projects').update(restData).eq('id', id).select().single();
       if (error) throw error;
+      
+      // Handle planning when assignment changes
+      if (oldAssignedUserId !== newAssignedUserId) {
+        // Remove old planning if there was an assigned user
+        if (oldAssignedUserId) {
+          await supabase
+            .from('planning_items')
+            .delete()
+            .eq('project_id', id)
+            .eq('assigned_user_id', oldAssignedUserId);
+        }
+        
+        // Create new planning if there's a new assigned user
+        if (newAssignedUserId) {
+          const planningData = {
+            project_id: id,
+            assigned_user_id: newAssignedUserId,
+            user_id: newAssignedUserId,
+            title: `Project: ${data.title}`,
+            description: data.description || 'Project uitvoering',
+            start_date: data.date,
+            start_time: '08:00:00',
+            end_time: '17:00:00',
+            status: 'gepland',
+          };
+          
+          await supabase.from('planning_items').upsert([planningData]);
+        }
+      }
+      
       return data;
     },
     onSuccess: (updatedProject) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['planning'] });
       toast({
         title: "Project bijgewerkt",
-        description: `Project "${updatedProject.title}" is succesvol bijgewerkt.`,
+        description: `Project "${updatedProject.title}" is succesvol bijgewerkt. ${updatedProject.assigned_user_id ? 'Planning is automatisch aangemaakt.' : ''}`,
       });
     },
     onError: (error) => {
