@@ -135,43 +135,51 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         setAttachments(Array.isArray(existingQuote.attachments) ? existingQuote.attachments : []);
       }
     } else {
-  // Generate unique quote number for new quotes
+        // Generate unique quote number for new quotes
       const generateQuoteNumber = async () => {
         try {
-          // First try database function with retry logic
-          let attempts = 0;
-          let quoteNumber = null;
+          console.log('🔢 Generating new quote number...');
           
-          while (attempts < 3 && !quoteNumber) {
-            const { data, error } = await supabase.rpc('generate_quote_number');
-            if (data && !error) {
-              // Verify uniqueness
-              const { data: existing } = await supabase
-                .from('quotes')
-                .select('id')
-                .eq('quote_number', data)
-                .maybeSingle();
-                
-              if (!existing) {
-                quoteNumber = data;
-                break;
-              }
+          // Use the improved database function (now with advisory locking)
+          const { data, error } = await supabase.rpc('generate_quote_number');
+          
+          if (error) {
+            console.error('❌ Database function error:', error);
+            throw error;
+          }
+          
+          if (data) {
+            console.log('✅ Generated quote number:', data);
+            
+            // Double-check uniqueness (extra safety)
+            const { data: existing, error: checkError } = await supabase
+              .from('quotes')
+              .select('id')
+              .eq('quote_number', data)
+              .maybeSingle();
+            
+            if (checkError) {
+              console.warn('⚠️ Error checking uniqueness:', checkError);
+              // Still use the number since database function should handle uniqueness
             }
-            attempts++;
-            // Wait before retry
-            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            if (existing) {
+              console.error('❌ Quote number already exists:', data);
+              // Fallback to timestamp-based number with random suffix
+              const fallbackNumber = `OFF-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}-${Math.random().toString(36).substr(2, 3).toUpperCase()}`;
+              console.log('🔄 Using fallback number:', fallbackNumber);
+              form.setValue('quoteNumber', fallbackNumber);
+            } else {
+              form.setValue('quoteNumber', data);
+            }
+          } else {
+            throw new Error('No quote number returned from database function');
           }
-          
-          // Fallback to timestamp-based number if database fails
-          if (!quoteNumber) {
-            quoteNumber = `OFF-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
-          }
-          
-          form.setValue('quoteNumber', quoteNumber);
         } catch (err) {
-          console.error('Error generating quote number:', err);
-          // Generate unique fallback quote number
-          const fallbackNumber = `OFF-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+          console.error('❌ Error generating quote number:', err);
+          // Generate robust fallback quote number with timestamp and random suffix
+          const fallbackNumber = `OFF-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}-${Math.random().toString(36).substr(2, 3).toUpperCase()}`;
+          console.log('🔄 Using fallback number:', fallbackNumber);
           form.setValue('quoteNumber', fallbackNumber);
         }
       };

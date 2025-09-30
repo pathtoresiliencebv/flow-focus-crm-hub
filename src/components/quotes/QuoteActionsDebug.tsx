@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Quote } from '@/types/quote';
+import { QuoteDuplicateChecker } from './QuoteDuplicateChecker';
 
 interface QuoteActionsDebugProps {
   quote: Quote;
@@ -300,6 +301,9 @@ export const QuoteActionsDebug: React.FC<QuoteActionsDebugProps> = ({ quote }) =
           )}
         </CardContent>
       </Card>
+
+      {/* Quote Number Duplicate Checker */}
+      <QuoteDuplicateChecker />
     </div>
   );
 };
