@@ -59,15 +59,18 @@ export const useSimpleChat = () => {
     if (!user || !profile) return;
 
     try {
+      console.log('🔍 Fetching available chat users for:', user.id, 'Role:', profile?.role);
+      
       const { data, error } = await supabase.rpc('get_available_chat_users', {
         current_user_id: user.id
       });
 
       if (error) {
-        console.error('Error fetching available users:', error);
+        console.error('❌ Error fetching available users:', error);
         return;
       }
 
+      console.log('✅ Found available chat users:', data?.length || 0, data);
       setAvailableUsers(data || []);
     } catch (error) {
       console.error('Error fetching available users:', error);
@@ -85,7 +88,7 @@ export const useSimpleChat = () => {
         .from('direct_messages')
         .select(`
           *,
-          sender:profiles!direct_messages_from_user_id_fkey(id, full_name)
+          sender:profiles!from_user_id(id, full_name)
         `)
         .or(`and(from_user_id.eq.${user.id},to_user_id.eq.${otherUserId}),and(from_user_id.eq.${otherUserId},to_user_id.eq.${user.id})`)
         .order('created_at', { ascending: true })
@@ -167,7 +170,7 @@ export const useSimpleChat = () => {
           .from('direct_messages')
           .select(`
             *,
-            sender:profiles!direct_messages_from_user_id_fkey(id, full_name)
+            sender:profiles!from_user_id(id, full_name)
           `)
           .or(`and(from_user_id.eq.${user.id},to_user_id.eq.${chatUser.id}),and(from_user_id.eq.${chatUser.id},to_user_id.eq.${user.id})`)
           .order('created_at', { ascending: false })

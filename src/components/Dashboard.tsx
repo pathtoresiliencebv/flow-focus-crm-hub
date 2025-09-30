@@ -106,7 +106,42 @@ export const Dashboard = () => {
         {/* Main Content Area - Mobile optimized */}
         <div className="space-y-4 sm:space-y-6">
           {/* Installateur Projects or Calendar */}
-          {profile?.role === 'Installateur' ? (
+          {/* Add Chat Section for All Users */}
+        {profile && (
+          <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm mx-1 sm:mx-0">
+            <CardHeader className="pb-3 sm:pb-4 px-3 sm:px-6 pt-4 sm:pt-6">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                💬 <span className="text-base sm:text-xl">Chat Systeem</span>
+              </CardTitle>
+              <CardDescription className="text-muted-foreground text-sm">
+                Communicatie tussen admin en installateurs
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-3 sm:p-6">
+              <p className="text-sm text-gray-600 mb-4">
+                {profile.role === 'Installateur' 
+                  ? 'Chat met administratie en management'
+                  : 'Chat met alle installateurs en collega\'s'}
+              </p>
+              <div className="space-y-2">
+                <button 
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  onClick={() => {
+                    // Navigate to chat 
+                    window.location.href = '/?tab=chat';
+                  }}
+                >
+                  💬 Open Chat
+                </button>
+                <div className="text-xs text-orange-600 font-medium">
+                  🚧 BETA - In development
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
+        {profile?.role === 'Installateur' ? (
             <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm mx-1 sm:mx-0">
               <CardHeader className="pb-3 sm:pb-4 px-3 sm:px-6 pt-4 sm:pt-6">
                 <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">

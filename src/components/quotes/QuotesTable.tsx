@@ -40,13 +40,24 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
 }) => {
   const handlePDFDownload = async (quoteId: string) => {
     try {
+      console.log('📄 Downloading PDF for quote:', quoteId);
       const { data, error } = await supabase.functions.invoke('generate-quote-pdf', {
         body: { quoteId }
       });
 
-      if (error) throw error;
+      console.log('📄 PDF Response:', { data, error });
 
-      if (data.pdfUrl) {
+      if (error) {
+        console.error('❌ PDF Generation Error:', error);
+        toast({
+          title: "PDF Fout",
+          description: `Kon PDF niet genereren: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data?.success && data?.pdfUrl) {
         // Create download link
         const link = document.createElement('a');
         link.href = data.pdfUrl;
@@ -54,34 +65,85 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        
+        toast({
+          title: "PDF gedownload",
+          description: "Het PDF bestand is succesvol gedownload.",
+        });
+      } else {
+        console.error('❌ No PDF URL in response:', data);
+        toast({
+          title: "PDF Fout",
+          description: "Geen PDF URL ontvangen van server.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
-      console.error('Error downloading PDF:', error);
+      console.error('❌ Error downloading PDF:', error);
+      toast({
+        title: "PDF Fout",
+        description: "Er is een onverwachte fout opgetreden bij het downloaden.",
+        variant: "destructive",
+      });
     }
   };
 
   const handlePrint = async (quoteId: string) => {
     try {
+      console.log('🖨️ Printing PDF for quote:', quoteId);
       const { data, error } = await supabase.functions.invoke('generate-quote-pdf', {
         body: { quoteId }
       });
 
-      if (error) throw error;
+      console.log('🖨️ Print PDF Response:', { data, error });
 
-      if (data.pdfUrl) {
+      if (error) {
+        console.error('❌ PDF Print Error:', error);
+        toast({
+          title: "Print Fout",
+          description: `Kon PDF niet genereren voor printen: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data?.success && data?.pdfUrl) {
         // Open PDF in new window for printing
         const printWindow = window.open(data.pdfUrl, '_blank');
         if (printWindow) {
           printWindow.onload = () => {
             printWindow.print();
           };
+          toast({
+            title: "PDF wordt afgedrukt",
+            description: "Het PDF bestand is geopend voor afdrukken.",
+          });
+        } else {
+          toast({
+            title: "Print Fout",
+            description: "Kon printvenster niet openen. Controleer of pop-ups zijn toegestaan.",
+            variant: "destructive",
+          });
         }
+      } else {
+        console.error('❌ No PDF URL for printing:', data);
+        toast({
+          title: "Print Fout",
+          description: "Geen PDF URL ontvangen voor printen.",
+          variant: "destructive",
+        });
       }
     } catch (error) {
-      console.error('Error printing PDF:', error);
+      console.error('❌ Error printing PDF:', error);
+      toast({
+        title: "Print Fout",
+        description: "Er is een onverwachte fout opgetreden bij het printen.",
+        variant: "destructive",
+      });
     }
   };
   const navigate = useNavigate();
+  const { toast } = useToast();
   const getStatusBadge = (status: string) => {
     const statusColors = {
       'concept': 'bg-gray-100 text-gray-800',

@@ -76,7 +76,10 @@ export function Quotes() {
   };
 
   const handleViewPublic = (publicToken: string) => {
-    const url = `https://smanscrm.nl/quote/${publicToken}`;
+    // Use current domain instead of hardcoded production URL
+    const baseUrl = window.location.origin;
+    const url = `${baseUrl}/quote/${publicToken}`;
+    console.log('🔗 Opening public quote URL:', url);
     window.open(url, '_blank');
   };
 

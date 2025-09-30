@@ -20,10 +20,21 @@ interface ProjectFormProps {
 }
 
 export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingProject }: ProjectFormProps) => {
-  const { addProject, updateProject, customers } = useCrmStore();
-  const { monteurs } = useUsers();
+  const { addProject, updateProject, customers, isLoading: crmLoading } = useCrmStore();
+  const { monteurs, isLoading: usersLoading, error: usersError } = useUsers();
   const { hasPermission } = useAuth();
   const { toast } = useToast();
+  
+  // Debug logging
+  console.log('🏗️ ProjectForm render:', {
+    customers: customers?.length,
+    monteurs: monteurs?.length,
+    crmLoading,
+    usersLoading,
+    usersError,
+    initialStatus,
+    existingProject: existingProject?.id
+  });
   const [showCustomerAdd, setShowCustomerAdd] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -169,14 +180,20 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
             <div className="flex gap-2">
               <Select value={formData.customerId} onValueChange={handleCustomerChange} required>
                 <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Selecteer klant" />
+                  <SelectValue placeholder={crmLoading ? "Laden..." : "Selecteer klant"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {customers.map((customer) => (
-                    <SelectItem key={customer.id} value={customer.id}>
-                      {customer.name}
-                    </SelectItem>
-                  ))}
+                  {crmLoading ? (
+                    <SelectItem value="" disabled>Klanten laden...</SelectItem>
+                  ) : customers.length === 0 ? (
+                    <SelectItem value="" disabled>Geen klanten beschikbaar</SelectItem>
+                  ) : (
+                    customers.map((customer) => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
               <Button 
@@ -213,15 +230,23 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
             <Label htmlFor="assignedUser">Toegewezen aan</Label>
             <Select value={formData.assignedUserId} onValueChange={handleAssignedUserChange}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecteer installateur" />
+                <SelectValue placeholder={usersLoading ? "Laden..." : "Selecteer installateur"} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Geen toewijzing</SelectItem>
-                {monteurs.map((monteur) => (
-                  <SelectItem key={monteur.id} value={monteur.id}>
-                    {monteur.full_name || monteur.email}
-                  </SelectItem>
-                ))}
+                {usersLoading ? (
+                  <SelectItem value="" disabled>Monteurs laden...</SelectItem>
+                ) : usersError ? (
+                  <SelectItem value="" disabled>Fout bij laden monteurs</SelectItem>
+                ) : (
+                  <>
+                    <SelectItem value="">Geen toewijzing</SelectItem>
+                    {monteurs.map((monteur) => (
+                      <SelectItem key={monteur.id} value={monteur.id}>
+                        {monteur.full_name || monteur.email}
+                      </SelectItem>
+                    ))}
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>

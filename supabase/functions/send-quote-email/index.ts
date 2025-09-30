@@ -95,8 +95,22 @@ const handler = async (req: Request): Promise<Response> => {
       console.log('Public token generated and saved:', publicToken);
     }
     
-    // Generate public link for the quote
-    const publicUrl = `https://smanscrm.nl/quote/${publicToken}`;
+    // Generate public link for the quote - use dynamic domain
+    const requestUrl = req.headers.get('origin') || req.headers.get('referer');
+    let baseUrl = 'https://smanscrm.nl'; // fallback to production
+    
+    if (requestUrl) {
+      try {
+        const url = new URL(requestUrl);
+        baseUrl = url.origin;
+        console.log('Using dynamic base URL:', baseUrl);
+      } catch (e) {
+        console.warn('Could not parse request URL, using fallback:', requestUrl);
+      }
+    }
+    
+    const publicUrl = `${baseUrl}/quote/${publicToken}`;
+    console.log('Generated public URL:', publicUrl);
     
     // Create email HTML content with prominent quote link
     const emailHtml = `

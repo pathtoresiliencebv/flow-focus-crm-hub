@@ -1,12 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ConversationList } from './chat/ConversationList';
 import { ChatArea } from './chat/ChatArea';
 import { ConnectionStatus } from './chat/ConnectionStatus';
+import { ChatTestDialog } from './chat/ChatTestDialog';
 import { useSimpleChat } from '@/hooks/useSimpleChat';
+import { Button } from '@/components/ui/button';
 
 export const SimpleChatPage: React.FC = () => {
   const isMobile = useIsMobile();
+  const [debugDialogOpen, setDebugDialogOpen] = useState(false);
   const {
     conversations,
     selectedConversation,
@@ -86,7 +89,7 @@ export const SimpleChatPage: React.FC = () => {
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Connection Status Bar */}
-      <div className="p-3 border-b border-border">
+      <div className="p-3 border-b border-border flex justify-between items-center">
         <ConnectionStatus
           isConnected={connectionState.isConnected}
           lastConnected={connectionState.lastConnected}
@@ -94,6 +97,14 @@ export const SimpleChatPage: React.FC = () => {
           maxReconnectAttempts={connectionState.maxReconnectAttempts}
           onReconnect={reconnectChat}
         />
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => setDebugDialogOpen(true)}
+          className="text-xs"
+        >
+          🧪 Debug
+        </Button>
       </div>
       
       <div className="flex flex-1">
@@ -126,6 +137,11 @@ export const SimpleChatPage: React.FC = () => {
         )}
       </div>
     </div>
+      
+      <ChatTestDialog 
+        open={debugDialogOpen} 
+        onOpenChange={setDebugDialogOpen}
+      />
     </div>
   );
 };
