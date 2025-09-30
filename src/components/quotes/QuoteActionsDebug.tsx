@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Quote } from '@/types/quote';
 import { QuoteDuplicateChecker } from './QuoteDuplicateChecker';
+import { MigrationPanel } from '../admin/MigrationPanel';
 
 interface QuoteActionsDebugProps {
   quote: Quote;
@@ -301,6 +302,9 @@ export const QuoteActionsDebug: React.FC<QuoteActionsDebugProps> = ({ quote }) =
           )}
         </CardContent>
       </Card>
+
+      {/* Migration Panel - Apply Quote Number Fix */}
+      <MigrationPanel />
 
       {/* Quote Number Duplicate Checker */}
       <QuoteDuplicateChecker />
