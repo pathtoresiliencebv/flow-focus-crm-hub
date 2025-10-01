@@ -208,11 +208,13 @@ export const useFixedChat = () => {
   // Select a conversation
   const selectConversation = useCallback((otherUserId: string | null) => {
     console.log('💬 Selecting conversation with:', otherUserId);
+    
+    // CRITICAL: Clear messages FIRST before fetching new ones
+    setMessages([]);
     setSelectedConversation(otherUserId);
+    
     if (otherUserId) {
       fetchMessages(otherUserId);
-    } else {
-      setMessages([]);
     }
   }, [fetchMessages]);
 
