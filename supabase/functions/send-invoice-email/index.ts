@@ -375,7 +375,9 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        emailId: emailResponse.data?.id
+        emailId: emailResponse.data?.id,
+        recipientEmail: recipientEmail,
+        invoiceNumber: invoice.invoice_number
       }), 
       {
         status: 200,

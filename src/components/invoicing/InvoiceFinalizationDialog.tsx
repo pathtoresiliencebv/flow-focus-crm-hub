@@ -57,10 +57,13 @@ export const InvoiceFinalizationDialog: React.FC<InvoiceFinalizationDialogProps>
       // Send email if requested
       if (emailCustomer && invoice.customer_email) {
         try {
-          const { error: emailError } = await supabase.functions.invoke('send-invoice-email', {
+          console.log('📧 Sending invoice email:', { invoiceId: invoice.id, email: invoice.customer_email });
+          
+          const { data, error: emailError } = await supabase.functions.invoke('send-invoice-email', {
             body: {
               invoiceId: invoice.id,
-              to: invoice.customer_email,
+              recipientEmail: invoice.customer_email,
+              recipientName: invoice.customer_name,
               subject: `Factuur ${invoiceNumber} - SMANS BV`,
               message: `Beste ${invoice.customer_name},
 
@@ -71,20 +74,32 @@ De factuur is te vinden in de bijlage van deze email.
 Voor vragen kunt u altijd contact met ons opnemen.
 
 Met vriendelijke groet,
-SMANS BV`
+SMANS BV`,
+              includePaymentLink: true
             }
           });
 
           if (emailError) {
-            console.error('Email error:', emailError);
+            console.error('❌ Email error:', emailError);
             toast({
               title: "Factuur gefinaliseerd",
-              description: "Factuur is gefinaliseerd, maar email kon niet worden verzonden.",
+              description: `Factuur is gefinaliseerd, maar email kon niet worden verzonden: ${emailError.message}`,
               variant: "destructive",
             });
+          } else if (data?.success) {
+            console.log('✅ Invoice email sent successfully');
+            toast({
+              title: "Email verzonden!",
+              description: `Factuur ${invoiceNumber} is verzonden naar ${invoice.customer_email}`,
+            });
           }
-        } catch (emailError) {
-          console.error('Email error:', emailError);
+        } catch (emailError: any) {
+          console.error('❌ Email catch error:', emailError);
+          toast({
+            title: "Email fout",
+            description: emailError.message || 'Onbekende fout bij email verzending',
+            variant: "destructive",
+          });
         }
       }
 
