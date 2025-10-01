@@ -66,17 +66,18 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
 
       if (error) throw error;
 
-      if (data.success) {
-        // Create a blob from the PDF data
-        const pdfBlob = new Blob([Buffer.from(data.pdfData, 'base64')], { type: 'application/pdf' });
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-        
+      if (data?.success && data?.htmlContent) {
         // Open PDF in new window for printing
-        const printWindow = window.open(pdfUrl);
+        const printWindow = window.open('', '_blank');
         if (printWindow) {
-          printWindow.onload = () => {
+          printWindow.document.write(data.htmlContent);
+          printWindow.document.close();
+          printWindow.focus();
+          
+          // Wait for content to load, then trigger print
+          setTimeout(() => {
             printWindow.print();
-          };
+          }, 500);
         }
         
         toast({

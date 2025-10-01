@@ -113,13 +113,19 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
         return;
       }
 
-      if (data?.success && data?.pdfUrl) {
+      if (data?.success && data?.htmlContent) {
         // Open PDF in new window for printing
-        const printWindow = window.open(data.pdfUrl, '_blank');
+        const printWindow = window.open('', '_blank');
         if (printWindow) {
-          printWindow.onload = () => {
+          printWindow.document.write(data.htmlContent);
+          printWindow.document.close();
+          printWindow.focus();
+          
+          // Wait for content to load, then trigger print
+          setTimeout(() => {
             printWindow.print();
-          };
+          }, 500);
+          
           toast({
             title: "PDF wordt afgedrukt",
             description: "Het PDF bestand is geopend voor afdrukken.",
@@ -132,10 +138,10 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
           });
         }
       } else {
-        console.error('❌ No PDF URL for printing:', data);
+        console.error('❌ No HTML content for printing:', data);
         toast({
           title: "Print Fout",
-          description: "Geen PDF URL ontvangen voor printen.",
+          description: "Geen PDF content ontvangen voor printen.",
           variant: "destructive",
         });
       }
