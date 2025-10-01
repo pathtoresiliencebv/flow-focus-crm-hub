@@ -212,12 +212,23 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
             <TableCell>€{(quote.total_amount + quote.total_vat_amount).toFixed(2)}</TableCell>
             <TableCell>{getStatusBadge(quote.status)}</TableCell>
             <TableCell className="text-right">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <MoreHorizontal className="h-4 w-4" />
+              <div className="flex items-center justify-end gap-2">
+                {onSendEmail && quote.status === 'concept' && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onSendEmail(quote)}
+                    title="Offerte versturen"
+                  >
+                    <Mail className="h-4 w-4 text-blue-600" />
                   </Button>
-                </DropdownMenuTrigger>
+                )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => onPreview(quote)}>
                     <Eye className="mr-2 h-4 w-4" />
@@ -291,6 +302,7 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                    </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              </div>
             </TableCell>
           </TableRow>
         ))}

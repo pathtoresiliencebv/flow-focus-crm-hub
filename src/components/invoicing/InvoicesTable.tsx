@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Eye, Send, Download, Trash2, MoreHorizontal, FileText, Printer, Pencil, Copy, Archive, CheckCircle, Bell } from "lucide-react";
+import { Eye, Send, Download, Trash2, MoreHorizontal, FileText, Printer, Pencil, Copy, Archive, CheckCircle, Bell, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { nl } from "date-fns/locale";
@@ -121,12 +121,23 @@ export const InvoicesTable = ({
               </TableCell>
               <TableCell>€{invoice.total_amount.toFixed(2)}</TableCell>
               <TableCell className="text-right">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
+                <div className="flex items-center justify-end gap-2">
+                  {onSendInvoice && invoice.status === 'concept' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onSendInvoice(invoice)}
+                      title="Factuur versturen"
+                    >
+                      <Mail className="h-4 w-4 text-blue-600" />
                     </Button>
-                  </DropdownMenuTrigger>
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => navigate(`/invoices/${invoice.id}`)}>
                       <Eye className="mr-2 h-4 w-4" />
@@ -278,6 +289,7 @@ export const InvoicesTable = ({
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>
+                </div>
               </TableCell>
             </TableRow>
           ))}

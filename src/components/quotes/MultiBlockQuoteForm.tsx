@@ -1235,23 +1235,13 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
                   Opslaan als Template
                 </Button>
                 <Button 
-                  type="button" 
-                  variant="secondary"
+                  type="button"
                   onClick={handleSaveDraft}
                   disabled={saving}
-                  className="min-w-[140px]"
+                  className="bg-blue-600 hover:bg-blue-700 text-white min-w-[140px]"
                 >
                   <Save className="h-4 w-4 mr-2" />
-                  {saving ? "Opslaan..." : "Opslaan als Concept"}
-                </Button>
-                <Button 
-                  type="button"
-                  onClick={handleSaveAndSend}
-                  disabled={saving}
-                  className="bg-blue-600 hover:bg-blue-700 text-white min-w-[160px]"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {saving ? "Opslaan en versturen..." : "Opslaan en Versturen"}
+                  {saving ? "Opslaan..." : "Opslaan"}
                 </Button>
               </div>
             </div>
