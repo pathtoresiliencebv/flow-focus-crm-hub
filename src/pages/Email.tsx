@@ -15,12 +15,49 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useEmailAccounts } from '@/hooks/useEmailAccounts';
+import { useEmailThreads } from '@/hooks/useEmailThreads';
+import { ConnectEmailAccount } from '@/components/email/ConnectEmailAccount';
 
 export default function Email() {
   const isMobile = useIsMobile();
+  const { accounts, loading: accountsLoading, syncAccount } = useEmailAccounts();
   const [selectedFolder, setSelectedFolder] = useState('inbox');
   const [selectedThread, setSelectedThread] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [syncing, setSyncing] = useState(false);
+
+  const primaryAccount = accounts.find(acc => acc.is_primary) || accounts[0];
+  const { threads, loading: threadsLoading } = useEmailThreads(primaryAccount?.id || null, selectedFolder);
+
+  const handleSync = async () => {
+    if (!primaryAccount) return;
+    
+    try {
+      setSyncing(true);
+      await syncAccount(primaryAccount.id);
+    } catch (error) {
+      console.error('Sync failed:', error);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  // Show connection screen if no accounts
+  if (!accountsLoading && accounts.length === 0) {
+    return <ConnectEmailAccount />;
+  }
+
+  if (accountsLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-muted-foreground">Loading email accounts...</p>
+        </div>
+      </div>
+    );
+  }
 
   const folders = [
     { id: 'inbox', label: 'Inbox', icon: Inbox, count: 12 },
@@ -131,8 +168,13 @@ export default function Email() {
                 className="pl-10"
               />
             </div>
-            <Button variant="outline" size="icon">
-              <RefreshCw className="h-4 w-4" />
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={handleSync}
+              disabled={syncing}
+            >
+              <RefreshCw className={cn("h-4 w-4", syncing && "animate-spin")} />
             </Button>
           </div>
         </div>
@@ -140,37 +182,62 @@ export default function Email() {
         {/* Thread List */}
         <div className="flex-1 overflow-hidden">
           <div className="h-full overflow-y-auto">
-            {/* Placeholder threads */}
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div
-                key={i}
-                onClick={() => setSelectedThread(`thread-${i}`)}
-                className={cn(
-                  "p-4 border-b border-border cursor-pointer hover:bg-muted/50 transition-colors",
-                  selectedThread === `thread-${i}` && "bg-muted"
-                )}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-sm truncate">
-                        Sender Name {i}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        10:30 AM
-                      </span>
-                    </div>
-                    <div className="text-sm font-medium truncate mb-1">
-                      Email Subject Line {i}
-                    </div>
-                    <div className="text-sm text-muted-foreground truncate">
-                      This is a preview of the email content that will appear here...
-                    </div>
-                  </div>
-                  <Star className="h-4 w-4 text-muted-foreground hover:text-yellow-500 cursor-pointer" />
-                </div>
+            {threadsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
               </div>
-            ))}
+            ) : threads.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Mail className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="font-semibold mb-2">No emails yet</h3>
+                <p className="text-sm text-muted-foreground">
+                  Your {selectedFolder} is empty
+                </p>
+              </div>
+            ) : (
+              threads.map((thread) => (
+                <div
+                  key={thread.id}
+                  onClick={() => setSelectedThread(thread.id)}
+                  className={cn(
+                    "p-4 border-b border-border cursor-pointer hover:bg-muted/50 transition-colors",
+                    selectedThread === thread.id && "bg-muted",
+                    !thread.is_read && "bg-blue-50/30"
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={cn(
+                          "text-sm truncate",
+                          !thread.is_read ? "font-bold" : "font-semibold"
+                        )}>
+                          {thread.participants[0]?.name || thread.participants[0]?.email || 'Unknown'}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {thread.last_message_at ? new Date(thread.last_message_at).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }) : ''}
+                        </span>
+                      </div>
+                      <div className={cn(
+                        "text-sm truncate mb-1",
+                        !thread.is_read ? "font-semibold" : "font-medium"
+                      )}>
+                        {thread.subject || '(No Subject)'}
+                      </div>
+                      <div className="text-sm text-muted-foreground truncate">
+                        {thread.snippet || ''}
+                      </div>
+                    </div>
+                    <Star 
+                      className={cn(
+                        "h-4 w-4 cursor-pointer flex-shrink-0",
+                        thread.is_starred ? "text-yellow-500 fill-yellow-500" : "text-muted-foreground hover:text-yellow-500"
+                      )} 
+                    />
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
