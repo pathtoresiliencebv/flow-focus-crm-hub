@@ -357,11 +357,11 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Update invoice status to 'verzonden'
+    // Update invoice status to 'sent'
     const { error: updateError } = await supabase
       .from('invoices')
       .update({ 
-        status: 'verzonden',
+        status: 'sent',
         updated_at: new Date().toISOString()
       })
       .eq('id', invoiceId);
