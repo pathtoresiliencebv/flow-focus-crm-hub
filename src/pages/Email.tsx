@@ -180,8 +180,9 @@ export default function Email() {
               variant="outline" 
               size="icon"
               onClick={handleSync}
-              disabled={syncing}
+              disabled={syncing || !primaryAccount}
               className="border-red-200 hover:bg-red-50 hover:text-red-700"
+              title="Sync emails"
             >
               <RefreshCw className={cn("h-4 w-4", syncing && "animate-spin")} />
             </Button>

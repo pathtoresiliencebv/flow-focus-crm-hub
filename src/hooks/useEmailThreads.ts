@@ -44,19 +44,20 @@ export const useEmailThreads = (accountId: string | null, folder: string = 'inbo
         .order('last_message_at', { ascending: false })
         .limit(50);
 
-      // Filter by folder
-      if (folder !== 'all') {
-        query = query.eq('folder', folder);
-      }
-
-      // Special filters
+      // Special filters (don't filter by folder column for now)
       if (folder === 'starred') {
         query = query.eq('is_starred', true);
-      } else if (folder === 'unread') {
-        query = query.eq('is_read', false);
+      } else if (folder === 'archive') {
+        query = query.eq('is_archived', true);
+      } else if (folder === 'trash') {
+        // Filter trash in frontend
+      } else if (folder === 'inbox') {
+        query = query.eq('is_archived', false);
       }
 
       const { data, error: fetchError } = await query;
+
+      console.log('Email threads query result:', { data, error: fetchError, accountId, folder });
 
       if (fetchError) throw fetchError;
 

@@ -52,6 +52,13 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
       // For SMTP accounts, use smtp-send function
       const functionName = account.provider === 'smtp' ? 'smtp-send' : 'send-email';
 
+      console.log('Sending email via:', functionName, {
+        accountId: account.id,
+        provider: account.provider,
+        to,
+        subject
+      });
+
       const { data, error } = await supabase.functions.invoke(functionName, {
         body: {
           accountId: account.id,
@@ -62,6 +69,8 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
           body: body.replace(/\n/g, '<br>'), // Simple HTML conversion
         }
       });
+
+      console.log('Send result:', { data, error });
 
       if (error) throw error;
 
