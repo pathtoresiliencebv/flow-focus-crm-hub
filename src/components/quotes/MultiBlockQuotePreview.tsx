@@ -372,7 +372,7 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
                     )}
                   </div>
                    {(quote.status === 'approved' || quote.status === 'goedgekeurd') && (
-                     <div className="mt-3 p-2 bg-green-100 text-green-800 text-xs rounded font-medium">
+                     <div className="mt-3 p-2 bg-red-100 text-red-800 text-xs rounded font-medium">
                        ✅ Goedgekeurd door klant
                      </div>
                    )}
