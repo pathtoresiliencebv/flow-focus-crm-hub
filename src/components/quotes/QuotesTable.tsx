@@ -64,12 +64,20 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
         if (printWindow) {
           printWindow.document.write(data.htmlContent);
           printWindow.document.close();
-          printWindow.focus();
           
-          // Wait for content to load, then trigger print
+          // Wait for images and styles to load before printing
+          printWindow.addEventListener('load', () => {
+            printWindow.focus();
+            setTimeout(() => {
+              printWindow.print();
+            }, 500);
+          });
+          
+          // Fallback if load event doesn't fire
           setTimeout(() => {
+            printWindow.focus();
             printWindow.print();
-          }, 1000);
+          }, 2000);
         }
         
         toast({
@@ -180,6 +188,20 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
     );
   };
 
+  // Helper function to get invoice term fraction display
+  const getInvoiceTermDisplay = (quote: any) => {
+    if (!quote.invoices || quote.invoices.length === 0) return null;
+    
+    const totalTerms = quote.invoices[0]?.total_payment_terms || 1;
+    const currentTerm = quote.invoices.length;
+    
+    if (totalTerms === 1) return '1/1';
+    if (totalTerms === 2) return '½';
+    if (totalTerms === 3) return '⅓';
+    if (totalTerms === 4) return '¼';
+    return `${currentTerm}/${totalTerms}`;
+  };
+
   return (
     <Table>
       <TableHeader>
@@ -187,6 +209,7 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
           <TableHead>Offertenummer</TableHead>
           <TableHead>Klant</TableHead>
           <TableHead>Project</TableHead>
+          <TableHead>Gefactureerd</TableHead>
           <TableHead>Datum</TableHead>
           <TableHead>Geldig tot</TableHead>
           <TableHead>Bedrag</TableHead>
@@ -207,6 +230,20 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
             </TableCell>
             <TableCell>{quote.customer_name}</TableCell>
             <TableCell>{quote.project_title || '-'}</TableCell>
+            <TableCell>
+              {quote.invoices && quote.invoices.length > 0 ? (
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-lg text-green-600">
+                    {getInvoiceTermDisplay(quote)}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    ({quote.invoices.length}/{quote.invoices[0]?.total_payment_terms || 1})
+                  </span>
+                </div>
+              ) : (
+                <span className="text-muted-foreground text-sm">-</span>
+              )}
+            </TableCell>
             <TableCell>{new Date(quote.quote_date).toLocaleDateString('nl-NL')}</TableCell>
             <TableCell>{new Date(quote.valid_until).toLocaleDateString('nl-NL')}</TableCell>
             <TableCell>€{(quote.total_amount + quote.total_vat_amount).toFixed(2)}</TableCell>

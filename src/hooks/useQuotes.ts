@@ -15,7 +15,10 @@ export const useQuotes = () => {
       
       let query = supabase
         .from('quotes')
-        .select('*');
+        .select(`
+          *,
+          invoices:invoices(id, invoice_number, payment_term_sequence, total_payment_terms, status, total_amount)
+        `);
       
       if (!includeArchived) {
         query = query.eq('is_archived', false);

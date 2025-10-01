@@ -91,17 +91,26 @@ export const MultiBlockInvoicePreview: React.FC<MultiBlockInvoicePreviewProps> =
 
       if (error) throw error;
 
-      if (data.success) {
-        // Create a blob from the PDF data
-        const pdfBlob = new Blob([Buffer.from(data.pdfData, 'base64')], { type: 'application/pdf' });
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-        
+      if (data?.success && data?.htmlContent) {
         // Open PDF in new window for printing
-        const printWindow = window.open(pdfUrl);
+        const printWindow = window.open('', '_blank');
         if (printWindow) {
-          printWindow.onload = () => {
+          printWindow.document.write(data.htmlContent);
+          printWindow.document.close();
+          
+          // Wait for images and styles to load before printing
+          printWindow.addEventListener('load', () => {
+            printWindow.focus();
+            setTimeout(() => {
+              printWindow.print();
+            }, 500);
+          });
+          
+          // Fallback if load event doesn't fire
+          setTimeout(() => {
+            printWindow.focus();
             printWindow.print();
-          };
+          }, 2000);
         }
         
         toast({

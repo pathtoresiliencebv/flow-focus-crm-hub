@@ -72,12 +72,20 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
         if (printWindow) {
           printWindow.document.write(data.htmlContent);
           printWindow.document.close();
-          printWindow.focus();
           
-          // Wait for content to load, then trigger print
+          // Wait for images and styles to load before printing
+          printWindow.addEventListener('load', () => {
+            printWindow.focus();
+            setTimeout(() => {
+              printWindow.print();
+            }, 500);
+          });
+          
+          // Fallback if load event doesn't fire
           setTimeout(() => {
+            printWindow.focus();
             printWindow.print();
-          }, 500);
+          }, 2000);
         }
         
         toast({

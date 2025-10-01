@@ -86,6 +86,7 @@ export const InvoicesTable = ({
             <TableHead>Factuurnummer</TableHead>
             <TableHead>Klant</TableHead>
             <TableHead>Project</TableHead>
+            <TableHead>Termijn</TableHead>
             <TableHead>Datum</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Totaal</TableHead>
@@ -97,9 +98,34 @@ export const InvoicesTable = ({
             <TableRow key={invoice.id}>
               <TableCell className="font-medium">
                 {invoice.invoice_number}
+                {invoice.payment_term_sequence > 1 && (
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    ({invoice.payment_term_sequence}/{invoice.total_payment_terms})
+                  </span>
+                )}
               </TableCell>
               <TableCell>{invoice.customer_name}</TableCell>
               <TableCell>{invoice.project_title || '-'}</TableCell>
+              <TableCell>
+                {invoice.total_payment_terms > 1 ? (
+                  <div className="flex items-center gap-1">
+                    <span className="font-mono text-lg">
+                      {invoice.payment_term_sequence === 1 && invoice.total_payment_terms === 2 && '½'}
+                      {invoice.payment_term_sequence === 2 && invoice.total_payment_terms === 2 && '½'}
+                      {invoice.payment_term_sequence === 1 && invoice.total_payment_terms === 3 && '⅓'}
+                      {invoice.payment_term_sequence === 2 && invoice.total_payment_terms === 3 && '⅓'}
+                      {invoice.payment_term_sequence === 3 && invoice.total_payment_terms === 3 && '⅓'}
+                      {invoice.payment_term_sequence === 1 && invoice.total_payment_terms === 4 && '¼'}
+                      {invoice.payment_term_sequence === 2 && invoice.total_payment_terms === 4 && '¼'}
+                      {invoice.payment_term_sequence === 3 && invoice.total_payment_terms === 4 && '¼'}
+                      {invoice.payment_term_sequence === 4 && invoice.total_payment_terms === 4 && '¼'}
+                      {!(invoice.total_payment_terms >= 2 && invoice.total_payment_terms <= 4) && `${invoice.payment_term_sequence}/${invoice.total_payment_terms}`}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground">Volledig</span>
+                )}
+              </TableCell>
               <TableCell>
                 {new Date(invoice.invoice_date).toLocaleDateString('nl-NL')}
               </TableCell>
@@ -201,32 +227,40 @@ export const InvoicesTable = ({
                            return;
                          }
 
-                         if (data?.success && data?.htmlContent) {
-                           // Open PDF in new window for printing
-                           const printWindow = window.open('', '_blank');
-                           if (printWindow) {
-                             printWindow.document.write(data.htmlContent);
-                             printWindow.document.close();
-                             printWindow.focus();
-                             
-                             // Wait for content to load, then trigger print
-                             setTimeout(() => {
-                               printWindow.print();
-                             }, 1000);
-                           }
-                           
-                           toast({
-                             title: "PDF geopend",
-                             description: "Het PDF bestand is geopend voor afdrukken.",
-                           });
-                         } else {
-                           console.error('❌ No HTML content in response:', data);
-                           toast({
-                             title: "PDF Fout",
-                             description: "Geen PDF content ontvangen van server.",
-                             variant: "destructive",
-                           });
-                         }
+                        if (data?.success && data?.htmlContent) {
+                          // Open PDF in new window for printing
+                          const printWindow = window.open('', '_blank');
+                          if (printWindow) {
+                            printWindow.document.write(data.htmlContent);
+                            printWindow.document.close();
+                            
+                            // Wait for images and styles to load before printing
+                            printWindow.addEventListener('load', () => {
+                              printWindow.focus();
+                              setTimeout(() => {
+                                printWindow.print();
+                              }, 500);
+                            });
+                            
+                            // Fallback if load event doesn't fire
+                            setTimeout(() => {
+                              printWindow.focus();
+                              printWindow.print();
+                            }, 2000);
+                          }
+                          
+                          toast({
+                            title: "PDF geopend",
+                            description: "Het PDF bestand is geopend voor afdrukken.",
+                          });
+                        } else {
+                          console.error('❌ No HTML content in response:', data);
+                          toast({
+                            title: "PDF Fout",
+                            description: "Geen PDF content ontvangen van server.",
+                            variant: "destructive",
+                          });
+                        }
                        } catch (error) {
                          console.error('❌ Error downloading PDF:', error);
                          toast({

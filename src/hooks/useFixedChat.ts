@@ -223,42 +223,67 @@ export const useFixedChat = () => {
     console.log('🔌 Setting up realtime subscription for user:', user.id);
 
     const channel = supabase
-      .channel('direct_messages')
+      .channel('direct_messages_channel')
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'direct_messages',
-          filter: `or(and(from_user_id.eq.${user.id}),and(to_user_id.eq.${user.id}))`
+          table: 'direct_messages'
         },
-        (payload) => {
+        async (payload) => {
           console.log('📨 New message received:', payload);
           
-          const newMessage = payload.new as DirectMessage;
+          const newMessage = payload.new as any;
+          
+          // Check if message involves current user
+          const isRelevant = newMessage.from_user_id === user.id || newMessage.to_user_id === user.id;
+          
+          if (!isRelevant) {
+            console.log('⏭️ Message not relevant for current user, skipping');
+            return;
+          }
+
+          // Fetch sender info
+          const { data: senderData } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .eq('id', newMessage.from_user_id)
+            .single();
+
+          const enrichedMessage: DirectMessage = {
+            ...newMessage,
+            sender: senderData || { id: newMessage.from_user_id, full_name: 'Unknown' }
+          };
           
           // Only add message if it's for the currently selected conversation
-          if (selectedConversationRef.current && 
-              (newMessage.from_user_id === selectedConversationRef.current || 
-               newMessage.to_user_id === selectedConversationRef.current)) {
+          const otherUserId = newMessage.from_user_id === user.id ? newMessage.to_user_id : newMessage.from_user_id;
+          
+          if (selectedConversationRef.current === otherUserId) {
+            console.log('✅ Adding message to current conversation');
             
             setMessages(prev => {
               // Check if message already exists
-              const exists = prev.some(msg => msg.id === newMessage.id);
-              if (exists) return prev;
+              const exists = prev.some(msg => msg.id === enrichedMessage.id);
+              if (exists) {
+                console.log('⚠️ Message already exists, skipping');
+                return prev;
+              }
               
-              return [...prev, newMessage];
+              return [...prev, enrichedMessage];
             });
+          } else {
+            console.log('⏭️ Message for different conversation, updating sidebar only');
           }
 
           // Update conversations list
           setConversations(prev => 
             prev.map(conv => {
-              if (conv.id === newMessage.from_user_id || conv.id === newMessage.to_user_id) {
+              if (conv.id === otherUserId) {
                 return {
                   ...conv,
-                  last_message: newMessage,
-                  unread_count: conv.id === newMessage.from_user_id ? conv.unread_count + 1 : conv.unread_count
+                  last_message: enrichedMessage,
+                  unread_count: newMessage.from_user_id !== user.id ? conv.unread_count + 1 : conv.unread_count
                 };
               }
               return conv;

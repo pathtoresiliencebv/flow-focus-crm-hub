@@ -57,7 +57,19 @@ export const SimplePlanningForm = ({ selectedDate, onClose, onSubmit }: SimplePl
       return;
     }
 
-    onSubmit(formData);
+    // Map form data to expected format
+    const planningData = {
+      title: formData.title,
+      date: formData.date,
+      startTime: formData.isFullDay ? '00:00' : formData.startTime,
+      endTime: formData.isFullDay ? '23:59' : formData.endTime,
+      location: formData.location,
+      description: formData.description,
+      assignedUserId: formData.employee, // Map employee to assignedUserId
+      projectId: formData.project || null
+    };
+
+    onSubmit(planningData);
     toast({
       title: "Planning aangemaakt",
       description: `${formData.title} is succesvol gepland voor ${format(new Date(formData.date), 'dd MMMM yyyy', { locale: nl })}.`
