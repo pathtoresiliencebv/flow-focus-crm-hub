@@ -52,7 +52,7 @@ export const useSimpleChat = () => {
   });
   
   const subscriptionRef = useRef<any>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimeoutRef = useRef<number | null>(null);
   const selectedConversationRef = useRef<string | null>(null);
 
   // Fetch available users based on role

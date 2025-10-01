@@ -70,7 +70,7 @@ export const QuoteDuplicateChecker: React.FC = () => {
       console.log('🔧 Fixing duplicate quote numbers...');
 
       const { data: fixResults, error: fixError } = await supabase
-        .rpc('fix_duplicate_quote_numbers');
+        .rpc('fix_duplicate_quote_numbers' as any);
 
       if (fixError) {
         throw fixError;
@@ -78,14 +78,14 @@ export const QuoteDuplicateChecker: React.FC = () => {
 
       console.log('Fixed duplicates:', fixResults);
 
-      if (fixResults?.length === 0) {
+      if (!Array.isArray(fixResults) || fixResults.length === 0) {
         toast({
           title: "✅ Geen duplicaten om te fixen",
           description: "Alle quote nummers zijn al uniek",
         });
       } else {
         toast({
-          title: `✅ ${fixResults?.length} duplicaten opgelost`,
+          title: `✅ ${fixResults.length} duplicaten opgelost`,
           description: "Nieuwe unieke nummers zijn toegewezen",
         });
       }

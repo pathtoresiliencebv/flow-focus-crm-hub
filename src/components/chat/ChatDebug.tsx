@@ -21,9 +21,9 @@ export const ChatDebug: React.FC = () => {
         email: user.email
       },
       profile: {
-        id: profile?.id,
         full_name: profile?.full_name,
-        role: profile?.role
+        role: profile?.role,
+        status: profile?.status
       },
       chat: {
         loading: chat.loading,

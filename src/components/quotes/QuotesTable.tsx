@@ -14,6 +14,7 @@ import {
 import { Eye, ExternalLink, Trash2, CheckCircle, Mail, Copy, Pencil, FileSignature, RotateCcw, MoreHorizontal, Download, Printer } from "lucide-react";
 import { Quote } from '@/types/quote';
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface QuotesTableProps {
   quotes: Quote[];

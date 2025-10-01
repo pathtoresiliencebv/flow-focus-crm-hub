@@ -33,10 +33,10 @@ export const ProjectAssignmentDebug = () => {
 
       // 3. Get projects via RPC
       const { data: rpcProjects, error: rpcError } = await supabase
-        .rpc('get_user_projects');
+        .rpc('get_user_projects' as any);
       results.rpcProjects = { 
-        count: rpcProjects?.length || 0, 
-        data: rpcProjects?.slice(0, 3),
+        count: Array.isArray(rpcProjects) ? rpcProjects.length : 0, 
+        data: Array.isArray(rpcProjects) ? rpcProjects.slice(0, 3) : [],
         error: rpcError?.message 
       };
 
@@ -54,7 +54,7 @@ export const ProjectAssignmentDebug = () => {
       // 5. Check specific project access if any exist
       if (directProjects && directProjects.length > 0) {
         const { data: debugData, error: debugError } = await supabase
-          .rpc('debug_project_access', { p_project_id: directProjects[0].id });
+          .rpc('debug_project_access' as any, { p_project_id: directProjects[0].id });
         results.projectAccess = { data: debugData, error: debugError?.message };
       }
 
