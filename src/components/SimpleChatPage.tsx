@@ -20,7 +20,8 @@ export const SimpleChatPage: React.FC = () => {
     userLanguage,
     setUserLanguage,
     selectConversation,
-    sendMessage
+    sendMessage,
+    sendMediaMessage
   } = useFixedChat();
 
   const handleLanguageChange = async (lang: string) => {
@@ -57,6 +58,7 @@ export const SimpleChatPage: React.FC = () => {
             conversation={conversations.find(c => c.id === selectedConversation)}
             messages={messages}
             onSendMessage={(content) => sendMessage(content, selectedConversation)}
+            onSendMedia={(file, type, duration) => sendMediaMessage(file, type, selectedConversation, duration)}
             onBack={() => selectConversation(null)}
             isMobile={true}
             sending={sending}
@@ -107,6 +109,7 @@ export const SimpleChatPage: React.FC = () => {
               conversation={conversations.find(c => c.id === selectedConversation)}
               messages={messages}
               onSendMessage={(content) => sendMessage(content, selectedConversation)}
+              onSendMedia={(file, type, duration) => sendMediaMessage(file, type, selectedConversation, duration)}
               isMobile={false}
               sending={sending}
               userLanguage={userLanguage}

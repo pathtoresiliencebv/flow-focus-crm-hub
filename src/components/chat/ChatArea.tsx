@@ -195,7 +195,26 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
       {/* Input */}
       <div className="p-4 border-t border-border bg-background">
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-end">
+          {/* Media buttons */}
+          <div className="flex gap-1">
+            <FileUploadButton
+              type="photo"
+              onFileSelect={handleFileSelect}
+              disabled={sending}
+            />
+            <FileUploadButton
+              type="file"
+              onFileSelect={handleFileSelect}
+              disabled={sending}
+            />
+            <VoiceRecorder
+              onVoiceRecorded={handleVoiceRecorded}
+              disabled={sending}
+            />
+          </div>
+
+          {/* Text input */}
           <Input
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
