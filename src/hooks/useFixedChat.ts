@@ -9,6 +9,12 @@ export interface DirectMessage {
   content: string;
   original_language: string;
   translated_content?: Record<string, string>;
+  media_type?: 'photo' | 'file' | 'voice';
+  media_url?: string;
+  media_filename?: string;
+  media_size?: number;
+  media_mime_type?: string;
+  voice_duration?: number;
   created_at: string;
   sender?: {
     id: string;
@@ -198,7 +204,122 @@ export const useFixedChat = () => {
     }
   }, [user]);
 
-  // Send a new message
+  // Upload media file to storage
+  const uploadMedia = useCallback(async (file: File, type: 'photo' | 'file' | 'voice'): Promise<string | null> => {
+    if (!user) return null;
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const timestamp = Date.now();
+      const folder = type === 'photo' ? 'photos' : type === 'voice' ? 'voice' : 'files';
+      const fileName = `${timestamp}${fileExt ? `.${fileExt}` : ''}`;
+      const filePath = `${user.id}/${folder}/${fileName}`;
+
+      console.log('📤 Uploading media:', { type, filePath, size: file.size });
+
+      const { data, error } = await supabase.storage
+        .from('chat-media')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        console.error('❌ Upload error:', error);
+        return null;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('chat-media')
+        .getPublicUrl(filePath);
+
+      console.log('✅ Media uploaded:', urlData.publicUrl);
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error('❌ Upload failed:', error);
+      return null;
+    }
+  }, [user]);
+
+  // Send media message (photo, file, or voice)
+  const sendMediaMessage = useCallback(async (
+    file: File, 
+    mediaType: 'photo' | 'file' | 'voice',
+    toUserId: string,
+    voiceDuration?: number
+  ) => {
+    if (!user || !toUserId || sending) return;
+
+    setSending(true);
+    console.log('📤 Sending media message:', { type: mediaType, to: toUserId });
+
+    try {
+      // Upload file to storage
+      const mediaUrl = await uploadMedia(file, mediaType);
+      
+      if (!mediaUrl) {
+        throw new Error('Media upload failed');
+      }
+
+      const messageData = {
+        from_user_id: user.id,
+        to_user_id: toUserId,
+        content: mediaType === 'photo' ? '📷 Foto' : mediaType === 'voice' ? '🎤 Spraakbericht' : `📎 ${file.name}`,
+        is_read: false,
+        original_language: userLanguage,
+        media_type: mediaType,
+        media_url: mediaUrl,
+        media_filename: file.name,
+        media_size: file.size,
+        media_mime_type: file.type,
+        voice_duration: voiceDuration || null
+      };
+
+      console.log('📝 Inserting media message:', messageData);
+
+      const { data, error } = await supabase
+        .from('direct_messages')
+        .insert(messageData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Error sending media message:', error);
+        throw error;
+      }
+
+      console.log('✅ Media message sent successfully');
+
+      // Add message to local state
+      const newMessage: DirectMessage = {
+        ...data,
+        sender: {
+          id: user.id,
+          full_name: profile?.full_name || 'You'
+        }
+      };
+
+      setMessages(prev => [...prev, newMessage]);
+
+      // Update conversation
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === toUserId
+            ? { ...conv, last_message: newMessage, unread_count: conv.unread_count }
+            : conv
+        )
+      );
+
+    } catch (error) {
+      console.error('❌ Error sending media message:', error);
+      throw error;
+    } finally {
+      setSending(false);
+    }
+  }, [user, profile, sending, userLanguage, uploadMedia]);
+
+  // Send a new text message
   const sendMessage = useCallback(async (content: string, toUserId: string) => {
     if (!user || !content.trim() || !toUserId || sending) return;
 
@@ -451,6 +572,7 @@ export const useFixedChat = () => {
     setUserLanguage,
     selectConversation,
     sendMessage,
+    sendMediaMessage,
     fetchMessages,
     fetchAvailableUsers
   };
