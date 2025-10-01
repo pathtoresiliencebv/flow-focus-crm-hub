@@ -91,7 +91,7 @@ export const useFixedChat = () => {
           .select('*', { count: 'exact', head: true })
           .eq('from_user_id', otherUser.id)
           .eq('to_user_id', user.id)
-          .eq('read', false);
+          .eq('is_read', false);
 
         return {
           id: otherUser.id,
@@ -161,7 +161,7 @@ export const useFixedChat = () => {
           from_user_id: user.id,
           to_user_id: toUserId,
           content: content.trim(),
-          read: false
+          is_read: false
         })
         .select()
         .single();
