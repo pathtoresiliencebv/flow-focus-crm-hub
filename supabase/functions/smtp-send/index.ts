@@ -102,7 +102,7 @@ serve(async (req) => {
       }
 
       // MAIL FROM
-      const mailFromResponse = await sendCommand(`MAIL FROM:<${account.email}>`);
+      const mailFromResponse = await sendCommand(`MAIL FROM:<${account.email_address}>`);
       if (!mailFromResponse.includes('250')) {
         throw new Error('MAIL FROM failed');
       }
@@ -126,7 +126,7 @@ serve(async (req) => {
       const messageId = `<${crypto.randomUUID()}@${account.smtp_host}>`;
       const date = new Date().toUTCString();
       
-      let emailContent = `From: ${account.display_name || account.email} <${account.email}>\r\n`;
+      let emailContent = `From: ${account.display_name || account.email_address} <${account.email_address}>\r\n`;
       emailContent += `To: ${to}\r\n`;
       if (cc && cc.length > 0) {
         emailContent += `Cc: ${cc.join(', ')}\r\n`;
@@ -160,7 +160,7 @@ serve(async (req) => {
           subject: subject,
           last_message_at: new Date().toISOString(),
           participants: [
-            { email: account.email, name: account.display_name || account.email },
+            { email: account.email_address, name: account.display_name || account.email_address },
             { email: to, name: to.split('@')[0] }
           ],
         }, {
@@ -178,8 +178,8 @@ serve(async (req) => {
             thread_id: thread.id,
             account_id: accountId,
             external_id: messageId,
-            from_email: account.email,
-            from_name: account.display_name || account.email,
+            from_email: account.email_address,
+            from_name: account.display_name || account.email_address,
             to_email: to,
             cc_emails: cc || [],
             bcc_emails: bcc || [],

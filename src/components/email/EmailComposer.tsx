@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -91,13 +91,13 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Nieuwe Email</DialogTitle>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+        <SheetHeader>
+          <SheetTitle>Nieuwe Email</SheetTitle>
+        </SheetHeader>
 
-        <div className="space-y-4 mt-4">
+        <div className="space-y-4 mt-6">
           {/* From */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span className="font-medium">Van:</span>
@@ -246,8 +246,8 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
             </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 };
 
