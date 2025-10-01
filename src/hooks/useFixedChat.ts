@@ -52,12 +52,21 @@ export const useFixedChat = () => {
     try {
       console.log('🔍 Fetching available chat users for:', user.id, 'Role:', profile?.role);
       
+      // Get fresh session to ensure API key is included
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.error('❌ No active session found');
+        return;
+      }
+      
       const { data, error } = await supabase.rpc('get_available_chat_users', {
         current_user_id: user.id
       });
 
       if (error) {
         console.error('❌ Error fetching available users:', error);
+        console.error('Error details:', JSON.stringify(error));
         return;
       }
 
