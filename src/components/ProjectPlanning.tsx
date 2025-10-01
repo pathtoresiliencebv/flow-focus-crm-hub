@@ -181,7 +181,6 @@ export const ProjectPlanning = ({ projectId, projectTitle }: ProjectPlanningProp
             events={projectEvents}
             onEventClick={handleEventClick}
             onAddPlanning={handleAddPlanning}
-            onPlanningAdded={handlePlanningSubmit}
             showCurrentTimeLine={true}
           />
         </CardContent>
