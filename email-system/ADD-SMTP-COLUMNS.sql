@@ -30,9 +30,12 @@ ALTER TABLE email_accounts
 ADD CONSTRAINT email_accounts_provider_check 
 CHECK (provider IN ('gmail', 'outlook', 'imap', 'smtp'));
 
--- Create index for faster lookups
+-- Create indexes for faster lookups (with IF NOT EXISTS to avoid errors)
 CREATE INDEX IF NOT EXISTS idx_email_accounts_provider 
 ON email_accounts(provider);
+
+CREATE INDEX IF NOT EXISTS idx_email_accounts_user_provider 
+ON email_accounts(user_id, provider);
 
 -- Comments
 COMMENT ON COLUMN email_accounts.smtp_host IS 'SMTP server hostname (e.g., smtp.gmail.com)';
