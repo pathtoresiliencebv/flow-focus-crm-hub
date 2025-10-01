@@ -155,14 +155,19 @@ export const useFixedChat = () => {
     console.log('📤 Sending message to:', toUserId, 'Content:', content);
 
     try {
+      const messageData = {
+        from_user_id: user.id,
+        to_user_id: toUserId,
+        content: content.trim(),
+        is_read: false,
+        original_language: 'nl'
+      };
+      
+      console.log('📝 Inserting message data:', messageData);
+      
       const { data, error } = await supabase
         .from('direct_messages')
-        .insert({
-          from_user_id: user.id,
-          to_user_id: toUserId,
-          content: content.trim(),
-          is_read: false
-        })
+        .insert(messageData)
         .select()
         .single();
 
