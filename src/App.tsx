@@ -14,6 +14,7 @@ import { QuoteSend } from "@/pages/QuoteSend";
 import { InvoiceDetailsPage } from "@/pages/InvoiceDetails";
 import { InvoiceSend } from "@/pages/InvoiceSend";
 import { CalendarPage } from "@/components/calendar/CalendarPage";
+import { GmailCallbackHandler } from "@/components/email/GmailCallbackHandler";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TranslationProvider } from "@/contexts/TranslationContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
