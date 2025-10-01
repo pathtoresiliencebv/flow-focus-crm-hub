@@ -125,12 +125,10 @@ export const useFixedChat = () => {
     console.log('📨 Fetching messages between:', user.id, 'and:', otherUserId);
 
     try {
-      const { data, error } = await supabase
+      // Fetch messages WITHOUT JOIN first to avoid foreign key issues
+      const { data: messagesData, error } = await supabase
         .from('direct_messages')
-        .select(`
-          *,
-          sender:profiles!from_user_id(id, full_name)
-        `)
+        .select('*')
         .or(`and(from_user_id.eq.${user.id},to_user_id.eq.${otherUserId}),and(from_user_id.eq.${otherUserId},to_user_id.eq.${user.id})`)
         .order('created_at', { ascending: true })
         .limit(100);
@@ -140,8 +138,28 @@ export const useFixedChat = () => {
         return;
       }
 
-      console.log('✅ Fetched messages:', data?.length || 0, 'messages', data);
-      setMessages((data || []) as DirectMessage[]);
+      console.log('✅ Fetched messages:', messagesData?.length || 0, 'messages', messagesData);
+      
+      // Enrich messages with sender info
+      if (messagesData && messagesData.length > 0) {
+        const enrichedMessages = await Promise.all(
+          messagesData.map(async (msg: any) => {
+            const { data: senderData } = await supabase
+              .from('profiles')
+              .select('id, full_name')
+              .eq('id', msg.from_user_id)
+              .single();
+            
+            return {
+              ...msg,
+              sender: senderData || { id: msg.from_user_id, full_name: 'Unknown' }
+            };
+          })
+        );
+        setMessages(enrichedMessages as DirectMessage[]);
+      } else {
+        setMessages([]);
+      }
     } catch (error) {
       console.error('❌ Error fetching messages:', error);
     }
