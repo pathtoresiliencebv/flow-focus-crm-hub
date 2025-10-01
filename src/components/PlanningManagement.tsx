@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Calendar, Plus, Users, Clock, MapPin } from "lucide-react";
 import { PlanningCalendarView } from './planning/PlanningCalendarView';
+import { TeamPlanningView } from './planning/TeamPlanningView';
 import { PlanningListView } from './planning/PlanningListView';
 import { QuickPlanningSlidePanel } from './planning/QuickPlanningSlidePanel';
 import { NewPlanningSlidePanel } from './planning/NewPlanningSlidePanel';
@@ -20,7 +21,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export function PlanningManagement() {
   const { toast } = useToast();
   const { user, hasPermission } = useAuth();
-  const [view, setView] = useState<'calendar' | 'list'>('calendar');
+  const [view, setView] = useState<'team' | 'calendar' | 'list'>('team');
   const [calendarView, setCalendarView] = useState<'week' | 'month' | 'day'>('week');
   const [showNewPlanning, setShowNewPlanning] = useState(false);
   const [showQuickPlanning, setShowQuickPlanning] = useState(false);
@@ -381,11 +382,38 @@ export function PlanningManagement() {
       </div>
 
       {/* View Toggle and Content */}
-      <Tabs value={view} onValueChange={(value) => setView(value as 'calendar' | 'list')}>
+      <Tabs value={view} onValueChange={(value) => setView(value as 'team' | 'calendar' | 'list')}>
         <TabsList>
+          <TabsTrigger value="team">Team Agenda</TabsTrigger>
           <TabsTrigger value="calendar">Kalender</TabsTrigger>
           <TabsTrigger value="list">Lijst</TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="team" className="mt-4">
+          <TeamPlanningView
+            installers={installers.map(installer => ({
+              id: installer.id!,
+              name: installer.full_name || installer.email || 'Onbekend',
+              color: `hsl(${Math.random() * 360}, 70%, 50%)`
+            }))}
+            events={calendarEvents.map(event => ({
+              id: event.id,
+              title: event.title,
+              startTime: event.startTime,
+              endTime: event.endTime,
+              date: event.date,
+              installerId: event.type === 'appointment' ? 'default-installer' : event.id,
+              location: event.description || '',
+              color: event.type === 'appointment' ? 'bg-blue-500' : 'bg-green-500'
+            }))}
+            onEventClick={handleEventClick}
+            onTimeSlotClick={(date, hour, installerId) => {
+              setSelectedDate(date);
+              setSelectedHour(hour);
+              setShowQuickPlanning(true);
+            }}
+          />
+        </TabsContent>
         
         <TabsContent value="calendar" className="mt-4">
           <PlanningCalendarView

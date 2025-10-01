@@ -276,29 +276,31 @@ export const useFixedChat = () => {
   useEffect(() => {
     if (!user) return;
 
+    let mounted = true;
+
     const initializeChat = async () => {
+      if (!mounted) return;
+      
       setLoading(true);
       console.log('🚀 Initializing chat for user:', user.id);
       
       await fetchAvailableUsers();
-      await generateConversations();
       
-      const cleanup = setupRealtimeSubscription();
+      if (!mounted) return;
       
       setLoading(false);
-      
-      return cleanup;
     };
 
     initializeChat();
 
     return () => {
+      mounted = false;
       if (subscriptionRef.current) {
         supabase.removeChannel(subscriptionRef.current);
         subscriptionRef.current = null;
       }
     };
-  }, [user, fetchAvailableUsers, generateConversations, setupRealtimeSubscription]);
+  }, [user, fetchAvailableUsers]);
 
   // Update conversations when available users change
   useEffect(() => {
