@@ -81,12 +81,20 @@ export default function Email() {
       {/* Sidebar - Folders & Labels */}
       {(!isMobile || !selectedThread) && (
         <div className={cn(
-          "border-r border-border bg-card",
+          "border-r border-border bg-card flex flex-col h-full",
           isMobile ? "w-full" : "w-64"
         )}>
+          {/* Account Info at top */}
+          {primaryAccount && (
+            <div className="p-4 border-b border-border">
+              <div className="text-sm font-medium text-gray-700 mb-1">Account</div>
+              <div className="text-xs text-gray-500 truncate">{primaryAccount.email_address}</div>
+            </div>
+          )}
+
           <div className="p-4 border-b border-border">
             <Button 
-              className="w-full" 
+              className="w-full bg-red-600 hover:bg-red-700 text-white" 
               size="lg"
               onClick={() => setComposerOpen(true)}
               disabled={!primaryAccount}
@@ -107,8 +115,8 @@ export default function Email() {
                   className={cn(
                     "w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors",
                     selectedFolder === folder.id
-                      ? "bg-primary text-primary-foreground"
-                      : "hover:bg-muted"
+                      ? "bg-red-600 text-white"
+                      : "hover:bg-gray-100"
                   )}
                 >
                   <div className="flex items-center gap-3">
@@ -131,37 +139,24 @@ export default function Email() {
           </div>
 
           {/* Labels */}
-          <div className="p-2 mt-4">
+          <div className="p-2 mt-4 flex-1 overflow-y-auto">
             <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase">
               Labels
             </div>
-            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-muted">
+            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-gray-100">
               <div className="h-3 w-3 rounded-full bg-red-500" />
               <span>Work</span>
               <span className="ml-auto text-xs text-muted-foreground">5</span>
             </button>
-            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-muted">
+            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-gray-100">
               <div className="h-3 w-3 rounded-full bg-blue-500" />
               <span>Personal</span>
               <span className="ml-auto text-xs text-muted-foreground">8</span>
             </button>
-            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-muted">
+            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm hover:bg-gray-100">
               <Tag className="h-4 w-4" />
               <span>New Label</span>
             </button>
-          </div>
-
-          {/* Account Info */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
-                JD
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium truncate">john@example.com</div>
-                <div className="text-xs text-muted-foreground">Connected</div>
-              </div>
-            </div>
           </div>
         </div>
       )}
@@ -186,6 +181,7 @@ export default function Email() {
               size="icon"
               onClick={handleSync}
               disabled={syncing}
+              className="border-red-200 hover:bg-red-50 hover:text-red-700"
             >
               <RefreshCw className={cn("h-4 w-4", syncing && "animate-spin")} />
             </Button>
