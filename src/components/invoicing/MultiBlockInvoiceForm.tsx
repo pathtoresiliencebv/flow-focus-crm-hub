@@ -702,19 +702,52 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
               onClick={async () => {
                 if (invoiceId) {
                   try {
+                    console.log('📄 Generating PDF for invoice:', invoiceId);
                     const { data, error } = await supabase.functions.invoke('generate-invoice-pdf', {
                       body: { invoiceId }
                     });
-                    if (error) throw error;
-                    toast({
-                      title: "PDF gegenereerd",
-                      description: "PDF is succesvol aangemaakt.",
-                    });
+
+                    if (error) {
+                      console.error('❌ PDF Generation Error:', error);
+                      toast({
+                        title: "PDF Fout",
+                        description: `Kon PDF niet genereren: ${error.message}`,
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    if (data?.success && data?.htmlContent) {
+                      // Open PDF in new window for printing
+                      const printWindow = window.open('', '_blank');
+                      if (printWindow) {
+                        printWindow.document.write(data.htmlContent);
+                        printWindow.document.close();
+                        printWindow.focus();
+                        
+                        // Wait for content to load, then trigger print
+                        setTimeout(() => {
+                          printWindow.print();
+                        }, 1000);
+                      }
+                      
+                      toast({
+                        title: "PDF geopend",
+                        description: "Het PDF bestand is geopend voor afdrukken.",
+                      });
+                    } else {
+                      console.error('❌ No HTML content in response:', data);
+                      toast({
+                        title: "PDF Fout",
+                        description: "Geen PDF content ontvangen van server.",
+                        variant: "destructive",
+                      });
+                    }
                   } catch (error) {
-                    console.error('Error generating PDF:', error);
+                    console.error('❌ Error generating PDF:', error);
                     toast({
-                      title: "Fout bij PDF generatie",
-                      description: "Er is een fout opgetreden bij het genereren van de PDF.",
+                      title: "PDF Fout",
+                      description: "Er is een onverwachte fout opgetreden bij het genereren van de PDF.",
                       variant: "destructive",
                     });
                   }

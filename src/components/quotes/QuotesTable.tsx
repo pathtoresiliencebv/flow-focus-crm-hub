@@ -58,24 +58,29 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
         return;
       }
 
-      if (data?.success && data?.pdfUrl) {
-        // Create download link
-        const link = document.createElement('a');
-        link.href = data.pdfUrl;
-        link.download = `offerte-${quotes.find(q => q.id === quoteId)?.quote_number || quoteId}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+      if (data?.success && data?.htmlContent) {
+        // Open PDF in new window for printing
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(data.htmlContent);
+          printWindow.document.close();
+          printWindow.focus();
+          
+          // Wait for content to load, then trigger print
+          setTimeout(() => {
+            printWindow.print();
+          }, 1000);
+        }
         
         toast({
-          title: "PDF gedownload",
-          description: "Het PDF bestand is succesvol gedownload.",
+          title: "PDF geopend",
+          description: "Het PDF bestand is geopend voor afdrukken.",
         });
       } else {
-        console.error('❌ No PDF URL in response:', data);
+        console.error('❌ No HTML content in response:', data);
         toast({
           title: "PDF Fout",
-          description: "Geen PDF URL ontvangen van server.",
+          description: "Geen PDF content ontvangen van server.",
           variant: "destructive",
         });
       }

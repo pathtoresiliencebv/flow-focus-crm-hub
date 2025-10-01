@@ -14,6 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { nl } from "date-fns/locale";
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from "@/hooks/use-toast";
 
 interface InvoicesTableProps {
   invoices: any[];
@@ -37,6 +38,7 @@ export const InvoicesTable = ({
   onSendReminder
 }: InvoicesTableProps) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -171,30 +173,57 @@ export const InvoicesTable = ({
                        PDF Preview
                      </DropdownMenuItem>
                      
-                     <DropdownMenuItem onClick={() => {
-                       // Download PDF using edge function
-                       supabase.functions.invoke('generate-invoice-pdf', {
-                         body: { invoiceId: invoice.id }
-                       }).then(({ data, error }) => {
-                         if (data?.success && data?.pdfData) {
-                           const byteCharacters = atob(data.pdfData);
-                           const byteNumbers = new Array(byteCharacters.length);
-                           for (let i = 0; i < byteCharacters.length; i++) {
-                             byteNumbers[i] = byteCharacters.charCodeAt(i);
-                           }
-                           const byteArray = new Uint8Array(byteNumbers);
-                           const blob = new Blob([byteArray], { type: 'application/pdf' });
-                           
-                           const url = URL.createObjectURL(blob);
-                           const link = document.createElement('a');
-                           link.href = url;
-                           link.download = `factuur-${invoice.invoice_number}.pdf`;
-                           document.body.appendChild(link);
-                           link.click();
-                           document.body.removeChild(link);
-                           URL.revokeObjectURL(url);
+                     <DropdownMenuItem onClick={async () => {
+                       try {
+                         console.log('📄 Downloading PDF for invoice:', invoice.id);
+                         const { data, error } = await supabase.functions.invoke('generate-invoice-pdf', {
+                           body: { invoiceId: invoice.id }
+                         });
+
+                         if (error) {
+                           console.error('❌ PDF Generation Error:', error);
+                           toast({
+                             title: "PDF Fout",
+                             description: `Kon PDF niet genereren: ${error.message}`,
+                             variant: "destructive",
+                           });
+                           return;
                          }
-                       });
+
+                         if (data?.success && data?.htmlContent) {
+                           // Open PDF in new window for printing
+                           const printWindow = window.open('', '_blank');
+                           if (printWindow) {
+                             printWindow.document.write(data.htmlContent);
+                             printWindow.document.close();
+                             printWindow.focus();
+                             
+                             // Wait for content to load, then trigger print
+                             setTimeout(() => {
+                               printWindow.print();
+                             }, 1000);
+                           }
+                           
+                           toast({
+                             title: "PDF geopend",
+                             description: "Het PDF bestand is geopend voor afdrukken.",
+                           });
+                         } else {
+                           console.error('❌ No HTML content in response:', data);
+                           toast({
+                             title: "PDF Fout",
+                             description: "Geen PDF content ontvangen van server.",
+                             variant: "destructive",
+                           });
+                         }
+                       } catch (error) {
+                         console.error('❌ Error downloading PDF:', error);
+                         toast({
+                           title: "PDF Fout",
+                           description: "Er is een onverwachte fout opgetreden bij het downloaden.",
+                           variant: "destructive",
+                         });
+                       }
                      }}>
                        <Download className="mr-2 h-4 w-4" />
                        PDF Downloaden

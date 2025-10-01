@@ -28,7 +28,7 @@ import { useCrmStore } from '@/hooks/useCrmStore';
 import { useQuoteTemplates } from '@/hooks/useQuoteTemplates';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { QuoteBlock, Quote } from '@/types/quote';
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from '@/integrations/supabase/client';
 
 const formSchema = z.object({
   customer: z.string().min(1, { message: "Selecteer een klant" }),
@@ -704,19 +704,82 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         return;
       }
 
-      // Save the quote first, then navigate to send page
-      await form.handleSubmit((values) => saveAndPrepareToSend(values))();
+      // Get form values
+      const values = form.getValues();
+      
+      // First save as draft
+      console.log('💾 Saving quote as draft first...');
+      const success = await saveAsDraft(values, false);
+      
+      if (!success) {
+        toast({
+          title: "Fout bij opslaan",
+          description: "Kon de offerte niet opslaan als concept.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // If we have a saved quote ID, trigger the send email function
+      if (savedQuote?.id) {
+        console.log('📧 Triggering send email for quote:', savedQuote.id);
+        
+        // Call the send-quote-email edge function directly
+        const { data, error } = await supabase.functions.invoke('send-quote-email', {
+          body: {
+            quoteId: savedQuote.id,
+            recipientEmail: values.customerEmail || customers.find(c => c.id === values.customer)?.email,
+            recipientName: values.customerName || customers.find(c => c.id === values.customer)?.name,
+            subject: `Offerte ${savedQuote.quote_number} - SMANS BV`,
+            message: values.message || 'Hierbij ontvangt u uw offerte. Voor vragen kunt u contact met ons opnemen.'
+          }
+        });
+
+        if (error) {
+          console.error('❌ Error sending email:', error);
+          toast({
+            title: "Fout bij versturen",
+            description: `Kon email niet versturen: ${error.message}`,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (data?.success) {
+          toast({
+            title: "Offerte verzonden!",
+            description: `De offerte is succesvol verzonden naar ${data.recipientEmail}`,
+          });
+          
+          // Navigate back to quotes overview
+          setTimeout(() => {
+            window.location.href = '/?tab=quotes';
+          }, 2000);
+        } else {
+          toast({
+            title: "Fout bij versturen",
+            description: "Er is een onbekende fout opgetreden bij het versturen.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Fout bij opslaan",
+          description: "Kon de offerte ID niet ophalen na opslaan.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
-      console.error('Error saving and preparing to send:', error);
+      console.error('Error in save and send:', error);
       toast({
-        title: "Fout bij opslaan",
-        description: "Er is een fout opgetreden bij het voorbereiden voor verzending.",
+        title: "Fout bij opslaan en versturen",
+        description: "Er is een onverwachte fout opgetreden.",
         variant: "destructive",
       });
     } finally {
       setSaving(false);
     }
-  }, [form, saveAndPrepareToSend, toast]);
+  }, [form, saveAsDraft, savedQuote, customers, toast]);
 
   const handleExitWithConfirm = () => {
     // Check if there are unsaved changes
@@ -1188,7 +1251,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
                   className="bg-blue-600 hover:bg-blue-700 text-white min-w-[160px]"
                 >
                   <Save className="h-4 w-4 mr-2" />
-                  {saving ? "Opslaan..." : "Opslaan en Versturen"}
+                  {saving ? "Opslaan en versturen..." : "Opslaan en Versturen"}
                 </Button>
               </div>
             </div>
