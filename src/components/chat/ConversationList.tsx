@@ -1,5 +1,5 @@
 import React from 'react';
-import { Conversation } from '@/hooks/useSimpleChat';
+import { Conversation } from '@/hooks/useFixedChat';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { nl } from 'date-fns/locale';

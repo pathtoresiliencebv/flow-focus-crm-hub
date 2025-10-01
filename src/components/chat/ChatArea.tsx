@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Conversation, DirectMessage } from '@/hooks/useSimpleChat';
+import { Conversation, DirectMessage } from '@/hooks/useFixedChat';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
