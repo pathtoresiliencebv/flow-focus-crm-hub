@@ -6,8 +6,8 @@ import { InvoicesTable } from "./invoicing/InvoicesTable";
 import { InvoiceFilters } from "./invoicing/InvoiceFilters";
 import { InvoicesSummary } from "./invoicing/InvoicesSummary";
 import { InvoicingHeader } from "./invoicing/InvoicingHeader";
-import { SendInvoiceDialog } from "./SendInvoiceDialog";
 import { ArchivedInvoicesView } from "./invoicing/ArchivedInvoicesView";
+import { supabase } from "@/integrations/supabase/client";
 import { InvoiceFinalizationDialog } from "./invoicing/InvoiceFinalizationDialog";
 import { MultiBlockInvoiceForm } from "./invoicing/MultiBlockInvoiceForm";
 import { useInvoices } from "@/hooks/useInvoices";
@@ -19,7 +19,6 @@ export const Invoicing = () => {
   const { toast } = useToast();
   const { invoices, deleteInvoice, duplicateInvoice, archiveInvoice, sendPaymentReminder, refetch } = useInvoices();
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
-  const [showSendDialog, setShowSendDialog] = useState(false);
   const [showFinalizationDialog, setShowFinalizationDialog] = useState(false);
   const [showNewInvoiceForm, setShowNewInvoiceForm] = useState(window.location.pathname === "/invoices/new");
   const [filters, setFilters] = useState({
@@ -28,9 +27,51 @@ export const Invoicing = () => {
     dateRange: "all"
   });
 
-  const handleSendInvoice = (invoice: any) => {
-    setSelectedInvoice(invoice);
-    setShowSendDialog(true);
+  const handleSendInvoice = async (invoice: any) => {
+    if (!invoice?.id) {
+      toast({
+        title: "Fout",
+        description: "Geen geldige factuur geselecteerd.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      console.log('📧 Sending invoice:', invoice.id, invoice.invoice_number);
+      
+      const { data, error } = await supabase.functions.invoke('send-invoice-email', {
+        body: { 
+          invoiceId: invoice.id
+        }
+      });
+
+      if (error) {
+        console.error('❌ Error sending invoice:', error);
+        toast({
+          title: "Fout bij versturen",
+          description: error.message || "Er is een fout opgetreden bij het versturen van de factuur.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('✅ Invoice sent successfully:', data);
+      
+      toast({
+        title: "Factuur verzonden!",
+        description: `Factuur ${invoice.invoice_number} is succesvol verzonden naar ${invoice.customer_email}.`,
+      });
+      
+      refetch();
+    } catch (error: any) {
+      console.error('❌ Error sending invoice:', error);
+      toast({
+        title: "Fout bij versturen",
+        description: error.message || "Er is een onverwachte fout opgetreden.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDeleteInvoice = async (invoice: any) => {
