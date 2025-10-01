@@ -266,57 +266,51 @@ export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
           </div>
         )}
         
-        {/* Collapsed state - show only logo icons */}
+        {/* Collapsed state - show icons */}
         {mini && (
-          <div className="flex flex-col items-center space-y-3 mt-6 px-2">
+          <div className="flex flex-col items-center space-y-2 mt-6 px-2">
             {mainLinks.filter(link => !link.permission || hasPermission(link.permission)).map(link => (
               <button
                 key={link.key}
                 onClick={() => setActiveTab(link.key)}
-                className={`w-10 h-10 rounded-md flex items-center justify-center transition-colors ${
+                className={`w-12 h-12 rounded-lg flex items-center justify-center transition-colors ${
                   activeTab === link.key 
-                    ? 'bg-red-600 text-white' 
+                    ? 'bg-red-600 text-white shadow-md' 
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
                 title={link.label}
               >
-                <div className="w-6 h-6 bg-red-600 rounded flex items-center justify-center">
-                  <span className="text-white font-bold text-xs">S</span>
-                </div>
+                {link.icon}
               </button>
             ))}
-            <div className="border-t border-gray-200 w-8 my-1"></div>
+            <div className="border-t border-gray-200 w-10 my-2"></div>
             {communication.filter(link => !link.permission || hasPermission(link.permission)).map(link => (
               <button
                 key={link.key}
                 onClick={() => setActiveTab(link.key)}
-                className={`w-10 h-10 rounded-md flex items-center justify-center transition-colors ${
+                className={`w-12 h-12 rounded-lg flex items-center justify-center transition-colors ${
                   activeTab === link.key 
-                    ? 'bg-red-600 text-white' 
+                    ? 'bg-red-600 text-white shadow-md' 
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
                 title={link.label}
               >
-                <div className="w-6 h-6 bg-red-600 rounded flex items-center justify-center">
-                  <span className="text-white font-bold text-xs">S</span>
-                </div>
+                {link.icon}
               </button>
             ))}
-            <div className="border-t border-gray-200 w-8 my-1"></div>
+            <div className="border-t border-gray-200 w-10 my-2"></div>
             {settings.filter(link => !link.permission || hasPermission(link.permission)).map(link => (
               <button
                 key={link.key}
                 onClick={() => setActiveTab(link.key)}
-                className={`w-10 h-10 rounded-md flex items-center justify-center transition-colors ${
+                className={`w-12 h-12 rounded-lg flex items-center justify-center transition-colors ${
                   activeTab === link.key 
-                    ? 'bg-red-600 text-white' 
+                    ? 'bg-red-600 text-white shadow-md' 
                     : 'text-gray-600 hover:bg-gray-100'
                 }`}
                 title={link.label}
               >
-                <div className="w-6 h-6 bg-red-600 rounded flex items-center justify-center">
-                  <span className="text-white font-bold text-xs">S</span>
-                </div>
+                {link.icon}
               </button>
             ))}
           </div>
