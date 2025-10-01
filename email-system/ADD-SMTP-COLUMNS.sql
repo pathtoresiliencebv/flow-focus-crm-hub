@@ -20,8 +20,15 @@ ADD COLUMN IF NOT EXISTS imap_password TEXT;
 ALTER TABLE email_accounts 
 ADD COLUMN IF NOT EXISTS display_name TEXT;
 
--- Update provider to allow 'smtp' value
--- The provider column is already TEXT so it can accept 'smtp' value
+-- Update provider constraint to allow 'smtp' value
+-- First drop the old constraint
+ALTER TABLE email_accounts 
+DROP CONSTRAINT IF EXISTS email_accounts_provider_check;
+
+-- Add new constraint that includes 'smtp'
+ALTER TABLE email_accounts 
+ADD CONSTRAINT email_accounts_provider_check 
+CHECK (provider IN ('gmail', 'outlook', 'imap', 'smtp'));
 
 -- Create index for faster lookups
 CREATE INDEX IF NOT EXISTS idx_email_accounts_provider 
