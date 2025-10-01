@@ -15,6 +15,7 @@ import { formatDistanceToNow } from "date-fns";
 import { nl } from "date-fns/locale";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
+import html2pdf from 'html2pdf.js';
 
 interface InvoicesTableProps {
   invoices: any[];
@@ -213,7 +214,7 @@ export const InvoicesTable = ({
                      <DropdownMenuItem onClick={async () => {
                        try {
                          console.log('📄 Downloading PDF for invoice:', invoice.id);
-                         const filename = `Factuur-${invoice.invoice_number}`;
+                         const filename = `Factuur-${invoice.invoice_number}.pdf`;
                          
                          const { data, error } = await supabase.functions.invoke('generate-invoice-pdf', {
                            body: { invoiceId: invoice.id }
@@ -230,33 +231,29 @@ export const InvoicesTable = ({
                          }
 
                         if (data?.success && data?.htmlContent) {
-                          // Open PDF in new window for saving
-                          const printWindow = window.open('', '_blank');
-                          if (printWindow) {
-                            printWindow.document.write(data.htmlContent);
-                            printWindow.document.close();
-                            
-                            // Set document title for PDF filename
-                            printWindow.document.title = filename;
-                            
-                            // Wait for images and styles to load before printing
-                            printWindow.addEventListener('load', () => {
-                              printWindow.focus();
-                              setTimeout(() => {
-                                printWindow.print();
-                              }, 500);
+                          // Create a temporary container for html2pdf
+                          const tempDiv = document.createElement('div');
+                          tempDiv.innerHTML = data.htmlContent;
+                          tempDiv.style.position = 'absolute';
+                          tempDiv.style.left = '-9999px';
+                          document.body.appendChild(tempDiv);
+
+                          // PDF options
+                          const opt = {
+                            margin: [10, 10, 10, 10],
+                            filename: filename,
+                            image: { type: 'jpeg', quality: 0.98 },
+                            html2canvas: { scale: 2, useCORS: true },
+                            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                          };
+
+                          // Generate and download PDF
+                          html2pdf().set(opt).from(tempDiv).save().then(() => {
+                            document.body.removeChild(tempDiv);
+                            toast({
+                              title: "PDF Gedownload! ✓",
+                              description: `${filename} is succesvol gedownload.`,
                             });
-                            
-                            // Fallback if load event doesn't fire
-                            setTimeout(() => {
-                              printWindow.focus();
-                              printWindow.print();
-                            }, 2000);
-                          }
-                          
-                          toast({
-                            title: "PDF geopend",
-                            description: "Kies 'Opslaan als PDF' in het printvenster om het bestand op te slaan.",
                           });
                         } else {
                           console.error('❌ No HTML content in response:', data);
@@ -279,29 +276,71 @@ export const InvoicesTable = ({
                        PDF Downloaden
                      </DropdownMenuItem>
 
-                     <DropdownMenuItem onClick={() => {
-                        // Print PDF using edge function
-                        supabase.functions.invoke('generate-invoice-pdf', {
+                     <DropdownMenuItem onClick={async () => {
+                       try {
+                        console.log('🖨️ Opening PDF for invoice:', invoice.id);
+                        const filename = `Factuur-${invoice.invoice_number}.pdf`;
+                        
+                        const { data, error } = await supabase.functions.invoke('generate-invoice-pdf', {
                           body: { invoiceId: invoice.id }
-                        }).then(({ data, error }) => {
-                          if (data?.success && data?.pdfData) {
-                            const byteCharacters = atob(data.pdfData);
-                            const byteNumbers = new Array(byteCharacters.length);
-                            for (let i = 0; i < byteCharacters.length; i++) {
-                              byteNumbers[i] = byteCharacters.charCodeAt(i);
-                            }
-                            const byteArray = new Uint8Array(byteNumbers);
-                            const blob = new Blob([byteArray], { type: 'application/pdf' });
-                            
-                            const url = URL.createObjectURL(blob);
-                            const printWindow = window.open(url);
-                            if (printWindow) {
-                              printWindow.onload = () => {
-                                printWindow.print();
-                              };
-                            }
-                          }
                         });
+
+                        if (error) {
+                          console.error('❌ PDF Error:', error);
+                          toast({
+                            title: "PDF Fout",
+                            description: `Kon PDF niet genereren: ${error.message}`,
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+
+                        if (data?.success && data?.htmlContent) {
+                          // Create a temporary container for html2pdf
+                          const tempDiv = document.createElement('div');
+                          tempDiv.innerHTML = data.htmlContent;
+                          tempDiv.style.position = 'absolute';
+                          tempDiv.style.left = '-9999px';
+                          document.body.appendChild(tempDiv);
+
+                          // PDF options for opening (not downloading)
+                          const opt = {
+                            margin: [10, 10, 10, 10],
+                            filename: filename,
+                            image: { type: 'jpeg', quality: 0.98 },
+                            html2canvas: { scale: 2, useCORS: true },
+                            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                          };
+
+                          // Generate PDF and open in new tab
+                          html2pdf().set(opt).from(tempDiv).outputPdf('blob').then((pdfBlob: Blob) => {
+                            document.body.removeChild(tempDiv);
+                            
+                            // Open PDF in new window
+                            const pdfUrl = URL.createObjectURL(pdfBlob);
+                            window.open(pdfUrl, '_blank');
+                            
+                            toast({
+                              title: "PDF Geopend! ✓",
+                              description: "De PDF is geopend in een nieuw tabblad.",
+                            });
+                          });
+                        } else {
+                          console.error('❌ No HTML content:', data);
+                          toast({
+                            title: "PDF Fout",
+                            description: "Geen PDF content ontvangen van server.",
+                            variant: "destructive",
+                          });
+                        }
+                       } catch (error) {
+                         console.error('❌ Error generating PDF:', error);
+                         toast({
+                           title: "PDF Fout",
+                           description: "Er is een onverwachte fout opgetreden.",
+                           variant: "destructive",
+                         });
+                       }
                       }}>
                         <Printer className="mr-2 h-4 w-4" />
                         PDF Printen

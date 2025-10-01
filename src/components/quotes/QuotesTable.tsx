@@ -15,6 +15,7 @@ import { Eye, ExternalLink, Trash2, CheckCircle, Mail, Copy, Pencil, FileSignatu
 import { Quote } from '@/types/quote';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import html2pdf from 'html2pdf.js';
 
 interface QuotesTableProps {
   quotes: Quote[];
@@ -39,6 +40,8 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
   onRestore,
   isArchived = false
 }) => {
+  const { toast } = useToast();
+
   const handlePDFDownload = async (quoteId: string) => {
     try {
       console.log('📄 Downloading PDF for quote:', quoteId);
@@ -64,35 +67,29 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
       }
 
       if (data?.success && data?.htmlContent) {
-        // Convert HTML to PDF using browser's print-to-PDF capability
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-          printWindow.document.write(data.htmlContent);
-          printWindow.document.close();
-          
-          // Set document title for default PDF filename
-          printWindow.document.title = filename.replace('.pdf', '');
-          
-          // Wait for content to load
-          printWindow.addEventListener('load', () => {
-            printWindow.focus();
-            
-            // Trigger print dialog (user can choose "Save as PDF")
-            setTimeout(() => {
-              printWindow.print();
-            }, 500);
+        // Create a temporary container for html2pdf
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = data.htmlContent;
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        document.body.appendChild(tempDiv);
+
+        // PDF options
+        const opt = {
+          margin: [10, 10, 10, 10],
+          filename: filename,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        // Generate and download PDF
+        html2pdf().set(opt).from(tempDiv).save().then(() => {
+          document.body.removeChild(tempDiv);
+          toast({
+            title: "PDF Gedownload! ✓",
+            description: `${filename} is succesvol gedownload.`,
           });
-          
-          // Fallback
-          setTimeout(() => {
-            printWindow.focus();
-            printWindow.print();
-          }, 2000);
-        }
-        
-        toast({
-          title: "PDF geopend",
-          description: "Kies 'Opslaan als PDF' in het printvenster om het bestand op te slaan.",
         });
       } else {
         console.error('❌ No HTML content in response:', data);
@@ -137,38 +134,40 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
       }
 
       if (data?.success && data?.htmlContent) {
-        // Open PDF in new window for printing
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-          printWindow.document.write(data.htmlContent);
-          printWindow.document.close();
+        // Create a temporary container for html2pdf
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = data.htmlContent;
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        document.body.appendChild(tempDiv);
+
+        // PDF options for opening (not downloading)
+        const opt = {
+          margin: [10, 10, 10, 10],
+          filename: `${filename}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        // Generate PDF and open in new tab
+        html2pdf().set(opt).from(tempDiv).outputPdf('blob').then((pdfBlob: Blob) => {
+          document.body.removeChild(tempDiv);
           
-          // Set document title for PDF filename
-          printWindow.document.title = filename;
-          
-          printWindow.focus();
-          
-          // Wait for content to load, then trigger print
-          setTimeout(() => {
-            printWindow.print();
-          }, 500);
+          // Open PDF in new window
+          const pdfUrl = URL.createObjectURL(pdfBlob);
+          window.open(pdfUrl, '_blank');
           
           toast({
-            title: "Print dialoog geopend",
-            description: "Kies een printer of 'Opslaan als PDF' om het bestand op te slaan.",
+            title: "PDF Geopend! ✓",
+            description: "De PDF is geopend in een nieuw tabblad.",
           });
-        } else {
-          toast({
-            title: "Print Fout",
-            description: "Kon printvenster niet openen. Controleer of pop-ups zijn toegestaan.",
-            variant: "destructive",
-          });
-        }
+        });
       } else {
         console.error('❌ No HTML content for printing:', data);
         toast({
-          title: "Print Fout",
-          description: "Geen PDF content ontvangen voor printen.",
+          title: "PDF Fout",
+          description: "Geen PDF content ontvangen van server.",
           variant: "destructive",
         });
       }

@@ -72,8 +72,11 @@ export const ProjectPlanning = ({ projectId, projectTitle }: ProjectPlanningProp
       });
       
       if (result) {
+        toast({
+          title: "Planning toegevoegd! ✓",
+          description: "De planning is succesvol toegevoegd aan het project.",
+        });
         setPlanningDialogOpen(false);
-        // Toast is already shown by usePlanningStore
       }
     } catch (error: any) {
       console.error('❌ Error adding planning:', error);

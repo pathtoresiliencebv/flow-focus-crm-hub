@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import html2pdf from 'html2pdf.js';
 
 interface InvoiceSettings {
   company_name?: string;
@@ -85,7 +86,7 @@ export const MultiBlockInvoicePreview: React.FC<MultiBlockInvoicePreviewProps> =
   const handlePrint = async () => {
     try {
       setPrintLoading(true);
-      const filename = `Factuur-${invoice.invoice_number || 'onbekend'}`;
+      const filename = `Factuur-${invoice.invoice_number || 'onbekend'}.pdf`;
       
       const { data, error } = await supabase.functions.invoke('generate-invoice-pdf', {
         body: { invoiceId: invoice.id }
@@ -94,40 +95,41 @@ export const MultiBlockInvoicePreview: React.FC<MultiBlockInvoicePreviewProps> =
       if (error) throw error;
 
       if (data?.success && data?.htmlContent) {
-        // Open PDF in new window for printing
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-          printWindow.document.write(data.htmlContent);
-          printWindow.document.close();
+        // Create a temporary container for html2pdf
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = data.htmlContent;
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        document.body.appendChild(tempDiv);
+
+        // PDF options
+        const opt = {
+          margin: [10, 10, 10, 10],
+          filename: filename,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        // Generate PDF and open in new tab
+        html2pdf().set(opt).from(tempDiv).outputPdf('blob').then((pdfBlob: Blob) => {
+          document.body.removeChild(tempDiv);
           
-          // Set document title for PDF filename
-          printWindow.document.title = filename;
+          // Open PDF in new window
+          const pdfUrl = URL.createObjectURL(pdfBlob);
+          window.open(pdfUrl, '_blank');
           
-          // Wait for images and styles to load before printing
-          printWindow.addEventListener('load', () => {
-            printWindow.focus();
-            setTimeout(() => {
-              printWindow.print();
-            }, 500);
+          toast({
+            title: "PDF Geopend! ✓",
+            description: "De PDF is geopend in een nieuw tabblad.",
           });
-          
-          // Fallback if load event doesn't fire
-          setTimeout(() => {
-            printWindow.focus();
-            printWindow.print();
-          }, 2000);
-        }
-        
-        toast({
-          title: "Print dialoog geopend",
-          description: "Kies een printer of 'Opslaan als PDF' om het bestand op te slaan.",
         });
       }
     } catch (error) {
-      console.error('Error printing invoice:', error);
+      console.error('Error opening PDF:', error);
       toast({
-        title: "Fout bij printen",
-        description: "Er ging iets mis bij het genereren van de PDF voor printen.",
+        title: "Fout bij PDF openen",
+        description: "Er ging iets mis bij het genereren van de PDF.",
         variant: "destructive",
       });
     } finally {
