@@ -566,7 +566,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         subtotal: currentTotalAmount,
         vat_amount: currentTotalVAT,
         total_amount: currentGrandTotal,
-        status: 'te-versturen',
+        status: 'concept',
         public_token: tokenData,
         admin_signature_data: adminSignature || null,
         updated_at: new Date().toISOString()
