@@ -7,6 +7,8 @@ export interface DirectMessage {
   from_user_id: string;
   to_user_id: string;
   content: string;
+  original_language: string;
+  translated_content?: Record<string, string>;
   created_at: string;
   sender?: {
     id: string;
@@ -36,9 +38,31 @@ export const useFixedChat = () => {
   const [availableUsers, setAvailableUsers] = useState<ChatUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [userLanguage, setUserLanguage] = useState<string>('nl');
   
   const subscriptionRef = useRef<any>(null);
   const selectedConversationRef = useRef<string | null>(null);
+
+  // Translate message using edge function
+  const translateMessage = useCallback(async (text: string, fromLang: string, toLang: string): Promise<string> => {
+    if (fromLang === toLang) return text;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('translate-message', {
+        body: { text, from_lang: fromLang, to_lang: toLang }
+      });
+
+      if (error) {
+        console.error('❌ Translation error:', error);
+        return text; // Fallback to original
+      }
+
+      return data.translated_text || text;
+    } catch (error) {
+      console.error('❌ Translation failed:', error);
+      return text;
+    }
+  }, []);
 
   // Update ref when selected conversation changes
   useEffect(() => {
@@ -182,12 +206,33 @@ export const useFixedChat = () => {
     console.log('📤 Sending message to:', toUserId, 'Content:', content);
 
     try {
+      // Get recipient's language preference
+      const { data: recipientData } = await supabase
+        .from('profiles')
+        .select('chat_language')
+        .eq('id', toUserId)
+        .single();
+
+      const recipientLang = recipientData?.chat_language || 'nl';
+      
+      // Translate if languages differ
+      let translatedContent: Record<string, string> = {};
+      if (userLanguage !== recipientLang) {
+        console.log('🌍 Translating from', userLanguage, 'to', recipientLang);
+        const translated = await translateMessage(content.trim(), userLanguage, recipientLang);
+        translatedContent = {
+          [userLanguage]: content.trim(),
+          [recipientLang]: translated
+        };
+      }
+
       const messageData = {
         from_user_id: user.id,
         to_user_id: toUserId,
         content: content.trim(),
         is_read: false,
-        original_language: 'nl'
+        original_language: userLanguage,
+        translated_content: Object.keys(translatedContent).length > 0 ? translatedContent : null
       };
       
       console.log('📝 Inserting message data:', messageData);
@@ -211,6 +256,8 @@ export const useFixedChat = () => {
         from_user_id: data.from_user_id,
         to_user_id: data.to_user_id,
         content: data.content,
+        original_language: data.original_language,
+        translated_content: data.translated_content,
         created_at: data.created_at,
         sender: {
           id: user.id,
@@ -235,7 +282,7 @@ export const useFixedChat = () => {
     } finally {
       setSending(false);
     }
-  }, [user, profile, sending]);
+  }, [user, profile, sending, userLanguage, translateMessage]);
 
   // Select a conversation
   const selectConversation = useCallback((otherUserId: string | null) => {
@@ -386,6 +433,13 @@ export const useFixedChat = () => {
     };
   }, [user, loading, setupRealtimeSubscription]);
 
+  // Load user's language preference
+  useEffect(() => {
+    if (profile?.chat_language) {
+      setUserLanguage(profile.chat_language);
+    }
+  }, [profile]);
+
   return {
     conversations,
     selectedConversation,
@@ -393,6 +447,8 @@ export const useFixedChat = () => {
     availableUsers,
     loading,
     sending,
+    userLanguage,
+    setUserLanguage,
     selectConversation,
     sendMessage,
     fetchMessages,
