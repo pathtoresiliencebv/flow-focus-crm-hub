@@ -15,15 +15,17 @@ interface ChatAreaProps {
   onBack?: () => void;
   isMobile: boolean;
   sending?: boolean;
+  userLanguage?: string;
 }
 
-export const ChatArea: React.FC<ChatAreaProps> = ({
-  conversation,
-  messages,
+export const ChatArea: React.FC<ChatAreaProps> = ({ 
+  conversation, 
+  messages, 
   onSendMessage,
   onBack,
   isMobile,
-  sending = false
+  sending = false,
+  userLanguage = 'nl'
 }) => {
   const { user } = useAuth();
   const [inputValue, setInputValue] = useState('');
@@ -125,6 +127,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
               key={message.id}
               message={message}
               isOwn={message.from_user_id === user?.id}
+              userLanguage={userLanguage}
             />
           ))
         )}
