@@ -53,6 +53,7 @@ export const useSimpleChat = () => {
   
   const subscriptionRef = useRef<any>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const selectedConversationRef = useRef<string | null>(null);
 
   // Fetch available users based on role
   const fetchAvailableUsers = useCallback(async () => {
@@ -234,6 +235,7 @@ export const useSimpleChat = () => {
   // Select a conversation
   const selectConversation = useCallback((conversationId: string) => {
     setSelectedConversation(conversationId);
+    selectedConversationRef.current = conversationId;
     fetchMessages(conversationId);
   }, [fetchMessages]);
 
@@ -295,27 +297,52 @@ export const useSimpleChat = () => {
           
           const newMessage = payload.new as DirectMessage;
           
-          // If message is for current conversation, add it immediately
-          if (selectedConversation && 
-              (newMessage.from_user_id === selectedConversation || 
-               newMessage.to_user_id === selectedConversation)) {
+          // Use a ref to get the current selectedConversation value
+          const currentConversation = selectedConversationRef.current;
+          
+          console.log('🔍 Checking if message belongs to current conversation:', {
+            messageFrom: newMessage.from_user_id,
+            messageTo: newMessage.to_user_id,
+            currentUser: user.id,
+            selectedConversation: currentConversation
+          });
+          
+          // Check if message belongs to current conversation
+          const isForCurrentConversation = currentConversation && (
+            (newMessage.from_user_id === user.id && newMessage.to_user_id === currentConversation) ||
+            (newMessage.from_user_id === currentConversation && newMessage.to_user_id === user.id)
+          );
+          
+          if (isForCurrentConversation) {
+            console.log('✅ Message is for current conversation, adding to messages');
             
             // Add message immediately for better UX
             setMessages(prevMessages => {
               // Avoid duplicates
               const exists = prevMessages.find(m => m.id === newMessage.id);
-              if (exists) return prevMessages;
+              if (exists) {
+                console.log('⚠️ Message already exists, skipping');
+                return prevMessages;
+              }
               
-              return [...prevMessages, newMessage].sort((a, b) => 
+              const updated = [...prevMessages, newMessage].sort((a, b) => 
                 new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
               );
+              console.log('📊 Updated messages count:', updated.length);
+              return updated;
             });
             
             // Also refresh to get complete data with sender info
-            setTimeout(() => fetchMessages(selectedConversation), 100);
+            setTimeout(() => {
+              if (selectedConversationRef.current === currentConversation) {
+                fetchMessages(currentConversation);
+              }
+            }, 100);
+          } else {
+            console.log('ℹ️ Message is for a different conversation, only updating conversation list');
           }
           
-          // Refresh conversations to update last message and unread counts
+          // Always refresh conversations to update last message and unread counts
           generateConversations();
         }
       )
