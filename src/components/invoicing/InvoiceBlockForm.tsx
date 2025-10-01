@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trash2, GripVertical, Edit3, Plus, Save, X } from 'lucide-react';
+import { Trash2, GripVertical, Edit3, Plus, Save, X, Minus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { RichTextEditor } from '@/components/quotes/RichTextEditor';
 import { useToast } from '@/hooks/use-toast';
@@ -248,43 +248,69 @@ export const InvoiceBlockForm: React.FC<InvoiceBlockFormProps> = ({
                   />
                 </div>
                 <div className="col-span-2">
-                  <Input
-                    type="number"
-                    value={item.quantity || ''}
-                    onChange={(e) => handleItemUpdate(item.id, { quantity: Number(e.target.value) || 0 })}
-                    onBlur={() => {}}
-                    placeholder="Aantal"
-                    className="h-9 text-sm"
-                    min="0"
-                    step="0.01"
-                  />
+                  <div className="flex items-center gap-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleItemUpdate(item.id, { quantity: Math.max(0, (item.quantity || 1) - 1) })}
+                      className="h-9 w-9 p-0 shrink-0"
+                    >
+                      <Minus className="h-3 w-3" />
+                    </Button>
+                    <Input
+                      type="number"
+                      value={item.quantity || ''}
+                      onChange={(e) => handleItemUpdate(item.id, { quantity: Number(e.target.value) || 0 })}
+                      onBlur={() => {}}
+                      placeholder="Aantal"
+                      className="h-9 text-sm text-center"
+                      min="0"
+                      step="0.01"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleItemUpdate(item.id, { quantity: (item.quantity || 1) + 1 })}
+                      className="h-9 w-9 p-0 shrink-0"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
                 </div>
                 <div className="col-span-2">
-                  <Input
-                    type="number"
-                    value={item.unit_price || ''}
-                    onChange={(e) => handleItemUpdate(item.id, { unit_price: Number(e.target.value) || 0 })}
-                    onBlur={() => {}}
-                    placeholder="Prijs"
-                    className="h-9 text-sm"
-                    min="0"
-                    step="0.01"
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">€</span>
+                    <Input
+                      type="number"
+                      value={item.unit_price || ''}
+                      onChange={(e) => handleItemUpdate(item.id, { unit_price: Number(e.target.value) || 0 })}
+                      onBlur={() => {}}
+                      placeholder="0.00"
+                      className="h-9 text-sm pl-7"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
                 </div>
                 <div className="col-span-1">
-                  <Select
-                    value={item.vat_rate?.toString() || '21'}
-                    onValueChange={(value) => handleItemUpdate(item.id, { vat_rate: Number(value) })}
-                  >
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">0%</SelectItem>
-                      <SelectItem value="9">9%</SelectItem>
-                      <SelectItem value="21">21%</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="relative">
+                    <Select
+                      value={item.vat_rate?.toString() || '21'}
+                      onValueChange={(value) => handleItemUpdate(item.id, { vat_rate: Number(value) })}
+                    >
+                      <SelectTrigger className="h-9 text-sm pr-7">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">0</SelectItem>
+                        <SelectItem value="9">9</SelectItem>
+                        <SelectItem value="21">21</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="absolute right-10 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">%</span>
+                  </div>
                 </div>
                 <div className="col-span-1 text-right">
                   <span className="text-sm font-medium">€{(item.total || 0).toFixed(2)}</span>

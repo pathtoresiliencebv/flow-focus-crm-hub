@@ -7,7 +7,6 @@ import { Trash2, GripVertical, Edit3, Plus, Save, X, Minus } from 'lucide-react'
 import { QuoteItem, QuoteBlock } from '@/types/quote';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AIEnhanceButton } from '@/components/ui/ai-enhance-button';
 import { useToast } from '@/hooks/use-toast';
 
 interface QuoteBlockFormProps {
@@ -328,78 +327,86 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
             <CardContent className="space-y-4">
               <div>
                 <label className="text-sm font-medium mb-2 block">Werkzaamheden</label>
-                <div className="flex gap-2">
-                  <Input
-                    value={newProduct.description}
-                    onChange={(e) => setNewProduct(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="bijv. sloopwerk"
-                    className="flex-1"
-                  />
-                  <AIEnhanceButton
-                    text={newProduct.description}
-                    onEnhanced={(enhanced) => setNewProduct(prev => ({ ...prev, description: enhanced }))}
-                    context="product"
-                    size="sm"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <label className="text-sm font-medium mb-2 block">Prijs per stuk (€)</label>
                 <Input
-                  type="number"
-                  value={newProduct.unit_price}
-                  onChange={(e) => setNewProduct(prev => ({ ...prev, unit_price: Number(e.target.value) || 0 }))}
-                  placeholder="0"
-                  min="0"
-                  step="0.01"
+                  value={newProduct.description}
+                  onChange={(e) => setNewProduct(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="bijv. sloopwerk"
                 />
               </div>
               
-              <div>
-                <label className="text-sm font-medium mb-2 block">Aantal</label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setNewProduct(prev => ({ ...prev, quantity: Math.max(0, prev.quantity - 1) }))}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Minus className="h-3 w-3" />
-                  </Button>
-                  <Input
-                    type="number"
-                    value={newProduct.quantity}
-                    onChange={(e) => setNewProduct(prev => ({ ...prev, quantity: Number(e.target.value) || 0 }))}
-                    className="w-16 text-center"
-                    min="0"
-                  />
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setNewProduct(prev => ({ ...prev, quantity: prev.quantity + 1 }))}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Aantal</label>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setNewProduct(prev => ({ ...prev, quantity: Math.max(0, prev.quantity - 1) }))}
+                      className="h-9 w-9 p-0 shrink-0"
+                    >
+                      <Minus className="h-3 w-3" />
+                    </Button>
+                    <Input
+                      type="number"
+                      value={newProduct.quantity}
+                      onChange={(e) => setNewProduct(prev => ({ ...prev, quantity: Number(e.target.value) || 0 }))}
+                      className="text-center"
+                      min="0"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setNewProduct(prev => ({ ...prev, quantity: prev.quantity + 1 }))}
+                      className="h-9 w-9 p-0 shrink-0"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Prijs per stuk</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">€</span>
+                    <Input
+                      type="number"
+                      value={newProduct.unit_price}
+                      onChange={(e) => setNewProduct(prev => ({ ...prev, unit_price: Number(e.target.value) || 0 }))}
+                      placeholder="0.00"
+                      className="pl-7"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium mb-2 block">BTW</label>
+                  <div className="relative">
+                    <Select
+                      value={newProduct.vat_rate.toString()}
+                      onValueChange={(value) => setNewProduct(prev => ({ ...prev, vat_rate: Number(value) }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">0%</SelectItem>
+                        <SelectItem value="9">9%</SelectItem>
+                        <SelectItem value="21">21%</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="absolute right-10 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none">%</span>
+                  </div>
                 </div>
               </div>
               
-              <div>
-                <label className="text-sm font-medium mb-2 block">BTW %</label>
-                <Select
-                  value={newProduct.vat_rate.toString()}
-                  onValueChange={(value) => setNewProduct(prev => ({ ...prev, vat_rate: Number(value) }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="0">0% BTW</SelectItem>
-                    <SelectItem value="9">9% BTW</SelectItem>
-                    <SelectItem value="21">21% BTW</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="flex justify-end">
+                <div className="text-sm font-medium">
+                  Totaal: <span className="text-lg">€{(newProduct.unit_price * newProduct.quantity).toFixed(2)}</span>
+                </div>
               </div>
               
               <div className="flex gap-2">
@@ -430,32 +437,22 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
               {item.type === 'product' ? (
                 <>
                   <div className="col-span-5">
-                    <div className="flex gap-2 items-center">
-                      <Input
-                        value={localItem.description}
-                        onChange={(e) => handleLocalInputChange(item.id, 'description', e.target.value)}
-                        onBlur={() => handleInputBlur(item.id)}
-                        placeholder="Beschrijving"
-                        className="h-9 text-sm flex-1"
-                      />
-                      <AIEnhanceButton
-                        text={localItem.description}
-                        onEnhanced={(enhanced) => {
-                          handleLocalInputChange(item.id, 'description', enhanced);
-                          handleInputBlur(item.id);
-                        }}
-                        context="product"
-                        size="sm"
-                      />
-                    </div>
+                    <Input
+                      value={localItem.description}
+                      onChange={(e) => handleLocalInputChange(item.id, 'description', e.target.value)}
+                      onBlur={() => handleInputBlur(item.id)}
+                      placeholder="Beschrijving"
+                      className="h-9 text-sm"
+                    />
                   </div>
                   <div className="col-span-2">
                     <div className="flex items-center gap-1">
                       <Button
+                        type="button"
                         size="sm"
                         variant="outline"
                         onClick={() => updateQuantity(item.id, (localItem.quantity || 1) - 1)}
-                        className="h-8 w-8 p-0"
+                        className="h-9 w-9 p-0 shrink-0"
                       >
                         <Minus className="h-3 w-3" />
                       </Button>
@@ -464,42 +461,49 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                         value={localItem.quantity || ''}
                         onChange={(e) => handleLocalInputChange(item.id, 'quantity', Number(e.target.value) || 0)}
                         onBlur={() => handleInputBlur(item.id)}
-                        className="h-8 w-12 text-center text-sm"
+                        className="h-9 text-center text-sm"
                         min="0"
                       />
                       <Button
+                        type="button"
                         size="sm"
                         variant="outline"
                         onClick={() => updateQuantity(item.id, (localItem.quantity || 1) + 1)}
-                        className="h-8 w-8 p-0"
+                        className="h-9 w-9 p-0 shrink-0"
                       >
                         <Plus className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
                   <div className="col-span-2">
-                    <Input
-                      type="number"
-                      value={localItem.unit_price || ''}
-                      onChange={(e) => handleLocalInputChange(item.id, 'unit_price', Number(e.target.value) || 0)}
-                      onBlur={() => handleInputBlur(item.id)}
-                      placeholder="Prijs"
-                      className="h-9 text-sm"
-                      min="0"
-                      step="0.01"
-                    />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">€</span>
+                      <Input
+                        type="number"
+                        value={localItem.unit_price || ''}
+                        onChange={(e) => handleLocalInputChange(item.id, 'unit_price', Number(e.target.value) || 0)}
+                        onBlur={() => handleInputBlur(item.id)}
+                        placeholder="0.00"
+                        className="h-9 text-sm pl-7"
+                        min="0"
+                        step="0.01"
+                      />
+                    </div>
                   </div>
                   <div className="col-span-2">
-                    <Input
-                      type="number"
-                      value={localItem.vat_rate || ''}
-                      onChange={(e) => handleLocalInputChange(item.id, 'vat_rate', Number(e.target.value) || 0)}
-                      onBlur={() => handleInputBlur(item.id)}
-                      placeholder="BTW"
-                      className="h-9 text-sm"
-                      min="0"
-                      max="100"
-                    />
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        value={localItem.vat_rate || ''}
+                        onChange={(e) => handleLocalInputChange(item.id, 'vat_rate', Number(e.target.value) || 0)}
+                        onBlur={() => handleInputBlur(item.id)}
+                        placeholder="21"
+                        className="h-9 text-sm pr-7"
+                        min="0"
+                        max="100"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">%</span>
+                    </div>
                   </div>
                   <div className="col-span-1 text-right text-sm font-medium">
                     €{(localItem.total || 0).toFixed(2)}
