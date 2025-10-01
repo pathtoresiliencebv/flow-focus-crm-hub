@@ -9,8 +9,7 @@ import { TimeRegistration } from "@/components/TimeRegistration";
 import { Receipts } from "@/components/Receipts";
 import { Quotes } from "@/components/Quotes";
 import { Invoicing } from "@/components/Invoicing";
-import { Email } from "@/components/Email";
-import { EmailFullscreen } from "@/components/EmailFullscreen";
+import Email from "@/pages/Email";
 import { SimpleChatPage } from "@/components/SimpleChatPage";
 import Personnel from "@/components/Personnel";
 import UserManagement from "@/components/UserManagement";
@@ -136,7 +135,7 @@ const Index = () => {
       case "invoicing":
         return <Invoicing />;
       case "email":
-        return <EmailFullscreen onBackToDashboard={() => setActiveTab("dashboard")} />;
+        return <Email />;
       case "chat":
         return <SimpleChatPage />;
       case "personnel":
