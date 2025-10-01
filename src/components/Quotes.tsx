@@ -181,54 +181,49 @@ export function Quotes() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-6 space-y-6">
       <QuotesHeader
         onQuoteCreated={() => fetchQuotes(true)}
       />
 
-      <Card>
-        <CardHeader>
-          <QuotesSearch
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
+      <QuotesSearch
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+      />
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="active">
+            Actieve Offertes ({activeQuotes.length})
+          </TabsTrigger>
+          <TabsTrigger value="archived">
+            Gearchiveerde Offertes ({archivedQuotes.length})
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="active" className="mt-0">
+          <QuotesTable
+            quotes={filteredActiveQuotes}
+            onPreview={handlePreview}
+            onViewPublic={handleViewPublic}
+            onDelete={deleteQuote}
+            onApprove={handleApprove}
+            onSendEmail={handleSendEmail}
+            onDuplicate={duplicateQuote}
           />
-        </CardHeader>
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="active">
-                Actieve Offertes ({activeQuotes.length})
-              </TabsTrigger>
-              <TabsTrigger value="archived">
-                Verwijderde Offertes ({archivedQuotes.length})
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="active" className="mt-4">
-              <QuotesTable
-                quotes={filteredActiveQuotes}
-                onPreview={handlePreview}
-                onViewPublic={handleViewPublic}
-                onDelete={deleteQuote}
-                onApprove={handleApprove}
-                onSendEmail={handleSendEmail}
-                onDuplicate={duplicateQuote}
-              />
-            </TabsContent>
-            
-            <TabsContent value="archived" className="mt-4">
-              <QuotesTable
-                quotes={filteredArchivedQuotes}
-                onPreview={handlePreview}
-                onViewPublic={handleViewPublic}
-                onDelete={permanentDeleteQuote}
-                onRestore={restoreQuote}
-                isArchived={true}
-              />
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+        </TabsContent>
+        
+        <TabsContent value="archived" className="mt-0">
+          <QuotesTable
+            quotes={filteredArchivedQuotes}
+            onPreview={handlePreview}
+            onViewPublic={handleViewPublic}
+            onDelete={permanentDeleteQuote}
+            onRestore={restoreQuote}
+            isArchived={true}
+          />
+        </TabsContent>
+      </Tabs>
 
       <QuotesPreviewDialog
         open={previewDialogOpen}
