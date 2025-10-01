@@ -96,7 +96,7 @@ export const SMTPConfigDialog: React.FC<SMTPConfigDialogProps> = ({ onAccountCon
         .from('email_accounts') as any)
         .insert({
           user_id: user.id,
-          email: emailAddress,
+          email_address: emailAddress,
           provider: 'smtp',
           display_name: displayName,
           is_primary: true,

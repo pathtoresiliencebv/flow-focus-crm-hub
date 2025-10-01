@@ -6,14 +6,12 @@ export interface EmailAccount {
   id: string;
   user_id: string;
   provider: 'gmail' | 'outlook' | 'imap' | 'smtp';
-  email: string;
-  email_address?: string;
+  email_address: string;
   display_name: string | null;
   is_active: boolean;
   is_primary: boolean;
   sync_enabled: boolean;
   last_sync_at: string | null;
-  last_synced_at?: string | null;
   created_at: string;
 }
 

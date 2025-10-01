@@ -101,7 +101,7 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
           {/* From */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span className="font-medium">Van:</span>
-            <span>{account.display_name || account.email} &lt;{account.email}&gt;</span>
+            <span>{account.display_name || account.email_address} &lt;{account.email_address}&gt;</span>
           </div>
 
           {/* To */}
@@ -217,7 +217,7 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
           {/* Actions */}
           <div className="flex justify-between items-center pt-4 border-t">
             <div className="text-xs text-muted-foreground">
-              Via {account.provider.toUpperCase()}: {account.email}
+              Via {account.provider.toUpperCase()}: {account.email_address}
             </div>
             <div className="flex gap-2">
               <Button
