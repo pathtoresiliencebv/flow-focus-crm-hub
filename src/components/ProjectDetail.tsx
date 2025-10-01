@@ -1,21 +1,20 @@
 
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, FileText, Users, Clipboard, BarChart, Edit, Save, X, User, MessageCircle, Pencil } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Calendar, FileText, Users, Clipboard, Edit, Save, X, User, Pencil, Package, UserCog } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useCrmStore, UpdateProject } from "@/hooks/useCrmStore";
 import { useUsers } from "@/hooks/useUsers";
 import { ProjectMaterials } from "./ProjectMaterials";
 import { ProjectPersonnel } from "./ProjectPersonnel";
 import { ProjectPlanning } from "./ProjectPlanning";
 import { ProjectTasks } from "./ProjectTasks";
-// import { ProjectChat } from "./ProjectChat"; // Disabled for now
 import { useProjectDelivery } from "@/hooks/useProjectDelivery";
 import { ProjectDeliveryDialog } from "./dashboard/ProjectDeliveryDialog";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,9 +26,11 @@ const ProjectDetail = () => {
   const { monteurs, isLoading: isLoadingUsers } = useUsers();
   const { profile, user } = useAuth();
   const { startProject, completeProject, isStarting, isCompleting } = useProjectDelivery();
-  const [projectDetailTab, setProjectDetailTab] = useState("details");
   const [isEditing, setIsEditing] = useState(false);
   const [showDelivery, setShowDelivery] = useState(false);
+  const [showPlanning, setShowPlanning] = useState(false);
+  const [showMaterials, setShowMaterials] = useState(false);
+  const [showPersonnel, setShowPersonnel] = useState(false);
   const [editData, setEditData] = useState({
     title: "",
     customerId: "",
@@ -351,152 +352,108 @@ const ProjectDetail = () => {
         )}
       </div>
 
-      <Tabs value={projectDetailTab} onValueChange={setProjectDetailTab} className="w-full">
-        <TabsList className="mb-4 grid w-full h-auto bg-muted/50 p-1 rounded-xl">
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 w-full">
-            <TabsTrigger 
-              value="details" 
-              className="flex flex-col gap-1 py-3 text-xs min-h-[60px] data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg touch-manipulation transition-all"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            >
-              <Clipboard className="h-5 w-5" />
-              <span className="font-medium">Details</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="planning" 
-              className="flex flex-col gap-1 py-3 text-xs min-h-[60px] data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg touch-manipulation transition-all"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            >
-              <div className="flex items-center gap-1">
-                <Calendar className="h-5 w-5" />
-                {canEditTabs && <Pencil className="h-3 w-3 opacity-50" />}
-              </div>
+      {/* Action Buttons */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <Sheet open={showPlanning} onOpenChange={setShowPlanning}>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="flex flex-col gap-2 py-6 h-auto">
+              <Calendar className="h-6 w-6" />
               <span className="font-medium">Planning</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="materials" 
-              className="flex flex-col gap-1 py-3 text-xs min-h-[60px] data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg touch-manipulation transition-all"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            >
-              <div className="flex items-center gap-1">
-                <FileText className="h-5 w-5" />
-                {canEditTabs && <Pencil className="h-3 w-3 opacity-50" />}
-              </div>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Planning - {project.title}</SheetTitle>
+            </SheetHeader>
+            <div className="mt-6">
+              <ProjectPlanning projectId={project.id} projectTitle={project.title} />
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        <Sheet open={showMaterials} onOpenChange={setShowMaterials}>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="flex flex-col gap-2 py-6 h-auto">
+              <Package className="h-6 w-6" />
               <span className="font-medium">Materialen</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="personnel" 
-              className="flex flex-col gap-1 py-3 text-xs min-h-[60px] data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg touch-manipulation transition-all"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            >
-              <div className="flex items-center gap-1">
-                <Users className="h-5 w-5" />
-                {canEditTabs && <Pencil className="h-3 w-3 opacity-50" />}
-              </div>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Materialen - {project.title}</SheetTitle>
+            </SheetHeader>
+            <div className="mt-6">
+              <ProjectMaterials projectId={project.id} />
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        <Sheet open={showPersonnel} onOpenChange={setShowPersonnel}>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="flex flex-col gap-2 py-6 h-auto">
+              <UserCog className="h-6 w-6" />
               <span className="font-medium">Personeel</span>
-            </TabsTrigger>
-            <TabsTrigger 
-              value="chat" 
-              className="flex flex-col gap-1 py-3 text-xs min-h-[60px] data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg touch-manipulation transition-all"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            >
-              <MessageCircle className="h-5 w-5" />
-              <span className="font-medium">Chat</span>
-            </TabsTrigger>
-            {profile?.role !== 'Installateur' && (
-              <TabsTrigger 
-                value="reports" 
-                className="flex flex-col gap-1 py-3 text-xs min-h-[60px] data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg touch-manipulation transition-all"
-                style={{ WebkitTapHighlightColor: 'transparent' }}
-              >
-                <BarChart className="h-5 w-5" />
-                <span className="font-medium">Rapporten</span>
-              </TabsTrigger>
-            )}
-          </div>
-        </TabsList>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle>Personeel - {project.title}</SheetTitle>
+            </SheetHeader>
+            <div className="mt-6">
+              <ProjectPersonnel projectId={project.id} />
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
 
-        <TabsContent value="details">
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Projectdetails</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+      {/* Project Details */}
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Projectdetails</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <h3 className="font-semibold mb-2">Beschrijving</h3>
+              {isEditing ? (
+                <Textarea
+                  value={editData.description}
+                  onChange={(e) => handleInputChange("description", e.target.value)}
+                  placeholder="Beschrijf het project..."
+                  rows={4}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {project.description || "Nog geen beschrijving toegevoegd voor dit project."}
+                </p>
+              )}
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2">Project specificaties</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <h3 className="font-semibold mb-2">Beschrijving</h3>
-                  {isEditing ? (
-                    <Textarea
-                      value={editData.description}
-                      onChange={(e) => handleInputChange("description", e.target.value)}
-                      placeholder="Beschrijf het project..."
-                      rows={4}
-                    />
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      {project.description || "Nog geen beschrijving toegevoegd voor dit project."}
-                    </p>
-                  )}
+                  <p className="text-sm font-medium">Type project</p>
+                  <p className="text-sm text-muted-foreground">{project.title.includes("kozijn") ? "Kozijnwerk" : "Glaswerk"}</p>
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-2">Project specificaties</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm font-medium">Type project</p>
-                      <p className="text-sm text-muted-foreground">{project.title.includes("kozijn") ? "Kozijnwerk" : "Glaswerk"}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Locatie</p>
-                      <p className="text-sm text-muted-foreground">Nog niet gespecificeerd</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Omvang werk</p>
-                      <p className="text-sm text-muted-foreground">Standaard installatie</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Verwachte doorlooptijd</p>
-                      <p className="text-sm text-muted-foreground">3-5 werkdagen</p>
-                    </div>
-                  </div>
+                  <p className="text-sm font-medium">Locatie</p>
+                  <p className="text-sm text-muted-foreground">Nog niet gespecificeerd</p>
                 </div>
-              </CardContent>
-            </Card>
+                <div>
+                  <p className="text-sm font-medium">Omvang werk</p>
+                  <p className="text-sm text-muted-foreground">Standaard installatie</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Verwachte doorlooptijd</p>
+                  <p className="text-sm text-muted-foreground">3-5 werkdagen</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-            <ProjectTasks projectId={project.id} />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="planning">
-          <ProjectPlanning projectId={project.id} projectTitle={project.title} />
-        </TabsContent>
-
-        <TabsContent value="materials">
-          <ProjectMaterials projectId={project.id} />
-        </TabsContent>
-
-        <TabsContent value="personnel">
-          <ProjectPersonnel projectId={project.id} />
-        </TabsContent>
-
-        <TabsContent value="chat">
-          <div className="text-center py-8 text-muted-foreground">
-            Chat functionaliteit wordt binnenkort toegevoegd.
-          </div>
-        </TabsContent>
-
-        <TabsContent value="reports">
-          <Card>
-            <CardHeader>
-              <CardTitle>Rapportages</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-center text-muted-foreground py-8">
-                Nog geen rapportages beschikbaar voor dit project.
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        <ProjectTasks projectId={project.id} />
+      </div>
 
       {/* Project Delivery Dialog */}
       {showDelivery && (
