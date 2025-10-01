@@ -108,28 +108,47 @@ export const useSimpleChat = () => {
 
   // Send a new message
   const sendMessage = useCallback(async (content: string, toUserId: string) => {
-    if (!user || !content.trim()) return;
+    if (!user || !content.trim()) {
+      console.warn('⚠️ Cannot send message: missing user or empty content', { user: !!user, content });
+      return;
+    }
 
     const messageContent = content.trim();
-    console.log('Sending message to user:', toUserId, 'Content:', messageContent);
+    console.log('📤 Sending message:', {
+      from: user.id,
+      to: toUserId,
+      content: messageContent,
+      contentLength: messageContent.length
+    });
 
     try {
+      const messageData = {
+        from_user_id: user.id,
+        to_user_id: toUserId,
+        content: messageContent
+      };
+      
+      console.log('📝 Insert data:', messageData);
+
       const { data, error } = await supabase
         .from('direct_messages')
-        .insert({
-          from_user_id: user.id,
-          to_user_id: toUserId,
-          content: messageContent
-        })
+        .insert(messageData)
         .select()
         .single();
 
       if (error) {
-        console.error('Error sending message:', error);
+        console.error('❌ Database error sending message:', {
+          error,
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        alert(`Fout bij verzenden bericht: ${error.message}\n\nCode: ${error.code}\nDetails: ${error.details || 'Geen details'}`);
         throw error;
       }
 
-      console.log('Message sent successfully:', data);
+      console.log('✅ Message sent successfully:', data);
       
       // Optimistically add the message to current conversation
       if (selectedConversation === toUserId) {
@@ -143,17 +162,24 @@ export const useSimpleChat = () => {
         
         setMessages(prevMessages => {
           const exists = prevMessages.find(m => m.id === optimisticMessage.id);
-          if (exists) return prevMessages;
+          if (exists) {
+            console.log('⚠️ Message already exists in state');
+            return prevMessages;
+          }
           
-          return [...prevMessages, optimisticMessage].sort((a, b) => 
+          const updated = [...prevMessages, optimisticMessage].sort((a, b) => 
             new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
           );
+          console.log('📊 Messages updated, count:', updated.length);
+          return updated;
         });
+      } else {
+        console.log('⚠️ Message sent to different conversation, not adding to current view');
       }
 
     } catch (error) {
-      console.error('Error sending message:', error);
-      // Could add toast notification here for user feedback
+      console.error('❌ Error sending message:', error);
+      // Error is already shown in alert above
     }
   }, [user, profile, selectedConversation]);
 
