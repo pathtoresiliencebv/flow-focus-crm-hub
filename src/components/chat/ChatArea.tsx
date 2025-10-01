@@ -34,11 +34,17 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   };
 
   useEffect(() => {
+    console.log('💬 ChatArea - Messages updated:', messages.length, 'messages', messages);
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    console.log('👤 ChatArea - Conversation changed:', conversation?.other_user.full_name, 'ID:', conversation?.id);
+  }, [conversation]);
+
   const handleSend = () => {
     if (inputValue.trim() && !sending) {
+      console.log('📤 ChatArea - Sending message:', inputValue);
       onSendMessage(inputValue);
       setInputValue('');
     }

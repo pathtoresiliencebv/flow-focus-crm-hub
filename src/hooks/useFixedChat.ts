@@ -117,7 +117,10 @@ export const useFixedChat = () => {
 
   // Fetch messages for a specific conversation
   const fetchMessages = useCallback(async (otherUserId: string) => {
-    if (!user || !otherUserId) return;
+    if (!user || !otherUserId) {
+      console.log('⚠️ Cannot fetch messages - missing user or otherUserId:', { user: user?.id, otherUserId });
+      return;
+    }
 
     console.log('📨 Fetching messages between:', user.id, 'and:', otherUserId);
 
@@ -137,7 +140,7 @@ export const useFixedChat = () => {
         return;
       }
 
-      console.log('✅ Fetched messages:', data?.length || 0, 'messages');
+      console.log('✅ Fetched messages:', data?.length || 0, 'messages', data);
       setMessages((data || []) as DirectMessage[]);
     } catch (error) {
       console.error('❌ Error fetching messages:', error);
@@ -203,10 +206,14 @@ export const useFixedChat = () => {
   }, [user, profile, sending]);
 
   // Select a conversation
-  const selectConversation = useCallback((otherUserId: string) => {
+  const selectConversation = useCallback((otherUserId: string | null) => {
     console.log('💬 Selecting conversation with:', otherUserId);
     setSelectedConversation(otherUserId);
-    fetchMessages(otherUserId);
+    if (otherUserId) {
+      fetchMessages(otherUserId);
+    } else {
+      setMessages([]);
+    }
   }, [fetchMessages]);
 
   // Setup realtime subscription
@@ -308,6 +315,17 @@ export const useFixedChat = () => {
       generateConversations();
     }
   }, [availableUsers, generateConversations]);
+
+  // Setup realtime subscription after initialization
+  useEffect(() => {
+    if (!user || loading) return;
+
+    const cleanup = setupRealtimeSubscription();
+    
+    return () => {
+      if (cleanup) cleanup();
+    };
+  }, [user, loading, setupRealtimeSubscription]);
 
   return {
     conversations,
