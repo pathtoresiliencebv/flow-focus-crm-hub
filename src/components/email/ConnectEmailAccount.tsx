@@ -5,6 +5,7 @@ import { Mail, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { SMTPConfigDialog } from './SMTPConfigDialog';
 
 interface ConnectEmailAccountProps {
   onAccountConnected?: () => void;
@@ -68,30 +69,49 @@ export const ConnectEmailAccount: React.FC<ConnectEmailAccountProps> = ({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6 pb-8">
-        <Button
-          onClick={handleConnectGmail}
-          disabled={connecting}
-          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
-          size="lg"
-        >
-          {connecting ? (
-            <>
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Verbinden...
-            </>
-          ) : (
-            <>
-              <Mail className="mr-2 h-5 w-5" />
-              Gmail Koppelen
-            </>
-          )}
-        </Button>
+        <div className="space-y-3">
+          <div className="text-sm font-medium text-center text-muted-foreground">
+            Kies je verbindingsmethode:
+          </div>
+          
+          <Button
+            onClick={handleConnectGmail}
+            disabled={connecting}
+            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+            size="lg"
+          >
+            {connecting ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Verbinden...
+              </>
+            ) : (
+              <>
+                <Mail className="mr-2 h-5 w-5" />
+                Gmail via OAuth
+              </>
+            )}
+          </Button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">Of</span>
+            </div>
+          </div>
+
+          <SMTPConfigDialog onAccountConnected={onAccountConnected} />
+        </div>
 
         <div className="bg-muted/50 rounded-lg p-4">
-          <p className="text-sm font-medium text-center mb-3">Binnenkort beschikbaar:</p>
-          <div className="flex gap-2 justify-center">
-            <span className="px-4 py-2 bg-background border border-border rounded-lg text-sm font-medium">Outlook</span>
-            <span className="px-4 py-2 bg-background border border-border rounded-lg text-sm font-medium">IMAP/SMTP</span>
+          <p className="text-sm font-medium text-center mb-3">SMTP/IMAP ondersteunt:</p>
+          <div className="flex gap-2 justify-center flex-wrap">
+            <span className="px-3 py-1 bg-background border border-border rounded-lg text-xs font-medium">Gmail</span>
+            <span className="px-3 py-1 bg-background border border-border rounded-lg text-xs font-medium">Outlook</span>
+            <span className="px-3 py-1 bg-background border border-border rounded-lg text-xs font-medium">Yahoo</span>
+            <span className="px-3 py-1 bg-background border border-border rounded-lg text-xs font-medium">Custom</span>
           </div>
         </div>
 
