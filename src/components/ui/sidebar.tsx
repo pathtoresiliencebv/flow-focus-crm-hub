@@ -121,7 +121,15 @@ interface SidebarProps {
 export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
   const { user, profile, logout, hasPermission } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  // Default collapsed state for email tab
+  const [isCollapsed, setIsCollapsed] = useState(activeTab === 'email');
+
+  // Auto-collapse when switching to email tab
+  useEffect(() => {
+    if (activeTab === 'email') {
+      setIsCollapsed(true);
+    }
+  }, [activeTab]);
 
   const toggleSidebar = () => setIsOpen(!isOpen);
   const toggleCollapse = () => setIsCollapsed(!isCollapsed);
@@ -223,8 +231,8 @@ export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
           {!mini ? (
             <img src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="SMANS Logo" className="h-10 w-auto" />
           ) : (
-            <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center">
-              <span className="text-white font-bold text-sm">S</span>
+            <div className="w-10 h-10 bg-red-600 rounded-md flex items-center justify-center">
+              <span className="text-white font-bold text-lg">S</span>
             </div>
           )}
         </div>
@@ -258,11 +266,14 @@ export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
           </div>
         )}
         
-        {/* Collapsed state - show only important communication and settings icons */}
+        {/* Collapsed state - show all menu items as icons */}
         {mini && (
-          <div className="space-y-2 mt-6">
+          <div className="space-y-1 mt-6 px-2">
+            {mainLinks.map(link => renderLink(link, false, true))}
+            <div className="border-t border-gray-200 my-2"></div>
             {communication.map(link => renderLink(link, false, true))}
-            {settings.filter(link => link.key === 'settings').map(link => renderLink(link, false, true))}
+            <div className="border-t border-gray-200 my-2"></div>
+            {settings.map(link => renderLink(link, false, true))}
           </div>
         )}
       </nav>

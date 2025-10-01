@@ -55,49 +55,53 @@ export const ConnectEmailAccount: React.FC<ConnectEmailAccountProps> = ({
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[400px]">
-      <Card className="max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <Mail className="h-8 w-8 text-primary" />
-            </div>
+    <Card className="w-full shadow-lg">
+      <CardHeader className="text-center pb-6">
+        <div className="flex justify-center mb-6">
+          <div className="h-20 w-20 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md">
+            <Mail className="h-10 w-10 text-white" />
           </div>
-          <CardTitle>Connect Your Email</CardTitle>
-          <CardDescription>
-            Connect your Gmail account to start managing emails directly in your CRM
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Button
-            onClick={handleConnectGmail}
-            disabled={connecting}
-            className="w-full"
-            size="lg"
-          >
-            {connecting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Connecting...
-              </>
-            ) : (
-              <>
-                <Mail className="mr-2 h-4 w-4" />
-                Connect Gmail
-              </>
-            )}
-          </Button>
+        </div>
+        <CardTitle className="text-2xl mb-2">Verbind je E-mail</CardTitle>
+        <CardDescription className="text-base">
+          Koppel je Gmail account om direct je emails te beheren vanuit het CRM systeem
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6 pb-8">
+        <Button
+          onClick={handleConnectGmail}
+          disabled={connecting}
+          className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+          size="lg"
+        >
+          {connecting ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Verbinden...
+            </>
+          ) : (
+            <>
+              <Mail className="mr-2 h-5 w-5" />
+              Gmail Koppelen
+            </>
+          )}
+        </Button>
 
-          <div className="text-sm text-muted-foreground text-center">
-            <p>More providers coming soon:</p>
-            <div className="flex gap-2 justify-center mt-2">
-              <span className="px-3 py-1 bg-muted rounded-full text-xs">Outlook</span>
-              <span className="px-3 py-1 bg-muted rounded-full text-xs">IMAP</span>
-            </div>
+        <div className="bg-muted/50 rounded-lg p-4">
+          <p className="text-sm font-medium text-center mb-3">Binnenkort beschikbaar:</p>
+          <div className="flex gap-2 justify-center">
+            <span className="px-4 py-2 bg-background border border-border rounded-lg text-sm font-medium">Outlook</span>
+            <span className="px-4 py-2 bg-background border border-border rounded-lg text-sm font-medium">IMAP/SMTP</span>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+
+        <div className="text-xs text-muted-foreground text-center space-y-1">
+          <p>✓ Veilige OAuth2 authenticatie</p>
+          <p>✓ Je wachtwoord wordt nooit opgeslagen</p>
+          <p>✓ Je kunt de koppeling altijd verwijderen</p>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
