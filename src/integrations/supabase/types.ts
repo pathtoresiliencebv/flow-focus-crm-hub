@@ -125,6 +125,147 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_event_shares: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          permission_level: string
+          shared_with_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          permission_level?: string
+          shared_with_user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          permission_level?: string
+          shared_with_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_event_shares_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calendar_events: {
+        Row: {
+          assigned_to_role: Database["public"]["Enums"]["user_role"] | null
+          assigned_to_user: string | null
+          category: Database["public"]["Enums"]["calendar_event_category"]
+          color_code: string | null
+          created_at: string
+          customer_id: string | null
+          description: string | null
+          end_datetime: string
+          id: string
+          is_all_day: boolean
+          is_recurring: boolean
+          is_team_event: boolean | null
+          location: string | null
+          parent_event_id: string | null
+          privacy_level: Database["public"]["Enums"]["calendar_privacy_level"]
+          project_id: string | null
+          recurrence_end_date: string | null
+          recurrence_interval: number | null
+          recurrence_pattern:
+            | Database["public"]["Enums"]["calendar_recurrence_pattern"]
+            | null
+          reminder_minutes_before: number[] | null
+          start_datetime: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_to_role?: Database["public"]["Enums"]["user_role"] | null
+          assigned_to_user?: string | null
+          category?: Database["public"]["Enums"]["calendar_event_category"]
+          color_code?: string | null
+          created_at?: string
+          customer_id?: string | null
+          description?: string | null
+          end_datetime: string
+          id?: string
+          is_all_day?: boolean
+          is_recurring?: boolean
+          is_team_event?: boolean | null
+          location?: string | null
+          parent_event_id?: string | null
+          privacy_level?: Database["public"]["Enums"]["calendar_privacy_level"]
+          project_id?: string | null
+          recurrence_end_date?: string | null
+          recurrence_interval?: number | null
+          recurrence_pattern?:
+            | Database["public"]["Enums"]["calendar_recurrence_pattern"]
+            | null
+          reminder_minutes_before?: number[] | null
+          start_datetime: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_to_role?: Database["public"]["Enums"]["user_role"] | null
+          assigned_to_user?: string | null
+          category?: Database["public"]["Enums"]["calendar_event_category"]
+          color_code?: string | null
+          created_at?: string
+          customer_id?: string | null
+          description?: string | null
+          end_datetime?: string
+          id?: string
+          is_all_day?: boolean
+          is_recurring?: boolean
+          is_team_event?: boolean | null
+          location?: string | null
+          parent_event_id?: string | null
+          privacy_level?: Database["public"]["Enums"]["calendar_privacy_level"]
+          project_id?: string | null
+          recurrence_end_date?: string | null
+          recurrence_interval?: number | null
+          recurrence_pattern?:
+            | Database["public"]["Enums"]["calendar_recurrence_pattern"]
+            | null
+          reminder_minutes_before?: number[] | null
+          start_datetime?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_events_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_events_parent_event_id_fkey"
+            columns: ["parent_event_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_channels: {
         Row: {
           created_at: string
@@ -1033,6 +1174,110 @@ export type Database = {
           },
         ]
       }
+      external_calendar_events: {
+        Row: {
+          attendees: Json | null
+          calendar_setting_id: string
+          created_at: string
+          description: string | null
+          end_time: string
+          external_event_id: string
+          id: string
+          location: string | null
+          start_time: string
+          status: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          attendees?: Json | null
+          calendar_setting_id: string
+          created_at?: string
+          description?: string | null
+          end_time: string
+          external_event_id: string
+          id?: string
+          location?: string | null
+          start_time: string
+          status?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          attendees?: Json | null
+          calendar_setting_id?: string
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          external_event_id?: string
+          id?: string
+          location?: string | null
+          start_time?: string
+          status?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_calendar_events_calendar_setting_id_fkey"
+            columns: ["calendar_setting_id"]
+            isOneToOne: false
+            referencedRelation: "google_calendar_settings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      google_calendar_settings: {
+        Row: {
+          access_token: string | null
+          calendar_id: string
+          calendar_name: string
+          created_at: string
+          id: string
+          last_sync_at: string | null
+          refresh_token: string | null
+          selected_calendars: Json | null
+          sync_enabled: boolean
+          sync_status: string | null
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+          user_role: Database["public"]["Enums"]["user_role"]
+        }
+        Insert: {
+          access_token?: string | null
+          calendar_id: string
+          calendar_name: string
+          created_at?: string
+          id?: string
+          last_sync_at?: string | null
+          refresh_token?: string | null
+          selected_calendars?: Json | null
+          sync_enabled?: boolean
+          sync_status?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+          user_role: Database["public"]["Enums"]["user_role"]
+        }
+        Update: {
+          access_token?: string | null
+          calendar_id?: string
+          calendar_name?: string
+          created_at?: string
+          id?: string
+          last_sync_at?: string | null
+          refresh_token?: string | null
+          selected_calendars?: Json | null
+          sync_enabled?: boolean
+          sync_status?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+          user_role?: Database["public"]["Enums"]["user_role"]
+        }
+        Relationships: []
+      }
       invoice_items: {
         Row: {
           block_order: number | null
@@ -1673,7 +1918,9 @@ export type Database = {
           created_at: string
           description: string | null
           end_time: string
+          google_calendar_event_id: string | null
           id: string
+          last_synced_at: string | null
           location: string | null
           project_id: string | null
           start_date: string
@@ -1688,7 +1935,9 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_time: string
+          google_calendar_event_id?: string | null
           id?: string
+          last_synced_at?: string | null
           location?: string | null
           project_id?: string | null
           start_date: string
@@ -1703,7 +1952,9 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_time?: string
+          google_calendar_event_id?: string | null
           id?: string
+          last_synced_at?: string | null
           location?: string | null
           project_id?: string | null
           start_date?: string
@@ -2626,6 +2877,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_calendar_settings: {
+        Row: {
+          created_at: string
+          default_reminder_minutes: number
+          default_view: string
+          id: string
+          show_weekends: boolean
+          timezone: string
+          updated_at: string
+          user_id: string
+          work_days: number[]
+          work_hours_end: string
+          work_hours_start: string
+        }
+        Insert: {
+          created_at?: string
+          default_reminder_minutes?: number
+          default_view?: string
+          id?: string
+          show_weekends?: boolean
+          timezone?: string
+          updated_at?: string
+          user_id: string
+          work_days?: number[]
+          work_hours_end?: string
+          work_hours_start?: string
+        }
+        Update: {
+          created_at?: string
+          default_reminder_minutes?: number
+          default_view?: string
+          id?: string
+          show_weekends?: boolean
+          timezone?: string
+          updated_at?: string
+          user_id?: string
+          work_days?: number[]
+          work_hours_end?: string
+          work_hours_start?: string
+        }
+        Relationships: []
+      }
       user_email_settings: {
         Row: {
           auto_add_signature: boolean | null
@@ -2928,6 +3221,21 @@ export type Database = {
         | "settings_edit"
         | "projects_create"
         | "planning_create"
+      calendar_event_category:
+        | "werk"
+        | "persoonlijk"
+        | "vakantie"
+        | "meeting"
+        | "project"
+        | "reminder"
+        | "deadline"
+      calendar_privacy_level: "private" | "shared" | "public"
+      calendar_recurrence_pattern:
+        | "none"
+        | "daily"
+        | "weekly"
+        | "monthly"
+        | "yearly"
       customer_status: "Actief" | "In behandeling" | "Inactief"
       project_status:
         | "te-plannen"
@@ -3086,6 +3394,23 @@ export const Constants = {
         "settings_edit",
         "projects_create",
         "planning_create",
+      ],
+      calendar_event_category: [
+        "werk",
+        "persoonlijk",
+        "vakantie",
+        "meeting",
+        "project",
+        "reminder",
+        "deadline",
+      ],
+      calendar_privacy_level: ["private", "shared", "public"],
+      calendar_recurrence_pattern: [
+        "none",
+        "daily",
+        "weekly",
+        "monthly",
+        "yearly",
       ],
       customer_status: ["Actief", "In behandeling", "Inactief"],
       project_status: [

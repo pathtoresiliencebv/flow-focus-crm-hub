@@ -4,14 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Calendar, Plus, Users, Clock, MapPin } from "lucide-react";
-import { SimplePlanningForm } from './SimplePlanningForm';
 import { PlanningCalendarView } from './planning/PlanningCalendarView';
 import { PlanningListView } from './planning/PlanningListView';
-import { NewPlanningDialog } from './planning/NewPlanningDialog';
-import { QuickPlanningDialog } from './planning/QuickPlanningDialog';
-import { MultiDayPlanningDialog } from './planning/MultiDayPlanningDialog';
+import { QuickPlanningSlidePanel } from './planning/QuickPlanningSlidePanel';
+import { NewPlanningSlidePanel } from './planning/NewPlanningSlidePanel';
+import { MultiDayPlanningSlidePanel } from './planning/MultiDayPlanningSlidePanel';
 import { usePlanningStore } from '@/hooks/usePlanningStore';
-import { useUsers } from '@/hooks/useUsers';
+import { useRealUserStore } from '@/hooks/useRealUserStore';
 import { useCrmStore } from '@/hooks/useCrmStore';
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +21,7 @@ export function PlanningManagement() {
   const { toast } = useToast();
   const { user, hasPermission } = useAuth();
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
+  const [calendarView, setCalendarView] = useState<'week' | 'month' | 'day'>('week');
   const [showNewPlanning, setShowNewPlanning] = useState(false);
   const [showQuickPlanning, setShowQuickPlanning] = useState(false);
   const [showMultiDayPlanning, setShowMultiDayPlanning] = useState(false);
@@ -29,7 +29,9 @@ export function PlanningManagement() {
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
-  const [location, setLocation] = useState('');
+  const [quickPlanningLocation, setQuickPlanningLocation] = useState('');
+  const [newPlanningLocation, setNewPlanningLocation] = useState('');
+  const [multiDayLocation, setMultiDayLocation] = useState('');
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
 
@@ -42,55 +44,36 @@ export function PlanningManagement() {
     fetchPlanningItems 
   } = usePlanningStore();
 
-  const { users, monteurs: installers } = useUsers();
+  const { installers } = useRealUserStore();
   const { projects } = useCrmStore();
+
+  // Installers are now fetched from the hook
 
   const handleQuickPlanning = async (formData: FormData) => {
     try {
-      console.log('🚀 Quick planning form data:', formData);
-      console.log('📅 Selected date:', selectedDate);
-      console.log('⏰ Selected hour:', selectedHour);
-      
-      const employeeId = formData.get('employee') as string;
-      const projectId = formData.get('project') as string;
-      const description = formData.get('description') as string;
-      
-      console.log('👤 Employee ID:', employeeId);
-      console.log('📋 Project ID:', projectId);
-      console.log('📝 Description:', description);
-      
-      // Validate required fields
-      if (!employeeId || !description) {
-        toast({
-          title: "Vereiste velden ontbreken",
-          description: "Selecteer een medewerker en voer een beschrijving in.",
-          variant: "destructive"
-        });
-        return;
-      }
-
       const data = {
-        assigned_user_id: employeeId,
-        project_id: projectId || null,
-        title: description,
-        description: description,
+        assigned_user_id: formData.get('installer') as string,
+        project_id: formData.get('project') as string,
+        title: formData.get('description') as string || 'Snelle Planning',
+        description: formData.get('description') as string,
         start_date: selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-        start_time: selectedHour ? `${String(selectedHour).padStart(2, '0')}:00` : '09:00',
-        end_time: selectedHour ? `${String(selectedHour + 1).padStart(2, '0')}:00` : '10:00',
-        location: location || '',
+        start_time: selectedHour ? `${selectedHour.toString().padStart(2, '0')}:00:00` : '09:00:00',
+        end_time: selectedHour ? `${(selectedHour + 1).toString().padStart(2, '0')}:00:00` : '10:00:00',
+        location: quickPlanningLocation,
         status: 'Gepland',
-        user_id: user?.id || ''
       };
 
-      console.log('💾 Planning data to save:', data);
-      await addPlanningItem(data);
+      await addPlanningItem({
+        ...data,
+        user_id: user?.id || ''
+      });
 
       toast({
         title: "Planning toegevoegd",
         description: "De planning is succesvol toegevoegd.",
       });
       setShowQuickPlanning(false);
-      setLocation('');
+      setQuickPlanningLocation('');
     } catch (error) {
       console.error('Error adding planning:', error);
       toast({
@@ -103,49 +86,33 @@ export function PlanningManagement() {
 
   const handleNewPlanning = async (formData: FormData) => {
     try {
-      console.log('📅 New planning form data:', formData);
+      const selectedTime = formData.get('startTime') as string || '09:00';
+      const [hours, minutes] = selectedTime.split(':');
+      const endHours = (parseInt(hours) + 1).toString().padStart(2, '0');
       
-      const employeeId = formData.get('employee') as string;
-      const projectId = formData.get('project') as string;
-      const description = formData.get('description') as string;
-      const time = formData.get('time') as string;
-      
-      // Validate required fields  
-      if (!employeeId || !description) {
-        toast({
-          title: "Vereiste velden ontbreken",
-          description: "Selecteer een medewerker en voer een beschrijving in.",
-          variant: "destructive"
-        });
-        return;
-      }
-
       const data = {
-        assigned_user_id: employeeId,
-        project_id: projectId || null,
-        title: description,
-        description: description,
+        assigned_user_id: formData.get('installer') as string,
+        project_id: formData.get('project') as string,
+        title: formData.get('description') as string || 'Nieuwe Planning',
+        description: formData.get('description') as string,
         start_date: selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-        start_time: time || '09:00',
-        end_time: time ? (() => {
-          const [hours, minutes] = time.split(':');
-          const endHour = parseInt(hours) + 1;
-          return `${String(endHour).padStart(2, '0')}:${minutes}`;
-        })() : '10:00',
-        location: location || '',
+        start_time: `${selectedTime}:00`,
+        end_time: `${endHours}:${minutes}:00`,
+        location: newPlanningLocation,
         status: 'Gepland',
-        user_id: user?.id || ''
       };
 
-      console.log('💾 New planning data to save:', data);
-      await addPlanningItem(data);
+      await addPlanningItem({
+        ...data,
+        user_id: user?.id || ''
+      });
 
       toast({
         title: "Planning toegevoegd",
         description: "De planning is succesvol toegevoegd.",
       });
       setShowNewPlanning(false);
-      setLocation('');
+      setNewPlanningLocation('');
     } catch (error) {
       console.error('Error adding planning:', error);
       toast({
@@ -158,15 +125,19 @@ export function PlanningManagement() {
 
   const handleMultiDayPlanning = async (formData: FormData) => {
     try {
+      const selectedTime = formData.get('time') as string || '09:00';
+      const [hours, minutes] = selectedTime.split(':');
+      const endHours = (parseInt(hours) + 1).toString().padStart(2, '0');
+      
       const data = {
         assigned_user_id: formData.get('employee') as string,
         project_id: formData.get('project') as string,
         title: formData.get('description') as string,
         description: formData.get('description') as string,
         start_date: startDate ? startDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-        start_time: formData.get('time') as string || '09:00',
-        end_time: formData.get('time') as string || '10:00',
-        location: location,
+        start_time: `${selectedTime}:00`,
+        end_time: `${endHours}:${minutes}:00`,
+        location: multiDayLocation,
         status: 'Gepland',
       };
 
@@ -180,7 +151,7 @@ export function PlanningManagement() {
         description: "De meerdaagse planning is succesvol toegevoegd.",
       });
       setShowMultiDayPlanning(false);
-      setLocation('');
+      setMultiDayLocation('');
     } catch (error) {
       console.error('Error adding multi-day planning:', error);
       toast({
@@ -215,7 +186,7 @@ export function PlanningManagement() {
     time: item.start_time,
     endTime: item.end_time,
     employee: item.assigned_user_id, // We'll need to map this to actual employee names
-    employeeId: item.assigned_user_id, // Keep as string UUID
+    employeeId: parseInt(item.assigned_user_id) || 0, // Convert string to number
     project: item.project_id || 'Geen project',
     projectId: item.project_id || '',
     status: item.status as "Gepland" | "Bevestigd" | "Afgerond" | "Geannuleerd",
@@ -418,12 +389,19 @@ export function PlanningManagement() {
         
         <TabsContent value="calendar" className="mt-4">
           <PlanningCalendarView
-            calendarView="week"
-            onCalendarViewChange={() => {}}
+            calendarView={calendarView}
+            onCalendarViewChange={(newView) => {
+              console.log('Calendar view changed to:', newView);
+              setCalendarView(newView);
+            }}
             events={calendarEvents}
             onEventClick={handleEventClick}
             onTimeSlotClick={handleTimeSlotClick}
-            onEventCreate={handleEventCreate}
+            onEventCreate={(date, startHour, endHour) => {
+              setSelectedDate(date);
+              setSelectedHour(startHour);
+              setShowQuickPlanning(true);
+            }}
           />
         </TabsContent>
         
@@ -434,45 +412,54 @@ export function PlanningManagement() {
         </TabsContent>
       </Tabs>
 
-      {/* Dialogs */}
-      <QuickPlanningDialog
-        open={showQuickPlanning}
-        onOpenChange={setShowQuickPlanning}
+      {/* Slide Panels */}
+      <QuickPlanningSlidePanel
+        isOpen={showQuickPlanning}
+        onClose={() => {
+          setShowQuickPlanning(false);
+          setQuickPlanningLocation('');
+        }}
         onSubmit={handleQuickPlanning}
         installers={installers}
         projects={projects}
-        quickPlanningData={quickPlanningData}
-        location={location}
-        onLocationChange={setLocation}
-        onClose={() => {
-          setShowQuickPlanning(false);
-          setLocation('');
+        quickPlanningData={{
+          installer: '',
+          project: '',
+          description: ''
         }}
+        location={quickPlanningLocation}
+        onLocationChange={setQuickPlanningLocation}
       />
       
-      <NewPlanningDialog
-        open={showNewPlanning}
-        onOpenChange={setShowNewPlanning}
+      <NewPlanningSlidePanel
+        isOpen={showNewPlanning}
+        onClose={() => {
+          setShowNewPlanning(false);
+          setNewPlanningLocation('');
+        }}
         onSubmit={handleNewPlanning}
         installers={installers}
         projects={projects}
         selectedDate={selectedDate}
-        location={location}
-        onLocationChange={setLocation}
+        location={newPlanningLocation}
+        onLocationChange={setNewPlanningLocation}
       />
       
-      <MultiDayPlanningDialog
-        open={showMultiDayPlanning}
-        onOpenChange={setShowMultiDayPlanning}
+      <MultiDayPlanningSlidePanel
+        isOpen={showMultiDayPlanning}
+        onClose={() => {
+          setShowMultiDayPlanning(false);
+          setMultiDayLocation('');
+        }}
         onSubmit={handleMultiDayPlanning}
         installers={installers}
         projects={projects}
         startDate={startDate}
-        onStartDateChange={setStartDate}
         endDate={endDate}
-        onEndDateChange={setEndDate}
-        location={location}
-        onLocationChange={setLocation}
+        onStartDateSelect={setStartDate}
+        onEndDateSelect={setEndDate}
+        location={multiDayLocation}
+        onLocationChange={setMultiDayLocation}
       />
     </div>
   );

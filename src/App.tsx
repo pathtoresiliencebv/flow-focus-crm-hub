@@ -13,6 +13,7 @@ import { QuotePreview } from "@/pages/QuotePreview";
 import { QuoteSend } from "@/pages/QuoteSend";
 import { InvoiceDetailsPage } from "@/pages/InvoiceDetails";
 import { InvoiceSend } from "@/pages/InvoiceSend";
+import { CalendarPage } from "@/components/calendar/CalendarPage";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TranslationProvider } from "@/contexts/TranslationContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -41,6 +42,7 @@ function App() {
                   <Route path="/customers/:customerId" element={<Index />} />
                   <Route path="/projects/:projectId" element={<Index />} />
                   <Route path="/customers-projects" element={<Index />} />
+                  <Route path="/calendar" element={<CalendarPage />} />
                   <Route path="/quotes" element={<Index />} />
                   <Route path="/quotes/new" element={<NewQuote />} />
                   <Route path="/invoices" element={<Index />} />

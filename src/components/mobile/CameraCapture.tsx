@@ -42,7 +42,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
   const [flashEnabled, setFlashEnabled] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
-  const recordingInterval = useRef<NodeJS.Timeout>();
+  const recordingInterval = useRef<ReturnType<typeof setInterval>>();
 
   const handleCapture = async () => {
     let media: CapturedMedia | null = null;
@@ -85,7 +85,7 @@ export const CameraCapture: React.FC<CameraCaptureProps> = ({
     
     recordingInterval.current = setInterval(() => {
       setRecordingDuration(prev => prev + 1);
-    }, 1000);
+    }, 1000) as ReturnType<typeof setInterval>;
   };
 
   const stopVideoRecording = () => {

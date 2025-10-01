@@ -238,8 +238,39 @@ export const useQuotes = () => {
 
       if (fetchError) throw fetchError;
 
-      // Generate new quote number
-      const { data: newQuoteNumber } = await supabase.rpc('generate_quote_number');
+      // Generate new quote number with retry logic
+      let newQuoteNumber = null;
+      let attempts = 0;
+      const maxAttempts = 5;
+      
+      while (attempts < maxAttempts && !newQuoteNumber) {
+        try {
+          const { data, error } = await supabase.rpc('generate_quote_number');
+          if (data && !error) {
+            // Verify uniqueness
+            const { data: existing } = await supabase
+              .from('quotes')
+              .select('id')
+              .eq('quote_number', data)
+              .maybeSingle();
+              
+            if (!existing) {
+              newQuoteNumber = data;
+              break;
+            }
+          }
+        } catch (error) {
+          console.error(`Quote number generation attempt ${attempts + 1} failed:`, error);
+        }
+        attempts++;
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 200 * attempts));
+      }
+      
+      // Fallback if all attempts failed
+      if (!newQuoteNumber) {
+        newQuoteNumber = `OFF-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+      }
 
       // Create duplicate quote
       const today = new Date();

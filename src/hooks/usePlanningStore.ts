@@ -12,13 +12,15 @@ export interface PlanningItem {
   project_id?: string;
   title: string;
   description?: string;
-  start_date: string;
-  start_time: string;
-  end_time: string;
+  start_date: string; // DATE format (YYYY-MM-DD)
+  start_time: string; // TIME format (HH:MM:SS)
+  end_time: string; // TIME format (HH:MM:SS)
   location?: string;
-  status: string;
+  status?: string;
   created_at: string;
   updated_at: string;
+  google_calendar_event_id?: string;
+  last_synced_at?: string;
 }
 
 export const usePlanningStore = () => {
@@ -69,13 +71,21 @@ export const usePlanningStore = () => {
   };
 
   const addPlanningItem = async (newItem: Omit<PlanningItem, 'id' | 'created_at' | 'updated_at'>) => {
-    if (!user) return;
+    if (!user) {
+      console.error('No user found for adding planning item');
+      return;
+    }
 
     try {
+      console.log('Adding planning item:', newItem);
+      console.log('User ID:', user.id);
+
       const planningData = {
         ...newItem,
         user_id: user.id, // Set the creator
       };
+
+      console.log('Planning data to insert:', planningData);
 
       const { data, error } = await supabase
         .from('planning_items')
@@ -88,6 +98,7 @@ export const usePlanningStore = () => {
         throw error;
       }
 
+      console.log('Planning item created successfully:', data);
       setPlanningItems(prev => [...prev, data]);
       
       toast({

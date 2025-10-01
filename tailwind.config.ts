@@ -57,6 +57,13 @@ export default {
           DEFAULT: 'hsl(var(--smans-primary))',
           foreground: 'hsl(var(--smans-primary-foreground))',
         },
+        'role': {
+          administrator: 'hsl(var(--role-administrator))',
+          installateur: 'hsl(var(--role-installateur))',
+          administratie: 'hsl(var(--role-administratie))',
+          personal: 'hsl(var(--role-personal))',
+          project: 'hsl(var(--role-project))',
+        },
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',

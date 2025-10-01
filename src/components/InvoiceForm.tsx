@@ -137,6 +137,12 @@ export function InvoiceForm({ onClose, customers, projects }: InvoiceFormProps) 
     try {
       console.log('Saving invoice data:', data);
       
+      // Generate unique invoice number
+      const { data: invoiceNumber, error: numberError } = await supabase.rpc('generate_invoice_number');
+      if (numberError) {
+        throw new Error(`Failed to generate invoice number: ${numberError.message}`);
+      }
+      
       const customer = allCustomers.find(c => c.id === data.customer) || customers.find(c => c.id === data.customer);
       
       // Calculate totals
@@ -146,6 +152,7 @@ export function InvoiceForm({ onClose, customers, projects }: InvoiceFormProps) 
       
       // Create invoice data structure
       const invoiceData = {
+        invoice_number: invoiceNumber,
         customer_name: customer?.name || '',
         customer_email: allCustomers.find(c => c.id === data.customer)?.email || '',
         project_title: data.project ? allProjects.find(p => p.id === data.project)?.title || '' : '',

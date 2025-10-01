@@ -29,7 +29,8 @@ interface AppSidebarProps {
 export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProps) {
   const { user, logout, profile, hasPermission } = useAuth();
 
-  const allLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null}[] = [
+  // Main navigation links
+  const mainLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null}[] = [
     {
       label: "Dashboard",
       icon: <LayoutDashboard className="h-5 w-5" />,
@@ -49,28 +50,10 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
       permission: "projects_view",
     },
     {
-      label: "Klanten & Projecten",
-      icon: <Users className="h-5 w-5" />,
-      key: "customers-projects",
-      permission: "customers_view",
-    },
-    {
       label: "Planning",
       icon: <Calendar className="h-5 w-5" />,
       key: "calendar",
       permission: "planning_create",
-    },
-    {
-      label: "Tijdregistratie",
-      icon: <Clock className="h-5 w-5" />,
-      key: "time",
-      permission: "projects_view",
-    },
-    {
-      label: "Bonnetjes",
-      icon: <Receipt className="h-5 w-5" />,
-      key: "receipts",
-      permission: "invoices_view",
     },
     {
       label: "Offertes",
@@ -84,11 +67,15 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
       key: "invoicing",
       permission: "invoices_view",
     },
+  ];
+
+  // Communication links
+  const communicationLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null}[] = [
     {
       label: "Postvak IN",
       icon: <Mail className="h-5 w-5" />,
       key: "email",
-      permission: null,
+      permission: "users_view", // Alleen voor administratie (users_view is alleen voor Admin/Administratie)
     },
     {
       label: "Chat",
@@ -96,12 +83,32 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
       key: "chat",
       permission: null,
     },
+  ];
+
+  // Personnel links (Personeel section)
+  const personnelLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null}[] = [
+    {
+      label: "Tijdregistratie",
+      icon: <Clock className="h-5 w-5" />,
+      key: "time",
+      permission: "projects_view",
+    },
+    {
+      label: "Bonnetjes",
+      icon: <Receipt className="h-5 w-5" />,
+      key: "receipts",
+      permission: "invoices_view",
+    },
     {
       label: "Personeel",
       icon: <UserCheck className="h-5 w-5" />,
       key: "personnel",
       permission: "users_view",
     },
+  ];
+
+  // Settings submenu links
+  const settingsLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null}[] = [
     {
       label: "Rapportages",
       icon: <BarChart className="h-5 w-5" />,
@@ -117,8 +124,19 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
   ];
 
   // Filter links based on permissions and role
-  const links = allLinks.filter(link => {
-    // Chat is available for all authenticated users now
+  const filteredMainLinks = mainLinks.filter(link => {
+    return link.permission === null || hasPermission(link.permission as Permission);
+  });
+
+  const filteredCommunicationLinks = communicationLinks.filter(link => {
+    return link.permission === null || hasPermission(link.permission as Permission);
+  });
+
+  const filteredPersonnelLinks = personnelLinks.filter(link => {
+    return link.permission === null || hasPermission(link.permission as Permission);
+  });
+
+  const filteredSettingsLinks = settingsLinks.filter(link => {
     // Hide Reports completely for Installateurs
     if (link.key === "reports" && profile?.role === 'Installateur') {
       return false;
@@ -126,13 +144,12 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
     return link.permission === null || hasPermission(link.permission as Permission);
   });
 
+  // Combine all links for the Sidebar component (maintaining backward compatibility)
+  const links = [...filteredMainLinks, ...filteredCommunicationLinks, ...filteredPersonnelLinks, ...filteredSettingsLinks];
+
 
   return (
     <Sidebar 
-      links={links}
-      user={user}
-      profile={profile}
-      logout={logout}
       activeTab={activeTab}
       setActiveTab={setActiveTab}
     >

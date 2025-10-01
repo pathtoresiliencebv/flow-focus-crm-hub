@@ -59,8 +59,15 @@
     --focus-ring: 2px solid hsl(var(--ring));
     --focus-ring-offset: 2px;
     
-  /* Dynamic accent color support */
-  --accent-dynamic: 262 83% 58%;
+    /* Dynamic accent color support */
+    --accent-dynamic: 262 83% 58%;
+    
+    /* Calendar role colors */
+    --role-administrator: 0 84% 60%;
+    --role-installateur: 217 91% 60%;
+    --role-administratie: 142 76% 36%;
+    --role-personal: 271 81% 56%;
+    --role-project: 39 97% 58%;
 }
 
 /* Print styles for optimal PDF printing */

@@ -18,7 +18,8 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   onSelectConversation,
   isMobile
 }) => {
-  const getInitials = (name: string) => {
+  const getInitials = (name: string | null) => {
+    if (!name) return '??';
     return name
       .split(' ')
       .map(word => word[0])
@@ -85,7 +86,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
                 <h3 className="font-semibold text-sm truncate">
-                  {conversation.other_user.full_name}
+                  {conversation.other_user.full_name || 'Naamloze Gebruiker'}
                 </h3>
                 {conversation.last_message && (
                   <span className="text-xs text-muted-foreground">

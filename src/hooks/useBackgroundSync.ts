@@ -49,7 +49,7 @@ export const useBackgroundSync = (config: Partial<BackgroundSyncConfig> = {}) =>
   
   const syncConfig = { ...DEFAULT_CONFIG, ...config };
   const backgroundTaskId = useRef<string | null>(null);
-  const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const syncIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const retryCountRef = useRef<number>(0);
 
   // Monitor battery level
@@ -207,7 +207,7 @@ export const useBackgroundSync = (config: Partial<BackgroundSyncConfig> = {}) =>
       } else {
         performSync();
       }
-    }, interval);
+    }, interval) as ReturnType<typeof setInterval>;
   }, [syncStatus.batteryOptimized, syncStatus.pendingOperations, syncConfig, appState, performSync]);
 
   const stopPeriodicSync = useCallback(() => {

@@ -1,0 +1,71 @@
+{
+  "expo": {
+    "name": "Smans CRM",
+    "slug": "smans-crm",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./src/assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "nl.smanscrm.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Deze app heeft toegang tot de camera nodig voor het maken van foto's van projecten en documenten.",
+        "NSLocationWhenInUseUsageDescription": "Deze app gebruikt locatie voor het taggen van foto's en het vinden van projectlocaties.",
+        "NSMicrophoneUsageDescription": "Deze app heeft toegang tot de microfoon nodig voor video-opnames.",
+        "NSPhotoLibraryUsageDescription": "Deze app heeft toegang tot de fotobibliotheek nodig voor het selecteren van afbeeldingen."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "nl.smanscrm.app",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./public/favicon.ico",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Toegang tot camera voor het maken van projectfoto's."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Toegang tot locatie voor projecttagging."
+        }
+      ]
+    ],
+    "scheme": "smanscrm",
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "9619b9db-de5c-4281-9df0-edb1fcb07eea"
+      }
+    }
+  }
+}

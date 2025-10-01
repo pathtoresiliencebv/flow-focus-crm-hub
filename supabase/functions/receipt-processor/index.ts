@@ -108,7 +108,7 @@ const handler = async (req: Request): Promise<Response> => {
             message: `Bonnetje ontvangen van ${emailData.from}: ${emailData.subject}`,
             type: 'receipt',
             reference_type: 'receipt',
-            reference_id: receiptData?.[0]?.id
+            reference_id: (receiptData as any)?.[0]?.id
           }));
 
           await supabase

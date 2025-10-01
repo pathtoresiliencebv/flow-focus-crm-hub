@@ -49,7 +49,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     }
   };
 
-  const getInitials = (name: string) => {
+  const getInitials = (name: string | null) => {
+    if (!name) return '??';
     return name
       .split(' ')
       .map(word => word[0])
@@ -97,7 +98,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
         </Avatar>
         
         <div>
-          <h3 className="font-semibold">{conversation.other_user.full_name}</h3>
+          <h3 className="font-semibold">{conversation.other_user.full_name || 'Naamloze Gebruiker'}</h3>
           <p className="text-sm text-muted-foreground">{conversation.other_user.role}</p>
         </div>
       </div>

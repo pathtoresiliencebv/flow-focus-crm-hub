@@ -16,8 +16,8 @@ interface CalendarEvent {
 }
 
 interface PlanningCalendarViewProps {
-  calendarView: "week" | "month";
-  onCalendarViewChange: (view: "week" | "month") => void;
+  calendarView: "week" | "month" | "day";
+  onCalendarViewChange: (view: "week" | "month" | "day") => void;
   events: CalendarEvent[];
   onEventClick: (event: any) => void;
   onTimeSlotClick: (date: Date, hour: number) => void;
@@ -39,7 +39,7 @@ export const PlanningCalendarView = ({
           <div className="flex items-center gap-2">
             <CalendarIcon className="h-5 w-5 text-blue-600" />
             <CardTitle className="text-lg sm:text-xl">
-              {calendarView === "week" ? "Weekplanning" : "Maandplanning"}
+              {calendarView === "week" ? "Weekplanning" : calendarView === "month" ? "Maandplanning" : "Dagplanning"}
             </CardTitle>
           </div>
           <Select value={calendarView} onValueChange={onCalendarViewChange}>
@@ -47,6 +47,7 @@ export const PlanningCalendarView = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-white z-50">
+              <SelectItem value="day">Dag</SelectItem>
               <SelectItem value="week">Week</SelectItem>
               <SelectItem value="month">Maand</SelectItem>
             </SelectContent>
@@ -69,11 +70,19 @@ export const PlanningCalendarView = ({
             onEventCreate={onEventCreate}
             showCurrentTimeLine={true}
           />
-        ) : (
+        ) : calendarView === "month" ? (
           <MonthCalendar 
             events={events}
             onEventClick={onEventClick}
             onEventCreate={onEventCreate}
+          />
+        ) : (
+          <WeekCalendar 
+            events={events}
+            onEventClick={onEventClick}
+            onTimeSlotClick={onTimeSlotClick}
+            onEventCreate={onEventCreate}
+            showCurrentTimeLine={true}
           />
         )}
       </CardContent>

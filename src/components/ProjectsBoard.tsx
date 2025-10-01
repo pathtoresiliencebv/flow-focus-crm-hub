@@ -14,6 +14,7 @@ import { useProjectTasks } from "@/hooks/useProjectTasks";
 import { useAuth } from "@/contexts/AuthContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { InstallateurProjectList } from './InstallateurProjectList';
+import { SlidePanel } from '@/components/ui/slide-panel';
 
 type ProjectStatus = "te-plannen" | "gepland" | "in-uitvoering" | "herkeuring" | "afgerond";
 
@@ -177,7 +178,7 @@ const ProjectCard = ({ project, index }: { project: Project, index: number }) =>
 export const ProjectsBoard: React.FC = () => {
   const { projects, updateProject } = useCrmStore();
   const { hasPermission, profile } = useAuth();
-  const [newProjectDialogOpen, setNewProjectDialogOpen] = useState(false);
+  const [newProjectPanelOpen, setNewProjectPanelOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<ProjectStatus>("te-plannen");
 
   // If user is Installateur, show simplified view
@@ -200,11 +201,11 @@ export const ProjectsBoard: React.FC = () => {
 
   const handleAddProjectClick = (status: ProjectStatus) => {
     setSelectedStatus(status);
-    setNewProjectDialogOpen(true);
+    setNewProjectPanelOpen(true);
   };
 
   const handleProjectCreated = () => {
-    setNewProjectDialogOpen(false);
+    setNewProjectPanelOpen(false);
     // Projects will automatically update through the useCrmStore hook
   };
 
@@ -233,20 +234,17 @@ export const ProjectsBoard: React.FC = () => {
         </Button>
       </div>
 
-      <Dialog open={newProjectDialogOpen} onOpenChange={setNewProjectDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Nieuw project aanmaken</DialogTitle>
-            <DialogDescription>
-              Vul de projectgegevens in om een nieuw project aan te maken in {statusDisplayMap[selectedStatus]}.
-            </DialogDescription>
-          </DialogHeader>
-          <ProjectForm 
-            onClose={handleProjectCreated} 
-            initialStatus={selectedStatus}
-          />
-        </DialogContent>
-      </Dialog>
+      <SlidePanel
+        isOpen={newProjectPanelOpen}
+        onClose={() => setNewProjectPanelOpen(false)}
+        title="Nieuw project aanmaken"
+        size="lg"
+      >
+        <ProjectForm 
+          onClose={handleProjectCreated} 
+          initialStatus={selectedStatus}
+        />
+      </SlidePanel>
     
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">

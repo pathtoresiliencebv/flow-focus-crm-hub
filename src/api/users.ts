@@ -11,7 +11,17 @@ export async function fetchUsers() {
   if (error) {
     // Provide a more user-friendly error message for permission issues
     if (error.message.includes('U heeft geen rechten om gebruikersgegevens op te halen.')) {
-        toast({ title: 'Geen Toegang', description: 'U heeft niet de benodigde rechten om gebruikers te zien.', variant: 'destructive' });
+      toast({ 
+        title: 'Geen Toegang', 
+        description: 'U heeft niet de benodigde Administrator rechten om gebruikers te beheren.', 
+        variant: 'destructive' 
+      });
+    } else {
+      toast({ 
+        title: 'Fout', 
+        description: 'Er is een fout opgetreden bij het laden van gebruikers.', 
+        variant: 'destructive' 
+      });
     }
     throw new Error(error.message);
   }
