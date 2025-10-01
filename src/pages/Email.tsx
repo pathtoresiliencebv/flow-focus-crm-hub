@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { useEmailAccounts } from '@/hooks/useEmailAccounts';
 import { useEmailThreads } from '@/hooks/useEmailThreads';
 import { ConnectEmailAccount } from '@/components/email/ConnectEmailAccount';
+import { EmailComposer } from '@/components/email/EmailComposer';
 
 export default function Email() {
   const isMobile = useIsMobile();
@@ -26,6 +27,7 @@ export default function Email() {
   const [selectedThread, setSelectedThread] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [syncing, setSyncing] = useState(false);
+  const [composerOpen, setComposerOpen] = useState(false);
 
   const primaryAccount = accounts.find(acc => acc.is_primary) || accounts[0];
   const { threads, loading: threadsLoading } = useEmailThreads(primaryAccount?.id || null, selectedFolder);
@@ -83,9 +85,14 @@ export default function Email() {
           isMobile ? "w-full" : "w-64"
         )}>
           <div className="p-4 border-b border-border">
-            <Button className="w-full" size="lg">
+            <Button 
+              className="w-full" 
+              size="lg"
+              onClick={() => setComposerOpen(true)}
+              disabled={!primaryAccount}
+            >
               <Plus className="h-4 w-4 mr-2" />
-              Compose
+              Nieuwe Email
             </Button>
           </div>
 
@@ -311,6 +318,15 @@ export default function Email() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Email Composer Dialog */}
+      {primaryAccount && (
+        <EmailComposer
+          open={composerOpen}
+          onOpenChange={setComposerOpen}
+          account={primaryAccount}
+        />
       )}
     </div>
   );

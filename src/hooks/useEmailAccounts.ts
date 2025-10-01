@@ -5,13 +5,15 @@ import { useAuth } from '@/contexts/AuthContext';
 export interface EmailAccount {
   id: string;
   user_id: string;
-  provider: 'gmail' | 'outlook' | 'imap';
-  email_address: string;
+  provider: 'gmail' | 'outlook' | 'imap' | 'smtp';
+  email: string;
+  email_address?: string;
   display_name: string | null;
   is_active: boolean;
   is_primary: boolean;
   sync_enabled: boolean;
   last_sync_at: string | null;
+  last_synced_at?: string | null;
   created_at: string;
 }
 
@@ -114,9 +116,16 @@ export const useEmailAccounts = () => {
 
   const syncAccount = useCallback(async (accountId: string) => {
     try {
-      const { data, error } = await supabase.functions.invoke('gmail-sync', {
-        body: { accountId, maxResults: 50, fullSync: false }
-      });
+      // Get account to determine provider
+      const account = accounts.find(a => a.id === accountId);
+      if (!account) throw new Error('Account not found');
+
+      const functionName = account.provider === 'smtp' ? 'imap-sync' : 'gmail-sync';
+      const body = account.provider === 'smtp' 
+        ? { accountId }
+        : { accountId, maxResults: 50, fullSync: false };
+      
+      const { data, error } = await supabase.functions.invoke(functionName, { body });
 
       if (error) throw error;
 
@@ -128,7 +137,7 @@ export const useEmailAccounts = () => {
       console.error('Error syncing email account:', err);
       throw err;
     }
-  }, [fetchAccounts]);
+  }, [fetchAccounts, accounts]);
 
   return {
     accounts,
