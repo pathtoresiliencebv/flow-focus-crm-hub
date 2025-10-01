@@ -59,7 +59,7 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
         subject
       });
 
-      const { data, error } = await supabase.functions.invoke(functionName, {
+      const response = await supabase.functions.invoke(functionName, {
         body: {
           accountId: account.id,
           to,
@@ -70,9 +70,26 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
         }
       });
 
-      console.log('Send result:', { data, error });
+      console.log('Send result:', response);
 
-      if (error) throw error;
+      // If there's an error, try to get more details
+      if (response.error) {
+        let errorDetails = response.error.message;
+        
+        // Try to read error from response data
+        if (response.data) {
+          try {
+            console.log('Response data:', response.data);
+            if (typeof response.data === 'object' && response.data.error) {
+              errorDetails = response.data.error;
+            }
+          } catch (e) {
+            console.error('Could not parse response data:', e);
+          }
+        }
+        
+        throw new Error(errorDetails);
+      }
 
       toast({
         title: "Email verzonden! ✓",
