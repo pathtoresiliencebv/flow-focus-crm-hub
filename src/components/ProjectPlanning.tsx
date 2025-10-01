@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import { usePlanningStore } from "@/hooks/usePlanningStore";
 import { useUsers } from "@/hooks/useUsers";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProjectPlanningEvent {
   id: string;
@@ -30,6 +31,7 @@ interface ProjectPlanningProps {
 export const ProjectPlanning = ({ projectId, projectTitle }: ProjectPlanningProps) => {
   const { planningItems, addPlanningItem, loading } = usePlanningStore();
   const { monteurs } = useUsers();
+  const { toast } = useToast();
   const [planningDialogOpen, setPlanningDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
 
@@ -45,7 +47,18 @@ export const ProjectPlanning = ({ projectId, projectTitle }: ProjectPlanningProp
 
   const handlePlanningSubmit = async (planningData: any) => {
     try {
-      await addPlanningItem({
+      console.log('📅 Adding planning item:', planningData);
+      
+      if (!planningData.assignedUserId) {
+        toast({
+          title: "Monteur vereist",
+          description: "Selecteer een monteur om de planning toe te voegen.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      const result = await addPlanningItem({
         title: planningData.title,
         description: planningData.description,
         start_date: planningData.date,
@@ -54,12 +67,17 @@ export const ProjectPlanning = ({ projectId, projectTitle }: ProjectPlanningProp
         location: planningData.location || '',
         status: 'Gepland',
         project_id: projectId,
-        assigned_user_id: planningData.assignedUserId || '',
+        assigned_user_id: planningData.assignedUserId,
         user_id: '' // Will be set by the hook
       });
-      setPlanningDialogOpen(false);
-    } catch (error) {
-      console.error('Error adding planning:', error);
+      
+      if (result) {
+        setPlanningDialogOpen(false);
+        // Toast is already shown by usePlanningStore
+      }
+    } catch (error: any) {
+      console.error('❌ Error adding planning:', error);
+      // Error toast is already shown by usePlanningStore
     }
   };
 

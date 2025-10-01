@@ -61,20 +61,17 @@ export const SimplePlanningForm = ({ selectedDate, onClose, onSubmit }: SimplePl
     const planningData = {
       title: formData.title,
       date: formData.date,
-      startTime: formData.isFullDay ? '00:00' : formData.startTime,
-      endTime: formData.isFullDay ? '23:59' : formData.endTime,
+      startTime: formData.isFullDay ? '00:00:00' : `${formData.startTime}:00`,
+      endTime: formData.isFullDay ? '23:59:59' : `${formData.endTime}:00`,
       location: formData.location,
       description: formData.description,
       assignedUserId: formData.employee, // Map employee to assignedUserId
       projectId: formData.project || null
     };
 
+    console.log('📋 SimplePlanningForm submitting:', planningData);
     onSubmit(planningData);
-    toast({
-      title: "Planning aangemaakt",
-      description: `${formData.title} is succesvol gepland voor ${format(new Date(formData.date), 'dd MMMM yyyy', { locale: nl })}.`
-    });
-    onClose();
+    // Toast and close will be handled by parent component
   };
 
   return (
