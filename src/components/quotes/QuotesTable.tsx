@@ -42,6 +42,11 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
   const handlePDFDownload = async (quoteId: string) => {
     try {
       console.log('📄 Downloading PDF for quote:', quoteId);
+      
+      // Find quote to get quote number for filename
+      const quote = quotes.find(q => q.id === quoteId);
+      const filename = `Offerte-${quote?.quote_number || 'onbekend'}.pdf`;
+      
       const { data, error } = await supabase.functions.invoke('generate-quote-pdf', {
         body: { quoteId }
       });
@@ -59,21 +64,26 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
       }
 
       if (data?.success && data?.htmlContent) {
-        // Open PDF in new window for printing
+        // Convert HTML to PDF using browser's print-to-PDF capability
         const printWindow = window.open('', '_blank');
         if (printWindow) {
           printWindow.document.write(data.htmlContent);
           printWindow.document.close();
           
-          // Wait for images and styles to load before printing
+          // Set document title for default PDF filename
+          printWindow.document.title = filename.replace('.pdf', '');
+          
+          // Wait for content to load
           printWindow.addEventListener('load', () => {
             printWindow.focus();
+            
+            // Trigger print dialog (user can choose "Save as PDF")
             setTimeout(() => {
               printWindow.print();
             }, 500);
           });
           
-          // Fallback if load event doesn't fire
+          // Fallback
           setTimeout(() => {
             printWindow.focus();
             printWindow.print();
@@ -82,7 +92,7 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
         
         toast({
           title: "PDF geopend",
-          description: "Het PDF bestand is geopend voor afdrukken.",
+          description: "Kies 'Opslaan als PDF' in het printvenster om het bestand op te slaan.",
         });
       } else {
         console.error('❌ No HTML content in response:', data);
@@ -105,6 +115,11 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
   const handlePrint = async (quoteId: string) => {
     try {
       console.log('🖨️ Printing PDF for quote:', quoteId);
+      
+      // Find quote to get quote number for filename
+      const quote = quotes.find(q => q.id === quoteId);
+      const filename = `Offerte-${quote?.quote_number || 'onbekend'}`;
+      
       const { data, error } = await supabase.functions.invoke('generate-quote-pdf', {
         body: { quoteId }
       });
@@ -127,6 +142,10 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
         if (printWindow) {
           printWindow.document.write(data.htmlContent);
           printWindow.document.close();
+          
+          // Set document title for PDF filename
+          printWindow.document.title = filename;
+          
           printWindow.focus();
           
           // Wait for content to load, then trigger print
@@ -135,8 +154,8 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
           }, 500);
           
           toast({
-            title: "PDF wordt afgedrukt",
-            description: "Het PDF bestand is geopend voor afdrukken.",
+            title: "Print dialoog geopend",
+            description: "Kies een printer of 'Opslaan als PDF' om het bestand op te slaan.",
           });
         } else {
           toast({

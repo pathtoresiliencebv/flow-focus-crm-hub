@@ -213,6 +213,8 @@ export const InvoicesTable = ({
                      <DropdownMenuItem onClick={async () => {
                        try {
                          console.log('📄 Downloading PDF for invoice:', invoice.id);
+                         const filename = `Factuur-${invoice.invoice_number}`;
+                         
                          const { data, error } = await supabase.functions.invoke('generate-invoice-pdf', {
                            body: { invoiceId: invoice.id }
                          });
@@ -228,11 +230,14 @@ export const InvoicesTable = ({
                          }
 
                         if (data?.success && data?.htmlContent) {
-                          // Open PDF in new window for printing
+                          // Open PDF in new window for saving
                           const printWindow = window.open('', '_blank');
                           if (printWindow) {
                             printWindow.document.write(data.htmlContent);
                             printWindow.document.close();
+                            
+                            // Set document title for PDF filename
+                            printWindow.document.title = filename;
                             
                             // Wait for images and styles to load before printing
                             printWindow.addEventListener('load', () => {
@@ -251,7 +256,7 @@ export const InvoicesTable = ({
                           
                           toast({
                             title: "PDF geopend",
-                            description: "Het PDF bestand is geopend voor afdrukken.",
+                            description: "Kies 'Opslaan als PDF' in het printvenster om het bestand op te slaan.",
                           });
                         } else {
                           console.error('❌ No HTML content in response:', data);

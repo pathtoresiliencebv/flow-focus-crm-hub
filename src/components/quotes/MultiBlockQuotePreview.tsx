@@ -60,6 +60,8 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
   const handlePrint = async () => {
     try {
       setPrintLoading(true);
+      const filename = `Offerte-${quote.quote_number || 'onbekend'}`;
+      
       const { data, error } = await supabase.functions.invoke('generate-quote-pdf', {
         body: { quoteId: quote.id }
       });
@@ -72,6 +74,9 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
         if (printWindow) {
           printWindow.document.write(data.htmlContent);
           printWindow.document.close();
+          
+          // Set document title for PDF filename
+          printWindow.document.title = filename;
           
           // Wait for images and styles to load before printing
           printWindow.addEventListener('load', () => {
@@ -89,8 +94,8 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
         }
         
         toast({
-          title: "PDF geopend voor printen",
-          description: "Het PDF bestand is geopend in een nieuw venster voor printen.",
+          title: "Print dialoog geopend",
+          description: "Kies een printer of 'Opslaan als PDF' om het bestand op te slaan.",
         });
       }
     } catch (error) {
