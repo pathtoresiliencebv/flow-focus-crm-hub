@@ -28,10 +28,22 @@ serve(async (req) => {
       .single();
 
     if (accountError || !account) {
-      throw new Error('Account not found');
+      console.error('Account fetch error:', accountError);
+      throw new Error('Account not found: ' + (accountError?.message || 'No account'));
     }
 
-    console.log('Sending email via SMTP:', account.smtp_host);
+    // Ensure email_address exists (fallback to email if needed for backwards compatibility)
+    const emailAddress = account.email_address || account.email;
+    if (!emailAddress) {
+      throw new Error('No email address found for account');
+    }
+
+    console.log('Sending email via SMTP:', {
+      host: account.smtp_host,
+      port: account.smtp_port,
+      from: emailAddress,
+      provider: account.provider
+    });
 
     // Connect to SMTP server
     const smtpConn = await Deno.connect({
@@ -102,7 +114,7 @@ serve(async (req) => {
       }
 
       // MAIL FROM
-      const mailFromResponse = await sendCommand(`MAIL FROM:<${account.email_address}>`);
+      const mailFromResponse = await sendCommand(`MAIL FROM:<${emailAddress}>`);
       if (!mailFromResponse.includes('250')) {
         throw new Error('MAIL FROM failed');
       }
@@ -126,7 +138,7 @@ serve(async (req) => {
       const messageId = `<${crypto.randomUUID()}@${account.smtp_host}>`;
       const date = new Date().toUTCString();
       
-      let emailContent = `From: ${account.display_name || account.email_address} <${account.email_address}>\r\n`;
+      let emailContent = `From: ${account.display_name || emailAddress} <${emailAddress}>\r\n`;
       emailContent += `To: ${to}\r\n`;
       if (cc && cc.length > 0) {
         emailContent += `Cc: ${cc.join(', ')}\r\n`;
@@ -160,7 +172,7 @@ serve(async (req) => {
           subject: subject,
           last_message_at: new Date().toISOString(),
           participants: [
-            { email: account.email_address, name: account.display_name || account.email_address },
+            { email: emailAddress, name: account.display_name || emailAddress },
             { email: to, name: to.split('@')[0] }
           ],
         }, {
@@ -178,8 +190,8 @@ serve(async (req) => {
             thread_id: thread.id,
             account_id: accountId,
             external_id: messageId,
-            from_email: account.email_address,
-            from_name: account.display_name || account.email_address,
+            from_email: emailAddress,
+            from_name: account.display_name || emailAddress,
             to_email: to,
             cc_emails: cc || [],
             bcc_emails: bcc || [],
@@ -199,14 +211,27 @@ serve(async (req) => {
       );
 
     } catch (error: any) {
-      smtpConn.close();
+      try {
+        smtpConn.close();
+      } catch (closeError) {
+        console.error('Error closing SMTP connection:', closeError);
+      }
       throw error;
     }
 
   } catch (error: any) {
-    console.error('Error in smtp-send:', error);
+    console.error('Error in smtp-send:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        success: false,
+        error: error.message || 'Unknown error occurred',
+        details: error.stack
+      }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500 

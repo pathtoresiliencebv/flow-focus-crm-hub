@@ -89,9 +89,24 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
 
     } catch (error: any) {
       console.error('Error sending email:', error);
+      
+      // Try to get more error details from the response
+      let errorMessage = error.message || "Er is een fout opgetreden bij het versturen";
+      
+      // If it's a FunctionsHttpError, try to get the response body
+      if (error.context?.body) {
+        try {
+          const errorBody = error.context.body;
+          errorMessage = errorBody.error || errorMessage;
+          console.error('Edge function error details:', errorBody);
+        } catch (e) {
+          console.error('Could not parse error body:', e);
+        }
+      }
+      
       toast({
         title: "Verzenden mislukt",
-        description: error.message || "Er is een fout opgetreden bij het versturen",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
