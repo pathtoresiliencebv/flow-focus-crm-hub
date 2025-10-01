@@ -14,6 +14,7 @@ interface ChatAreaProps {
   onSendMessage: (content: string) => void;
   onBack?: () => void;
   isMobile: boolean;
+  sending?: boolean;
 }
 
 export const ChatArea: React.FC<ChatAreaProps> = ({
@@ -21,7 +22,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   messages,
   onSendMessage,
   onBack,
-  isMobile
+  isMobile,
+  sending = false
 }) => {
   const { user } = useAuth();
   const [inputValue, setInputValue] = useState('');
@@ -36,7 +38,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   }, [messages]);
 
   const handleSend = () => {
-    if (inputValue.trim()) {
+    if (inputValue.trim() && !sending) {
       onSendMessage(inputValue);
       setInputValue('');
     }
@@ -132,9 +134,14 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
             onKeyPress={handleKeyPress}
             placeholder="Typ een bericht..."
             className="flex-1"
+            disabled={sending}
           />
-          <Button onClick={handleSend} disabled={!inputValue.trim()}>
-            <Send className="h-4 w-4" />
+          <Button onClick={handleSend} disabled={!inputValue.trim() || sending}>
+            {sending ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </div>
