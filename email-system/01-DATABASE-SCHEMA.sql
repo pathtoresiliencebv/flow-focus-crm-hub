@@ -116,9 +116,9 @@ CREATE TABLE IF NOT EXISTS email_messages (
   -- Labels
   labels TEXT[] DEFAULT '{}',
   
-  -- References (for threading)
+  -- Email threading references
   in_reply_to TEXT,
-  references TEXT[],
+  email_references TEXT[], -- renamed from 'references' (reserved keyword)
   
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
