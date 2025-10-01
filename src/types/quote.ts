@@ -48,4 +48,12 @@ export interface Quote {
   archived_at?: string;
   archived_by?: string;
   attachments?: any;
+  invoices?: Array<{
+    id: string;
+    invoice_number: string;
+    payment_term_sequence: number;
+    total_payment_terms: number;
+    status: string;
+    total_amount: number;
+  }>;
 }

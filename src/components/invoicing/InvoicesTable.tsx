@@ -240,11 +240,11 @@ export const InvoicesTable = ({
 
                           // PDF options
                           const opt = {
-                            margin: [10, 10, 10, 10],
+                            margin: [10, 10, 10, 10] as [number, number, number, number],
                             filename: filename,
-                            image: { type: 'jpeg', quality: 0.98 },
+                            image: { type: 'jpeg' as const, quality: 0.98 },
                             html2canvas: { scale: 2, useCORS: true },
-                            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
                           };
 
                           // Generate and download PDF
@@ -305,11 +305,11 @@ export const InvoicesTable = ({
 
                           // PDF options for opening (not downloading)
                           const opt = {
-                            margin: [10, 10, 10, 10],
+                            margin: [10, 10, 10, 10] as [number, number, number, number],
                             filename: filename,
-                            image: { type: 'jpeg', quality: 0.98 },
+                            image: { type: 'jpeg' as const, quality: 0.98 },
                             html2canvas: { scale: 2, useCORS: true },
-                            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
                           };
 
                           // Generate PDF and open in new tab
