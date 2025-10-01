@@ -93,6 +93,9 @@ GRANT ALL ON public.direct_messages TO authenticated;
 GRANT ALL ON public.direct_messages TO service_role;
 
 -- STAP 11: Update get_available_chat_users function
+-- Drop existing function first to avoid return type conflict
+DROP FUNCTION IF EXISTS public.get_available_chat_users(uuid);
+
 CREATE OR REPLACE FUNCTION public.get_available_chat_users(current_user_id uuid)
 RETURNS TABLE(id uuid, full_name text, role text, email text, is_online boolean)
 LANGUAGE plpgsql
