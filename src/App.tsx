@@ -56,6 +56,7 @@ function App() {
                   <Route path="/invoices/:invoiceId/send" element={<InvoiceSend />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/quote/:token" element={<PublicQuote />} />
+                  <Route path="/api/auth/gmail/callback" element={<GmailCallbackHandler />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 <Toaster />
