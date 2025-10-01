@@ -10,6 +10,7 @@ interface UserProfile {
   role: UserRole;
   status: 'Actief' | 'Inactief';
   permissions: Permission[];
+  chat_language?: string;
 }
 
 interface AuthContextType {
@@ -47,7 +48,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const fetchProfile = useCallback(async (user: User) => {
     const { data: profileData, error } = await supabase
       .from('profiles')
-      .select('full_name, role, status')
+      .select('full_name, role, status, chat_language')
       .eq('id', user.id)
       .single();
 
