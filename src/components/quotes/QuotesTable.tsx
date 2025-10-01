@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,11 +11,12 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Eye, ExternalLink, Trash2, CheckCircle, Mail, Copy, Pencil, FileSignature, RotateCcw, MoreHorizontal, Download, Printer } from "lucide-react";
+import { Eye, ExternalLink, Trash2, CheckCircle, Mail, Copy, Pencil, FileSignature, RotateCcw, MoreHorizontal, Download, Printer, Archive } from "lucide-react";
 import { Quote } from '@/types/quote';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import html2pdf from 'html2pdf.js';
+import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
 
 interface QuotesTableProps {
   quotes: Quote[];
@@ -41,6 +42,8 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
   isArchived = false
 }) => {
   const { toast } = useToast();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [quoteToDelete, setQuoteToDelete] = useState<Quote | null>(null);
 
   const handlePDFDownload = async (quoteId: string) => {
     try {
@@ -221,6 +224,7 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
   };
 
   return (
+    <>
     <Table>
       <TableHeader>
         <TableRow>
@@ -344,17 +348,35 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                       PDF Printen
                     </DropdownMenuItem>
                    
-                   {((!isArchived && onDelete) || (isArchived && onRestore)) && (
+                   {onDelete && (
                      <DropdownMenuSeparator />
                    )}
                    
-                   <DropdownMenuItem 
-                     onClick={() => onDelete(quote.id!)}
-                     className="text-destructive"
-                   >
-                     <Trash2 className="mr-2 h-4 w-4" />
-                     {isArchived ? "Permanent verwijderen" : "Verwijderen"}
-                   </DropdownMenuItem>
+                   {!isArchived && onDelete && (
+                     <DropdownMenuItem 
+                       onClick={() => {
+                         setQuoteToDelete(quote);
+                         setDeleteDialogOpen(true);
+                       }}
+                       className="text-orange-600"
+                     >
+                       <Archive className="mr-2 h-4 w-4" />
+                       Archiveren
+                     </DropdownMenuItem>
+                   )}
+                   
+                   {isArchived && onDelete && (
+                     <DropdownMenuItem 
+                       onClick={() => {
+                         setQuoteToDelete(quote);
+                         setDeleteDialogOpen(true);
+                       }}
+                       className="text-destructive"
+                     >
+                       <Trash2 className="mr-2 h-4 w-4" />
+                       Permanent verwijderen
+                     </DropdownMenuItem>
+                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
               </div>
@@ -363,5 +385,21 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
         ))}
       </TableBody>
     </Table>
+    
+    <ConfirmDeleteDialog
+      isOpen={deleteDialogOpen}
+      onClose={() => {
+        setDeleteDialogOpen(false);
+        setQuoteToDelete(null);
+      }}
+      onConfirm={() => {
+        if (quoteToDelete?.id) {
+          onDelete(quoteToDelete.id);
+        }
+      }}
+      quote={quoteToDelete}
+      isArchiving={!isArchived}
+    />
+  </>
   );
 };
