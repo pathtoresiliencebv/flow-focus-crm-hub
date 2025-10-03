@@ -4,7 +4,7 @@ import { Dashboard } from "@/components/Dashboard";
 import { Customers } from "@/components/Customers";
 import { ProjectsBoard } from "@/components/ProjectsBoard";
 import { CustomersAndProjects } from "@/components/CustomersAndProjects";
-import { PlanningManagement } from "@/components/PlanningManagement";
+import { SimplifiedPlanningManagement } from "@/components/SimplifiedPlanningManagement";
 import { TimeRegistration } from "@/components/TimeRegistration";
 import { Receipts } from "@/components/Receipts";
 import { Quotes } from "@/components/Quotes";
@@ -125,7 +125,7 @@ const Index = () => {
       case "customers-projects":
         return <CustomersAndProjects />;
       case "calendar":
-        return <PlanningManagement />;
+        return <SimplifiedPlanningManagement />;
       case "time":
         return <TimeRegistration />;
       case "receipts":
