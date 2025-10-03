@@ -49,12 +49,11 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
     try {
       setSending(true);
 
-      // For SMTP accounts, use smtp-send function
-      const functionName = account.provider === 'smtp' ? 'smtp-send' : 'send-email';
+      // All accounts now use SMTP/IMAP
+      const functionName = 'smtp-send';
 
       console.log('Sending email via:', functionName, {
         accountId: account.id,
-        provider: account.provider,
         to,
         subject
       });
@@ -258,7 +257,7 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
           {/* Actions */}
           <div className="flex justify-between items-center pt-4 border-t">
             <div className="text-xs text-muted-foreground">
-              Via {account.provider.toUpperCase()}: {account.email_address}
+              Van: {account.email_address}
             </div>
             <div className="flex gap-2">
               <Button

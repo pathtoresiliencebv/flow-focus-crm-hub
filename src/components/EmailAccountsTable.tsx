@@ -84,7 +84,9 @@ export const EmailAccountsTable: React.FC<EmailAccountsTableProps> = ({ accounts
             <TableRow key={account.id}>
               <TableCell className="font-medium">{account.display_name}</TableCell>
               <TableCell>{account.email_address}</TableCell>
-              <TableCell>{getProviderBadge(account.provider_type)}</TableCell>
+              <TableCell>
+                <Badge variant="outline">SMTP/IMAP</Badge>
+              </TableCell>
               <TableCell>{getSyncStatusBadge(account)}</TableCell>
               <TableCell>
                 {account.last_sync_at 
