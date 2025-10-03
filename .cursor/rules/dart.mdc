@@ -1,0 +1,53 @@
+---
+alwaysApply: true
+---
+Project Rules for Cursor ↔ DART (MCP Integration)
+1. Project Context
+
+For this project we use the SmansCRM Space.
+ID: ZINnNW33ybAz-SmansCRM
+URL: SmansCRM Space
+
+2. Task Management via MCP
+
+All actions and updates must be synchronized with DART AI through MCP.
+
+This means: whenever you create, update, or complete a task in Cursor, make sure it is immediately reflected in DART.
+
+Cursor is the working environment, but DART is the source of truth for project tracking.
+
+3. Workflow Rules (To Do → Doing → Done)
+
+Always move tasks through the workflow stages:
+
+To Do → not started yet
+
+Doing → currently in progress
+
+Done → completed
+
+Task descriptions must always be updated when moving between stages:
+
+When moving a task from To Do → Doing, update the description with what is being worked on and the initial implementation approach.
+
+When moving a task from Doing → Done, update the description with what has actually been completed, including notes about any technical or design decisions.
+
+4. Task Structure
+
+For large features or major changes (e.g., building an email system), create a main parent task (e.g., email-integration).
+
+Break down the implementation into subtasks under that parent task (e.g., set up SMTP, create templates, integrate with user accounts).
+
+Each subtask follows the same rules (To Do → Doing → Done, with updated descriptions).
+
+5. Quality and Consistency
+
+Descriptions must be clear, detailed, and written in English.
+
+Every completed task should give enough context so that someone reviewing the board later understands what was built and why.
+
+Never leave tasks in “Doing” without progress notes.
+
+Always check that task titles are short and descriptive (e.g., Fix login bug instead of Bug).
+
+👉 This way, Cursor stays your coding/creation environment, while DART always has the up-to-date status and history of every task.

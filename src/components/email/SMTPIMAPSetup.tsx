@@ -54,21 +54,21 @@ export const SMTPIMAPSetup: React.FC<SMTPIMAPSetupProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
 
-  // Form state
-  const [selectedPreset, setSelectedPreset] = useState<string>('custom');
+  // Form state - DEFAULT TO HOSTNET!
+  const [selectedPreset, setSelectedPreset] = useState<string>('hostnet');
   const [emailAddress, setEmailAddress] = useState('');
   const [displayName, setDisplayName] = useState('');
   
-  // SMTP state
-  const [smtpHost, setSmtpHost] = useState('');
+  // SMTP state - DEFAULT TO HOSTNET SETTINGS!
+  const [smtpHost, setSmtpHost] = useState('smtp.hostnet.nl');
   const [smtpPort, setSmtpPort] = useState(587);
   const [smtpUsername, setSmtpUsername] = useState('');
   const [smtpPassword, setSmtpPassword] = useState('');
   const [smtpEncryption, setSmtpEncryption] = useState<'tls' | 'ssl' | 'none'>('tls');
   const [showSmtpPassword, setShowSmtpPassword] = useState(false);
   
-  // IMAP state
-  const [imapHost, setImapHost] = useState('');
+  // IMAP state - DEFAULT TO HOSTNET SETTINGS!
+  const [imapHost, setImapHost] = useState('imap.hostnet.nl');
   const [imapPort, setImapPort] = useState(993);
   const [imapUsername, setImapUsername] = useState('');
   const [imapPassword, setImapPassword] = useState('');

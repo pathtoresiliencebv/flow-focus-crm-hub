@@ -159,6 +159,30 @@ export const EMAIL_PRESETS: Record<string, EmailPreset> = {
     setupUrl: 'https://www.zoho.com/mail/help/imap-access.html',
   },
 
+  hostnet: {
+    id: 'hostnet',
+    name: 'Hostnet (Smans Onderhoud)',
+    smtp: {
+      host: 'smtp.hostnet.nl',
+      port: 587,
+      encryption: 'tls',
+    },
+    imap: {
+      host: 'imap.hostnet.nl',
+      port: 993,
+      encryption: 'ssl',
+    },
+    requiresAppPassword: false,
+    instructions: `Voor Hostnet email:
+    
+1. Gebruik je volledige email adres als gebruikersnaam (bijv. info@smansonderhoud.nl)
+2. Gebruik je email wachtwoord (zoals ingesteld in Hostnet controle panel)
+3. SMTP server: smtp.hostnet.nl poort 587 met TLS
+4. IMAP server: imap.hostnet.nl poort 993 met SSL
+5. Als het niet werkt, controleer je wachtwoord in het Hostnet controle panel`,
+    setupUrl: 'https://www.hostnet.nl/support/email',
+  },
+
   custom: {
     id: 'custom',
     name: 'Aangepast / Anders',
@@ -230,6 +254,8 @@ export function detectProviderFromEmail(email: string): EmailPreset | null {
     'mac.com': 'icloud',
     'zoho.com': 'zoho',
     'zohomail.com': 'zoho',
+    'smansonderhoud.nl': 'hostnet',
+    'hostnet.nl': 'hostnet',
   };
 
   const presetId = domainMap[domain];
