@@ -138,7 +138,7 @@ export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
     { key: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" />, permission: null },
     { key: "customers", label: "Klanten", icon: <Users className="h-5 w-5" />, permission: "customers_view" },
     { key: "projects", label: "Projecten", icon: <FolderKanban className="h-5 w-5" />, permission: "projects_view" },
-    { key: "planning", label: "Planning", icon: <Calendar className="h-5 w-5" />, permission: "projects_view" },
+    { key: "calendar", label: "Planning", icon: <Calendar className="h-5 w-5" />, permission: "projects_view" },
     { key: "time", label: "Tijdregistratie", icon: <Clock className="h-5 w-5" />, permission: "projects_view" },
     { key: "receipts", label: "Bonnetjes", icon: <Receipt className="h-5 w-5" />, permission: "invoices_view" },
     { key: "quotes", label: "Offertes", icon: <FileText className="h-5 w-5" />, permission: "invoices_view" },
