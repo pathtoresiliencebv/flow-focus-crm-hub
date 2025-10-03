@@ -256,44 +256,30 @@ export const SMTPIMAPSetup: React.FC<SMTPIMAPSetupProps> = ({
     setSaving(true);
 
     try {
-      const accountData = {
-        user_id: user?.id,
-        email_address: emailAddress,
-        display_name: displayName || emailAddress.split('@')[0],
-        smtp_host: smtpHost,
-        smtp_port: smtpPort,
-        smtp_username: smtpUsername,
-        smtp_password: smtpPassword, // Note: Should be encrypted client-side
-        smtp_encryption: smtpEncryption,
-        imap_host: imapHost,
-        imap_port: imapPort,
-        imap_username: imapUsername,
-        imap_password: imapPassword, // Note: Should be encrypted client-side
-        imap_encryption: imapEncryption,
-        sync_enabled: true,
-        connection_status: testResult?.success ? 'connected' : 'unconfigured',
-        is_active: true,
-      };
+      // Use Edge Function to save account with encrypted passwords
+      const { data: result, error } = await supabase.functions.invoke('save-email-account', {
+        body: {
+          accountId: accountId || undefined,
+          emailAddress: emailAddress,
+          displayName: displayName || emailAddress.split('@')[0],
+          smtpHost,
+          smtpPort,
+          smtpUsername,
+          smtpPassword, // Will be encrypted server-side
+          smtpEncryption,
+          imapHost,
+          imapPort,
+          imapUsername,
+          imapPassword, // Will be encrypted server-side
+          imapEncryption,
+          syncEnabled: true,
+          connectionStatus: testResult?.success ? 'connected' : 'configured',
+          isActive: true,
+        },
+      });
 
-      let result;
-      if (accountId) {
-        // Update existing
-        result = await supabase
-          .from('email_accounts')
-          .update(accountData)
-          .eq('id', accountId)
-          .select()
-          .single();
-      } else {
-        // Create new
-        result = await supabase
-          .from('email_accounts')
-          .insert(accountData)
-          .select()
-          .single();
-      }
-
-      if (result.error) throw result.error;
+      if (error) throw error;
+      if (!result.success) throw new Error(result.error || 'Failed to save account');
 
       toast({
         title: '✅ Account opgeslagen',
@@ -303,6 +289,9 @@ export const SMTPIMAPSetup: React.FC<SMTPIMAPSetupProps> = ({
       if (onSuccess && result.data) {
         onSuccess(result.data.id);
       }
+      
+      // Refresh the page to load the account
+      window.location.reload();
     } catch (error) {
       console.error('Save failed:', error);
       toast({
