@@ -18,7 +18,7 @@ interface AuthContextType {
   profile: UserProfile | null;
   session: Session | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, preferredLanguage?: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string, role?: UserRole) => Promise<void>;
   logout: () => Promise<void>;
   isAuthenticated: boolean;
@@ -156,8 +156,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
   }, [fetchProfile]);
 
-  const login = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const login = async (email: string, password: string, preferredLanguage: string = 'nl') => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       let description = "Er is een onbekende fout opgetreden.";
       if (error.message === 'Invalid login credentials') {
@@ -174,6 +174,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         variant: "destructive"
       });
     } else {
+      // Update user's language preference after successful login
+      if (data.user && preferredLanguage) {
+        try {
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ 
+              chat_language: preferredLanguage,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', data.user.id);
+
+          if (updateError) {
+            console.error('Error updating language preference:', updateError);
+          }
+        } catch (error) {
+          console.error('Error saving language preference:', error);
+        }
+      }
+
       toast({
         title: "Ingelogd",
         description: `Welkom terug!`,
