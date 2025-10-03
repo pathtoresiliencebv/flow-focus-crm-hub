@@ -327,7 +327,7 @@ export const SMTPIMAPSetup: React.FC<SMTPIMAPSetupProps> = ({
           imapPassword, // Will be encrypted server-side
           imapEncryption,
           syncEnabled: true,
-          connectionStatus: testResult?.success ? 'connected' : 'configured',
+          connectionStatus: testResult?.success ? 'connected' : 'unconfigured',
           isActive: true,
         },
       });
