@@ -12,7 +12,9 @@ import {
   Tag, 
   Search,
   Plus,
-  RefreshCw
+  RefreshCw,
+  Settings,
+  ChevronLeft
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEmailAccounts } from '@/hooks/useEmailAccounts';
@@ -274,7 +276,7 @@ export default function Email() {
                   size="icon"
                   onClick={() => setSelectedThread(null)}
                 >
-                  ←
+                  <ChevronLeft className="h-4 w-4" />
                 </Button>
               )}
               <div className="flex-1">
