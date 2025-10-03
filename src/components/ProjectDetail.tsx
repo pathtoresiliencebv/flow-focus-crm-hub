@@ -16,7 +16,6 @@ import { ProjectPersonnel } from "./ProjectPersonnel";
 import { ProjectPlanning } from "./ProjectPlanning";
 import { ProjectTasks } from "./ProjectTasks";
 import { useProjectDelivery } from "@/hooks/useProjectDelivery";
-import { ProjectDeliveryDialog } from "./dashboard/ProjectDeliveryDialog";
 import { useAuth } from "@/contexts/AuthContext";
 
 const ProjectDetail = () => {
@@ -25,9 +24,8 @@ const ProjectDetail = () => {
   const { projects, customers, updateProject } = useCrmStore();
   const { monteurs, isLoading: isLoadingUsers } = useUsers();
   const { profile, user } = useAuth();
-  const { startProject, completeProject, isStarting, isCompleting } = useProjectDelivery();
+  const { startProject, isStarting } = useProjectDelivery();
   const [isEditing, setIsEditing] = useState(false);
-  const [showDelivery, setShowDelivery] = useState(false);
   const [showPlanning, setShowPlanning] = useState(false);
   const [showMaterials, setShowMaterials] = useState(false);
   const [showPersonnel, setShowPersonnel] = useState(false);
@@ -115,7 +113,7 @@ const ProjectDetail = () => {
   };
 
   const handleCompleteProject = () => {
-    setShowDelivery(true);
+    navigate(`/projects/${projectId}/delivery`);
   };
 
   const canManageProject = profile?.role === 'Installateur' && project.assigned_user_id === user?.id;
@@ -456,18 +454,6 @@ const ProjectDetail = () => {
       </div>
 
       {/* Project Delivery Dialog */}
-      {showDelivery && (
-        <ProjectDeliveryDialog
-          project={project}
-          isOpen={showDelivery}
-          onClose={() => setShowDelivery(false)}
-          onComplete={() => {
-            setShowDelivery(false);
-            // Refresh to show updated status
-            window.location.reload();
-          }}
-        />
-      )}
     </div>
   );
 };

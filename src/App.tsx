@@ -15,6 +15,7 @@ import { InvoiceDetailsPage } from "@/pages/InvoiceDetails";
 import { InvoiceSend } from "@/pages/InvoiceSend";
 import { CalendarPage } from "@/components/calendar/CalendarPage";
 import { GmailCallbackHandler } from "@/components/email/GmailCallbackHandler";
+import { ProjectDelivery } from "@/pages/ProjectDelivery";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TranslationProvider } from "@/contexts/TranslationContext";
 import { I18nProvider } from "@/contexts/I18nContext";
@@ -44,6 +45,7 @@ function App() {
                   <Route path="/" element={<Index />} />
                   <Route path="/customers/:customerId" element={<Index />} />
                   <Route path="/projects/:projectId" element={<Index />} />
+                  <Route path="/projects/:projectId/delivery" element={<ProjectDelivery />} />
                   <Route path="/customers-projects" element={<Index />} />
                   <Route path="/calendar" element={<CalendarPage />} />
                   <Route path="/quotes" element={<Index />} />
