@@ -35,12 +35,18 @@ export const FileAttachmentsManager = ({ value, onChange }: FileAttachmentsManag
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
         const filePath = `quotes/${fileName}`;
 
+        // Determine correct MIME type for PDFs
+        const contentType = file.name.toLowerCase().endsWith('.pdf') 
+          ? 'application/pdf' 
+          : file.type;
+
         // Upload to Supabase Storage
         const { data, error } = await supabase.storage
           .from('quote-attachments')
           .upload(filePath, file, {
             cacheControl: '3600',
-            upsert: false
+            upsert: false,
+            contentType: contentType  // Explicitly set MIME type
           });
 
         if (error) {
