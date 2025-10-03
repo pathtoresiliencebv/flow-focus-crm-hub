@@ -17,6 +17,7 @@ import { CalendarPage } from "@/components/calendar/CalendarPage";
 import { GmailCallbackHandler } from "@/components/email/GmailCallbackHandler";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TranslationProvider } from "@/contexts/TranslationContext";
+import { I18nProvider } from "@/contexts/I18nContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -35,8 +36,9 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <TranslationProvider>
-            <BrowserRouter>
+          <I18nProvider>
+            <TranslationProvider>
+              <BrowserRouter>
               <div className="min-h-screen bg-background">
                 <Routes>
                   <Route path="/" element={<Index />} />
@@ -63,8 +65,9 @@ function App() {
                 <Toaster />
                 <Sonner />
               </div>
-            </BrowserRouter>
-          </TranslationProvider>
+              </BrowserRouter>
+            </TranslationProvider>
+          </I18nProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>
