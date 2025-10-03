@@ -26,31 +26,35 @@ const CustomerDetail = () => {
   // Fetch invoices and quotes for this customer
   useEffect(() => {
     const fetchData = async () => {
-      if (!customerId) return;
+      if (!customerId || !customer) return;
       
       try {
         setLoading(true);
         
-        // Fetch invoices
+        // Fetch invoices - try by customer_id first, fallback to customer_name
         const { data: invoiceData, error: invoiceError } = await supabase
           .from('invoices')
           .select('*')
-          .eq('customer_id', customerId)
+          .or(`customer_id.eq.${customerId},customer_name.eq.${customer.name}`)
           .order('created_at', { ascending: false });
 
         if (!invoiceError && invoiceData) {
           setInvoices(invoiceData);
+        } else if (invoiceError) {
+          console.error('Error fetching invoices:', invoiceError);
         }
 
-        // Fetch quotes
+        // Fetch quotes - try by customer_id first, fallback to customer_name
         const { data: quoteData, error: quoteError } = await supabase
           .from('quotes')
           .select('*')
-          .eq('customer_id', customerId)
+          .or(`customer_id.eq.${customerId},customer_name.eq.${customer.name}`)
           .order('created_at', { ascending: false });
 
         if (!quoteError && quoteData) {
           setQuotes(quoteData);
+        } else if (quoteError) {
+          console.error('Error fetching quotes:', quoteError);
         }
       } catch (error) {
         console.error('Error fetching customer data:', error);
@@ -60,7 +64,7 @@ const CustomerDetail = () => {
     };
 
     fetchData();
-  }, [customerId]);
+  }, [customerId, customer]);
 
   // If customer not found, show error message
   if (!customer) {
