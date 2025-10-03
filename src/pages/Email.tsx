@@ -87,6 +87,7 @@ export default function Email() {
       <div className="h-full overflow-auto bg-gradient-to-br from-gray-50 to-gray-100 p-6">
         <div className="w-full max-w-4xl mx-auto">
           <SMTPIMAPSetup 
+            accountId={primaryAccount?.id} // ✅ LOAD EXISTING ACCOUNT!
             onSuccess={() => {
               setShowAccountSetup(false);
               toast({

@@ -63,7 +63,11 @@ class IMAPClient {
 
       // Read greeting (untagged response)
       const greeting = await this.readResponse(10000, false);
-      console.log('IMAP greeting:', greeting ? greeting.substring(0, Math.min(greeting.length, 100)) : '(empty response)');
+      console.log('IMAP greeting:', 
+        typeof greeting === 'string' && greeting.length > 0 
+          ? greeting.substring(0, Math.min(greeting.length, 100)) 
+          : `(invalid greeting: ${typeof greeting}, value: ${String(greeting).substring(0, 50)})`
+      );
     } catch (error) {
       console.error('❌ IMAP connection failed:', error);
       throw new Error(`Failed to connect to IMAP server: ${error.message}`);
@@ -197,7 +201,8 @@ class IMAPClient {
   private async readResponse(timeoutMs: number = 10000, expectTag: boolean = true): Promise<string> {
     if (!this.connection) throw new Error('Not connected');
 
-    return await withTimeout(async () => {
+    // ✅ FIX: Call the async function immediately to get a Promise!
+    return await withTimeout((async () => {
       let response = '';
       const buffer = new Uint8Array(8192);
 
@@ -235,7 +240,7 @@ class IMAPClient {
 
       console.log('← Response length:', response.length, 'expectTag:', expectTag);
       return response;
-    }, timeoutMs);
+    })(), timeoutMs); // ✅ Note the () after the arrow function!
   }
 }
 
