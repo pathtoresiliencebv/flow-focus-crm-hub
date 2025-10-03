@@ -3,6 +3,9 @@
  * 
  * Saves email account with encrypted passwords
  * Handles both create and update operations
+ * 
+ * Version: 1.1.0
+ * Updated: 2025-10-03 - Fixed connection_status constraint
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
