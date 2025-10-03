@@ -314,85 +314,135 @@ export default function Email() {
           "flex-1 bg-white flex flex-col",
           isMobile && !selectedThread && "hidden"
         )}>
-          {selectedThread ? (
-            <>
-              <div className="border-b p-4 flex items-center justify-between">
-                {isMobile && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedThread(null)}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                )}
-                <div className="flex-1">
-                  <h2 className="font-semibold text-lg">Email Subject</h2>
+          {(() => {
+            // ✅ FIND SELECTED EMAIL
+            const selectedMessage = messages.find(m => String(m.uid) === selectedThread);
+            
+            return selectedMessage ? (
+              <>
+                <div className="border-b p-4 flex items-center justify-between">
+                  {isMobile && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedThread(null)}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <div className="flex-1">
+                    <h2 className="font-semibold text-lg truncate">
+                      {selectedMessage.subject || '(Geen onderwerp)'}
+                    </h2>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      className={selectedMessage.isStarred ? "text-yellow-500" : ""}
+                    >
+                      <Star className={cn("h-4 w-4", selectedMessage.isStarred && "fill-yellow-500")} />
+                    </Button>
+                    <Button variant="ghost" size="icon">
+                      <Archive className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon">
-                    <Star className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon">
-                    <Archive className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="max-w-3xl mx-auto">
-                  <div className="mb-6">
-                    <div className="flex items-start gap-3">
-                      <div className="h-10 w-10 rounded-full bg-red-600 flex items-center justify-center text-white font-semibold">
-                        X
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-medium">XENAPO<L className="h-4 w-4" /></div>
-                        <div className="text-sm text-gray-500">noreply@mailgun.efaktura.nl</div>
-                        <div className="text-xs text-gray-400 mt-1">
-                          15:30 · {new Date().toLocaleDateString('nl-NL')}
+                
+                <div className="flex-1 overflow-y-auto p-6">
+                  <div className="max-w-3xl mx-auto">
+                    {/* Email Header */}
+                    <div className="mb-6 pb-6 border-b">
+                      <div className="flex items-start gap-3">
+                        <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0">
+                          {selectedMessage.from?.[0]?.toUpperCase() || '?'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-gray-900">
+                            {selectedMessage.from || 'Onbekend'}
+                          </div>
+                          <div className="text-sm text-gray-500 mt-1">
+                            Aan: {primaryAccount?.email_address}
+                          </div>
+                          <div className="text-xs text-gray-400 mt-1">
+                            {new Date(selectedMessage.date).toLocaleString('nl-NL', {
+                              weekday: 'long',
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="prose max-w-none">
-                    <p className="text-gray-700">
-                      Email content wordt hier weergegeven wanneer je een email selecteert.
-                    </p>
-                    <p className="text-gray-500 text-sm mt-4">
-                      Klik op "Nieuw bericht" om een email te versturen.
-                    </p>
+                    {/* Email Body */}
+                    <div className="prose prose-sm max-w-none">
+                      <div 
+                        className="text-gray-700 whitespace-pre-wrap break-words"
+                        style={{ wordBreak: 'break-word' }}
+                      >
+                        {selectedMessage.body || '(Geen inhoud)'}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="border-t p-4 flex gap-2">
-                <Button className="bg-red-600 hover:bg-red-700">
-                  Beantwoorden
-                </Button>
-                <Button variant="outline">
-                  Allen beantwoorden
-                </Button>
-                <Button variant="outline">
-                  Doorsturen
-                </Button>
+                {/* Action Buttons */}
+                <div className="border-t p-4 flex gap-2">
+                  <Button 
+                    className="bg-red-600 hover:bg-red-700"
+                    onClick={() => {
+                      // TODO: Implement reply
+                      toast({
+                        title: "Reply functie",
+                        description: "Reply functionaliteit wordt nog geïmplementeerd",
+                      });
+                    }}
+                  >
+                    Beantwoorden
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      toast({
+                        title: "Reply all functie",
+                        description: "Reply all functionaliteit wordt nog geïmplementeerd",
+                      });
+                    }}
+                  >
+                    Allen beantwoorden
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      toast({
+                        title: "Forward functie",
+                        description: "Forward functionaliteit wordt nog geïmplementeerd",
+                      });
+                    }}
+                  >
+                    Doorsturen
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-gray-400">
+                <div className="text-center">
+                  <Mail className="h-16 w-16 mx-auto mb-4 opacity-20" />
+                  <p>Selecteer een email om te lezen</p>
+                </div>
               </div>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-400">
-              <div className="text-center">
-                <Mail className="h-16 w-16 mx-auto mb-4 opacity-20" />
-                <p>Selecteer een email om te lezen</p>
-              </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
       </div>
 
