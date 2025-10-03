@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Settings as SettingsIcon, Building2, FileText, Users, Mail, Wallet, Bot, ChevronRight, CreditCard, Shield, Bell, FormInput, MessageSquare } from "lucide-react";
+import { Settings as SettingsIcon, Building2, FileText, Users, Mail, Wallet, Bot, ChevronRight, CreditCard, Shield, Bell, FormInput, MessageSquare, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CompanyDetailsSettings } from '@/components/settings/CompanyDetailsSettings';
 import { ExternalIntegrationsSettings } from '@/components/settings/ExternalIntegrationsSettings';
@@ -14,8 +14,9 @@ import { EmailTemplateSettings } from '@/components/settings/EmailTemplateSettin
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { LeadFormSettings } from '@/components/settings/LeadFormSettings';
 import { AIIntegrationSettings } from '@/components/settings/AIIntegrationSettings';
+import { LanguageSettings } from '@/components/LanguageSettings';
 
-type SettingPage = 'overview' | 'company' | 'quotes' | 'invoices' | 'users' | 'roles' | 'email' | 'email-templates' | 'notifications' | 'lead-forms' | 'ai-integration' | 'integrations';
+type SettingPage = 'overview' | 'company' | 'quotes' | 'invoices' | 'users' | 'roles' | 'email' | 'email-templates' | 'notifications' | 'lead-forms' | 'ai-integration' | 'integrations' | 'language';
 
 const settingsCategories = [
   {
@@ -28,6 +29,13 @@ const settingsCategories = [
         description: "Beheer uw bedrijfsinformatie en contactgegevens",
         icon: Building2,
         color: "text-blue-600"
+      },
+      {
+        id: 'language' as SettingPage,
+        title: "Taal & Vertaling",
+        description: "Wijzig interface taal en vertaalinstellingen",
+        icon: Languages,
+        color: "text-teal-600"
       },
       {
         id: 'quotes' as SettingPage,
@@ -134,6 +142,8 @@ export default function Settings() {
     switch (currentPage) {
       case 'company':
         return <CompanyDetailsSettings />;
+      case 'language':
+        return <LanguageSettings />;
       case 'quotes':
         return <QuoteSettings />;
       case 'invoices':
