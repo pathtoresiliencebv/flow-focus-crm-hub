@@ -17,7 +17,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useEmailAccounts } from '@/hooks/useEmailAccounts';
 import { useEmailThreads } from '@/hooks/useEmailThreads';
-import { ConnectEmailAccount } from '@/components/email/ConnectEmailAccount';
+import { SMTPIMAPSetup } from '@/components/email/SMTPIMAPSetup';
 import { EmailComposer } from '@/components/email/EmailComposer';
 
 export default function Email() {
@@ -28,6 +28,7 @@ export default function Email() {
   const [searchQuery, setSearchQuery] = useState('');
   const [syncing, setSyncing] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
+  const [showAccountSetup, setShowAccountSetup] = useState(false);
 
   const primaryAccount = accounts.find(acc => acc.is_primary) || accounts[0];
   const { threads, loading: threadsLoading } = useEmailThreads(primaryAccount?.id || null, selectedFolder);
@@ -45,12 +46,18 @@ export default function Email() {
     }
   };
 
-  // Show connection screen if no accounts
-  if (!accountsLoading && accounts.length === 0) {
+  // Show SMTP/IMAP setup if no accounts or user clicked "Add Account"
+  if ((!accountsLoading && accounts.length === 0) || showAccountSetup) {
     return (
-      <div className="h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-6">
-        <div className="w-full max-w-md">
-          <ConnectEmailAccount />
+      <div className="h-full overflow-auto bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+        <div className="w-full max-w-4xl mx-auto">
+          <SMTPIMAPSetup 
+            onSuccess={() => {
+              setShowAccountSetup(false);
+              // Refresh accounts will happen automatically via useEmailAccounts
+            }}
+            onCancel={accounts.length > 0 ? () => setShowAccountSetup(false) : undefined}
+          />
         </div>
       </div>
     );
