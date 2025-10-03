@@ -38,19 +38,34 @@ class IMAPClient {
 
   async connect(host: string, port: number, useTLS: boolean): Promise<void> {
     try {
-      this.connection = await withTimeout(
-        Deno.connect({
-          hostname: host,
-          port: port,
-          transport: useTLS ? 'tls' : 'tcp',
-        }),
-        10000
-      );
+      // Deno Edge Runtime: use Deno.connectTls() for TLS, Deno.connect() for plain TCP
+      if (useTLS) {
+        console.log(`🔐 Connecting to ${host}:${port} with TLS...`);
+        this.connection = await withTimeout(
+          Deno.connectTls({
+            hostname: host,
+            port: port,
+          }),
+          10000
+        );
+      } else {
+        console.log(`🔓 Connecting to ${host}:${port} without TLS...`);
+        this.connection = await withTimeout(
+          Deno.connect({
+            hostname: host,
+            port: port,
+          }) as Promise<Deno.Conn>,
+          10000
+        );
+      }
+
+      console.log(`✅ Connected to IMAP server ${host}:${port}`);
 
       // Read greeting
       const greeting = await this.readResponse();
       console.log('IMAP greeting:', greeting.substring(0, 100));
     } catch (error) {
+      console.error('❌ IMAP connection failed:', error);
       throw new Error(`Failed to connect to IMAP server: ${error.message}`);
     }
   }
