@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+// Email migration to SMTP/IMAP complete - Gmail OAuth removed
 import Index from "@/pages/Index";
 import Settings from "@/pages/Settings";
 import PublicQuote from "@/pages/PublicQuote";
