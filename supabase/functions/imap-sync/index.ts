@@ -1,8 +1,8 @@
 /**
- * IMAP Sync Edge Function - FULL IMPLEMENTATION
+ * IMAP Fetch Emails - LIVE MODE (NO DATABASE STORAGE)
  * 
- * Synchronizes emails from IMAP server to database
- * Based on Roundcube functionality
+ * Fetches emails directly from IMAP server and returns them
+ * Does NOT store emails in database - pure Roundcube-style live reading
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -61,9 +61,9 @@ class IMAPClient {
 
       console.log(`✅ Connected to IMAP server ${host}:${port}`);
 
-      // Read greeting
-      const greeting = await this.readResponse();
-      console.log('IMAP greeting:', greeting.substring(0, 100));
+      // Read greeting (untagged response)
+      const greeting = await this.readResponse(10000, false);
+      console.log('IMAP greeting:', greeting ? greeting.substring(0, Math.min(greeting.length, 100)) : '(empty response)');
     } catch (error) {
       console.error('❌ IMAP connection failed:', error);
       throw new Error(`Failed to connect to IMAP server: ${error.message}`);
@@ -194,7 +194,7 @@ class IMAPClient {
     await this.connection.write(new TextEncoder().encode(fullCommand));
   }
 
-  private async readResponse(timeoutMs: number = 10000): Promise<string> {
+  private async readResponse(timeoutMs: number = 10000, expectTag: boolean = true): Promise<string> {
     if (!this.connection) throw new Error('Not connected');
 
     return await withTimeout(async () => {
@@ -208,8 +208,16 @@ class IMAPClient {
         response += new TextDecoder().decode(buffer.subarray(0, bytesRead));
 
         // Check if we have a complete response
-        if (response.match(/A\d{4} (OK|NO|BAD)/)) {
-          break;
+        if (expectTag) {
+          // Tagged response (command responses)
+          if (response.match(/A\d{4} (OK|NO|BAD)/)) {
+            break;
+          }
+        } else {
+          // Untagged response (greetings, etc.)
+          if (response.includes('\r\n') || response.includes('\n')) {
+            break;
+          }
         }
 
         // Prevent infinite loop
@@ -217,9 +225,15 @@ class IMAPClient {
           console.warn('Response too large, truncating');
           break;
         }
+        
+        // If we have SOME data and expectTag is false, don't wait forever
+        if (!expectTag && response.length > 0 && bytesRead < buffer.length) {
+          // Likely end of greeting
+          break;
+        }
       }
 
-      console.log('← Response length:', response.length);
+      console.log('← Response length:', response.length, 'expectTag:', expectTag);
       return response;
     }, timeoutMs);
   }
@@ -306,63 +320,12 @@ serve(async (req) => {
       const start = fullSync ? Math.max(1, mailboxInfo.exists - maxMessages + 1) : mailboxInfo.exists - 10;
       const end = mailboxInfo.exists;
 
+      let messages: any[] = [];
+      
       if (end > 0) {
-        const messages = await imap.fetchMessages(start, end);
-        console.log(`📥 Fetched ${messages.length} messages`);
-
-        // Store messages in database
-        for (const message of messages) {
-          try {
-            // Create or update thread
-            const threadId = `thread-${accountId}-${message.uid}`;
-            
-            await supabaseClient
-              .from('email_threads')
-              .upsert({
-                id: threadId,
-                account_id: accountId,
-                thread_id: `imap-${message.uid}`,
-                subject: message.subject,
-                snippet: message.body.substring(0, 200),
-                participants: [{ email: message.from, name: message.from }],
-                message_count: 1,
-                last_message_at: message.date,
-                is_read: message.isRead,
-                is_starred: message.isStarred,
-                is_archived: false,
-                has_attachments: false,
-                labels: [],
-              });
-
-            // Insert message
-            await supabaseClient
-              .from('email_messages')
-              .upsert({
-                thread_id: threadId,
-                message_id: `uid-${message.uid}`,
-                from_email: message.from,
-                from_name: message.from,
-                to_emails: [{ email: account.email_address, name: account.display_name }],
-                cc_emails: [],
-                bcc_emails: [],
-                subject: message.subject,
-                body_text: message.body,
-                body_html: `<p>${message.body}</p>`,
-                received_at: message.date,
-                is_read: message.isRead,
-                is_draft: false,
-                labels: [],
-              }, {
-                onConflict: 'message_id',
-                ignoreDuplicates: true,
-              });
-
-            syncedCount++;
-          } catch (error) {
-            console.error('Error storing message:', error);
-            errorCount++;
-          }
-        }
+        messages = await imap.fetchMessages(start, end);
+        console.log(`📥 Fetched ${messages.length} messages (LIVE - not stored)`);
+        syncedCount = messages.length;
       }
 
       // Logout
@@ -378,14 +341,15 @@ serve(async (req) => {
         })
         .eq('id', accountId);
 
-      console.log('✅ Sync completed:', { syncedCount, errorCount });
+      console.log('✅ Fetch completed:', { messageCount: syncedCount });
 
       return new Response(
         JSON.stringify({
           success: true,
-          message: `Successfully synced ${syncedCount} messages`,
-          syncedCount,
-          errorCount,
+          message: `Successfully fetched ${syncedCount} messages`,
+          messages, // Return messages directly
+          mailboxInfo,
+          messageCount: syncedCount,
           timestamp: new Date().toISOString(),
         }),
         {
