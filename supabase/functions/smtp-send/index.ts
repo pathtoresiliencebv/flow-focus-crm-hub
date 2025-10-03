@@ -1,12 +1,41 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+/**
+ * SMTP Send Edge Function
+ * 
+ * Sends emails via SMTP and saves to Sent folder
+ * Provider-agnostic email sending
+ */
 
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts';
+import { decryptPassword } from '../_shared/emailEncryption.ts';
+
+// CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface SendEmailRequest {
+  accountId: string;
+  to: string | string[];
+  cc?: string | string[];
+  bcc?: string | string[];
+  subject: string;
+  bodyText?: string;
+  bodyHtml?: string;
+  attachments?: Array<{
+    filename: string;
+    content: string; // base64
+    contentType?: string;
+  }>;
+  inReplyTo?: string; // Message ID for threading
+  references?: string[]; // For email threading
+  priority?: 'high' | 'normal' | 'low';
+}
+
 serve(async (req) => {
+  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -14,229 +43,190 @@ serve(async (req) => {
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { accountId, to, subject, body, cc, bcc } = await req.json();
+    const emailData: SendEmailRequest = await req.json();
+
+    console.log('📤 Sending email via SMTP for account:', emailData.accountId);
 
     // Get account details
     const { data: account, error: accountError } = await supabaseClient
       .from('email_accounts')
       .select('*')
-      .eq('id', accountId)
+      .eq('id', emailData.accountId)
       .single();
 
     if (accountError || !account) {
-      console.error('Account fetch error:', accountError);
-      throw new Error('Account not found: ' + (accountError?.message || 'No account'));
+      throw new Error('Email account not found');
     }
 
-    // Ensure email_address exists (fallback to email if needed for backwards compatibility)
-    const emailAddress = account.email_address || account.email;
-    if (!emailAddress) {
-      throw new Error('No email address found for account');
-    }
+    // Decrypt password
+    const smtpPassword = await decryptPassword(account.smtp_password);
 
-    console.log('Sending email via SMTP:', {
-      host: account.smtp_host,
-      port: account.smtp_port,
-      from: emailAddress,
-      provider: account.provider
+    console.log('🔐 Connecting to SMTP:', account.smtp_host);
+
+    // Configure SMTP client
+    const smtpClient = new SMTPClient({
+      connection: {
+        hostname: account.smtp_host,
+        port: account.smtp_port,
+        tls: account.smtp_encryption !== 'none',
+        auth: {
+          username: account.smtp_username,
+          password: smtpPassword,
+        },
+      },
     });
 
-    // Connect to SMTP server
-    const smtpConn = await Deno.connect({
-      hostname: account.smtp_host,
-      port: account.smtp_port,
-    });
+    // Prepare recipients
+    const toAddresses = Array.isArray(emailData.to) ? emailData.to : [emailData.to];
+    const ccAddresses = emailData.cc ? (Array.isArray(emailData.cc) ? emailData.cc : [emailData.cc]) : undefined;
+    const bccAddresses = emailData.bcc ? (Array.isArray(emailData.bcc) ? emailData.bcc : [emailData.bcc]) : undefined;
 
-    const decoder = new TextDecoder();
-    const encoder = new TextEncoder();
+    // Prepare email
+    const emailMessage: any = {
+      from: {
+        name: account.display_name || account.email_address.split('@')[0],
+        mail: account.email_address,
+      },
+      to: toAddresses,
+      cc: ccAddresses,
+      bcc: bccAddresses,
+      subject: emailData.subject,
+      content: emailData.bodyText || '',
+      html: emailData.bodyHtml,
+    };
 
-    // Helper function to read response
-    async function readResponse(): Promise<string> {
-      const buffer = new Uint8Array(4096);
-      const n = await smtpConn.read(buffer);
-      const response = decoder.decode(buffer.subarray(0, n || 0));
-      console.log('SMTP response:', response);
-      return response;
+    // Add headers for threading
+    if (emailData.inReplyTo) {
+      emailMessage.inReplyTo = emailData.inReplyTo;
+    }
+    if (emailData.references) {
+      emailMessage.references = emailData.references;
     }
 
-    // Helper function to send command
-    async function sendCommand(command: string): Promise<string> {
-      console.log('SMTP command:', command.replace(/AUTH PLAIN [^\r]+/, 'AUTH PLAIN ***'));
-      await smtpConn.write(encoder.encode(command + '\r\n'));
-      return await readResponse();
+    // Add priority
+    if (emailData.priority) {
+      const priorityMap = {
+        high: '1',
+        normal: '3',
+        low: '5',
+      };
+      emailMessage.priority = priorityMap[emailData.priority];
     }
 
-    try {
-      // Read greeting
-      const greeting = await readResponse();
-      if (!greeting.startsWith('220')) {
-        throw new Error('SMTP connection failed');
-      }
-
-      // EHLO
-      const ehloResponse = await sendCommand(`EHLO ${account.smtp_host}`);
-      if (!ehloResponse.includes('250')) {
-        throw new Error('EHLO failed');
-      }
-
-      // STARTTLS if using TLS on port 587
-      if (account.smtp_secure && account.smtp_port === 587) {
-        const tlsResponse = await sendCommand('STARTTLS');
-        if (!tlsResponse.includes('220')) {
-          throw new Error('STARTTLS failed');
-        }
-        // Note: In production, you'd need to upgrade to TLS connection here
-        // For now, we'll continue without encryption (not recommended for production)
-      }
-
-      // AUTH LOGIN (Base64 encoded)
-      const authResponse = await sendCommand('AUTH LOGIN');
-      if (!authResponse.includes('334')) {
-        throw new Error('AUTH LOGIN failed');
-      }
-
-      // Send username (Base64)
-      const usernameB64 = btoa(account.smtp_username);
-      const userResponse = await sendCommand(usernameB64);
-      if (!userResponse.includes('334')) {
-        throw new Error('Username authentication failed');
-      }
-
-      // Send password (Base64)
-      const passwordB64 = btoa(account.smtp_password);
-      const passResponse = await sendCommand(passwordB64);
-      if (!passResponse.includes('235')) {
-        throw new Error('Password authentication failed');
-      }
-
-      // MAIL FROM
-      const mailFromResponse = await sendCommand(`MAIL FROM:<${emailAddress}>`);
-      if (!mailFromResponse.includes('250')) {
-        throw new Error('MAIL FROM failed');
-      }
-
-      // RCPT TO
-      const recipients = [to, ...(cc || []), ...(bcc || [])];
-      for (const recipient of recipients) {
-        const rcptResponse = await sendCommand(`RCPT TO:<${recipient}>`);
-        if (!rcptResponse.includes('250')) {
-          throw new Error(`RCPT TO failed for ${recipient}`);
-        }
-      }
-
-      // DATA
-      const dataResponse = await sendCommand('DATA');
-      if (!dataResponse.includes('354')) {
-        throw new Error('DATA command failed');
-      }
-
-      // Build email
-      const messageId = `<${crypto.randomUUID()}@${account.smtp_host}>`;
-      const date = new Date().toUTCString();
-      
-      let emailContent = `From: ${account.display_name || emailAddress} <${emailAddress}>\r\n`;
-      emailContent += `To: ${to}\r\n`;
-      if (cc && cc.length > 0) {
-        emailContent += `Cc: ${cc.join(', ')}\r\n`;
-      }
-      emailContent += `Subject: ${subject}\r\n`;
-      emailContent += `Date: ${date}\r\n`;
-      emailContent += `Message-ID: ${messageId}\r\n`;
-      emailContent += `MIME-Version: 1.0\r\n`;
-      emailContent += `Content-Type: text/html; charset=UTF-8\r\n`;
-      emailContent += `\r\n`;
-      emailContent += body;
-      emailContent += `\r\n.\r\n`;
-
-      // Send email content
-      await smtpConn.write(encoder.encode(emailContent));
-      const sendResponse = await readResponse();
-      if (!sendResponse.includes('250')) {
-        throw new Error('Email sending failed');
-      }
-
-      // QUIT
-      await sendCommand('QUIT');
-      smtpConn.close();
-
-      // Store sent message in database
-      // First create/get thread
-      const { data: thread, error: threadError } = await supabaseClient
-        .from('email_threads')
-        .upsert({
-          account_id: accountId,
-          subject: subject,
-          last_message_at: new Date().toISOString(),
-          participants: [
-            { email: emailAddress, name: account.display_name || emailAddress },
-            { email: to, name: to.split('@')[0] }
-          ],
-        }, {
-          onConflict: 'account_id,subject',
-          ignoreDuplicates: false,
-        })
-        .select()
-        .single();
-
-      if (!threadError && thread) {
-        // Store message
-        await supabaseClient
-          .from('email_messages')
-          .insert({
-            thread_id: thread.id,
-            account_id: accountId,
-            external_id: messageId,
-            from_email: emailAddress,
-            from_name: account.display_name || emailAddress,
-            to_email: to,
-            cc_emails: cc || [],
-            bcc_emails: bcc || [],
-            subject: subject,
-            body_html: body,
-            sent_at: new Date().toISOString(),
-          });
-      }
-
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: 'Email sent successfully',
-          messageId,
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-
-    } catch (error: any) {
-      try {
-        smtpConn.close();
-      } catch (closeError) {
-        console.error('Error closing SMTP connection:', closeError);
-      }
-      throw error;
+    // Add attachments if any
+    if (emailData.attachments && emailData.attachments.length > 0) {
+      emailMessage.attachments = emailData.attachments.map(att => ({
+        filename: att.filename,
+        content: att.content,
+        encoding: 'base64',
+        contentType: att.contentType || 'application/octet-stream',
+      }));
     }
 
-  } catch (error: any) {
-    console.error('Error in smtp-send:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
-    
+    // Send email
+    console.log('📧 Sending to:', toAddresses.join(', '));
+    await smtpClient.send(emailMessage);
+    await smtpClient.close();
+
+    console.log('✅ Email sent successfully');
+
+    // Generate unique message ID
+    const messageId = `<${Date.now()}.${Math.random().toString(36)}@${account.smtp_host}>`;
+    const threadId = emailData.inReplyTo 
+      ? await findThreadByMessageId(emailData.inReplyTo, supabaseClient)
+      : `thread-${account.id}-${Date.now()}`;
+
+    // Create or update thread
+    await supabaseClient
+      .from('email_threads')
+      .upsert({
+        id: threadId,
+        account_id: account.id,
+        thread_id: messageId,
+        subject: emailData.subject,
+        snippet: (emailData.bodyText || emailData.bodyHtml || '').substring(0, 200),
+        participants: [
+          { email: account.email_address, name: account.display_name },
+          ...toAddresses.map(email => ({ email, name: email.split('@')[0] })),
+        ],
+        message_count: 1, // Would increment if reply
+        last_message_at: new Date().toISOString(),
+        is_read: true, // Sent emails are always read
+        is_starred: false,
+        labels: ['Sent'],
+      });
+
+    // Save email to database (Sent folder)
+    const { data: savedMessage, error: saveError } = await supabaseClient
+      .from('email_messages')
+      .insert({
+        thread_id: threadId,
+        message_id: messageId,
+        from_email: account.email_address,
+        from_name: account.display_name || account.email_address,
+        to_emails: toAddresses.map(email => ({ email, name: email.split('@')[0] })),
+        cc_emails: ccAddresses?.map(email => ({ email, name: email.split('@')[0] })) || [],
+        bcc_emails: bccAddresses?.map(email => ({ email, name: email.split('@')[0] })) || [],
+        subject: emailData.subject,
+        body_text: emailData.bodyText || '',
+        body_html: emailData.bodyHtml || '',
+        received_at: new Date().toISOString(),
+        is_read: true,
+        is_draft: false,
+        labels: ['Sent'],
+      })
+      .select()
+      .single();
+
+    if (saveError) {
+      console.error('Error saving sent email:', saveError);
+      // Don't fail the request - email was sent successfully
+    }
+
+    // TODO: Also save to IMAP Sent folder for proper sync
+    // This would require IMAP APPEND command
+
     return new Response(
-      JSON.stringify({ 
-        success: false,
-        error: error.message || 'Unknown error occurred',
-        details: error.stack
+      JSON.stringify({
+        success: true,
+        messageId,
+        threadId,
+        savedMessage,
       }),
-      { 
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('❌ Send error:', error);
+
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error.message,
+        details: error.toString(),
+      }),
+      {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
+        status: 500,
       }
     );
   }
 });
 
+/**
+ * Find thread ID by message ID (for replies)
+ */
+async function findThreadByMessageId(
+  messageId: string,
+  supabase: any
+): Promise<string> {
+  const { data } = await supabase
+    .from('email_messages')
+    .select('thread_id')
+    .eq('message_id', messageId)
+    .single();
+
+  return data?.thread_id || `thread-${Date.now()}`;
+}
