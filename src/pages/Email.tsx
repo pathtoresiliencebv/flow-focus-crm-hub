@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEmailAccounts } from '@/hooks/useEmailAccounts';
-import { useLiveEmails } from '@/hooks/useLiveEmails';
+import { useCachedEmails } from '@/hooks/useCachedEmails';
 import { SMTPIMAPSetup } from '@/components/email/SMTPIMAPSetup';
 import { EmailComposer } from '@/components/email/EmailComposer';
 import { useToast } from '@/hooks/use-toast';
@@ -38,32 +38,32 @@ export default function Email() {
   const validAccounts = accounts.filter(acc => acc.smtp_host && acc.imap_host);
   const primaryAccount = validAccounts.find(acc => acc.is_primary) || validAccounts[0];
   
-  // ✅ USE LIVE EMAILS instead of database threads
-  const { messages, loading: messagesLoading, fetchEmails, refresh } = useLiveEmails();
+  // ✅ USE CACHED EMAILS from database (synced from IMAP)
+  const { messages, loading: messagesLoading, fetchEmails, syncEmails, getFolders } = useCachedEmails();
 
-  // Auto-fetch emails when account changes
+  // Auto-fetch emails from cache when account changes
   useEffect(() => {
     if (primaryAccount?.id) {
-      fetchEmails(primaryAccount.id).catch(err => {
-        console.error('Failed to fetch emails on mount:', err);
+      fetchEmails(primaryAccount.id, selectedFolder).catch(err => {
+        console.error('Failed to fetch cached emails on mount:', err);
       });
     }
-  }, [primaryAccount?.id, fetchEmails]);
+  }, [primaryAccount?.id, selectedFolder, fetchEmails]);
 
   const handleSync = async () => {
     if (!primaryAccount) return;
     
     try {
-      console.log('🔄 Starting LIVE sync for account:', primaryAccount.id);
+      console.log('🔄 Starting CACHE sync for account:', primaryAccount.id);
       
-      // Use LIVE email fetch
-      const result = await refresh(primaryAccount.id);
+      // Sync from IMAP to database cache
+      const result = await syncEmails(primaryAccount.id);
       
-      console.log('✅ LIVE Sync completed:', result);
+      console.log('✅ Cache sync completed:', result);
       
       toast({
         title: "Synchronisatie voltooid",
-        description: `${result.messageCount || 0} berichten opgehaald van IMAP server.`,
+        description: `${result.totalMessages || 0} berichten opgehaald van ${result.folders || 0} mappen.`,
       });
     } catch (error: any) {
       console.error('❌ Sync failed:', error);
@@ -125,7 +125,7 @@ export default function Email() {
     { id: 'inbox', label: 'Postvak IN', icon: Inbox, count: messages?.length || 0 },
     { id: 'sent', label: 'Verzonden', icon: Send, count: 0 },
     { id: 'drafts', label: 'Concepten', icon: Mail, count: 0 },
-    { id: 'starred', label: 'Met ster', icon: Star, count: messages?.filter(m => m.isStarred).length || 0 },
+    { id: 'starred', label: 'Met ster', icon: Star, count: messages?.filter(m => m.is_starred).length || 0 },
     { id: 'archive', label: 'Archief', icon: Archive, count: 0 },
     { id: 'trash', label: 'Prullenbak', icon: Trash2, count: 0 },
   ];
@@ -241,55 +241,55 @@ export default function Email() {
               </div>
             </div>
 
-            {/* Email Messages (LIVE from IMAP) */}
+            {/* Email Messages (CACHED from database) */}
             <div className="flex-1 overflow-y-auto">
               {messagesLoading ? (
                 <div className="p-8 text-center text-gray-500">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-300 mx-auto mb-2"></div>
-                  <p className="text-sm">Emails laden van IMAP server...</p>
+                  <p className="text-sm">Emails laden...</p>
                 </div>
               ) : messages && messages.length > 0 ? (
                 messages.map((message) => (
                   <div
-                    key={message.uid}
-                    onClick={() => setSelectedThread(String(message.uid))}
+                    key={message.id}
+                    onClick={() => setSelectedThread(message.id)}
                     className={cn(
                       "p-3 border-b cursor-pointer transition-colors hover:bg-gray-50",
-                      selectedThread === String(message.uid) ? "bg-blue-50" : "",
-                      !message.isRead ? "bg-blue-50/30" : ""
+                      selectedThread === message.id ? "bg-blue-50" : "",
+                      message.status === 'unread' ? "bg-blue-50/30" : ""
                     )}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          {!message.isRead && (
+                          {message.status === 'unread' && (
                             <div className="h-2 w-2 rounded-full bg-blue-600 flex-shrink-0"></div>
                           )}
                           <span className={cn(
                             "font-medium text-sm truncate",
-                            !message.isRead ? "text-gray-900" : "text-gray-700"
+                            message.status === 'unread' ? "text-gray-900" : "text-gray-700"
                           )}>
-                            {message.from || 'Onbekend'}
+                            {message.from_email || 'Onbekend'}
                           </span>
                         </div>
                         <h3 className={cn(
                           "text-sm truncate mt-1",
-                          !message.isRead ? "font-semibold text-gray-900" : "text-gray-700"
+                          message.status === 'unread' ? "font-semibold text-gray-900" : "text-gray-700"
                         )}>
                           {message.subject || '(Geen onderwerp)'}
                         </h3>
                         <p className="text-xs text-gray-500 truncate mt-1">
-                          {message.body?.substring(0, 100) || 'Geen preview beschikbaar'}
+                          {message.body_text?.substring(0, 100) || 'Geen preview beschikbaar'}
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-1 flex-shrink-0">
                         <span className="text-xs text-gray-500">
-                          {new Date(message.date).toLocaleDateString('nl-NL', {
+                          {new Date(message.received_at).toLocaleDateString('nl-NL', {
                             day: 'numeric',
                             month: 'short'
                           })}
                         </span>
-                        {message.isStarred && (
+                        {message.is_starred && (
                           <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
                         )}
                       </div>
@@ -315,8 +315,8 @@ export default function Email() {
           isMobile && !selectedThread && "hidden"
         )}>
           {(() => {
-            // ✅ FIND SELECTED EMAIL
-            const selectedMessage = messages.find(m => String(m.uid) === selectedThread);
+            // ✅ FIND SELECTED CACHED EMAIL
+            const selectedMessage = messages.find(m => m.id === selectedThread);
             
             return selectedMessage ? (
               <>
@@ -339,9 +339,9 @@ export default function Email() {
                     <Button 
                       variant="ghost" 
                       size="icon"
-                      className={selectedMessage.isStarred ? "text-yellow-500" : ""}
+                      className={selectedMessage.is_starred ? "text-yellow-500" : ""}
                     >
-                      <Star className={cn("h-4 w-4", selectedMessage.isStarred && "fill-yellow-500")} />
+                      <Star className={cn("h-4 w-4", selectedMessage.is_starred && "fill-yellow-500")} />
                     </Button>
                     <Button variant="ghost" size="icon">
                       <Archive className="h-4 w-4" />
@@ -361,17 +361,17 @@ export default function Email() {
                     <div className="mb-6 pb-6 border-b">
                       <div className="flex items-start gap-3">
                         <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0">
-                          {selectedMessage.from?.[0]?.toUpperCase() || '?'}
+                          {selectedMessage.from_email?.[0]?.toUpperCase() || '?'}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-gray-900">
-                            {selectedMessage.from || 'Onbekend'}
+                            {selectedMessage.from_email || 'Onbekend'}
                           </div>
                           <div className="text-sm text-gray-500 mt-1">
-                            Aan: {primaryAccount?.email_address}
+                            Aan: {selectedMessage.to_email?.join(', ') || primaryAccount?.email_address}
                           </div>
                           <div className="text-xs text-gray-400 mt-1">
-                            {new Date(selectedMessage.date).toLocaleString('nl-NL', {
+                            {new Date(selectedMessage.received_at).toLocaleString('nl-NL', {
                               weekday: 'long',
                               year: 'numeric',
                               month: 'long',
@@ -390,7 +390,7 @@ export default function Email() {
                         className="text-gray-700 whitespace-pre-wrap break-words"
                         style={{ wordBreak: 'break-word' }}
                       >
-                        {selectedMessage.body || '(Geen inhoud)'}
+                        {selectedMessage.body_text || selectedMessage.body_html || '(Geen inhoud)'}
                       </div>
                     </div>
                   </div>
