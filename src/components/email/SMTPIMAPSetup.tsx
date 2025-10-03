@@ -188,6 +188,8 @@ export const SMTPIMAPSetup: React.FC<SMTPIMAPSetupProps> = ({
     setTestResult(null);
 
     try {
+      console.log('🧪 Testing email connection...');
+      
       const { data, error } = await supabase.functions.invoke('test-email-connection', {
         body: {
           smtp: {
@@ -208,27 +210,70 @@ export const SMTPIMAPSetup: React.FC<SMTPIMAPSetupProps> = ({
         },
       });
 
-      if (error) throw error;
+      console.log('📊 Test result:', data);
+      console.log('❌ Test error:', error);
+
+      if (error) {
+        console.error('Edge Function invocation error:', error);
+        throw error;
+      }
 
       setTestResult(data);
 
-      if (data.success) {
+      // Check if BOTH SMTP and IMAP succeeded
+      const smtpSuccess = data?.results?.smtp?.success === true;
+      const imapSuccess = data?.results?.imap?.success === true;
+      const bothSuccess = smtpSuccess && imapSuccess;
+      
+      console.log('✅ Connection status:', { 
+        smtpSuccess, 
+        imapSuccess, 
+        bothSuccess,
+        smtpDetails: data?.results?.smtp,
+        imapDetails: data?.results?.imap
+      });
+
+      if (bothSuccess) {
         toast({
           title: '✅ Verbinding succesvol',
           description: 'SMTP en IMAP verbindingen werken!',
         });
       } else {
+        // Show specific errors
+        const errors = [];
+        
+        if (!smtpSuccess) {
+          const smtpError = data?.results?.smtp?.error || data?.results?.smtp?.message || 'Onbekende fout';
+          errors.push(`SMTP: ${smtpError}`);
+        }
+        
+        if (!imapSuccess) {
+          const imapError = data?.results?.imap?.error || data?.results?.imap?.message || 'Onbekende fout';
+          errors.push(`IMAP: ${imapError}`);
+        }
+        
+        console.error('❌ Connection failed:', errors);
+        
         toast({
           title: '❌ Verbinding mislukt',
-          description: 'Controleer je instellingen en probeer opnieuw',
+          description: errors.join('\n\n'),
           variant: 'destructive'
         });
       }
-    } catch (error) {
-      console.error('Test failed:', error);
+    } catch (error: any) {
+      console.error('❌ Test failed with exception:', error);
+      
+      setTestResult({
+        success: false,
+        results: {
+          smtp: { success: false, error: error.message || 'Test mislukt' },
+          imap: { success: false, error: error.message || 'Test mislukt' },
+        }
+      });
+      
       toast({
-        title: 'Test fout',
-        description: error.message,
+        title: '❌ Test fout',
+        description: error.message || 'Er is een onbekende fout opgetreden',
         variant: 'destructive'
       });
     } finally {
