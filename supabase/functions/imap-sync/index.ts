@@ -251,7 +251,7 @@ serve(async (req) => {
   }
 
   try {
-    const { accountId, fullSync = false, maxMessages = 50 }: SyncRequest = await req.json();
+    const { accountId, fullSync = false, maxMessages = 200 }: SyncRequest = await req.json();
 
     // Get Supabase client
     const authHeader = req.headers.get('Authorization')!;
@@ -322,7 +322,10 @@ serve(async (req) => {
       console.log('📬 Mailbox info:', mailboxInfo);
 
       // Fetch messages
-      const start = fullSync ? Math.max(1, mailboxInfo.exists - maxMessages + 1) : mailboxInfo.exists - 10;
+      // Default: laatste maxMessages (200), fullSync: alles
+      const start = fullSync 
+        ? 1  // Fetch ALLE messages
+        : Math.max(1, mailboxInfo.exists - maxMessages + 1);  // Laatste 200 messages
       const end = mailboxInfo.exists;
 
       let messages: any[] = [];

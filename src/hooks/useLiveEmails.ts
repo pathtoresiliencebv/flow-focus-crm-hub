@@ -52,7 +52,7 @@ export const useLiveEmails = () => {
         body: {
           accountId,
           fullSync: options?.fullSync ?? false,
-          maxMessages: options?.maxMessages ?? 50,
+          maxMessages: options?.maxMessages ?? 200,  // ✅ Fetch laatste 200 emails
         }
       });
 
