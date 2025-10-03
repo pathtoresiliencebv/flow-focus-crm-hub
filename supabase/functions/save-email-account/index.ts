@@ -88,7 +88,7 @@ serve(async (req) => {
       imap_password: encryptedImapPassword,
       imap_encryption: requestData.imapEncryption,
       sync_enabled: requestData.syncEnabled ?? true,
-      connection_status: requestData.connectionStatus || 'configured',
+      connection_status: requestData.connectionStatus || 'unconfigured', // Must be one of: 'unconfigured', 'testing', 'connected', 'error'
       is_active: requestData.isActive ?? true,
       is_primary: requestData.isPrimary ?? false,
     };
