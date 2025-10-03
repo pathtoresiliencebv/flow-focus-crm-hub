@@ -14,7 +14,6 @@ import { QuoteSend } from "@/pages/QuoteSend";
 import { InvoiceDetailsPage } from "@/pages/InvoiceDetails";
 import { InvoiceSend } from "@/pages/InvoiceSend";
 import { CalendarPage } from "@/components/calendar/CalendarPage";
-import { GmailCallbackHandler } from "@/components/email/GmailCallbackHandler";
 import { ProjectDelivery } from "@/pages/ProjectDelivery";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TranslationProvider } from "@/contexts/TranslationContext";
@@ -61,7 +60,6 @@ function App() {
                   <Route path="/invoices/:invoiceId/send" element={<InvoiceSend />} />
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/quote/:token" element={<PublicQuote />} />
-                  <Route path="/api/auth/gmail/callback" element={<GmailCallbackHandler />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 <Toaster />
