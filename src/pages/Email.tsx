@@ -45,16 +45,35 @@ export default function Email() {
     
     try {
       setSyncing(true);
+      console.log('🔄 Starting sync for account:', primaryAccount.id);
+      
       const result = await syncAccount(primaryAccount.id);
+      
+      console.log('✅ Sync completed:', result);
+      
       toast({
         title: "Synchronisatie voltooid",
-        description: `${result.syncedCount || 0} nieuwe berichten gesynchroniseerd.`,
+        description: result.message || `${result.syncedCount || 0} berichten gesynchroniseerd.`,
       });
-    } catch (error) {
-      console.error('Sync failed:', error);
+    } catch (error: any) {
+      console.error('❌ Sync failed:', error);
+      
+      // Show user-friendly error message
+      let errorMessage = "Er is een fout opgetreden tijdens synchronisatie.";
+      
+      if (error.message?.includes('EMAIL_ENCRYPTION_KEY')) {
+        errorMessage = "Email encryptie sleutel niet ingesteld. Configureer EMAIL_ENCRYPTION_KEY in Supabase.";
+      } else if (error.message?.includes('authentication')) {
+        errorMessage = "Email authenticatie gefaald. Controleer je wachtwoord.";
+      } else if (error.message?.includes('connection')) {
+        errorMessage = "Kan geen verbinding maken met email server.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Synchronisatie mislukt",
-        description: error.message || "Er is een fout opgetreden tijdens synchronisatie.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -190,14 +209,7 @@ export default function Email() {
               })}
             </div>
 
-            <div className="p-3 border-t mt-auto">
-              <div className="text-xs text-gray-500 space-y-1">
-                <div className="flex justify-between">
-                  <span>Opslag:</span>
-                  <span>2.1 GB van 15 GB</span>
-                </div>
-              </div>
-            </div>
+            {/* Removed hardcoded storage info */}
           </div>
         )}
 
