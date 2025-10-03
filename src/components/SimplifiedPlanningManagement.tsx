@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Calendar as CalendarIcon, ListOrdered, Users } from "lucide-react";
-import { SimplifiedPlanningCalendar } from './planning/SimplifiedPlanningCalendar';
-import { DirectProjectPlanningPanel } from './planning/DirectProjectPlanningPanel';
+import { EnhancedPlanningAgenda } from './planning/EnhancedPlanningAgenda';
+import { SlideInPlanningPanel } from './planning/SlideInPlanningPanel';
 import { usePlanningStore, PlanningItem } from '@/hooks/usePlanningStore';
 import { useRealUserStore } from '@/hooks/useRealUserStore';
 import { useCrmStore } from '@/hooks/useCrmStore';
@@ -37,9 +37,16 @@ export function SimplifiedPlanningManagement() {
     };
   });
 
-  const handleDateClick = (date: Date) => {
+  const handleDateClick = (date: Date, installerId?: string) => {
     setSelectedDate(date);
     setShowPlanningPanel(true);
+  };
+
+  const handleEventClick = (event: any) => {
+    // Navigate to project if project_id exists
+    if (event.project_id) {
+      window.location.href = `/projects/${event.project_id}`;
+    }
   };
 
   const handlePlanProject = async (data: {
@@ -211,14 +218,12 @@ export function SimplifiedPlanningManagement() {
         </div>
       )}
 
-      {/* Calendar */}
-      <SimplifiedPlanningCalendar
+      {/* Enhanced Planning Agenda */}
+      <EnhancedPlanningAgenda
         events={eventsWithInstallers}
-        onDateClick={handleDateClick}
-        onEventClick={(event) => {
-          // Optional: Open event details
-          console.log('Event clicked:', event);
-        }}
+        installers={installers}
+        onEventClick={handleEventClick}
+        onTimeSlotClick={handleDateClick}
       />
 
       {/* Recent Planning List */}
