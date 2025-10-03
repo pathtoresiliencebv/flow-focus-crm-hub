@@ -29,6 +29,7 @@ import { useQuoteTemplates } from '@/hooks/useQuoteTemplates';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { QuoteBlock, Quote } from '@/types/quote';
 import { supabase } from '@/integrations/supabase/client';
+import { SearchableCustomerSelect } from '@/components/ui/searchable-customer-select';
 
 const formSchema = z.object({
   customer: z.string().min(1, { message: "Selecteer een klant" }),
@@ -934,20 +935,15 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
                       <FormItem>
                         <FormLabel>Klant *</FormLabel>
                         <div className="flex gap-2">
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecteer klant" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {customers.map((customer) => (
-                                <SelectItem key={customer.id} value={customer.id}>
-                                  {customer.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <FormControl>
+                            <SearchableCustomerSelect
+                              customers={customers}
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              placeholder="Zoek op naam, email of telefoon..."
+                              className="flex-1"
+                            />
+                          </FormControl>
                           <Button
                             type="button"
                             variant="outline"
