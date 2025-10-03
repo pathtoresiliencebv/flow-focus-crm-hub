@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -18,15 +18,14 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEmailAccounts } from '@/hooks/useEmailAccounts';
-import { useEmailThreads } from '@/hooks/useEmailThreads';
+import { useLiveEmails } from '@/hooks/useLiveEmails';
 import { SMTPIMAPSetup } from '@/components/email/SMTPIMAPSetup';
 import { EmailComposer } from '@/components/email/EmailComposer';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function Email() {
-  const { accounts, loading: accountsLoading, syncAccount } = useEmailAccounts();
-  const [syncing, setSyncing] = useState(false);
+  const { accounts, loading: accountsLoading } = useEmailAccounts();
   const [showAccountSetup, setShowAccountSetup] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
   const [selectedFolder, setSelectedFolder] = useState('inbox');
@@ -38,22 +37,33 @@ export default function Email() {
   // Filter out old accounts without SMTP/IMAP configuration
   const validAccounts = accounts.filter(acc => acc.smtp_host && acc.imap_host);
   const primaryAccount = validAccounts.find(acc => acc.is_primary) || validAccounts[0];
-  const { threads, loading: threadsLoading } = useEmailThreads(primaryAccount?.id || null, selectedFolder);
+  
+  // ✅ USE LIVE EMAILS instead of database threads
+  const { messages, loading: messagesLoading, fetchEmails, refresh } = useLiveEmails();
+
+  // Auto-fetch emails when account changes
+  useEffect(() => {
+    if (primaryAccount?.id) {
+      fetchEmails(primaryAccount.id).catch(err => {
+        console.error('Failed to fetch emails on mount:', err);
+      });
+    }
+  }, [primaryAccount?.id, fetchEmails]);
 
   const handleSync = async () => {
     if (!primaryAccount) return;
     
     try {
-      setSyncing(true);
-      console.log('🔄 Starting sync for account:', primaryAccount.id);
+      console.log('🔄 Starting LIVE sync for account:', primaryAccount.id);
       
-      const result = await syncAccount(primaryAccount.id);
+      // Use LIVE email fetch
+      const result = await refresh(primaryAccount.id);
       
-      console.log('✅ Sync completed:', result);
+      console.log('✅ LIVE Sync completed:', result);
       
       toast({
         title: "Synchronisatie voltooid",
-        description: result.message || `${result.syncedCount || 0} berichten gesynchroniseerd.`,
+        description: `${result.messageCount || 0} berichten opgehaald van IMAP server.`,
       });
     } catch (error: any) {
       console.error('❌ Sync failed:', error);
@@ -76,8 +86,6 @@ export default function Email() {
         description: errorMessage,
         variant: "destructive",
       });
-    } finally {
-      setSyncing(false);
     }
   };
 
@@ -114,10 +122,10 @@ export default function Email() {
   }
 
   const folders = [
-    { id: 'inbox', label: 'Postvak IN', icon: Inbox, count: threads?.length || 0 },
+    { id: 'inbox', label: 'Postvak IN', icon: Inbox, count: messages?.length || 0 },
     { id: 'sent', label: 'Verzonden', icon: Send, count: 0 },
     { id: 'drafts', label: 'Concepten', icon: Mail, count: 0 },
-    { id: 'starred', label: 'Met ster', icon: Star, count: 0 },
+    { id: 'starred', label: 'Met ster', icon: Star, count: messages?.filter(m => m.isStarred).length || 0 },
     { id: 'archive', label: 'Archief', icon: Archive, count: 0 },
     { id: 'trash', label: 'Prullenbak', icon: Trash2, count: 0 },
   ];
@@ -141,9 +149,9 @@ export default function Email() {
             variant="outline"
             size="sm"
             onClick={handleSync}
-            disabled={syncing || !primaryAccount}
+            disabled={messagesLoading || !primaryAccount}
           >
-            <RefreshCw className={cn("h-4 w-4", syncing && "animate-spin")} />
+            <RefreshCw className={cn("h-4 w-4", messagesLoading && "animate-spin")} />
           </Button>
           
           <Button
@@ -233,59 +241,56 @@ export default function Email() {
               </div>
             </div>
 
-            {/* Email Threads */}
+            {/* Email Messages (LIVE from IMAP) */}
             <div className="flex-1 overflow-y-auto">
-              {threadsLoading ? (
+              {messagesLoading ? (
                 <div className="p-8 text-center text-gray-500">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-300 mx-auto mb-2"></div>
-                  <p className="text-sm">Emails laden...</p>
+                  <p className="text-sm">Emails laden van IMAP server...</p>
                 </div>
-              ) : threads && threads.length > 0 ? (
-                threads.map((thread) => (
+              ) : messages && messages.length > 0 ? (
+                messages.map((message) => (
                   <div
-                    key={thread.id}
-                    onClick={() => setSelectedThread(thread.id)}
+                    key={message.uid}
+                    onClick={() => setSelectedThread(String(message.uid))}
                     className={cn(
                       "p-3 border-b cursor-pointer transition-colors hover:bg-gray-50",
-                      selectedThread === thread.id ? "bg-blue-50" : "",
-                      !thread.is_read ? "bg-blue-50/30" : ""
+                      selectedThread === String(message.uid) ? "bg-blue-50" : "",
+                      !message.isRead ? "bg-blue-50/30" : ""
                     )}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          {!thread.is_read && (
+                          {!message.isRead && (
                             <div className="h-2 w-2 rounded-full bg-blue-600 flex-shrink-0"></div>
                           )}
                           <span className={cn(
                             "font-medium text-sm truncate",
-                            !thread.is_read ? "text-gray-900" : "text-gray-700"
+                            !message.isRead ? "text-gray-900" : "text-gray-700"
                           )}>
-                            {thread.participants?.[0]?.name || thread.participants?.[0]?.email || 'Onbekend'}
+                            {message.from || 'Onbekend'}
                           </span>
                         </div>
                         <h3 className={cn(
                           "text-sm truncate mt-1",
-                          !thread.is_read ? "font-semibold text-gray-900" : "text-gray-700"
+                          !message.isRead ? "font-semibold text-gray-900" : "text-gray-700"
                         )}>
-                          {thread.subject || '(Geen onderwerp)'}
+                          {message.subject || '(Geen onderwerp)'}
                         </h3>
                         <p className="text-xs text-gray-500 truncate mt-1">
-                          {thread.snippet || 'Geen preview beschikbaar'}
+                          {message.body?.substring(0, 100) || 'Geen preview beschikbaar'}
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-1 flex-shrink-0">
                         <span className="text-xs text-gray-500">
-                          {new Date(thread.last_message_at).toLocaleDateString('nl-NL', {
+                          {new Date(message.date).toLocaleDateString('nl-NL', {
                             day: 'numeric',
                             month: 'short'
                           })}
                         </span>
-                        {thread.is_starred && (
+                        {message.isStarred && (
                           <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
-                        )}
-                        {thread.has_attachments && (
-                          <Paperclip className="h-3.5 w-3.5 text-gray-400" />
                         )}
                       </div>
                     </div>
@@ -296,7 +301,7 @@ export default function Email() {
                   <Mail className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                   <p className="text-gray-500">Geen emails in deze map</p>
                   <p className="text-sm text-gray-400 mt-1">
-                    Klik op Synchroniseer om emails op te halen
+                    Klik op Synchroniseren om emails op te halen
                   </p>
                 </div>
               )}
