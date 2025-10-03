@@ -5,14 +5,31 @@ import { useAuth } from '@/contexts/AuthContext';
 export interface EmailAccount {
   id: string;
   user_id: string;
-  provider: 'gmail' | 'outlook' | 'imap' | 'smtp';
   email_address: string;
   display_name: string | null;
+  // SMTP configuration
+  smtp_host: string;
+  smtp_port: number;
+  smtp_username: string;
+  smtp_password: string; // Encrypted
+  smtp_encryption: 'tls' | 'ssl' | 'none';
+  // IMAP configuration
+  imap_host: string;
+  imap_port: number;
+  imap_username: string;
+  imap_password: string; // Encrypted
+  imap_encryption: 'ssl' | 'tls' | 'none';
+  // Status
   is_active: boolean;
   is_primary: boolean;
   sync_enabled: boolean;
+  connection_status: 'unconfigured' | 'testing' | 'connected' | 'error';
   last_sync_at: string | null;
+  last_synced_uid: number | null;
+  last_error: string | null;
+  last_error_at: string | null;
   created_at: string;
+  updated_at: string;
 }
 
 export const useEmailAccounts = () => {
@@ -112,30 +129,90 @@ export const useEmailAccounts = () => {
     }
   }, []);
 
-  const syncAccount = useCallback(async (accountId: string) => {
+  const syncAccount = useCallback(async (accountId: string, fullSync: boolean = false) => {
     try {
-      // Get account to determine provider
-      const account = accounts.find(a => a.id === accountId);
-      if (!account) throw new Error('Account not found');
-
-      const functionName = account.provider === 'smtp' ? 'imap-sync' : 'gmail-sync';
-      const body = account.provider === 'smtp' 
-        ? { accountId }
-        : { accountId, maxResults: 50, fullSync: false };
-      
-      const { data, error } = await supabase.functions.invoke(functionName, { body });
+      // All accounts now use imap-sync (SMTP/IMAP based)
+      const { data, error } = await supabase.functions.invoke('imap-sync', {
+        body: {
+          accountId,
+          fullSync,
+          maxMessages: fullSync ? 100 : 50,
+        }
+      });
 
       if (error) throw error;
 
-      console.log('Sync result:', data);
+      console.log('✅ Sync result:', data);
       await fetchAccounts(); // Refresh accounts to update last_sync_at
       
       return data;
     } catch (err: any) {
-      console.error('Error syncing email account:', err);
+      console.error('❌ Error syncing email account:', err);
       throw err;
     }
-  }, [fetchAccounts, accounts]);
+  }, [fetchAccounts]);
+
+  const testConnection = useCallback(async (config: {
+    smtp: {
+      host: string;
+      port: number;
+      username: string;
+      password: string;
+      encryption: 'tls' | 'ssl' | 'none';
+    };
+    imap: {
+      host: string;
+      port: number;
+      username: string;
+      password: string;
+      encryption: 'ssl' | 'tls' | 'none';
+    };
+    testEmail?: string;
+  }) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('test-email-connection', {
+        body: config
+      });
+
+      if (error) throw error;
+
+      return data;
+    } catch (err: any) {
+      console.error('❌ Error testing connection:', err);
+      throw err;
+    }
+  }, []);
+
+  const sendEmail = useCallback(async (params: {
+    accountId: string;
+    to: string | string[];
+    cc?: string | string[];
+    bcc?: string | string[];
+    subject: string;
+    bodyText?: string;
+    bodyHtml?: string;
+    attachments?: Array<{
+      filename: string;
+      content: string;
+      contentType?: string;
+    }>;
+    inReplyTo?: string;
+    priority?: 'high' | 'normal' | 'low';
+  }) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('smtp-send', {
+        body: params
+      });
+
+      if (error) throw error;
+
+      console.log('✅ Email sent:', data);
+      return data;
+    } catch (err: any) {
+      console.error('❌ Error sending email:', err);
+      throw err;
+    }
+  }, []);
 
   return {
     accounts,
@@ -145,6 +222,8 @@ export const useEmailAccounts = () => {
     addAccount,
     updateAccount,
     deleteAccount,
-    syncAccount
+    syncAccount,
+    testConnection,
+    sendEmail,
   };
 };
