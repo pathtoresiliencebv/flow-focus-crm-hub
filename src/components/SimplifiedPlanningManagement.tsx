@@ -271,8 +271,8 @@ export function SimplifiedPlanningManagement() {
         </CardContent>
       </Card>
 
-      {/* Planning Panel */}
-      <DirectProjectPlanningPanel
+      {/* Slide-in Planning Panel */}
+      <SlideInPlanningPanel
         projects={projects}
         installers={installers}
         selectedDate={selectedDate}
