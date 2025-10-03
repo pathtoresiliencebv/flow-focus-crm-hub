@@ -37,13 +37,15 @@ export default function Email() {
   const primaryAccount = validAccounts.find(acc => acc.is_primary) || validAccounts[0];
   const { threads, loading: threadsLoading } = useEmailThreads(primaryAccount?.id || null, selectedFolder);
 
-  // Debug logging
-  console.log('📧 Email Debug:', {
-    totalAccounts: accounts.length,
-    validAccounts: validAccounts.length,
-    accountsLoading,
-    showAccountSetup
-  });
+  // Debug logging with explicit values
+  console.log('=== EMAIL DEBUG START ===');
+  console.log('Total accounts from DB:', accounts.length);
+  console.log('Valid accounts (with SMTP/IMAP):', validAccounts.length);
+  console.log('Loading?', accountsLoading);
+  console.log('Show setup?', showAccountSetup);
+  console.log('Accounts data:', accounts);
+  console.log('Valid accounts data:', validAccounts);
+  console.log('=== EMAIL DEBUG END ===');
 
   const handleSync = async () => {
     if (!primaryAccount) return;
