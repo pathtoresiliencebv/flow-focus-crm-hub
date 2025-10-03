@@ -32,7 +32,9 @@ export default function Email() {
   const [composerOpen, setComposerOpen] = useState(false);
   const [showAccountSetup, setShowAccountSetup] = useState(false);
 
-  const primaryAccount = accounts.find(acc => acc.is_primary) || accounts[0];
+  // Filter out old accounts without SMTP/IMAP configuration
+  const validAccounts = accounts.filter(acc => acc.smtp_host && acc.imap_host);
+  const primaryAccount = validAccounts.find(acc => acc.is_primary) || validAccounts[0];
   const { threads, loading: threadsLoading } = useEmailThreads(primaryAccount?.id || null, selectedFolder);
 
   const handleSync = async () => {
@@ -48,8 +50,8 @@ export default function Email() {
     }
   };
 
-  // Show SMTP/IMAP setup if no accounts or user clicked "Add Account"
-  if ((!accountsLoading && accounts.length === 0) || showAccountSetup) {
+  // Show SMTP/IMAP setup if no valid accounts or user clicked "Add Account"
+  if ((!accountsLoading && validAccounts.length === 0) || showAccountSetup) {
     return (
       <div className="h-full overflow-auto bg-gradient-to-br from-gray-50 to-gray-100 p-6">
         <div className="w-full max-w-4xl mx-auto">
@@ -58,7 +60,7 @@ export default function Email() {
               setShowAccountSetup(false);
               // Refresh accounts will happen automatically via useEmailAccounts
             }}
-            onCancel={accounts.length > 0 ? () => setShowAccountSetup(false) : undefined}
+            onCancel={validAccounts.length > 0 ? () => setShowAccountSetup(false) : undefined}
           />
         </div>
       </div>
