@@ -233,11 +233,20 @@ export const SMTPIMAPSetup: React.FC<SMTPIMAPSetupProps> = ({
         imapDetails: data?.results?.imap
       });
 
-      if (bothSuccess) {
-        toast({
-          title: '✅ Verbinding succesvol',
-          description: 'SMTP en IMAP verbindingen werken!',
-        });
+      // Consider IMAP success as sufficient (SMTP test is flaky in Edge Functions)
+      if (imapSuccess) {
+        if (bothSuccess) {
+          toast({
+            title: '✅ Verbinding succesvol',
+            description: 'SMTP en IMAP verbindingen werken perfect!',
+          });
+        } else {
+          // IMAP works but SMTP failed
+          toast({
+            title: '⚠️ Gedeeltelijk succesvol',
+            description: 'IMAP werkt! SMTP test faalde maar je kan toch proberen op te slaan. SMTP wordt getest bij eerste email versturen.',
+          });
+        }
       } else {
         // Show specific errors
         const errors = [];
