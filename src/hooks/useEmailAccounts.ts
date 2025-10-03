@@ -7,18 +7,18 @@ export interface EmailAccount {
   user_id: string;
   email_address: string;
   display_name: string | null;
-  // SMTP configuration
-  smtp_host: string;
-  smtp_port: number;
-  smtp_username: string;
-  smtp_password: string; // Encrypted
-  smtp_encryption: 'tls' | 'ssl' | 'none';
-  // IMAP configuration
-  imap_host: string;
-  imap_port: number;
-  imap_username: string;
-  imap_password: string; // Encrypted
-  imap_encryption: 'ssl' | 'tls' | 'none';
+  // SMTP configuration (nullable for old Gmail OAuth accounts)
+  smtp_host: string | null;
+  smtp_port: number | null;
+  smtp_username: string | null;
+  smtp_password: string | null; // Encrypted
+  smtp_encryption: 'tls' | 'ssl' | 'none' | null;
+  // IMAP configuration (nullable for old Gmail OAuth accounts)
+  imap_host: string | null;
+  imap_port: number | null;
+  imap_username: string | null;
+  imap_password: string | null; // Encrypted
+  imap_encryption: 'ssl' | 'tls' | 'none' | null;
   // Status
   is_active: boolean;
   is_primary: boolean;
@@ -58,7 +58,12 @@ export const useEmailAccounts = () => {
 
       if (fetchError) throw fetchError;
 
-      setAccounts(data || []);
+      // Filter out old Gmail OAuth accounts without SMTP/IMAP configuration
+      const validAccounts = (data || []).filter(account => 
+        account.smtp_host && account.imap_host
+      );
+
+      setAccounts(validAccounts);
     } catch (err: any) {
       console.error('Error fetching email accounts:', err);
       setError(err.message);
