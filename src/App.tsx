@@ -61,7 +61,7 @@ function App() {
                   <Route path="/invoices/:invoiceId/details" element={<InvoiceDetailsPage />} />
                   <Route path="/invoices/:invoiceId/send" element={<InvoiceSend />} />
                   <Route path="/settings" element={<Settings />} />
-                  <Route path="/webmail" element={<Email />} />
+                  <Route path="/webmail" element={<Index />} />
                   <Route path="/quote/:token" element={<PublicQuote />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
