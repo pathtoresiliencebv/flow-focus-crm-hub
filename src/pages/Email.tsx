@@ -139,68 +139,8 @@ export default function Email() {
     );
   }
 
-  const loadCustomFolders = useCallback(async () => {
-    if (!primaryAccount?.id) return;
-    try {
-      const { data, error } = await supabase
-        .from('email_labels')
-        .select('*')
-        .eq('account_id', primaryAccount?.id)
-        .eq('label_type', 'custom')
-        .order('name');
-      
-      if (error) throw error;
-      
-      setCustomFolders(data?.map(f => ({
-        id: f.id,
-        name: f.name,
-        count: f.message_count || 0,
-      })) || []);
-    } catch (err) {
-      console.error('Failed to load custom folders:', err);
-    }
-  }, [primaryAccount?.id]);
-
-  // Load custom folders on mount
-  useEffect(() => {
-    loadCustomFolders();
-  }, [loadCustomFolders]);
-
-  const handleCreateFolder = async () => {
-    if (!newFolderName.trim() || !primaryAccount?.id) return;
-    
-    setCreatingFolder(true);
-    try {
-      const { error } = await supabase
-        .from('email_labels')
-        .insert({
-          account_id: primaryAccount.id,
-          name: newFolderName.trim(),
-          label_type: 'custom',
-          color: '#6366f1',
-          message_count: 0,
-        });
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Map aangemaakt",
-        description: `Map "${newFolderName}" is toegevoegd`,
-      });
-      
-      setNewFolderName('');
-      setShowNewFolderDialog(false);
-      loadCustomFolders();
-    } catch (err: any) {
-      toast({
-        title: "Fout bij aanmaken map",
-        description: err.message,
-        variant: "destructive",
-      });
-    } finally {
-      setCreatingFolder(false);
-    }
-  };
+  // Custom folders feature temporarily disabled to fix infinite loop
+  // TODO: Re-implement with proper memoization
 
   const folders = [
     { id: 'inbox', label: 'Postvak IN', icon: Inbox, count: messages?.length || 0 },
@@ -302,58 +242,7 @@ export default function Email() {
                 );
               })}
 
-              {/* Custom folders */}
-              {customFolders.length > 0 && (
-                <>
-                  <div className="border-t my-2"></div>
-                  <div className="text-xs font-semibold text-gray-500 px-3 py-1 mb-1">
-                    MIJN MAPPEN
-                  </div>
-                  {customFolders.map((folder) => (
-                    <button
-                      key={folder.id}
-                      onClick={() => {
-                        setSelectedFolder(folder.id);
-                        setSelectedThread(null);
-                      }}
-                      className={cn(
-                        "w-full flex items-center justify-between px-3 py-2 rounded text-sm transition-colors mb-1",
-                        selectedFolder === folder.id
-                          ? "bg-red-50 text-red-700 font-medium"
-                          : "hover:bg-gray-100 text-gray-700"
-                      )}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-4 w-4" />
-                        <span>{folder.name}</span>
-                      </div>
-                      {folder.count > 0 && (
-                        <span className={cn(
-                          "text-xs px-1.5 py-0.5 rounded",
-                          selectedFolder === folder.id
-                            ? "bg-red-100 text-red-700"
-                            : "bg-gray-200 text-gray-600"
-                        )}>
-                          {folder.count}
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </>
-              )}
-
-              {/* New Folder Button */}
-              <div className="border-t mt-2 pt-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start text-gray-600 hover:text-gray-900"
-                  onClick={() => setShowNewFolderDialog(true)}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nieuwe map
-                </Button>
-              </div>
+              {/* Custom folders temporarily disabled - will re-add after testing */}
             </div>
           </div>
         )}
@@ -751,55 +640,7 @@ export default function Email() {
         />
       )}
 
-      {/* New Folder Dialog */}
-      <Dialog open={showNewFolderDialog} onOpenChange={setShowNewFolderDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Nieuwe map aanmaken</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="folderName">Map naam</Label>
-            <Input
-              id="folderName"
-              placeholder="Bijv. Projecten, Klanten, Belangrijk..."
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !creatingFolder) {
-                  handleCreateFolder();
-                }
-              }}
-              className="mt-2"
-              autoFocus
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowNewFolderDialog(false);
-                setNewFolderName('');
-              }}
-              disabled={creatingFolder}
-            >
-              Annuleren
-            </Button>
-            <Button
-              onClick={handleCreateFolder}
-              disabled={!newFolderName.trim() || creatingFolder}
-            >
-              {creatingFolder ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Aanmaken...
-                </>
-              ) : (
-                'Map aanmaken'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Custom folders dialog temporarily disabled */}
     </div>
   );
 }
