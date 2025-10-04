@@ -1,12 +1,13 @@
 {
   "compilerOptions": {
-    "target": "esnext",
+    "target": "es2020",
+    "lib": ["es2020"],
+    "module": "esnext",
+    "moduleResolution": "node",
     "allowJs": true,
+    "strict": false,
     "noImplicitAny": false,
     "strictNullChecks": false,
-    "strict": false,
-    "useUnknownInCatchVariables": false,
-    "lib": ["esnext", "dom"],
     "skipLibCheck": true,
     "types": []
   }
