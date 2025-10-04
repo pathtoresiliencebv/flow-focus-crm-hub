@@ -108,8 +108,8 @@ class IMAPClient {
     const tag = this.nextTag();
     const range = end === -1 ? `${start}:*` : `${start}:${end}`;
     
-    // Simplified FETCH - only get essential fields that ALWAYS parse correctly
-    await this.sendCommand(tag, `FETCH ${range} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)] BODY.PEEK[TEXT]<0.500>)`);
+    // Fetch both text and HTML body parts + structure for attachments
+    await this.sendCommand(tag, `FETCH ${range} (UID FLAGS BODYSTRUCTURE BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)] BODY.PEEK[TEXT] BODY.PEEK[HTML])`);
     const response = await this.readResponse(60000); // Longer timeout for many emails
 
     return this.parseMessages(response);
@@ -174,12 +174,35 @@ class IMAPClient {
             }
           }
 
-          // Extract BODY (first 500 chars)
-          let body = '';
-          const bodyMatch = block.match(/BODY\[TEXT\](?:<\d+\.\d+>)?\s*(?:\{(\d+)\})?\r?\n?([\s\S]*)/);
-          if (bodyMatch) {
-            const bodyText = bodyMatch[2] || '';
-            body = bodyText.substring(0, 500).trim();
+          // Extract TEXT body
+          let bodyText = '';
+          const textMatch = block.match(/BODY\[TEXT\](?:<\d+\.\d+>)?\s*(?:\{(\d+)\})?\r?\n?([\s\S]*?)(?=\r?\nBODY\[|$)/);
+          if (textMatch) {
+            bodyText = (textMatch[2] || '').substring(0, 5000).trim();
+          }
+
+          // Extract HTML body
+          let bodyHtml = '';
+          const htmlMatch = block.match(/BODY\[HTML\](?:<\d+\.\d+>)?\s*(?:\{(\d+)\})?\r?\n?([\s\S]*?)(?=\r?\nBODY\[|$)/);
+          if (htmlMatch) {
+            bodyHtml = (htmlMatch[2] || '').substring(0, 10000).trim();
+          }
+
+          // Parse BODYSTRUCTURE for attachments
+          const attachments: any[] = [];
+          const structureMatch = block.match(/BODYSTRUCTURE \((.*)\)/s);
+          if (structureMatch) {
+            // Basic attachment detection - look for filename in structure
+            const structure = structureMatch[1];
+            const filenameMatches = structure.matchAll(/"filename"\s+"([^"]+)"/gi);
+            for (const match of filenameMatches) {
+              attachments.push({
+                filename: match[1],
+                name: match[1],
+                // Note: Full attachment download would require additional FETCH
+                // For now we just indicate attachments exist
+              });
+            }
           }
 
           // Create message object compatible with frontend
@@ -191,8 +214,9 @@ class IMAPClient {
             to_email: [], // Not fetched for performance
             subject,
             date,
-            body_text: body,
-            body_html: null,
+            body_text: bodyText,
+            body_html: bodyHtml || null,
+            attachments: attachments.length > 0 ? attachments : null,
             status: flags.includes('\\Seen') ? 'read' : 'unread',
             is_starred: flags.includes('\\Flagged'),
             folder: 'inbox',
