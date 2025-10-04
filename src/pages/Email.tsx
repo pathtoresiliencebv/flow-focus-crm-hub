@@ -643,15 +643,44 @@ export default function Email() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => {
-                                  window.open('https://webmail.hostnet.nl', '_blank');
-                                  toast({
-                                    title: "Hostnet webmail geopend",
-                                    description: "Download de bijlage daar - CRM download komt binnenkort",
-                                  });
+                                onClick={async () => {
+                                  try {
+                                    // Call OX API to download attachment
+                                    const { data, error } = await supabase.functions.invoke('ox-mail-get-attachment', {
+                                      body: {
+                                        accountId: primaryAccount?.id,
+                                        messageId: selectedMessage.uid,
+                                        attachmentId: idx + 1, // OX uses 1-based index
+                                      }
+                                    });
+
+                                    if (error) throw error;
+
+                                    // Create download link
+                                    const blob = new Blob([data]);
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = attachment.filename;
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                    URL.revokeObjectURL(url);
+
+                                    toast({
+                                      title: "Bijlage gedownload",
+                                      description: attachment.filename,
+                                    });
+                                  } catch (err: any) {
+                                    toast({
+                                      title: "Download mislukt",
+                                      description: err.message,
+                                      variant: "destructive",
+                                    });
+                                  }
                                 }}
                               >
-                                Open in Hostnet
+                                Download
                               </Button>
                             </div>
                           ))}
