@@ -3,7 +3,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 const isDev = process.env.NODE_ENV === 'development' || process.env.CAP_MODE === 'development';
 
 const config: CapacitorConfig = {
-  appId: 'nl.smanscrm.app',
+  appId: 'com.smanscrm.ios',
   appName: 'Smans CRM',
   webDir: 'dist',
   server: {
@@ -21,7 +21,7 @@ const config: CapacitorConfig = {
       presentationOptions: ["badge", "sound", "alert"]
     },
     LiveUpdates: {
-      appId: 'nl.smanscrm.app',
+      appId: 'com.smanscrm.ios',
       channel: 'production',
       autoUpdateMethod: 'background',
       maxVersions: 2
