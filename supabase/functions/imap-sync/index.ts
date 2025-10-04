@@ -182,19 +182,19 @@ class IMAPClient {
             body = bodyText.substring(0, 500).trim();
           }
 
-          // Simple attachment detection from BODYSTRUCTURE
+          // VERY simple attachment detection - look for multipart in BODYSTRUCTURE
           const attachments: any[] = [];
-          const structureMatch = block.match(/BODYSTRUCTURE \(([^\)]+\))/);
-          if (structureMatch) {
-            const structure = structureMatch[1];
-            // Look for "name" or "filename" in structure (indicates attachment)
-            if (structure.includes('"name"') || structure.includes('"filename"')) {
-              // Extract filename if possible
-              const nameMatch = structure.match(/(?:"name"|"filename")\s+"([^"]+)"/i);
+          if (block.includes('BODYSTRUCTURE')) {
+            // If BODYSTRUCTURE contains "attachment" or has multiple parts beyond first
+            if (block.match(/BODYSTRUCTURE.*"attachment"/i) || 
+                block.match(/BODYSTRUCTURE \([^)]*\([^)]*\)/)) {
+              // Email has attachments
+              const nameMatch = block.match(/(?:name|filename)=?"([^";\s]+)"/i);
               attachments.push({
-                filename: nameMatch ? nameMatch[1] : 'bijlage',
-                name: nameMatch ? nameMatch[1] : 'bijlage',
+                filename: nameMatch ? nameMatch[1] : 'bijlage.pdf',
+                name: nameMatch ? nameMatch[1] : 'bijlage.pdf',
               });
+              console.log(`📎 Found attachment in UID ${uid}`);
             }
           }
 

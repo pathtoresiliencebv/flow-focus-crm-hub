@@ -121,6 +121,24 @@ export default function Email() {
   // ✅ USE CACHED EMAILS from database (synced from IMAP)
   const { messages, loading: messagesLoading, fetchEmails, syncEmails, getFolders } = useCachedEmails();
 
+  // Mark email as read when opened
+  useEffect(() => {
+    if (selectedThread) {
+      const markAsRead = async () => {
+        try {
+          await supabase
+            .from('email_messages')
+            .update({ status: 'read' })
+            .eq('id', selectedThread)
+            .eq('status', 'unread'); // Only update if currently unread
+        } catch (err) {
+          console.error('Failed to mark as read:', err);
+        }
+      };
+      markAsRead();
+    }
+  }, [selectedThread]);
+
   // Auto-fetch/sync emails when folder changes
   useEffect(() => {
     if (primaryAccount?.id && selectedFolder) {
