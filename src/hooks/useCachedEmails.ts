@@ -142,15 +142,10 @@ export const useCachedEmails = () => {
           throw new Error(data.error || 'Fetch failed');
         }
       }
-    } catch (allErrors: any) {
-      console.warn('⚠️ Both OX Mail and IMAP failed:', allErrors.message);
-      throw allErrors;
-    }
+      console.log('✅ Live emails fetched:', data);
 
-    console.log('✅ Live emails fetched:', data);
-
-    // Save to database for persistence (delete/star must work!)
-    if (data.messages && data.messages.length > 0) {
+      // Save to database for persistence (delete/star must work!)
+      if (data.messages && data.messages.length > 0) {
         console.log('💾 Saving', data.messages.length, 'emails to database...');
         
         const { data: userData } = await supabase.auth.getUser();
@@ -198,10 +193,10 @@ export const useCachedEmails = () => {
       }));
 
       return data;
-    } catch (err: any) {
-      console.error('❌ Error fetching live emails:', err);
-      setState(prev => ({ ...prev, error: err.message, loading: false }));
-      throw err;
+    } catch (allErrors: any) {
+      console.warn('⚠️ Both OX Mail and IMAP failed:', allErrors.message);
+      setState(prev => ({ ...prev, error: allErrors.message, loading: false }));
+      throw allErrors;
     }
   }, []);
 
