@@ -33,7 +33,7 @@ import { useEmailAccounts } from '@/hooks/useEmailAccounts';
 import { useCachedEmails } from '@/hooks/useCachedEmails';
 import { SMTPIMAPSetup } from '@/components/email/SMTPIMAPSetup';
 import { EmailComposer } from '@/components/email/EmailComposer';
-import { EmailDebug } from '@/components/email/EmailDebug';
+// import { EmailDebug } from '@/components/email/EmailDebug';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 // import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -43,7 +43,7 @@ export default function Email() {
   const { accounts, loading: accountsLoading } = useEmailAccounts();
   const [showAccountSetup, setShowAccountSetup] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
-  const [showDebug, setShowDebug] = useState(false);
+  // const [showDebug, setShowDebug] = useState(false);
   const [replyTo, setReplyTo] = useState<{ to: string; subject: string; messageId?: string } | undefined>();
   const [selectedFolder, setSelectedFolder] = useState('inbox');
   const [selectedThread, setSelectedThread] = useState<string | null>(null);
@@ -282,13 +282,14 @@ export default function Email() {
           >
             <Settings className="h-4 w-4" />
           </Button>
-          <Button
+          {/* Debug button temporarily disabled */}
+          {/* <Button
             variant="outline"
             size="sm"
             onClick={() => setShowDebug(true)}
           >
             🔍 Debug
-          </Button>
+          </Button> */}
           
           <Button 
             size="sm" 
@@ -826,8 +827,8 @@ export default function Email() {
         />
       )}
 
-      {/* Debug Modal */}
-      {showDebug && (
+      {/* Debug Modal temporarily disabled */}
+      {/* {showDebug && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-4xl max-h-[80vh] overflow-auto">
             <div className="flex justify-between items-center mb-4">
@@ -844,7 +845,7 @@ export default function Email() {
             )}
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Custom folders dialog temporarily disabled */}
     </div>

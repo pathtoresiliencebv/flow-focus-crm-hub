@@ -143,32 +143,8 @@ export const useCachedEmails = () => {
         }
       }
     } catch (allErrors: any) {
-      console.warn('⚠️ Both OX Mail and IMAP failed, trying database fallback:', allErrors.message);
-      
-      // Final fallback: try to load from database
-      try {
-        const { data: dbData, error: dbError } = await supabase
-          .from('email_messages')
-          .select('*')
-          .eq('folder', 'inbox')
-          .order('received_at', { ascending: false })
-          .limit(maxMessages);
-        
-        if (dbError) throw dbError;
-        
-        console.log('📧 Database fallback loaded:', dbData?.length || 0, 'emails');
-        
-        setState(prev => ({
-          messages: dbData || [],
-          loading: false,
-          error: null,
-        }));
-        
-        return { success: true, messages: dbData || [], messageCount: dbData?.length || 0 };
-      } catch (dbFallbackError: any) {
-        console.error('❌ Database fallback also failed:', dbFallbackError);
-        throw new Error('All email sync methods failed. Please check your email configuration.');
-      }
+      console.warn('⚠️ Both OX Mail and IMAP failed:', allErrors.message);
+      throw allErrors;
     }
 
     console.log('✅ Live emails fetched:', data);
