@@ -6,6 +6,7 @@ import Index from "@/pages/Index";
 import Settings from "@/pages/Settings";
 import PublicQuote from "@/pages/PublicQuote";
 import NotFound from "@/pages/NotFound";
+import Webmail from "@/pages/Webmail";
 import { NewQuote } from "@/pages/NewQuote";
 import { EditQuote } from "@/pages/EditQuote";
 import { NewInvoice } from "@/pages/NewInvoice";
@@ -60,6 +61,7 @@ function App() {
                   <Route path="/invoices/:invoiceId/details" element={<InvoiceDetailsPage />} />
                   <Route path="/invoices/:invoiceId/send" element={<InvoiceSend />} />
                   <Route path="/settings" element={<Settings />} />
+                  <Route path="/webmail" element={<Webmail />} />
                   <Route path="/quote/:token" element={<PublicQuote />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
