@@ -97,25 +97,50 @@ export const useCachedEmails = () => {
     try {
       console.log('🔄 Fetching emails LIVE from IMAP server...', { maxMessages, loadMore });
 
-      // Use IMAP sync (reliable)
-      console.log('📧 Calling imap-sync with:', { accountId, maxMessages });
+      // Try OX Mail sync first, fallback to IMAP if it fails
+      console.log('📧 Calling ox-mail-sync with:', { accountId, maxMessages });
       
-      const { data, error } = await supabase.functions.invoke('imap-sync', {
-        body: {
-          accountId,
-          fullSync: false,
-          maxMessages,
+      let data, error;
+      
+      try {
+        const oxResponse = await supabase.functions.invoke('ox-mail-sync', {
+          body: {
+            accountId,
+            maxMessages,
+          }
+        });
+        
+        data = oxResponse.data;
+        error = oxResponse.error;
+        
+        console.log('📧 OX response:', { data, error });
+        
+        if (error || !data?.success) {
+          throw new Error(error?.message || data?.error || 'OX Mail sync failed');
         }
-      });
-      
-      console.log('📧 IMAP response:', { data, error });
+      } catch (oxError: any) {
+        console.warn('⚠️ OX Mail sync failed, falling back to IMAP:', oxError.message);
+        
+        // Fallback to IMAP sync
+        const imapResponse = await supabase.functions.invoke('imap-sync', {
+          body: {
+            accountId,
+            maxMessages,
+          }
+        });
+        
+        data = imapResponse.data;
+        error = imapResponse.error;
+        
+        console.log('📧 IMAP fallback response:', { data, error });
+        
+        if (error) {
+          throw new Error(error.message || 'Failed to fetch emails');
+        }
 
-      if (error) {
-        throw new Error(error.message || 'Failed to fetch emails');
-      }
-
-      if (!data.success) {
-        throw new Error(data.error || 'Fetch failed');
+        if (!data.success) {
+          throw new Error(data.error || 'Fetch failed');
+        }
       }
 
       console.log('✅ Live emails fetched:', data);
@@ -127,25 +152,30 @@ export const useCachedEmails = () => {
         const { data: userData } = await supabase.auth.getUser();
         
         const messagesToSave = data.messages.map((m: any) => ({
-          id: m.id || `uid:${m.uid}`,
+          id: m.id || crypto.randomUUID(), // Use existing ID or generate new one
           user_id: userData.user?.id,
           direction: 'inbound',
-          from_email: m.from_email,
-          to_email: Array.isArray(m.to_email) ? m.to_email : [],
+          from_email: m.from_email || 'unknown',
+          to_email: Array.isArray(m.to_email) ? m.to_email : [m.to_email || ''],
           subject: m.subject || '(Geen onderwerp)',
-          body_text: m.body_text,
-          body_html: m.body_html,
-          attachments: m.attachments,
+          body_text: m.body_text || '',
+          body_html: m.body_html || null,
+          attachments: m.attachments || [],
           status: m.status || 'unread',
           is_starred: m.is_starred || false,
           folder: 'inbox',
-          received_at: m.received_at || m.date,
-          external_message_id: m.external_message_id,
+          received_at: m.received_at || m.date || new Date().toISOString(),
+          external_message_id: m.external_message_id || m.uid,
         }));
         
-        await supabase.from('email_messages').upsert(messagesToSave, {
-          onConflict: 'id',
+        const { error: upsertError } = await supabase.from('email_messages').upsert(messagesToSave, {
+          onConflict: 'external_message_id',
         });
+        
+        if (upsertError) {
+          console.error('❌ Error saving emails to database:', upsertError);
+          throw upsertError;
+        }
       }
 
       // Sort by date DESC (newest first)

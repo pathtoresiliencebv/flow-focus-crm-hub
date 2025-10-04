@@ -158,8 +158,7 @@ export default function Email() {
       };
       loadEmails();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [primaryAccount?.id, selectedFolder]); // Trigger on folder change
+  }, [primaryAccount?.id, selectedFolder, syncEmails, fetchEmails]); // Include all dependencies
 
   const handleSync = async (loadMore: boolean = false) => {
     if (!primaryAccount) return;
