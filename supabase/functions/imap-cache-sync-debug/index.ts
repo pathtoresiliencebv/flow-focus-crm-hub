@@ -128,21 +128,148 @@ serve(async (req) => {
     
     console.log('✅ [IMAP] Found', folders.length, 'folders:', folders);
 
+    let totalSynced = 0;
+    let tagCounter = 4; // We're already at A0003
+
+    // Sync first folder only (INBOX) with 10 messages
+    const firstFolder = folders.find(f => f.toUpperCase().includes('INBOX')) || folders[0];
+    
+    if (firstFolder) {
+      console.log('📁 [SYNC] Syncing folder:', firstFolder);
+      
+      // SELECT folder
+      const selectCmd = `A${String(tagCounter++).padStart(4, '0')} SELECT "${firstFolder}"\r\n`;
+      await conn.write(new TextEncoder().encode(selectCmd));
+      
+      let selectResponse = '';
+      const selectBuffer = new Uint8Array(4096);
+      while (true) {
+        const bytesRead = await conn.read(selectBuffer);
+        if (!bytesRead) break;
+        selectResponse += new TextDecoder().decode(selectBuffer.subarray(0, bytesRead));
+        if (selectResponse.match(/A\d{4} OK/)) break;
+      }
+      
+      const existsMatch = selectResponse.match(/\* (\d+) EXISTS/);
+      const messageCount = existsMatch ? parseInt(existsMatch[1]) : 0;
+      console.log('✅ [SYNC] Folder has', messageCount, 'messages');
+      
+      if (messageCount > 0) {
+        const maxToFetch = Math.min(10, messageCount);
+        console.log('📥 [SYNC] Fetching', maxToFetch, 'messages...');
+        
+        // FETCH messages
+        const fetchCmd = `A${String(tagCounter++).padStart(4, '0')} FETCH 1:${maxToFetch} (UID FLAGS INTERNALDATE ENVELOPE BODY.PEEK[TEXT])\r\n`;
+        await conn.write(new TextEncoder().encode(fetchCmd));
+        
+        let fetchResponse = '';
+        const fetchBuffer = new Uint8Array(65536); // Larger buffer for message data
+        while (true) {
+          const bytesRead = await conn.read(fetchBuffer);
+          if (!bytesRead) break;
+          fetchResponse += new TextDecoder().decode(fetchBuffer.subarray(0, bytesRead));
+          if (fetchResponse.match(/A\d{4} OK/)) break;
+        }
+        
+        console.log('📨 [SYNC] Raw response length:', fetchResponse.length);
+        
+        // Parse messages
+        const messageBlocks = fetchResponse.split(/\r?\n\* \d+ FETCH/).slice(1);
+        console.log('📨 [SYNC] Found', messageBlocks.length, 'message blocks');
+        
+        for (const block of messageBlocks) {
+          try {
+            const uidMatch = block.match(/UID (\d+)/);
+            if (!uidMatch) continue;
+            
+            const uid = parseInt(uidMatch[1]);
+            const flagsMatch = block.match(/FLAGS \(([^\)]*)\)/);
+            const flags = flagsMatch ? flagsMatch[1].split(' ').filter(f => f) : [];
+            
+            const dateMatch = block.match(/INTERNALDATE "([^"]*)"/);
+            const date = dateMatch ? new Date(dateMatch[1]).toISOString() : new Date().toISOString();
+            
+            const envelopeMatch = block.match(/ENVELOPE \(([^\)]+)\)/);
+            let from = 'unknown@unknown.com';
+            let subject = '(No subject)';
+            
+            if (envelopeMatch) {
+              const envelope = envelopeMatch[1];
+              const subjectMatch = envelope.match(/"([^"]*)"/);
+              if (subjectMatch && subjectMatch[1]) {
+                subject = subjectMatch[1];
+              }
+              
+              const fromMatch = envelope.match(/\(\("([^"]*)" NIL "([^"]*)" "([^"]*)"\)\)/);
+              if (fromMatch) {
+                const name = fromMatch[1] || '';
+                const mailbox = fromMatch[2] || '';
+                const host = fromMatch[3] || '';
+                from = name ? `${name} <${mailbox}@${host}>` : `${mailbox}@${host}`;
+              }
+            }
+            
+            const bodyMatch = block.match(/BODY\[TEXT\] \{(\d+)\}\r?\n([\s\S]*)/);
+            let body = '';
+            if (bodyMatch) {
+              const bodyLength = parseInt(bodyMatch[1]);
+              body = bodyMatch[2].substring(0, bodyLength);
+            }
+            
+            console.log('💾 [DB] Saving message UID:', uid, 'Subject:', subject.substring(0, 50));
+            
+            // Save to database
+            const { error: insertError } = await supabaseClient
+              .from('email_messages')
+              .upsert({
+                id: `${accountId}:${firstFolder}:${uid}`,
+                user_id: account.user_id,
+                direction: firstFolder.toLowerCase().includes('sent') ? 'outbound' : 'inbound',
+                from_email: from,
+                to_email: [account.email_address],
+                subject: subject,
+                body_text: body,
+                body_html: body,
+                status: flags.includes('\\Seen') ? 'read' : 'unread',
+                is_starred: flags.includes('\\Flagged') || false,
+                folder: firstFolder.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+                external_message_id: `${firstFolder}:${uid}`,
+                received_at: date,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              }, {
+                onConflict: 'id',
+              });
+            
+            if (insertError) {
+              console.error('❌ [DB] Error saving message:', insertError);
+            } else {
+              totalSynced++;
+              console.log('✅ [DB] Message saved, total:', totalSynced);
+            }
+          } catch (err) {
+            console.error('❌ [SYNC] Error parsing message:', err);
+          }
+        }
+      }
+    }
+
     // Logout
     console.log('👋 [IMAP] Logging out...');
-    const logoutCmd = 'A0003 LOGOUT\r\n';
+    const logoutCmd = `A${String(tagCounter++).padStart(4, '0')} LOGOUT\r\n`;
     await conn.write(new TextEncoder().encode(logoutCmd));
     conn.close();
 
-    console.log('✅ [COMPLETE] Debug sync successful!');
+    console.log('✅ [COMPLETE] Debug sync successful! Synced', totalSynced, 'messages');
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Debug sync completed',
+        message: `Debug sync completed - ${totalSynced} messages synced`,
         account: account.email_address,
         folders: folders,
         foldersCount: folders.length,
+        messagesSynced: totalSynced,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
