@@ -319,18 +319,39 @@ serve(async (req) => {
     }
 
     console.log('📧 Starting CACHE sync for:', account.email_address);
+    console.log('  IMAP settings:', {
+      host: account.imap_host,
+      port: account.imap_port,
+      username: account.imap_username,
+      encryption: account.imap_encryption
+    });
 
     // Decrypt password (basic for now - use actual decryption in prod)
     const imapPassword = account.imap_password;
+    
+    if (!imapPassword) {
+      throw new Error('IMAP password not found in account settings');
+    }
 
     // Connect to IMAP
     const imap = new IMAPClient();
-    await imap.connect(account.imap_host, account.imap_port, true);
-    await imap.login(account.imap_username, imapPassword);
+    try {
+      await imap.connect(account.imap_host, account.imap_port, true);
+    } catch (connError: any) {
+      console.error('❌ IMAP connection failed:', connError);
+      throw new Error(`IMAP connection failed: ${connError.message}`);
+    }
+    
+    try {
+      await imap.login(account.imap_username, imapPassword);
+    } catch (loginError: any) {
+      console.error('❌ IMAP login failed:', loginError);
+      throw new Error(`IMAP authentication failed: ${loginError.message}`);
+    }
 
     // Get all folders
     const folders = await imap.listFolders();
-    console.log(`📂 Found ${folders.length} folders`);
+    console.log(`📂 Found ${folders.length} folders:`, folders);
 
     let totalSynced = 0;
 
@@ -350,6 +371,14 @@ serve(async (req) => {
       // Save to Supabase email_messages
       for (const msg of messages) {
         try {
+          // Validate date
+          let receivedAt: string;
+          try {
+            receivedAt = msg.date ? new Date(msg.date).toISOString() : new Date().toISOString();
+          } catch {
+            receivedAt = new Date().toISOString();
+          }
+
           const { error: insertError } = await supabaseClient
             .from('email_messages')
             .upsert({
@@ -362,10 +391,10 @@ serve(async (req) => {
               body_text: msg.body || '',
               body_html: msg.body || '',
               status: msg.isRead ? 'read' : 'unread',
-              is_starred: msg.isStarred,
+              is_starred: msg.isStarred || false,
               folder: folder.toLowerCase().replace(/[^a-z0-9]/g, '_'),
               external_message_id: `${folder}:${msg.uid}`,
-              received_at: msg.date,
+              received_at: receivedAt,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             }, {
@@ -373,12 +402,12 @@ serve(async (req) => {
             });
 
           if (insertError) {
-            console.error('Error saving message:', insertError);
+            console.error('❌ Error saving message:', insertError, 'Message:', msg);
           } else {
             totalSynced++;
           }
         } catch (err) {
-          console.error('Error saving message:', err);
+          console.error('❌ Exception saving message:', err, 'Message:', msg);
         }
       }
     }
@@ -403,12 +432,15 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error: any) {
-    console.error('IMAP cache sync error:', error);
+    console.error('❌ IMAP cache sync error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', JSON.stringify(error, null, 2));
 
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message,
+        error: error.message || 'Unknown error occurred',
+        details: error.toString(),
       }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
