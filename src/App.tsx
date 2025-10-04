@@ -1,10 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
+// Email migration to SMTP/IMAP complete - Gmail OAuth removed
 import Index from "@/pages/Index";
 import Settings from "@/pages/Settings";
 import PublicQuote from "@/pages/PublicQuote";
 import NotFound from "@/pages/NotFound";
+import Webmail from "@/pages/Webmail";
 import { NewQuote } from "@/pages/NewQuote";
 import { EditQuote } from "@/pages/EditQuote";
 import { NewInvoice } from "@/pages/NewInvoice";
@@ -14,8 +16,10 @@ import { QuoteSend } from "@/pages/QuoteSend";
 import { InvoiceDetailsPage } from "@/pages/InvoiceDetails";
 import { InvoiceSend } from "@/pages/InvoiceSend";
 import { CalendarPage } from "@/components/calendar/CalendarPage";
+import { ProjectDelivery } from "@/pages/ProjectDelivery";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TranslationProvider } from "@/contexts/TranslationContext";
+import { I18nProvider } from "@/contexts/I18nContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -34,13 +38,15 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <TranslationProvider>
-            <BrowserRouter>
+          <I18nProvider>
+            <TranslationProvider>
+              <BrowserRouter>
               <div className="min-h-screen bg-background">
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/customers/:customerId" element={<Index />} />
                   <Route path="/projects/:projectId" element={<Index />} />
+                  <Route path="/projects/:projectId/delivery" element={<ProjectDelivery />} />
                   <Route path="/customers-projects" element={<Index />} />
                   <Route path="/calendar" element={<CalendarPage />} />
                   <Route path="/quotes" element={<Index />} />
@@ -55,14 +61,16 @@ function App() {
                   <Route path="/invoices/:invoiceId/details" element={<InvoiceDetailsPage />} />
                   <Route path="/invoices/:invoiceId/send" element={<InvoiceSend />} />
                   <Route path="/settings" element={<Settings />} />
+                  <Route path="/webmail" element={<Webmail />} />
                   <Route path="/quote/:token" element={<PublicQuote />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 <Toaster />
                 <Sonner />
               </div>
-            </BrowserRouter>
-          </TranslationProvider>
+              </BrowserRouter>
+            </TranslationProvider>
+          </I18nProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>

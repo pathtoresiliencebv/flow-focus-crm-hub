@@ -239,6 +239,11 @@ const generateQuoteHTML = (quote: any, settings: any) => {
           <p><strong>Klant akkoord:</strong></p>
           <p>${quote.client_name || ''}</p>
           <p>${quote.client_signed_at ? new Date(quote.client_signed_at).toLocaleDateString() : ''}</p>
+          ${(quote.status === 'approved' || quote.status === 'goedgekeurd') ? `
+          <div style="margin-top: 12px; padding: 8px; background-color: #fee2e2; color: #991b1b; border-radius: 4px; font-size: 12px; font-weight: 600;">
+            ✅ Goedgekeurd door klant
+          </div>
+          ` : ''}
         </div>
         ` : ''}
         ${quote.admin_signature_data ? `

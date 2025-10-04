@@ -12,6 +12,7 @@ import { MultiBlockInvoicePreview } from './MultiBlockInvoicePreview';
 import { InvoiceBlockForm } from './InvoiceBlockForm';
 import { PaymentTermsSelector, PaymentTerm } from '../quotes/PaymentTermsSelector';
 import { supabase } from '@/integrations/supabase/client';
+import { SearchableCustomerSelect } from '@/components/ui/searchable-customer-select';
 
 interface InvoiceItem {
   id: string;
@@ -542,18 +543,12 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">Klant *</label>
-            <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecteer klant" />
-              </SelectTrigger>
-              <SelectContent>
-                {customers.map(customer => (
-                  <SelectItem key={customer.id} value={customer.id}>
-                    {customer.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableCustomerSelect
+              customers={customers}
+              value={selectedCustomerId}
+              onValueChange={setSelectedCustomerId}
+              placeholder="Zoek op naam, email of telefoon..."
+            />
           </div>
 
           <div>

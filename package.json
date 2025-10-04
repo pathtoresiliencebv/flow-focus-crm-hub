@@ -99,6 +99,7 @@
     "expo-router": "^6.0.8",
     "expo-sqlite": "^16.0.8",
     "framer-motion": "^12.18.1",
+    "html2pdf.js": "^0.12.1",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.462.0",
     "mapbox-gl": "^3.12.0",

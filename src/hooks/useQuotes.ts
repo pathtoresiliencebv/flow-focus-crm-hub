@@ -15,7 +15,10 @@ export const useQuotes = () => {
       
       let query = supabase
         .from('quotes')
-        .select('*');
+        .select(`
+          *,
+          invoices:invoices(id, invoice_number, payment_term_sequence, total_payment_terms, status, total_amount)
+        `);
       
       if (!includeArchived) {
         query = query.eq('is_archived', false);
@@ -153,8 +156,8 @@ export const useQuotes = () => {
       }
 
       toast({
-        title: "Offerte gearchiveerd",
-        description: "De offerte is verplaatst naar de prullenbak.",
+        title: "Offerte gearchiveerd ✓",
+        description: "De offerte is gearchiveerd en is te vinden in het tabblad 'Gearchiveerde Offertes'.",
       });
 
       fetchQuotes(true);
@@ -185,8 +188,8 @@ export const useQuotes = () => {
       }
 
       toast({
-        title: "Offerte hersteld",
-        description: "De offerte is hersteld uit de prullenbak.",
+        title: "Offerte hersteld ✓",
+        description: "De offerte is hersteld en staat weer bij de actieve offertes.",
       });
 
       fetchQuotes(true);
@@ -213,8 +216,8 @@ export const useQuotes = () => {
       }
 
       toast({
-        title: "Offerte permanent verwijderd",
-        description: "De offerte is permanent verwijderd.",
+        title: "Offerte permanent verwijderd ✓",
+        description: "De offerte is definitief verwijderd en kan niet meer worden hersteld.",
       });
 
       fetchQuotes(true);

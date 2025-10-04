@@ -8,6 +8,7 @@ import { QuoteItem, QuoteBlock } from '@/types/quote';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { RichTextEditor } from './RichTextEditor';
 
 interface QuoteBlockFormProps {
   block: QuoteBlock;
@@ -248,6 +249,41 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
     onUpdateBlock(updatedBlock);
   }, [block, onUpdateBlock, calculateBlockSubtotal, calculateBlockVAT]);
 
+  const handleContentChange = useCallback((content: string) => {
+    const updatedBlock: QuoteBlock = {
+      ...block,
+      content
+    };
+    onUpdateBlock(updatedBlock);
+  }, [block, onUpdateBlock]);
+
+  // For textblock type, render simple editor
+  if (block.type === 'textblock') {
+    return (
+      <div className="w-full">
+        <div {...dragHandleProps} className="flex items-center gap-2 mb-2">
+          <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+          <span className="text-xs text-muted-foreground">Tekstblok</span>
+          {canDelete && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onDeleteBlock}
+              className="text-destructive hover:text-destructive h-6 w-6 p-0 ml-auto"
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+        <RichTextEditor
+          value={block.content || ''}
+          onChange={(content) => handleContentChange(content)}
+          placeholder="Voer uw tekst in..."
+        />
+      </div>
+    );
+  }
+
   return (
     <Card className="border border-border bg-card">
       <CardHeader className="pb-3">
@@ -318,6 +354,43 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {/* Textblock Add Form */}
+        {showTextForm && (
+          <Card className="bg-blue-50 border-blue-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Tekstblok toevoegen</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Tekst inhoud</label>
+                <Textarea
+                  value={textBlockContent}
+                  onChange={(e) => setTextBlockContent(e.target.value)}
+                  placeholder="Voer hier uw tekst in..."
+                  rows={4}
+                  className="resize-none"
+                />
+              </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleAddTextBlock}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Tekstblok toevoegen
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowTextForm(false)}
+                >
+                  Annuleren
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Product/Service Add Form - Same as Invoice */}
         {showProductForm && (
           <Card className="bg-gray-50 border-gray-200">

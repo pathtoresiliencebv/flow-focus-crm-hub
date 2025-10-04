@@ -75,7 +75,7 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
       label: "Postvak IN",
       icon: <Mail className="h-5 w-5" />,
       key: "email",
-      permission: "users_view", // Alleen voor administratie (users_view is alleen voor Admin/Administratie)
+      permission: null, // Everyone can access email
     },
     {
       label: "Chat",

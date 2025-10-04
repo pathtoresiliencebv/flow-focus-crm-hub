@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,8 +15,6 @@ import { useProjectDelivery } from "@/hooks/useProjectDelivery";
 import { MobileTimeRegistration } from './MobileTimeRegistration';
 import { MobilePhotoUpload } from './MobilePhotoUpload';
 import { MobileWorkOrder } from './MobileWorkOrder';
-
-import { MobileProjectDelivery } from './MobileProjectDelivery';
 import { MobileMaterialsReceipts } from './MobileMaterialsReceipts';
 
 interface MobileProjectViewProps {
@@ -24,12 +23,12 @@ interface MobileProjectViewProps {
 
 export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId }) => {
   const { profile } = useAuth();
+  const navigate = useNavigate();
   const { projects, customers } = useCrmStore();
   const { tasksByBlock, completionPercentage, updateTask, isLoading } = useProjectTasks(projectId);
   const { hapticFeedback, networkStatus } = useNativeCapabilities();
   const { startProject, isStarting } = useProjectDelivery();
   const [activeTab, setActiveTab] = useState("tasks");
-  const [showDelivery, setShowDelivery] = useState(false);
 
   const project = projects.find(p => p.id === projectId);
   const customer = customers.find(c => c.id === project?.customer_id);
@@ -57,28 +56,12 @@ export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId 
     await startProject(projectId);
   };
 
-  const handleCompleteProject = () => {
-    setShowDelivery(true);
-  };
-
-  const handleDeliveryComplete = () => {
-    setShowDelivery(false);
-    // Refresh to show updated status
-    window.location.reload();
+  const handleCompleteProject = async () => {
+    await hapticFeedback();
+    navigate(`/projects/${projectId}/delivery`);
   };
 
   const blockEntries = Object.entries(tasksByBlock);
-
-  // Show delivery flow if active
-  if (showDelivery && project) {
-    return (
-      <MobileProjectDelivery
-        project={project}
-        onBack={() => setShowDelivery(false)}
-        onComplete={handleDeliveryComplete}
-      />
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">

@@ -5,6 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { Eye, EyeOff } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { LoginLanguageSelector } from "@/components/LoginLanguageSelector";
 
 // UTILITY: cn function for merging Tailwind classes
 function cn(...inputs: ClassValue[]) {
@@ -112,27 +113,33 @@ PasswordInput.displayName = "PasswordInput";
 // --- FORMS & AUTH LOGIC ---
 
 interface AuthFormProps {
-  onSubmit: (email: string, password: string, name?: string) => void;
+  onSubmit: (email: string, password: string, name?: string, language?: string) => void;
   isLoading?: boolean;
 }
 
 // FORM: SignInForm
 function SignInForm({ onSubmit, isLoading }: AuthFormProps) {
+  const [selectedLanguage, setSelectedLanguage] = useState('nl');
+  
   const handleSignIn = (event: FormEvent<HTMLFormElement>) => { 
     event.preventDefault(); 
     const formData = new FormData(event.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
-    onSubmit(email, password);
+    onSubmit(email, password, undefined, selectedLanguage);
   };
   
   return (
-    <form onSubmit={handleSignIn} autoComplete="on" className="flex flex-col gap-8">
+    <form onSubmit={handleSignIn} autoComplete="on" className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
         <h1 className="text-2xl font-bold text-gray-900">Inloggen bij SMANS</h1>
         <p className="text-balance text-sm text-muted-foreground">Voer uw gegevens in om in te loggen</p>
       </div>
       <div className="grid gap-4">
+        <LoginLanguageSelector 
+          value={selectedLanguage} 
+          onChange={setSelectedLanguage}
+        />
         <div className="grid gap-2">
           <Label htmlFor="email">E-mailadres</Label>
           <Input id="email" name="email" type="email" placeholder="naam@smans.nl" required autoComplete="email" />
@@ -183,7 +190,7 @@ function SignUpForm({ onSubmit, isLoading }: AuthFormProps) {
 
 // CONTAINER for the forms to handle state switching
 interface AuthFormContainerProps {
-  onLogin: (email: string, password: string, name?: string) => void;
+  onLogin: (email: string, password: string, name?: string, language?: string) => void;
   isLoading?: boolean;
 }
 
@@ -206,7 +213,7 @@ interface AuthUIProps {
         text: string;
         author: string;
     };
-    onLogin: (email: string, password: string, name?: string) => void;
+    onLogin: (email: string, password: string, name?: string, language?: string) => void;
     isLoading?: boolean;
 }
 

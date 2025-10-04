@@ -5,27 +5,36 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Send } from 'lucide-react';
 import { MessageBubble } from './MessageBubble';
+import { MediaMessageBubble } from './MediaMessageBubble';
+import { FileUploadButton } from './FileUploadButton';
+import { VoiceRecorder } from './VoiceRecorder';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
 interface ChatAreaProps {
   conversation?: Conversation;
   messages: DirectMessage[];
   onSendMessage: (content: string) => void;
+  onSendMedia?: (file: File, type: 'photo' | 'file' | 'voice', duration?: number) => void;
   onBack?: () => void;
   isMobile: boolean;
   sending?: boolean;
+  userLanguage?: string;
 }
 
-export const ChatArea: React.FC<ChatAreaProps> = ({
-  conversation,
-  messages,
+export const ChatArea: React.FC<ChatAreaProps> = ({ 
+  conversation, 
+  messages, 
   onSendMessage,
+  onSendMedia,
   onBack,
   isMobile,
-  sending = false
+  sending = false,
+  userLanguage = 'nl'
 }) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -54,6 +63,46 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const handleFileSelect = async (file: File, type: 'photo' | 'file') => {
+    if (!onSendMedia) return;
+    
+    try {
+      await onSendMedia(file, type);
+      toast({
+        title: type === 'photo' ? "Foto verzonden" : "Bestand verzonden",
+        description: `${file.name} is succesvol verzonden`
+      });
+    } catch (error) {
+      toast({
+        title: "Upload mislukt",
+        description: "Er is een fout opgetreden bij het verzenden",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleVoiceRecorded = async (audioBlob: Blob, duration: number) => {
+    if (!onSendMedia) return;
+    
+    try {
+      const audioFile = new File([audioBlob], `voice_${Date.now()}.webm`, { 
+        type: 'audio/webm;codecs=opus' 
+      });
+      
+      await onSendMedia(audioFile, 'voice', duration);
+      toast({
+        title: "Spraakbericht verzonden",
+        description: `${duration}s audio verzonden`
+      });
+    } catch (error) {
+      toast({
+        title: "Upload mislukt",
+        description: "Er is een fout opgetreden bij het verzenden",
+        variant: "destructive"
+      });
     }
   };
 
@@ -121,11 +170,24 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
           </div>
         ) : (
           messages.map((message) => (
-            <MessageBubble
-              key={message.id}
-              message={message}
-              isOwn={message.from_user_id === user?.id}
-            />
+            message.media_type ? (
+              <MediaMessageBubble
+                key={message.id}
+                mediaType={message.media_type}
+                mediaUrl={message.media_url || ''}
+                mediaFilename={message.media_filename}
+                mediaSize={message.media_size}
+                voiceDuration={message.voice_duration}
+                isOwn={message.from_user_id === user?.id}
+              />
+            ) : (
+              <MessageBubble
+                key={message.id}
+                message={message}
+                isOwn={message.from_user_id === user?.id}
+                userLanguage={userLanguage}
+              />
+            )
           ))
         )}
         <div ref={messagesEndRef} />
@@ -133,7 +195,26 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
       {/* Input */}
       <div className="p-4 border-t border-border bg-background">
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-end">
+          {/* Media buttons */}
+          <div className="flex gap-1">
+            <FileUploadButton
+              type="photo"
+              onFileSelect={handleFileSelect}
+              disabled={sending}
+            />
+            <FileUploadButton
+              type="file"
+              onFileSelect={handleFileSelect}
+              disabled={sending}
+            />
+            <VoiceRecorder
+              onVoiceRecorded={handleVoiceRecorded}
+              disabled={sending}
+            />
+          </div>
+
+          {/* Text input */}
           <Input
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}

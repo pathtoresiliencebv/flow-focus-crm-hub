@@ -121,7 +121,15 @@ interface SidebarProps {
 export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
   const { user, profile, logout, hasPermission } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  // Default collapsed state for email tab
+  const [isCollapsed, setIsCollapsed] = useState(activeTab === 'email');
+
+  // Auto-collapse when switching to email tab
+  useEffect(() => {
+    if (activeTab === 'email') {
+      setIsCollapsed(true);
+    }
+  }, [activeTab]);
 
   const toggleSidebar = () => setIsOpen(!isOpen);
   const toggleCollapse = () => setIsCollapsed(!isCollapsed);
@@ -130,7 +138,7 @@ export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
     { key: "dashboard", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" />, permission: null },
     { key: "customers", label: "Klanten", icon: <Users className="h-5 w-5" />, permission: "customers_view" },
     { key: "projects", label: "Projecten", icon: <FolderKanban className="h-5 w-5" />, permission: "projects_view" },
-    { key: "planning", label: "Planning", icon: <Calendar className="h-5 w-5" />, permission: "projects_view" },
+    { key: "calendar", label: "Planning", icon: <Calendar className="h-5 w-5" />, permission: "projects_view" },
     { key: "time", label: "Tijdregistratie", icon: <Clock className="h-5 w-5" />, permission: "projects_view" },
     { key: "receipts", label: "Bonnetjes", icon: <Receipt className="h-5 w-5" />, permission: "invoices_view" },
     { key: "quotes", label: "Offertes", icon: <FileText className="h-5 w-5" />, permission: "invoices_view" },
@@ -188,6 +196,9 @@ export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
 
     const isActive = activeTab === link.key;
 
+    // All links use button with tab switching for consistency
+    // This ensures navigation always works
+
     return (
       <li key={link.key} className="relative group">
         <button
@@ -223,8 +234,8 @@ export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
           {!mini ? (
             <img src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="SMANS Logo" className="h-10 w-auto" />
           ) : (
-            <div className="w-8 h-8 bg-red-600 rounded flex items-center justify-center">
-              <span className="text-white font-bold text-sm">S</span>
+            <div className="w-10 h-10 bg-red-600 rounded-md flex items-center justify-center">
+              <span className="text-white font-bold text-lg">S</span>
             </div>
           )}
         </div>
@@ -258,11 +269,53 @@ export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
           </div>
         )}
         
-        {/* Collapsed state - show only important communication and settings icons */}
+        {/* Collapsed state - show icons */}
         {mini && (
-          <div className="space-y-2 mt-6">
-            {communication.map(link => renderLink(link, false, true))}
-            {settings.filter(link => link.key === 'settings').map(link => renderLink(link, false, true))}
+          <div className="flex flex-col items-center space-y-2 mt-6 px-2">
+            {mainLinks.filter(link => !link.permission || hasPermission(link.permission)).map(link => (
+              <button
+                key={link.key}
+                onClick={() => setActiveTab(link.key)}
+                className={`w-12 h-12 rounded-lg flex items-center justify-center transition-colors ${
+                  activeTab === link.key 
+                    ? 'bg-red-600 text-white shadow-md' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+                title={link.label}
+              >
+                {link.icon}
+              </button>
+            ))}
+            <div className="border-t border-gray-200 w-10 my-2"></div>
+            {communication.filter(link => !link.permission || hasPermission(link.permission)).map(link => (
+              <button
+                key={link.key}
+                onClick={() => setActiveTab(link.key)}
+                className={`w-12 h-12 rounded-lg flex items-center justify-center transition-colors ${
+                  activeTab === link.key 
+                    ? 'bg-red-600 text-white shadow-md' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+                title={link.label}
+              >
+                {link.icon}
+              </button>
+            ))}
+            <div className="border-t border-gray-200 w-10 my-2"></div>
+            {settings.filter(link => !link.permission || hasPermission(link.permission)).map(link => (
+              <button
+                key={link.key}
+                onClick={() => setActiveTab(link.key)}
+                className={`w-12 h-12 rounded-lg flex items-center justify-center transition-colors ${
+                  activeTab === link.key 
+                    ? 'bg-red-600 text-white shadow-md' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+                title={link.label}
+              >
+                {link.icon}
+              </button>
+            ))}
           </div>
         )}
       </nav>

@@ -15,6 +15,7 @@ import { formatDistanceToNow } from "date-fns";
 import { nl } from "date-fns/locale";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/hooks/use-toast";
+import html2pdf from 'html2pdf.js';
 
 interface InvoicesTableProps {
   invoices: any[];
@@ -86,6 +87,7 @@ export const InvoicesTable = ({
             <TableHead>Factuurnummer</TableHead>
             <TableHead>Klant</TableHead>
             <TableHead>Project</TableHead>
+            <TableHead>Termijn</TableHead>
             <TableHead>Datum</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Totaal</TableHead>
@@ -97,9 +99,34 @@ export const InvoicesTable = ({
             <TableRow key={invoice.id}>
               <TableCell className="font-medium">
                 {invoice.invoice_number}
+                {invoice.payment_term_sequence > 1 && (
+                  <span className="ml-2 text-xs text-muted-foreground">
+                    ({invoice.payment_term_sequence}/{invoice.total_payment_terms})
+                  </span>
+                )}
               </TableCell>
               <TableCell>{invoice.customer_name}</TableCell>
               <TableCell>{invoice.project_title || '-'}</TableCell>
+              <TableCell>
+                {invoice.total_payment_terms > 1 ? (
+                  <div className="flex items-center gap-1">
+                    <span className="font-mono text-lg">
+                      {invoice.payment_term_sequence === 1 && invoice.total_payment_terms === 2 && '½'}
+                      {invoice.payment_term_sequence === 2 && invoice.total_payment_terms === 2 && '½'}
+                      {invoice.payment_term_sequence === 1 && invoice.total_payment_terms === 3 && '⅓'}
+                      {invoice.payment_term_sequence === 2 && invoice.total_payment_terms === 3 && '⅓'}
+                      {invoice.payment_term_sequence === 3 && invoice.total_payment_terms === 3 && '⅓'}
+                      {invoice.payment_term_sequence === 1 && invoice.total_payment_terms === 4 && '¼'}
+                      {invoice.payment_term_sequence === 2 && invoice.total_payment_terms === 4 && '¼'}
+                      {invoice.payment_term_sequence === 3 && invoice.total_payment_terms === 4 && '¼'}
+                      {invoice.payment_term_sequence === 4 && invoice.total_payment_terms === 4 && '¼'}
+                      {!(invoice.total_payment_terms >= 2 && invoice.total_payment_terms <= 4) && `${invoice.payment_term_sequence}/${invoice.total_payment_terms}`}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground">Volledig</span>
+                )}
+              </TableCell>
               <TableCell>
                 {new Date(invoice.invoice_date).toLocaleDateString('nl-NL')}
               </TableCell>
@@ -187,6 +214,8 @@ export const InvoicesTable = ({
                      <DropdownMenuItem onClick={async () => {
                        try {
                          console.log('📄 Downloading PDF for invoice:', invoice.id);
+                         const filename = `Factuur-${invoice.invoice_number}.pdf`;
+                         
                          const { data, error } = await supabase.functions.invoke('generate-invoice-pdf', {
                            body: { invoiceId: invoice.id }
                          });
@@ -201,32 +230,39 @@ export const InvoicesTable = ({
                            return;
                          }
 
-                         if (data?.success && data?.htmlContent) {
-                           // Open PDF in new window for printing
-                           const printWindow = window.open('', '_blank');
-                           if (printWindow) {
-                             printWindow.document.write(data.htmlContent);
-                             printWindow.document.close();
-                             printWindow.focus();
-                             
-                             // Wait for content to load, then trigger print
-                             setTimeout(() => {
-                               printWindow.print();
-                             }, 1000);
-                           }
-                           
-                           toast({
-                             title: "PDF geopend",
-                             description: "Het PDF bestand is geopend voor afdrukken.",
-                           });
-                         } else {
-                           console.error('❌ No HTML content in response:', data);
-                           toast({
-                             title: "PDF Fout",
-                             description: "Geen PDF content ontvangen van server.",
-                             variant: "destructive",
-                           });
-                         }
+                        if (data?.success && data?.htmlContent) {
+                          // Create a temporary container for html2pdf
+                          const tempDiv = document.createElement('div');
+                          tempDiv.innerHTML = data.htmlContent;
+                          tempDiv.style.position = 'absolute';
+                          tempDiv.style.left = '-9999px';
+                          document.body.appendChild(tempDiv);
+
+                          // PDF options
+                          const opt = {
+                            margin: [10, 10, 10, 10] as [number, number, number, number],
+                            filename: filename,
+                            image: { type: 'jpeg' as const, quality: 0.98 },
+                            html2canvas: { scale: 2, useCORS: true },
+                            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
+                          };
+
+                          // Generate and download PDF
+                          html2pdf().set(opt).from(tempDiv).save().then(() => {
+                            document.body.removeChild(tempDiv);
+                            toast({
+                              title: "PDF Gedownload! ✓",
+                              description: `${filename} is succesvol gedownload.`,
+                            });
+                          });
+                        } else {
+                          console.error('❌ No HTML content in response:', data);
+                          toast({
+                            title: "PDF Fout",
+                            description: "Geen PDF content ontvangen van server.",
+                            variant: "destructive",
+                          });
+                        }
                        } catch (error) {
                          console.error('❌ Error downloading PDF:', error);
                          toast({
@@ -240,29 +276,71 @@ export const InvoicesTable = ({
                        PDF Downloaden
                      </DropdownMenuItem>
 
-                     <DropdownMenuItem onClick={() => {
-                        // Print PDF using edge function
-                        supabase.functions.invoke('generate-invoice-pdf', {
+                     <DropdownMenuItem onClick={async () => {
+                       try {
+                        console.log('🖨️ Opening PDF for invoice:', invoice.id);
+                        const filename = `Factuur-${invoice.invoice_number}.pdf`;
+                        
+                        const { data, error } = await supabase.functions.invoke('generate-invoice-pdf', {
                           body: { invoiceId: invoice.id }
-                        }).then(({ data, error }) => {
-                          if (data?.success && data?.pdfData) {
-                            const byteCharacters = atob(data.pdfData);
-                            const byteNumbers = new Array(byteCharacters.length);
-                            for (let i = 0; i < byteCharacters.length; i++) {
-                              byteNumbers[i] = byteCharacters.charCodeAt(i);
-                            }
-                            const byteArray = new Uint8Array(byteNumbers);
-                            const blob = new Blob([byteArray], { type: 'application/pdf' });
-                            
-                            const url = URL.createObjectURL(blob);
-                            const printWindow = window.open(url);
-                            if (printWindow) {
-                              printWindow.onload = () => {
-                                printWindow.print();
-                              };
-                            }
-                          }
                         });
+
+                        if (error) {
+                          console.error('❌ PDF Error:', error);
+                          toast({
+                            title: "PDF Fout",
+                            description: `Kon PDF niet genereren: ${error.message}`,
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+
+                        if (data?.success && data?.htmlContent) {
+                          // Create a temporary container for html2pdf
+                          const tempDiv = document.createElement('div');
+                          tempDiv.innerHTML = data.htmlContent;
+                          tempDiv.style.position = 'absolute';
+                          tempDiv.style.left = '-9999px';
+                          document.body.appendChild(tempDiv);
+
+                          // PDF options for opening (not downloading)
+                          const opt = {
+                            margin: [10, 10, 10, 10] as [number, number, number, number],
+                            filename: filename,
+                            image: { type: 'jpeg' as const, quality: 0.98 },
+                            html2canvas: { scale: 2, useCORS: true },
+                            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
+                          };
+
+                          // Generate PDF and open in new tab
+                          html2pdf().set(opt).from(tempDiv).outputPdf('blob').then((pdfBlob: Blob) => {
+                            document.body.removeChild(tempDiv);
+                            
+                            // Open PDF in new window
+                            const pdfUrl = URL.createObjectURL(pdfBlob);
+                            window.open(pdfUrl, '_blank');
+                            
+                            toast({
+                              title: "PDF Geopend! ✓",
+                              description: "De PDF is geopend in een nieuw tabblad.",
+                            });
+                          });
+                        } else {
+                          console.error('❌ No HTML content:', data);
+                          toast({
+                            title: "PDF Fout",
+                            description: "Geen PDF content ontvangen van server.",
+                            variant: "destructive",
+                          });
+                        }
+                       } catch (error) {
+                         console.error('❌ Error generating PDF:', error);
+                         toast({
+                           title: "PDF Fout",
+                           description: "Er is een onverwachte fout opgetreden.",
+                           variant: "destructive",
+                         });
+                       }
                       }}>
                         <Printer className="mr-2 h-4 w-4" />
                         PDF Printen

@@ -1,18 +1,16 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { MapPin, Clock, Calendar, FileText } from "lucide-react";
+import { MapPin, Calendar, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useCrmStore } from "@/hooks/useCrmStore";
 import { useUsers } from "@/hooks/useUsers";
 import { format } from "date-fns";
-import { nl } from "date-fns/locale";
 
 interface SimplePlanningFormProps {
   selectedDate?: Date;
@@ -57,23 +55,27 @@ export const SimplePlanningForm = ({ selectedDate, onClose, onSubmit }: SimplePl
       return;
     }
 
-    onSubmit(formData);
-    toast({
-      title: "Planning aangemaakt",
-      description: `${formData.title} is succesvol gepland voor ${format(new Date(formData.date), 'dd MMMM yyyy', { locale: nl })}.`
-    });
-    onClose();
+    // Map form data to expected format
+    const planningData = {
+      title: formData.title,
+      date: formData.date,
+      startTime: formData.isFullDay ? '00:00:00' : `${formData.startTime}:00`,
+      endTime: formData.isFullDay ? '23:59:59' : `${formData.endTime}:00`,
+      location: formData.location,
+      description: formData.description,
+      assignedUserId: formData.employee, // Map employee to assignedUserId
+      projectId: formData.project || null
+    };
+
+    console.log('📋 SimplePlanningForm submitting:', planningData);
+    onSubmit(planningData);
+    // Toast and close will be handled by parent component
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto bg-white shadow-lg">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-lg font-medium text-gray-900">
-          Nieuwe Planning
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="w-full">
+      <h2 className="text-lg font-semibold mb-4">Nieuwe Planning</h2>
+      <form onSubmit={handleSubmit} className="space-y-4">
           {/* Title */}
           <div>
             <Label htmlFor="title" className="text-sm font-medium text-gray-700">
@@ -191,7 +193,7 @@ export const SimplePlanningForm = ({ selectedDate, onClose, onSubmit }: SimplePl
             <Label htmlFor="employee" className="text-sm font-medium text-gray-700">
               Monteur *
             </Label>
-            <Select onValueChange={(value) => handleInputChange('employee', value)} required>
+            <Select value={formData.employee} onValueChange={(value) => handleInputChange('employee', value)}>
               <SelectTrigger className="mt-1">
                 <SelectValue placeholder="Kies monteur" />
               </SelectTrigger>
@@ -258,7 +260,6 @@ export const SimplePlanningForm = ({ selectedDate, onClose, onSubmit }: SimplePl
             </Button>
           </div>
         </form>
-      </CardContent>
-    </Card>
+    </div>
   );
 };

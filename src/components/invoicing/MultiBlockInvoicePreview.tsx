@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import html2pdf from 'html2pdf.js';
 
 interface InvoiceSettings {
   company_name?: string;
@@ -85,35 +86,50 @@ export const MultiBlockInvoicePreview: React.FC<MultiBlockInvoicePreviewProps> =
   const handlePrint = async () => {
     try {
       setPrintLoading(true);
+      const filename = `Factuur-${invoice.invoice_number || 'onbekend'}.pdf`;
+      
       const { data, error } = await supabase.functions.invoke('generate-invoice-pdf', {
         body: { invoiceId: invoice.id }
       });
 
       if (error) throw error;
 
-      if (data.success) {
-        // Create a blob from the PDF data
-        const pdfBlob = new Blob([Buffer.from(data.pdfData, 'base64')], { type: 'application/pdf' });
-        const pdfUrl = URL.createObjectURL(pdfBlob);
-        
-        // Open PDF in new window for printing
-        const printWindow = window.open(pdfUrl);
-        if (printWindow) {
-          printWindow.onload = () => {
-            printWindow.print();
-          };
-        }
-        
-        toast({
-          title: "PDF geopend voor printen",
-          description: "Het PDF bestand is geopend in een nieuw venster voor printen.",
+      if (data?.success && data?.htmlContent) {
+        // Create a temporary container for html2pdf
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = data.htmlContent;
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        document.body.appendChild(tempDiv);
+
+        // PDF options
+        const opt = {
+          margin: [10, 10, 10, 10] as [number, number, number, number],
+          filename: filename,
+          image: { type: 'jpeg' as const, quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
+        };
+
+        // Generate PDF and open in new tab
+        html2pdf().set(opt).from(tempDiv).outputPdf('blob').then((pdfBlob: Blob) => {
+          document.body.removeChild(tempDiv);
+          
+          // Open PDF in new window
+          const pdfUrl = URL.createObjectURL(pdfBlob);
+          window.open(pdfUrl, '_blank');
+          
+          toast({
+            title: "PDF Geopend! ✓",
+            description: "De PDF is geopend in een nieuw tabblad.",
+          });
         });
       }
     } catch (error) {
-      console.error('Error printing invoice:', error);
+      console.error('Error opening PDF:', error);
       toast({
-        title: "Fout bij printen",
-        description: "Er ging iets mis bij het genereren van de PDF voor printen.",
+        title: "Fout bij PDF openen",
+        description: "Er ging iets mis bij het genereren van de PDF.",
         variant: "destructive",
       });
     } finally {

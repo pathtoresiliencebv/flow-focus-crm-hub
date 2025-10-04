@@ -1,203 +1,234 @@
-
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
 
-interface EmailAccount {
+export interface EmailAccount {
   id: string;
   user_id: string;
   email_address: string;
-  display_name: string;
-  smtp_host?: string;
-  smtp_port?: number;
-  smtp_username?: string;
-  smtp_password?: string;
-  imap_host?: string;
-  imap_port?: number;
-  imap_username?: string;
-  imap_password?: string;
-  is_active?: boolean;
-  signature_html?: string;
-  signature_text?: string;
-  auto_add_signature?: boolean;
+  display_name: string | null;
+  // SMTP configuration (nullable for old Gmail OAuth accounts)
+  smtp_host: string | null;
+  smtp_port: number | null;
+  smtp_username: string | null;
+  smtp_password: string | null; // Encrypted
+  smtp_encryption: 'tls' | 'ssl' | 'none' | null;
+  // IMAP configuration (nullable for old Gmail OAuth accounts)
+  imap_host: string | null;
+  imap_port: number | null;
+  imap_username: string | null;
+  imap_password: string | null; // Encrypted
+  imap_encryption: 'ssl' | 'tls' | 'none' | null;
+  // Status
+  is_active: boolean;
+  is_primary: boolean;
+  sync_enabled: boolean;
+  connection_status: 'unconfigured' | 'testing' | 'connected' | 'error';
+  last_sync_at: string | null;
+  last_synced_uid: number | null;
+  last_error: string | null;
+  last_error_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export const useEmailAccounts = () => {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const [accounts, setAccounts] = useState<EmailAccount[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const { data: accounts = [], isLoading, refetch } = useQuery<EmailAccount[]>({
-    queryKey: ['email-accounts', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      
-      const { data, error } = await supabase
-        .from('user_email_settings')
+  const fetchAccounts = useCallback(async () => {
+    if (!user) {
+      setAccounts([]);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data, error: fetchError } = await supabase
+        .from('email_accounts')
         .select('*')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .order('is_primary', { ascending: false })
+        .order('created_at', { ascending: false });
 
-      if (error) {
-        toast({ 
-          title: "Fout bij ophalen accounts", 
-          description: error.message, 
-          variant: "destructive" 
-        });
-        return [];
-      }
-      return data || [];
-    },
-    enabled: !!user?.id,
-  });
+      if (fetchError) throw fetchError;
 
-  const getDefaultSignature = () => {
-    const htmlSignature = `<!DOCTYPE html>
-<html lang="nl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>E-mail Handtekening Smans Onderhoud en Service</title>
-<style>
-    /* Gebruik inline stijlen voor maximale compatibiliteit met e-mailclients */
-</style>
-</head>
-<body>
-<br>
-Met vriendelijke groet,
-<br>
------
-  <table style="width: 100%; max-width: 500px; border-spacing: 0; font-family: Arial, sans-serif; color: #333333;">
-    <tr>
-      <td style="width: 30%; padding-right: 20px; vertical-align: top;">
-        <a href="https://smansonderhoud.nl" target="_blank">
-          <img src="https://smanscrm.nl/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="Smans Logo" style="width: 100%; max-width: 120px; height: auto;">
-        </a>
-      </td>
-      <td style="width: 70%; vertical-align: top; border-left: 2px solid #b91c1c; padding-left: 20px;">
-        <h3 style="margin: 0 0 5px 0; font-size: 18px; font-weight: bold; color: #333333;">
-          Team Smans Onderhoud en Service
-        </h3>
-        <p style="margin: 0 0 10px 0; font-size: 14px;">
-          <a href="https://smansonderhoud.nl" style="color: #b91c1c; text-decoration: none;">
-            smansonderhoud.nl
-          </a>
-        </p>
-        <p style="margin: 0; font-size: 12px;">
-          <a href="#" style="color: #b91c1c; text-decoration: none; margin-right: 10px;">Facebook</a>
-          <a href="#" style="color: #b91c1c; text-decoration: none; margin-right: 10px;">LinkedIn</a>
-        </p>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+      // Filter out old Gmail OAuth accounts without SMTP/IMAP configuration
+      const validAccounts = (data || []).filter(account => 
+        account.smtp_host && account.imap_host
+      );
 
-    const textSignature = `
-Met vriendelijke groet,
+      setAccounts(validAccounts);
+    } catch (err: any) {
+      console.error('Error fetching email accounts:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
 
------
-Team Smans Onderhoud en Service
-smansonderhoud.nl
-`;
+  useEffect(() => {
+    fetchAccounts();
+  }, [fetchAccounts]);
 
-    return { htmlSignature, textSignature };
-  };
+  const addAccount = useCallback(async (accountData: Partial<EmailAccount>) => {
+    if (!user) return;
 
-  const addAccountMutation = useMutation({
-    mutationFn: async (accountData: Omit<EmailAccount, 'id' | 'user_id'>) => {
-      if (!user?.id) throw new Error('Geen gebruiker ingelogd');
-
-      // Add default signature if not provided
-      const { htmlSignature, textSignature } = getDefaultSignature();
-      const accountWithDefaults = {
-        ...accountData,
-        signature_html: accountData.signature_html || htmlSignature,
-        signature_text: accountData.signature_text || textSignature,
-        auto_add_signature: accountData.auto_add_signature ?? true,
-      };
-
-      const { error } = await supabase
-        .from('user_email_settings')
+    try {
+      const { data, error } = await supabase
+        .from('email_accounts')
         .insert({
-          user_id: user.id,
-          ...accountWithDefaults,
-        });
+          ...accountData,
+          user_id: user.id
+        })
+        .select()
+        .single();
 
       if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['email-accounts', user?.id] });
-      toast({ 
-        title: "Account toegevoegd", 
-        description: "E-mail account succesvol toegevoegd." 
-      });
-    },
-    onError: (error: any) => {
-      toast({ 
-        title: "Fout bij toevoegen", 
-        description: error.message, 
-        variant: "destructive" 
-      });
-    },
-  });
 
-  const updateAccountMutation = useMutation({
-    mutationFn: async ({ id, ...accountData }: Partial<EmailAccount> & { id: string }) => {
-      const { error } = await supabase
-        .from('user_email_settings')
-        .update(accountData)
-        .eq('id', id);
+      setAccounts(prev => [...prev, data]);
+      return data;
+    } catch (err: any) {
+      console.error('Error adding email account:', err);
+      throw err;
+    }
+  }, [user]);
+
+  const updateAccount = useCallback(async (accountId: string, updates: Partial<EmailAccount>) => {
+    try {
+      const { data, error } = await supabase
+        .from('email_accounts')
+        .update(updates)
+        .eq('id', accountId)
+        .select()
+        .single();
 
       if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['email-accounts', user?.id] });
-      toast({ 
-        title: "Account bijgewerkt", 
-        description: "E-mail account succesvol bijgewerkt." 
-      });
-    },
-    onError: (error: any) => {
-      toast({ 
-        title: "Fout bij bijwerken", 
-        description: error.message, 
-        variant: "destructive" 
-      });
-    },
-  });
 
-  const deleteAccountMutation = useMutation({
-    mutationFn: async (id: string) => {
+      setAccounts(prev => prev.map(acc => acc.id === accountId ? data : acc));
+      return data;
+    } catch (err: any) {
+      console.error('Error updating email account:', err);
+      throw err;
+    }
+  }, []);
+
+  const deleteAccount = useCallback(async (accountId: string) => {
+    try {
       const { error } = await supabase
-        .from('user_email_settings')
+        .from('email_accounts')
         .delete()
-        .eq('id', id);
+        .eq('id', accountId);
 
       if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['email-accounts', user?.id] });
-      toast({ 
-        title: "Account verwijderd", 
-        description: "E-mail account succesvol verwijderd." 
+
+      setAccounts(prev => prev.filter(acc => acc.id !== accountId));
+    } catch (err: any) {
+      console.error('Error deleting email account:', err);
+      throw err;
+    }
+  }, []);
+
+  const syncAccount = useCallback(async (accountId: string, fullSync: boolean = false) => {
+    try {
+      // All accounts now use imap-sync (SMTP/IMAP based)
+      const { data, error } = await supabase.functions.invoke('imap-sync', {
+        body: {
+          accountId,
+          fullSync,
+          maxMessages: fullSync ? 100 : 50,
+        }
       });
-    },
-    onError: (error: any) => {
-      toast({ 
-        title: "Fout bij verwijderen", 
-        description: error.message, 
-        variant: "destructive" 
+
+      if (error) throw error;
+
+      console.log('✅ Sync result:', data);
+      await fetchAccounts(); // Refresh accounts to update last_sync_at
+      
+      return data;
+    } catch (err: any) {
+      console.error('❌ Error syncing email account:', err);
+      throw err;
+    }
+  }, [fetchAccounts]);
+
+  const testConnection = useCallback(async (config: {
+    smtp: {
+      host: string;
+      port: number;
+      username: string;
+      password: string;
+      encryption: 'tls' | 'ssl' | 'none';
+    };
+    imap: {
+      host: string;
+      port: number;
+      username: string;
+      password: string;
+      encryption: 'ssl' | 'tls' | 'none';
+    };
+    testEmail?: string;
+  }) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('test-email-connection', {
+        body: config
       });
-    },
-  });
+
+      if (error) throw error;
+
+      return data;
+    } catch (err: any) {
+      console.error('❌ Error testing connection:', err);
+      throw err;
+    }
+  }, []);
+
+  const sendEmail = useCallback(async (params: {
+    accountId: string;
+    to: string | string[];
+    cc?: string | string[];
+    bcc?: string | string[];
+    subject: string;
+    bodyText?: string;
+    bodyHtml?: string;
+    attachments?: Array<{
+      filename: string;
+      content: string;
+      contentType?: string;
+    }>;
+    inReplyTo?: string;
+    priority?: 'high' | 'normal' | 'low';
+  }) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('smtp-send', {
+        body: params
+      });
+
+      if (error) throw error;
+
+      console.log('✅ Email sent:', data);
+      return data;
+    } catch (err: any) {
+      console.error('❌ Error sending email:', err);
+      throw err;
+    }
+  }, []);
 
   return {
     accounts,
-    isLoading,
-    refetch,
-    addAccount: addAccountMutation.mutate,
-    updateAccount: updateAccountMutation.mutate,
-    deleteAccount: deleteAccountMutation.mutate,
-    hasAccounts: accounts.length > 0,
+    loading,
+    error,
+    fetchAccounts,
+    addAccount,
+    updateAccount,
+    deleteAccount,
+    syncAccount,
+    testConnection,
+    sendEmail,
   };
 };

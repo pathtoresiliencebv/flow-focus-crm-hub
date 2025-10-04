@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import html2pdf from 'html2pdf.js';
 
 interface QuoteSettings {
   terms_and_conditions?: string;
@@ -60,6 +61,8 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
   const handlePrint = async () => {
     try {
       setPrintLoading(true);
+      const filename = `Offerte-${quote.quote_number || 'onbekend'}.pdf`;
+      
       const { data, error } = await supabase.functions.invoke('generate-quote-pdf', {
         body: { quoteId: quote.id }
       });
@@ -67,29 +70,41 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
       if (error) throw error;
 
       if (data?.success && data?.htmlContent) {
-        // Open PDF in new window for printing
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-          printWindow.document.write(data.htmlContent);
-          printWindow.document.close();
-          printWindow.focus();
+        // Create a temporary container for html2pdf
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = data.htmlContent;
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        document.body.appendChild(tempDiv);
+
+        // PDF options
+        const opt = {
+          margin: [10, 10, 10, 10] as [number, number, number, number],
+          filename: filename,
+          image: { type: 'jpeg' as const, quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
+        };
+
+        // Generate PDF and open in new tab
+        html2pdf().set(opt).from(tempDiv).outputPdf('blob').then((pdfBlob: Blob) => {
+          document.body.removeChild(tempDiv);
           
-          // Wait for content to load, then trigger print
-          setTimeout(() => {
-            printWindow.print();
-          }, 500);
-        }
-        
-        toast({
-          title: "PDF geopend voor printen",
-          description: "Het PDF bestand is geopend in een nieuw venster voor printen.",
+          // Open PDF in new window
+          const pdfUrl = URL.createObjectURL(pdfBlob);
+          window.open(pdfUrl, '_blank');
+          
+          toast({
+            title: "PDF Geopend! ✓",
+            description: "De PDF is geopend in een nieuw tabblad.",
+          });
         });
       }
     } catch (error) {
-      console.error('Error printing quote:', error);
+      console.error('Error opening PDF:', error);
       toast({
-        title: "Fout bij printen",
-        description: "Er ging iets mis bij het genereren van de PDF voor printen.",
+        title: "Fout bij PDF openen",
+        description: "Er ging iets mis bij het genereren van de PDF.",
         variant: "destructive",
       });
     } finally {
@@ -359,7 +374,7 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
                     )}
                   </div>
                    {(quote.status === 'approved' || quote.status === 'goedgekeurd') && (
-                     <div className="mt-3 p-2 bg-green-100 text-green-800 text-xs rounded font-medium">
+                     <div className="mt-3 p-2 bg-red-100 text-red-800 text-xs rounded font-medium">
                        ✅ Goedgekeurd door klant
                      </div>
                    )}

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,10 +11,12 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Eye, ExternalLink, Trash2, CheckCircle, Mail, Copy, Pencil, FileSignature, RotateCcw, MoreHorizontal, Download, Printer } from "lucide-react";
+import { Eye, ExternalLink, Trash2, CheckCircle, Mail, Copy, Pencil, FileSignature, RotateCcw, MoreHorizontal, Download, Printer, Archive } from "lucide-react";
 import { Quote } from '@/types/quote';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import html2pdf from 'html2pdf.js';
+import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
 
 interface QuotesTableProps {
   quotes: Quote[];
@@ -39,9 +41,18 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
   onRestore,
   isArchived = false
 }) => {
+  const { toast } = useToast();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [quoteToDelete, setQuoteToDelete] = useState<Quote | null>(null);
+
   const handlePDFDownload = async (quoteId: string) => {
     try {
       console.log('📄 Downloading PDF for quote:', quoteId);
+      
+      // Find quote to get quote number for filename
+      const quote = quotes.find(q => q.id === quoteId);
+      const filename = `Offerte-${quote?.quote_number || 'onbekend'}.pdf`;
+      
       const { data, error } = await supabase.functions.invoke('generate-quote-pdf', {
         body: { quoteId }
       });
@@ -59,22 +70,29 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
       }
 
       if (data?.success && data?.htmlContent) {
-        // Open PDF in new window for printing
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-          printWindow.document.write(data.htmlContent);
-          printWindow.document.close();
-          printWindow.focus();
-          
-          // Wait for content to load, then trigger print
-          setTimeout(() => {
-            printWindow.print();
-          }, 1000);
-        }
-        
-        toast({
-          title: "PDF geopend",
-          description: "Het PDF bestand is geopend voor afdrukken.",
+        // Create a temporary container for html2pdf
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = data.htmlContent;
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        document.body.appendChild(tempDiv);
+
+        // PDF options
+        const opt = {
+          margin: [10, 10, 10, 10] as [number, number, number, number],
+          filename: filename,
+          image: { type: 'jpeg' as const, quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
+        };
+
+        // Generate and download PDF
+        html2pdf().set(opt).from(tempDiv).save().then(() => {
+          document.body.removeChild(tempDiv);
+          toast({
+            title: "PDF Gedownload! ✓",
+            description: `${filename} is succesvol gedownload.`,
+          });
         });
       } else {
         console.error('❌ No HTML content in response:', data);
@@ -97,6 +115,11 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
   const handlePrint = async (quoteId: string) => {
     try {
       console.log('🖨️ Printing PDF for quote:', quoteId);
+      
+      // Find quote to get quote number for filename
+      const quote = quotes.find(q => q.id === quoteId);
+      const filename = `Offerte-${quote?.quote_number || 'onbekend'}`;
+      
       const { data, error } = await supabase.functions.invoke('generate-quote-pdf', {
         body: { quoteId }
       });
@@ -114,34 +137,40 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
       }
 
       if (data?.success && data?.htmlContent) {
-        // Open PDF in new window for printing
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-          printWindow.document.write(data.htmlContent);
-          printWindow.document.close();
-          printWindow.focus();
+        // Create a temporary container for html2pdf
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = data.htmlContent;
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        document.body.appendChild(tempDiv);
+
+        // PDF options for opening (not downloading)
+        const opt = {
+          margin: [10, 10, 10, 10] as [number, number, number, number],
+          filename: `${filename}.pdf`,
+          image: { type: 'jpeg' as const, quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
+        };
+
+        // Generate PDF and open in new tab
+        html2pdf().set(opt).from(tempDiv).outputPdf('blob').then((pdfBlob: Blob) => {
+          document.body.removeChild(tempDiv);
           
-          // Wait for content to load, then trigger print
-          setTimeout(() => {
-            printWindow.print();
-          }, 500);
+          // Open PDF in new window
+          const pdfUrl = URL.createObjectURL(pdfBlob);
+          window.open(pdfUrl, '_blank');
           
           toast({
-            title: "PDF wordt afgedrukt",
-            description: "Het PDF bestand is geopend voor afdrukken.",
+            title: "PDF Geopend! ✓",
+            description: "De PDF is geopend in een nieuw tabblad.",
           });
-        } else {
-          toast({
-            title: "Print Fout",
-            description: "Kon printvenster niet openen. Controleer of pop-ups zijn toegestaan.",
-            variant: "destructive",
-          });
-        }
+        });
       } else {
         console.error('❌ No HTML content for printing:', data);
         toast({
-          title: "Print Fout",
-          description: "Geen PDF content ontvangen voor printen.",
+          title: "PDF Fout",
+          description: "Geen PDF content ontvangen van server.",
           variant: "destructive",
         });
       }
@@ -154,8 +183,8 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
       });
     }
   };
+  
   const navigate = useNavigate();
-  const { toast } = useToast();
   const getStatusBadge = (status: string) => {
     const statusColors = {
       'concept': 'bg-gray-100 text-gray-800',
@@ -180,13 +209,29 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
     );
   };
 
+  // Helper function to get invoice term fraction display
+  const getInvoiceTermDisplay = (quote: any) => {
+    if (!quote.invoices || quote.invoices.length === 0) return null;
+    
+    const totalTerms = quote.invoices[0]?.total_payment_terms || 1;
+    const currentTerm = quote.invoices.length;
+    
+    if (totalTerms === 1) return '1/1';
+    if (totalTerms === 2) return '½';
+    if (totalTerms === 3) return '⅓';
+    if (totalTerms === 4) return '¼';
+    return `${currentTerm}/${totalTerms}`;
+  };
+
   return (
+    <>
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead>Offertenummer</TableHead>
           <TableHead>Klant</TableHead>
           <TableHead>Project</TableHead>
+          <TableHead>Gefactureerd</TableHead>
           <TableHead>Datum</TableHead>
           <TableHead>Geldig tot</TableHead>
           <TableHead>Bedrag</TableHead>
@@ -207,6 +252,20 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
             </TableCell>
             <TableCell>{quote.customer_name}</TableCell>
             <TableCell>{quote.project_title || '-'}</TableCell>
+            <TableCell>
+              {quote.invoices && quote.invoices.length > 0 ? (
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-lg text-green-600">
+                    {getInvoiceTermDisplay(quote)}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    ({quote.invoices.length}/{quote.invoices[0]?.total_payment_terms || 1})
+                  </span>
+                </div>
+              ) : (
+                <span className="text-muted-foreground text-sm">-</span>
+              )}
+            </TableCell>
             <TableCell>{new Date(quote.quote_date).toLocaleDateString('nl-NL')}</TableCell>
             <TableCell>{new Date(quote.valid_until).toLocaleDateString('nl-NL')}</TableCell>
             <TableCell>€{(quote.total_amount + quote.total_vat_amount).toFixed(2)}</TableCell>
@@ -289,17 +348,35 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                       PDF Printen
                     </DropdownMenuItem>
                    
-                   {((!isArchived && onDelete) || (isArchived && onRestore)) && (
+                   {onDelete && (
                      <DropdownMenuSeparator />
                    )}
                    
-                   <DropdownMenuItem 
-                     onClick={() => onDelete(quote.id!)}
-                     className="text-destructive"
-                   >
-                     <Trash2 className="mr-2 h-4 w-4" />
-                     {isArchived ? "Permanent verwijderen" : "Verwijderen"}
-                   </DropdownMenuItem>
+                   {!isArchived && onDelete && (
+                     <DropdownMenuItem 
+                       onClick={() => {
+                         setQuoteToDelete(quote);
+                         setDeleteDialogOpen(true);
+                       }}
+                       className="text-orange-600"
+                     >
+                       <Archive className="mr-2 h-4 w-4" />
+                       Archiveren
+                     </DropdownMenuItem>
+                   )}
+                   
+                   {isArchived && onDelete && (
+                     <DropdownMenuItem 
+                       onClick={() => {
+                         setQuoteToDelete(quote);
+                         setDeleteDialogOpen(true);
+                       }}
+                       className="text-destructive"
+                     >
+                       <Trash2 className="mr-2 h-4 w-4" />
+                       Permanent verwijderen
+                     </DropdownMenuItem>
+                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
               </div>
@@ -308,5 +385,21 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
         ))}
       </TableBody>
     </Table>
+    
+    <ConfirmDeleteDialog
+      isOpen={deleteDialogOpen}
+      onClose={() => {
+        setDeleteDialogOpen(false);
+        setQuoteToDelete(null);
+      }}
+      onConfirm={() => {
+        if (quoteToDelete?.id) {
+          onDelete(quoteToDelete.id);
+        }
+      }}
+      quote={quoteToDelete}
+      isArchiving={!isArchived}
+    />
+  </>
   );
 };

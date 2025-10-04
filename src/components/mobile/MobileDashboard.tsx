@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Calendar, Clock, CheckCircle, MapPin, Phone, User } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useCrmStore } from "@/hooks/useCrmStore";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
@@ -13,12 +14,46 @@ export const MobileDashboard: React.FC = () => {
   const { profile, user } = useAuth();
   const { projects, customers } = useCrmStore();
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
+  const [planningItems, setPlanningItems] = useState<any[]>([]);
 
-  // Filter projects assigned to current user
-  const myProjects = projects.filter(project => 
-    project.assigned_user_id === user?.id && 
-    project.status !== 'afgerond'
-  );
+  // Fetch planning items for current user
+  useEffect(() => {
+    const fetchPlanning = async () => {
+      if (!user?.id) return;
+      
+      const { data, error } = await supabase
+        .from('planning_items')
+        .select('*')
+        .eq('assigned_user_id', user.id)
+        .order('start_date', { ascending: true });
+      
+      if (error) {
+        console.error('Error fetching planning:', error);
+        return;
+      }
+      
+      setPlanningItems(data || []);
+    };
+    
+    fetchPlanning();
+  }, [user?.id]);
+
+  // Get project IDs from planning items
+  const plannedProjectIds = new Set(planningItems.map(p => p.project_id).filter(Boolean));
+
+  // Filter projects: only show SCHEDULED projects, sorted by planning date
+  const myProjects = projects
+    .filter(project => 
+      plannedProjectIds.has(project.id) && 
+      project.status !== 'afgerond'
+    )
+    .sort((a, b) => {
+      // Sort by planning date
+      const planningA = planningItems.find(pi => pi.project_id === a.id);
+      const planningB = planningItems.find(pi => pi.project_id === b.id);
+      if (!planningA || !planningB) return 0;
+      return new Date(planningA.start_date).getTime() - new Date(planningB.start_date).getTime();
+    });
 
   if (selectedProject) {
     return (
@@ -79,13 +114,18 @@ export const MobileDashboard: React.FC = () => {
           </Card>
         ) : (
           <div className="space-y-3">
-            {myProjects.map((project) => (
-              <ProjectCard 
-                key={project.id} 
-                project={project}
-                onClick={() => setSelectedProject(project.id)}
-              />
-            ))}
+            {myProjects.map((project) => {
+              const planning = planningItems.find(pi => pi.project_id === project.id);
+              return (
+                <ProjectCard 
+                  key={project.id} 
+                  project={project}
+                  onClick={() => setSelectedProject(project.id)}
+                  planningDate={planning?.start_date}
+                  planningTime={planning?.start_time}
+                />
+              );
+            })}
           </div>
         )}
       </div>
@@ -96,9 +136,11 @@ export const MobileDashboard: React.FC = () => {
 interface ProjectCardProps {
   project: any;
   onClick: () => void;
+  planningDate?: string;
+  planningTime?: string;
 }
 
-const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
+const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick, planningDate, planningTime }) => {
   const { customers } = useCrmStore();
   const { completionPercentage } = useProjectTasks(project.id);
   
@@ -135,6 +177,21 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
             </Badge>
           </div>
 
+          {/* Planning Date - Highlighted */}
+          {planningDate && (
+            <div className="flex items-center gap-2 text-sm font-semibold text-blue-600 bg-blue-50 p-2 rounded-md">
+              <Calendar className="h-4 w-4" />
+              <span>Ingepland: {new Date(planningDate).toLocaleDateString('nl-NL', { 
+                weekday: 'short', 
+                day: 'numeric', 
+                month: 'short' 
+              })}</span>
+              {planningTime && (
+                <span className="text-xs opacity-75">om {planningTime.slice(0, 5)}</span>
+              )}
+            </div>
+          )}
+
           {customer && (
             <div className="space-y-1">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -159,10 +216,6 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onClick }) => {
               )}
             </div>
           )}
-
-          <div className="flex justify-center items-center text-xs">
-            <span className="text-muted-foreground">{project.date}</span>
-          </div>
 
           <div className="space-y-1">
             <div className="flex justify-between items-center text-xs">

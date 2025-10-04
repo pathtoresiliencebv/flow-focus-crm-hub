@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Eye, User, Calendar, MapPin, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useCrmStore } from "@/hooks/useCrmStore";
 import { useUsers } from "@/hooks/useUsers";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
@@ -40,9 +41,43 @@ export const InstallateurProjectList: React.FC = () => {
   const [showDelivery, setShowDelivery] = useState(false);
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [showProjectAdd, setShowProjectAdd] = useState(false);
+  const [planningItems, setPlanningItems] = useState<any[]>([]);
 
-  // Filter projects for current installateur
-  const installateurProjects = projects.filter(p => p.assigned_user_id === user?.id);
+  // Fetch planning items for current user
+  useEffect(() => {
+    const fetchPlanning = async () => {
+      if (!user?.id) return;
+      
+      const { data, error } = await supabase
+        .from('planning_items')
+        .select('*')
+        .eq('assigned_user_id', user.id)
+        .order('start_date', { ascending: true });
+      
+      if (error) {
+        console.error('Error fetching planning:', error);
+        return;
+      }
+      
+      setPlanningItems(data || []);
+    };
+    
+    fetchPlanning();
+  }, [user?.id]);
+
+  // Get project IDs from planning items
+  const plannedProjectIds = new Set(planningItems.map(p => p.project_id).filter(Boolean));
+
+  // Filter projects: only show projects that are in planning_items for this user
+  const installateurProjects = projects
+    .filter(p => plannedProjectIds.has(p.id))
+    .sort((a, b) => {
+      // Sort by planning date
+      const planningA = planningItems.find(pi => pi.project_id === a.id);
+      const planningB = planningItems.find(pi => pi.project_id === b.id);
+      if (!planningA || !planningB) return 0;
+      return new Date(planningA.start_date).getTime() - new Date(planningB.start_date).getTime();
+    });
 
   // Group projects by status
   const projectsByStatus = {

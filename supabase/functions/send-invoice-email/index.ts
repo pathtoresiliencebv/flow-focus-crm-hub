@@ -370,6 +370,26 @@ const handler = async (req: Request): Promise<Response> => {
       console.error('Error updating invoice status:', updateError);
     }
 
+    // ✨ AUTO-SAVE CUSTOMER EMAIL: Update customer record with email if customer_id exists
+    if (invoice.customer_id && recipientEmail) {
+      console.log('💾 Saving customer email:', { customer_id: invoice.customer_id, email: recipientEmail });
+      
+      const { error: customerUpdateError } = await supabase
+        .from('customers')
+        .update({ 
+          email: recipientEmail,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', invoice.customer_id);
+
+      if (customerUpdateError) {
+        console.error('⚠️ Could not update customer email:', customerUpdateError);
+        // Don't fail the whole operation if customer update fails
+      } else {
+        console.log('✅ Customer email saved successfully');
+      }
+    }
+
     console.log("Invoice email sent successfully:", emailResponse);
 
     return new Response(

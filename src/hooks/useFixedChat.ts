@@ -7,6 +7,14 @@ export interface DirectMessage {
   from_user_id: string;
   to_user_id: string;
   content: string;
+  original_language: string;
+  translated_content?: Record<string, string>;
+  media_type?: 'photo' | 'file' | 'voice';
+  media_url?: string;
+  media_filename?: string;
+  media_size?: number;
+  media_mime_type?: string;
+  voice_duration?: number;
   created_at: string;
   sender?: {
     id: string;
@@ -36,9 +44,31 @@ export const useFixedChat = () => {
   const [availableUsers, setAvailableUsers] = useState<ChatUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [userLanguage, setUserLanguage] = useState<string>('nl');
   
   const subscriptionRef = useRef<any>(null);
   const selectedConversationRef = useRef<string | null>(null);
+
+  // Translate message using edge function
+  const translateMessage = useCallback(async (text: string, fromLang: string, toLang: string): Promise<string> => {
+    if (fromLang === toLang) return text;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('translate-message', {
+        body: { text, from_lang: fromLang, to_lang: toLang }
+      });
+
+      if (error) {
+        console.error('❌ Translation error:', error);
+        return text; // Fallback to original
+      }
+
+      return data.translated_text || text;
+    } catch (error) {
+      console.error('❌ Translation failed:', error);
+      return text;
+    }
+  }, []);
 
   // Update ref when selected conversation changes
   useEffect(() => {
@@ -52,12 +82,21 @@ export const useFixedChat = () => {
     try {
       console.log('🔍 Fetching available chat users for:', user.id, 'Role:', profile?.role);
       
+      // Get fresh session to ensure API key is included
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.error('❌ No active session found');
+        return;
+      }
+      
       const { data, error } = await supabase.rpc('get_available_chat_users', {
         current_user_id: user.id
       });
 
       if (error) {
         console.error('❌ Error fetching available users:', error);
+        console.error('Error details:', JSON.stringify(error));
         return;
       }
 
@@ -91,7 +130,7 @@ export const useFixedChat = () => {
           .select('*', { count: 'exact', head: true })
           .eq('from_user_id', otherUser.id)
           .eq('to_user_id', user.id)
-          .eq('read', false);
+          .eq('is_read', false);
 
         return {
           id: otherUser.id,
@@ -125,12 +164,10 @@ export const useFixedChat = () => {
     console.log('📨 Fetching messages between:', user.id, 'and:', otherUserId);
 
     try {
-      const { data, error } = await supabase
+      // Fetch messages WITHOUT JOIN first to avoid foreign key issues
+      const { data: messagesData, error } = await supabase
         .from('direct_messages')
-        .select(`
-          *,
-          sender:profiles!from_user_id(id, full_name)
-        `)
+        .select('*')
         .or(`and(from_user_id.eq.${user.id},to_user_id.eq.${otherUserId}),and(from_user_id.eq.${otherUserId},to_user_id.eq.${user.id})`)
         .order('created_at', { ascending: true })
         .limit(100);
@@ -140,14 +177,149 @@ export const useFixedChat = () => {
         return;
       }
 
-      console.log('✅ Fetched messages:', data?.length || 0, 'messages', data);
-      setMessages((data || []) as DirectMessage[]);
+      console.log('✅ Fetched messages:', messagesData?.length || 0, 'messages', messagesData);
+      
+      // Enrich messages with sender info
+      if (messagesData && messagesData.length > 0) {
+        const enrichedMessages = await Promise.all(
+          messagesData.map(async (msg: any) => {
+            const { data: senderData } = await supabase
+              .from('profiles')
+              .select('id, full_name')
+              .eq('id', msg.from_user_id)
+              .single();
+            
+            return {
+              ...msg,
+              sender: senderData || { id: msg.from_user_id, full_name: 'Unknown' }
+            };
+          })
+        );
+        setMessages(enrichedMessages as DirectMessage[]);
+      } else {
+        setMessages([]);
+      }
     } catch (error) {
       console.error('❌ Error fetching messages:', error);
     }
   }, [user]);
 
-  // Send a new message
+  // Upload media file to storage
+  const uploadMedia = useCallback(async (file: File, type: 'photo' | 'file' | 'voice'): Promise<string | null> => {
+    if (!user) return null;
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const timestamp = Date.now();
+      const folder = type === 'photo' ? 'photos' : type === 'voice' ? 'voice' : 'files';
+      const fileName = `${timestamp}${fileExt ? `.${fileExt}` : ''}`;
+      const filePath = `${user.id}/${folder}/${fileName}`;
+
+      console.log('📤 Uploading media:', { type, filePath, size: file.size });
+
+      const { data, error } = await supabase.storage
+        .from('chat-media')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) {
+        console.error('❌ Upload error:', error);
+        return null;
+      }
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('chat-media')
+        .getPublicUrl(filePath);
+
+      console.log('✅ Media uploaded:', urlData.publicUrl);
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error('❌ Upload failed:', error);
+      return null;
+    }
+  }, [user]);
+
+  // Send media message (photo, file, or voice)
+  const sendMediaMessage = useCallback(async (
+    file: File, 
+    mediaType: 'photo' | 'file' | 'voice',
+    toUserId: string,
+    voiceDuration?: number
+  ) => {
+    if (!user || !toUserId || sending) return;
+
+    setSending(true);
+    console.log('📤 Sending media message:', { type: mediaType, to: toUserId });
+
+    try {
+      // Upload file to storage
+      const mediaUrl = await uploadMedia(file, mediaType);
+      
+      if (!mediaUrl) {
+        throw new Error('Media upload failed');
+      }
+
+      const messageData = {
+        from_user_id: user.id,
+        to_user_id: toUserId,
+        content: mediaType === 'photo' ? '📷 Foto' : mediaType === 'voice' ? '🎤 Spraakbericht' : `📎 ${file.name}`,
+        is_read: false,
+        original_language: userLanguage,
+        media_type: mediaType,
+        media_url: mediaUrl,
+        media_filename: file.name,
+        media_size: file.size,
+        media_mime_type: file.type,
+        voice_duration: voiceDuration || null
+      };
+
+      console.log('📝 Inserting media message:', messageData);
+
+      const { data, error } = await supabase
+        .from('direct_messages')
+        .insert(messageData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Error sending media message:', error);
+        throw error;
+      }
+
+      console.log('✅ Media message sent successfully');
+
+      // Add message to local state
+      const newMessage: DirectMessage = {
+        ...data,
+        sender: {
+          id: user.id,
+          full_name: profile?.full_name || 'You'
+        }
+      };
+
+      setMessages(prev => [...prev, newMessage]);
+
+      // Update conversation
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === toUserId
+            ? { ...conv, last_message: newMessage, unread_count: conv.unread_count }
+            : conv
+        )
+      );
+
+    } catch (error) {
+      console.error('❌ Error sending media message:', error);
+      throw error;
+    } finally {
+      setSending(false);
+    }
+  }, [user, profile, sending, userLanguage, uploadMedia]);
+
+  // Send a new text message
   const sendMessage = useCallback(async (content: string, toUserId: string) => {
     if (!user || !content.trim() || !toUserId || sending) return;
 
@@ -155,14 +327,40 @@ export const useFixedChat = () => {
     console.log('📤 Sending message to:', toUserId, 'Content:', content);
 
     try {
+      // Get recipient's language preference
+      const { data: recipientData } = await supabase
+        .from('profiles')
+        .select('chat_language')
+        .eq('id', toUserId)
+        .single();
+
+      const recipientLang = recipientData?.chat_language || 'nl';
+      
+      // Translate if languages differ
+      let translatedContent: Record<string, string> = {};
+      if (userLanguage !== recipientLang) {
+        console.log('🌍 Translating from', userLanguage, 'to', recipientLang);
+        const translated = await translateMessage(content.trim(), userLanguage, recipientLang);
+        translatedContent = {
+          [userLanguage]: content.trim(),
+          [recipientLang]: translated
+        };
+      }
+
+      const messageData = {
+        from_user_id: user.id,
+        to_user_id: toUserId,
+        content: content.trim(),
+        is_read: false,
+        original_language: userLanguage,
+        translated_content: Object.keys(translatedContent).length > 0 ? translatedContent : null
+      };
+      
+      console.log('📝 Inserting message data:', messageData);
+      
       const { data, error } = await supabase
         .from('direct_messages')
-        .insert({
-          from_user_id: user.id,
-          to_user_id: toUserId,
-          content: content.trim(),
-          read: false
-        })
+        .insert(messageData)
         .select()
         .single();
 
@@ -179,6 +377,8 @@ export const useFixedChat = () => {
         from_user_id: data.from_user_id,
         to_user_id: data.to_user_id,
         content: data.content,
+        original_language: data.original_language,
+        translated_content: data.translated_content,
         created_at: data.created_at,
         sender: {
           id: user.id,
@@ -203,16 +403,18 @@ export const useFixedChat = () => {
     } finally {
       setSending(false);
     }
-  }, [user, profile, sending]);
+  }, [user, profile, sending, userLanguage, translateMessage]);
 
   // Select a conversation
   const selectConversation = useCallback((otherUserId: string | null) => {
     console.log('💬 Selecting conversation with:', otherUserId);
+    
+    // CRITICAL: Clear messages FIRST before fetching new ones
+    setMessages([]);
     setSelectedConversation(otherUserId);
+    
     if (otherUserId) {
       fetchMessages(otherUserId);
-    } else {
-      setMessages([]);
     }
   }, [fetchMessages]);
 
@@ -223,42 +425,67 @@ export const useFixedChat = () => {
     console.log('🔌 Setting up realtime subscription for user:', user.id);
 
     const channel = supabase
-      .channel('direct_messages')
+      .channel('direct_messages_channel')
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'direct_messages',
-          filter: `or(and(from_user_id.eq.${user.id}),and(to_user_id.eq.${user.id}))`
+          table: 'direct_messages'
         },
-        (payload) => {
+        async (payload) => {
           console.log('📨 New message received:', payload);
           
-          const newMessage = payload.new as DirectMessage;
+          const newMessage = payload.new as any;
+          
+          // Check if message involves current user
+          const isRelevant = newMessage.from_user_id === user.id || newMessage.to_user_id === user.id;
+          
+          if (!isRelevant) {
+            console.log('⏭️ Message not relevant for current user, skipping');
+            return;
+          }
+
+          // Fetch sender info
+          const { data: senderData } = await supabase
+            .from('profiles')
+            .select('id, full_name')
+            .eq('id', newMessage.from_user_id)
+            .single();
+
+          const enrichedMessage: DirectMessage = {
+            ...newMessage,
+            sender: senderData || { id: newMessage.from_user_id, full_name: 'Unknown' }
+          };
           
           // Only add message if it's for the currently selected conversation
-          if (selectedConversationRef.current && 
-              (newMessage.from_user_id === selectedConversationRef.current || 
-               newMessage.to_user_id === selectedConversationRef.current)) {
+          const otherUserId = newMessage.from_user_id === user.id ? newMessage.to_user_id : newMessage.from_user_id;
+          
+          if (selectedConversationRef.current === otherUserId) {
+            console.log('✅ Adding message to current conversation');
             
             setMessages(prev => {
               // Check if message already exists
-              const exists = prev.some(msg => msg.id === newMessage.id);
-              if (exists) return prev;
+              const exists = prev.some(msg => msg.id === enrichedMessage.id);
+              if (exists) {
+                console.log('⚠️ Message already exists, skipping');
+                return prev;
+              }
               
-              return [...prev, newMessage];
+              return [...prev, enrichedMessage];
             });
+          } else {
+            console.log('⏭️ Message for different conversation, updating sidebar only');
           }
 
           // Update conversations list
           setConversations(prev => 
             prev.map(conv => {
-              if (conv.id === newMessage.from_user_id || conv.id === newMessage.to_user_id) {
+              if (conv.id === otherUserId) {
                 return {
                   ...conv,
-                  last_message: newMessage,
-                  unread_count: conv.id === newMessage.from_user_id ? conv.unread_count + 1 : conv.unread_count
+                  last_message: enrichedMessage,
+                  unread_count: newMessage.from_user_id !== user.id ? conv.unread_count + 1 : conv.unread_count
                 };
               }
               return conv;
@@ -327,6 +554,13 @@ export const useFixedChat = () => {
     };
   }, [user, loading, setupRealtimeSubscription]);
 
+  // Load user's language preference
+  useEffect(() => {
+    if (profile?.chat_language) {
+      setUserLanguage(profile.chat_language);
+    }
+  }, [profile]);
+
   return {
     conversations,
     selectedConversation,
@@ -334,8 +568,11 @@ export const useFixedChat = () => {
     availableUsers,
     loading,
     sending,
+    userLanguage,
+    setUserLanguage,
     selectConversation,
     sendMessage,
+    sendMediaMessage,
     fetchMessages,
     fetchAvailableUsers
   };
