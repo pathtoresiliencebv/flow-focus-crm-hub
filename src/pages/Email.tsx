@@ -259,7 +259,16 @@ export default function Email() {
                 </div>
               ) : messages && messages.length > 0 ? (
                 <>
-                {messages.map((message) => (
+                {messages.map((message) => {
+                  // Strip HTML from preview text
+                  const stripHtml = (html: string) => {
+                    return html?.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() || '';
+                  };
+                  
+                  const previewText = stripHtml(message.body_text || message.body_html || '');
+                  const hasAttachments = message.attachments && message.attachments.length > 0;
+                  
+                  return (
                   <div
                     key={message.id}
                     onClick={() => setSelectedThread(message.id)}
@@ -281,6 +290,9 @@ export default function Email() {
                           )}>
                             {message.from_email || 'Onbekend'}
                           </span>
+                          {hasAttachments && (
+                            <Paperclip className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                          )}
                         </div>
                         <h3 className={cn(
                           "text-sm truncate mt-1",
@@ -289,7 +301,7 @@ export default function Email() {
                           {message.subject || '(Geen onderwerp)'}
                         </h3>
                         <p className="text-xs text-gray-500 truncate mt-1">
-                          {message.body_text?.substring(0, 100) || 'Geen preview beschikbaar'}
+                          {previewText.substring(0, 100) || 'Geen preview beschikbaar'}
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-1 flex-shrink-0">
@@ -305,7 +317,8 @@ export default function Email() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
                 
                 {/* Load More Button */}
                 {messages.length > 0 && messages.length % 200 === 0 && (
@@ -429,6 +442,44 @@ export default function Email() {
                         </div>
                       )}
                     </div>
+
+                    {/* Attachments Section */}
+                    {selectedMessage.attachments && selectedMessage.attachments.length > 0 && (
+                      <div className="mt-6 border-t pt-4">
+                        <h3 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
+                          <Paperclip className="h-4 w-4" />
+                          Bijlagen ({selectedMessage.attachments.length})
+                        </h3>
+                        <div className="space-y-2">
+                          {selectedMessage.attachments.map((attachment: any, idx: number) => (
+                            <div
+                              key={idx}
+                              className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                              onClick={() => {
+                                if (attachment.url) {
+                                  window.open(attachment.url, '_blank');
+                                }
+                              }}
+                            >
+                              <Paperclip className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">
+                                  {attachment.filename || attachment.name || `Bijlage ${idx + 1}`}
+                                </p>
+                                {attachment.size && (
+                                  <p className="text-xs text-gray-500">
+                                    {(attachment.size / 1024).toFixed(1)} KB
+                                  </p>
+                                )}
+                              </div>
+                              <Button variant="ghost" size="sm">
+                                Download
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
