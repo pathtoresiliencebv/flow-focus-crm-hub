@@ -98,6 +98,8 @@ export const useCachedEmails = () => {
       console.log('🔄 Fetching emails LIVE from IMAP server...', { maxMessages, loadMore });
 
       // Use IMAP sync (reliable)
+      console.log('📧 Calling imap-sync with:', { accountId, maxMessages });
+      
       const { data, error } = await supabase.functions.invoke('imap-sync', {
         body: {
           accountId,
@@ -105,6 +107,8 @@ export const useCachedEmails = () => {
           maxMessages,
         }
       });
+      
+      console.log('📧 IMAP response:', { data, error });
 
       if (error) {
         throw new Error(error.message || 'Failed to fetch emails');
