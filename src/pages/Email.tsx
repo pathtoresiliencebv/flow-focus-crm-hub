@@ -654,30 +654,36 @@ export default function Email() {
                           {selectedMessage.attachments.map((attachment: any, idx: number) => (
                             <div
                               key={idx}
-                              className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                              onClick={() => {
-                                if (attachment.url) {
-                                  window.open(attachment.url, '_blank');
-                                }
-                              }}
+                              className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                             >
                               <Paperclip className="h-5 w-5 text-gray-400 flex-shrink-0" />
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-gray-900 truncate">
                                   {attachment.filename || attachment.name || `Bijlage ${idx + 1}`}
                                 </p>
-                                {attachment.size && (
-                                  <p className="text-xs text-gray-500">
-                                    {(attachment.size / 1024).toFixed(1)} KB
-                                  </p>
-                                )}
+                                <p className="text-xs text-gray-500">
+                                  Download via Hostnet webmail
+                                </p>
                               </div>
-                              <Button variant="ghost" size="sm">
-                                Download
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  window.open('https://webmail.hostnet.nl', '_blank');
+                                  toast({
+                                    title: "Hostnet webmail geopend",
+                                    description: "Download de bijlage daar - CRM download komt binnenkort",
+                                  });
+                                }}
+                              >
+                                Open in Hostnet
                               </Button>
                             </div>
                           ))}
                         </div>
+                        <p className="text-xs text-gray-500 mt-3">
+                          💡 Tip: Directe download vanuit CRM komt in een volgende update
+                        </p>
                       </div>
                     )}
                   </div>
