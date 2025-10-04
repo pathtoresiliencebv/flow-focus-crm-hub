@@ -194,17 +194,21 @@ class IMAPClient {
             }
           }
 
-          // Simple attachment detection - look for "attachment" in body
+          // Attachment detection - ONLY if Content-Disposition: attachment found
           const attachments: any[] = [];
-          const hasAttachment = block.toLowerCase().includes('attachment') || 
-                               block.toLowerCase().includes('filename');
+          
+          // More specific check: Look for actual attachment headers
+          const hasAttachment = block.match(/Content-Disposition:\s*attachment/i) ||
+                               block.match(/Content-Type:.*name=/i);
+          
           if (hasAttachment) {
-            // We know there are attachments, but don't have full structure
-            // Frontend will show icon and "Opslaan als bon" button
+            // Try to extract filename from Content-Disposition or Content-Type
+            const filenameMatch = block.match(/(?:filename|name)=["']?([^"'\r\n;]+)["']?/i);
+            const filename = filenameMatch ? filenameMatch[1] : 'bijlage';
+            
             attachments.push({
-              filename: 'bijlage.pdf',
-              name: 'bijlage.pdf', 
-              note: 'Gebruik download functie in originele email'
+              filename: filename,
+              name: filename,
             });
           }
 
