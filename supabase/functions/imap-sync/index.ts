@@ -292,10 +292,9 @@ class IMAPClient {
   private async readResponse(timeoutMs: number = 10000, expectTag: boolean = true): Promise<string> {
     if (!this.connection) throw new Error('Not connected');
 
-    // ✅ FIX: Call the async function immediately to get a Promise!
     return await withTimeout((async () => {
       let response = '';
-      const buffer = new Uint8Array(8192);
+      const buffer = new Uint8Array(65536); // 64KB buffer (was 8KB - TOO SMALL!)
 
       while (true) {
         const bytesRead = await this.connection!.read(buffer);
@@ -316,9 +315,9 @@ class IMAPClient {
           }
         }
 
-        // Prevent infinite loop
-        if (response.length > 1024 * 1024) { // 1MB max
-          console.warn('Response too large, truncating');
+        // Prevent infinite loop - increase max to 10MB for large mailboxes
+        if (response.length > 10 * 1024 * 1024) { // 10MB max
+          console.warn('Response too large, truncating at', response.length, 'bytes');
           break;
         }
         
@@ -329,9 +328,9 @@ class IMAPClient {
         }
       }
 
-      console.log('← Response length:', response.length, 'expectTag:', expectTag);
+      console.log('← Response length:', response.length, 'bytes, expectTag:', expectTag);
       return response;
-    })(), timeoutMs); // ✅ Note the () after the arrow function!
+    })(), timeoutMs);
   }
 }
 
