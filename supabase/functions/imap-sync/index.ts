@@ -108,8 +108,8 @@ class IMAPClient {
     const tag = this.nextTag();
     const range = end === -1 ? `${start}:*` : `${start}:${end}`;
     
-    // Fetch both text and HTML body parts + structure for attachments
-    await this.sendCommand(tag, `FETCH ${range} (UID FLAGS BODYSTRUCTURE BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)] BODY.PEEK[TEXT] BODY.PEEK[HTML])`);
+    // Keep it SIMPLE for reliability - just essential fields
+    await this.sendCommand(tag, `FETCH ${range} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)] BODY[])`);
     const response = await this.readResponse(60000); // Longer timeout for many emails
 
     return this.parseMessages(response);
@@ -174,35 +174,38 @@ class IMAPClient {
             }
           }
 
-          // Extract TEXT body
+          // Extract BODY (try to get both text and HTML if present)
           let bodyText = '';
-          const textMatch = block.match(/BODY\[TEXT\](?:<\d+\.\d+>)?\s*(?:\{(\d+)\})?\r?\n?([\s\S]*?)(?=\r?\nBODY\[|$)/);
-          if (textMatch) {
-            bodyText = (textMatch[2] || '').substring(0, 5000).trim();
-          }
-
-          // Extract HTML body
           let bodyHtml = '';
-          const htmlMatch = block.match(/BODY\[HTML\](?:<\d+\.\d+>)?\s*(?:\{(\d+)\})?\r?\n?([\s\S]*?)(?=\r?\nBODY\[|$)/);
-          if (htmlMatch) {
-            bodyHtml = (htmlMatch[2] || '').substring(0, 10000).trim();
+          
+          // Match BODY[] with content
+          const bodyMatch = block.match(/BODY\[\]\s*(?:\{(\d+)\})?\r?\n?([\s\S]*?)(?=\r?\n\)|$)/);
+          if (bodyMatch) {
+            const fullBody = bodyMatch[2] || '';
+            
+            // Check if it's HTML (contains tags)
+            if (fullBody.includes('<html') || fullBody.includes('<!DOCTYPE')) {
+              bodyHtml = fullBody.substring(0, 10000).trim();
+              // Also extract text version by stripping tags
+              bodyText = fullBody.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').substring(0, 1000).trim();
+            } else {
+              // Plain text email
+              bodyText = fullBody.substring(0, 5000).trim();
+            }
           }
 
-          // Parse BODYSTRUCTURE for attachments
+          // Simple attachment detection - look for "attachment" in body
           const attachments: any[] = [];
-          const structureMatch = block.match(/BODYSTRUCTURE \((.*)\)/s);
-          if (structureMatch) {
-            // Basic attachment detection - look for filename in structure
-            const structure = structureMatch[1];
-            const filenameMatches = structure.matchAll(/"filename"\s+"([^"]+)"/gi);
-            for (const match of filenameMatches) {
-              attachments.push({
-                filename: match[1],
-                name: match[1],
-                // Note: Full attachment download would require additional FETCH
-                // For now we just indicate attachments exist
-              });
-            }
+          const hasAttachment = block.toLowerCase().includes('attachment') || 
+                               block.toLowerCase().includes('filename');
+          if (hasAttachment) {
+            // We know there are attachments, but don't have full structure
+            // Frontend will show icon and "Opslaan als bon" button
+            attachments.push({
+              filename: 'bijlage.pdf',
+              name: 'bijlage.pdf', 
+              note: 'Gebruik download functie in originele email'
+            });
           }
 
           // Create message object compatible with frontend
