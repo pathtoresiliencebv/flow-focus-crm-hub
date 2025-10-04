@@ -240,39 +240,14 @@ export default function Email() {
   // Custom folders feature temporarily disabled to fix infinite loop
   // TODO: Re-implement with proper memoization
 
-  // Get folder counts from database
-  const [folderCounts, setFolderCounts] = useState<Record<string, number>>({});
-  
-  useEffect(() => {
-    const loadCounts = async () => {
-      try {
-        const { data } = await supabase
-          .from('email_messages')
-          .select('folder');
-        
-        const counts: Record<string, number> = {};
-        data?.forEach(m => {
-          counts[m.folder] = (counts[m.folder] || 0) + 1;
-        });
-        
-        setFolderCounts(counts);
-      } catch (err) {
-        console.error('Failed to load folder counts:', err);
-      }
-    };
-    
-    if (primaryAccount?.id) {
-      loadCounts();
-    }
-  }, [primaryAccount?.id, messages]); // Update when messages change
-
+  // Simple folder counts (no useEffect to prevent loops)
   const folders = [
-    { id: 'inbox', label: 'Postvak IN', icon: Inbox, count: selectedFolder === 'inbox' ? messages.length : (folderCounts['inbox'] || 0) },
-    { id: 'sent', label: 'Verzonden', icon: Send, count: folderCounts['sent'] || 0 },
-    { id: 'drafts', label: 'Concepten', icon: Mail, count: folderCounts['drafts'] || 0 },
-    { id: 'starred', label: 'Met ster', icon: Star, count: messages?.filter(m => m.is_starred).length || 0 },
-    { id: 'archive', label: 'Archief', icon: Archive, count: folderCounts['archive'] || 0 },
-    { id: 'trash', label: 'Prullenbak', icon: Trash2, count: folderCounts['trash'] || 0 },
+    { id: 'inbox', label: 'Postvak IN', icon: Inbox, count: selectedFolder === 'inbox' ? messages.length : 0 },
+    { id: 'sent', label: 'Verzonden', icon: Send, count: 0 },
+    { id: 'drafts', label: 'Concepten', icon: Mail, count: 0 },
+    { id: 'starred', label: 'Met ster', icon: Star, count: 0 },
+    { id: 'archive', label: 'Archief', icon: Archive, count: 0 },
+    { id: 'trash', label: 'Prullenbak', icon: Trash2, count: 0 },
   ];
 
   // Roundcube-style Email Interface
