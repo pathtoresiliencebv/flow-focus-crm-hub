@@ -108,62 +108,110 @@ class IMAPClient {
     const tag = this.nextTag();
     const range = end === -1 ? `${start}:*` : `${start}:${end}`;
     
-    await this.sendCommand(tag, `FETCH ${range} (UID FLAGS ENVELOPE BODY.PEEK[HEADER] BODY.PEEK[TEXT])`);
-    const response = await this.readResponse(30000); // Longer timeout for fetching
+    // Simplified FETCH - only get essential fields that ALWAYS parse correctly
+    await this.sendCommand(tag, `FETCH ${range} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)] BODY.PEEK[TEXT]<0.500>)`);
+    const response = await this.readResponse(60000); // Longer timeout for many emails
 
     return this.parseMessages(response);
   }
 
   private parseMessages(response: string): any[] {
     const messages: any[] = [];
-    const messageBlocks = response.split(/\r?\n\* \d+ FETCH/).slice(1);
+    
+    try {
+      // Split into individual FETCH responses
+      const messageBlocks = response.split(/\r?\n\* \d+ FETCH/).slice(1);
+      console.log(`📦 Parsing ${messageBlocks.length} message blocks...`);
 
-    for (const block of messageBlocks) {
-      try {
-        const uidMatch = block.match(/UID (\d+)/);
-        const flagsMatch = block.match(/FLAGS \((.*?)\)/);
-        const envelopeMatch = block.match(/ENVELOPE \((.*?)\)/s);
-
-        if (!uidMatch) continue;
-
-        const uid = parseInt(uidMatch[1]);
-        const flags = flagsMatch ? flagsMatch[1].split(' ') : [];
+      for (let i = 0; i < messageBlocks.length; i++) {
+        const block = messageBlocks[i];
         
-        // Parse envelope (simplified)
-        let from = 'Unknown';
-        let subject = '(No subject)';
-        let date = new Date().toISOString();
-
-        if (envelopeMatch) {
-          const envelope = envelopeMatch[1];
-          // Very basic envelope parsing - in production use a proper library
-          const parts = envelope.split('" "');
-          if (parts.length > 2) {
-            date = parts[0].replace(/"/g, '');
-            subject = parts[1].replace(/"/g, '');
+        try {
+          // Extract UID (REQUIRED)
+          const uidMatch = block.match(/UID (\d+)/);
+          if (!uidMatch) {
+            console.warn(`⚠️ Message ${i + 1}: No UID found, skipping`);
+            continue;
           }
-        }
+          const uid = parseInt(uidMatch[1]);
 
-        // Extract body (simplified)
-        const bodyMatch = block.match(/BODY\[TEXT\] \{(\d+)\}\r?\n([\s\S]*)/);
-        let body = '';
-        if (bodyMatch) {
-          body = bodyMatch[2].substring(0, parseInt(bodyMatch[1]));
-        }
+          // Extract FLAGS
+          const flagsMatch = block.match(/FLAGS \(([^\)]*)\)/);
+          const flags = flagsMatch ? flagsMatch[1].split(' ').filter(f => f) : [];
 
-        messages.push({
-          uid,
-          flags,
-          from,
-          subject,
-          date,
-          body: body.substring(0, 500), // Limit body size
-          isRead: flags.includes('\\Seen'),
-          isStarred: flags.includes('\\Flagged'),
-        });
-      } catch (error) {
-        console.error('Error parsing message:', error);
+          // Extract FROM header (robust)
+          let from = 'Onbekend';
+          const fromMatch = block.match(/From:\s*([^\r\n]+)/i);
+          if (fromMatch) {
+            from = fromMatch[1].trim();
+            // Extract email from "Name <email>" format
+            const emailMatch = from.match(/<([^>]+)>/);
+            if (emailMatch) {
+              from = emailMatch[1];
+            }
+          }
+
+          // Extract SUBJECT header (robust)
+          let subject = '(Geen onderwerp)';
+          const subjectMatch = block.match(/Subject:\s*([^\r\n]+)/i);
+          if (subjectMatch) {
+            subject = subjectMatch[1].trim();
+            // Decode if encoded (=?UTF-8?...)
+            if (subject.includes('=?')) {
+              // Basic decode - remove encoding markers
+              subject = subject.replace(/=\?[^?]+\?[BQ]\?([^?]+)\?=/gi, '$1');
+            }
+          }
+
+          // Extract DATE header
+          let date = new Date().toISOString();
+          const dateMatch = block.match(/Date:\s*([^\r\n]+)/i);
+          if (dateMatch) {
+            try {
+              date = new Date(dateMatch[1].trim()).toISOString();
+            } catch {
+              // Keep default if date parsing fails
+            }
+          }
+
+          // Extract BODY (first 500 chars)
+          let body = '';
+          const bodyMatch = block.match(/BODY\[TEXT\](?:<\d+\.\d+>)?\s*(?:\{(\d+)\})?\r?\n?([\s\S]*)/);
+          if (bodyMatch) {
+            const bodyText = bodyMatch[2] || '';
+            body = bodyText.substring(0, 500).trim();
+          }
+
+          // Create message object compatible with frontend
+          messages.push({
+            id: `${uid}`,
+            uid,
+            flags,
+            from_email: from,
+            to_email: [], // Not fetched for performance
+            subject,
+            date,
+            body_text: body,
+            body_html: null,
+            status: flags.includes('\\Seen') ? 'read' : 'unread',
+            is_starred: flags.includes('\\Flagged'),
+            folder: 'inbox',
+            received_at: date,
+            external_message_id: `uid:${uid}`,
+          });
+
+          if (i < 5 || i % 50 === 0) {
+            console.log(`✅ Parsed message ${i + 1}/${messageBlocks.length}: ${subject.substring(0, 40)}`);
+          }
+        } catch (error) {
+          console.error(`❌ Error parsing message ${i + 1}:`, error);
+          // Continue with next message instead of failing completely
+        }
       }
+
+      console.log(`✅ Successfully parsed ${messages.length}/${messageBlocks.length} messages`);
+    } catch (error) {
+      console.error('❌ Fatal parsing error:', error);
     }
 
     return messages;
