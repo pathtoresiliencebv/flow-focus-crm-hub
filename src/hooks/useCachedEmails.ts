@@ -116,16 +116,39 @@ export const useCachedEmails = () => {
 
       console.log('✅ Live emails fetched:', data);
 
-      // NO database storage - pure LIVE like Roundcube!
-      // Just show messages directly from IMAP
-      
-      console.log('📧 Displaying', data.messages?.length || 0, 'LIVE messages (no database)');
+      // Save to database for persistence (delete/star must work!)
+      if (data.messages && data.messages.length > 0) {
+        console.log('💾 Saving', data.messages.length, 'emails to database...');
+        
+        const { data: userData } = await supabase.auth.getUser();
+        
+        const messagesToSave = data.messages.map((m: any) => ({
+          id: m.id || `uid:${m.uid}`,
+          user_id: userData.user?.id,
+          direction: 'inbound',
+          from_email: m.from_email,
+          to_email: Array.isArray(m.to_email) ? m.to_email : [],
+          subject: m.subject || '(Geen onderwerp)',
+          body_text: m.body_text,
+          body_html: m.body_html,
+          attachments: m.attachments,
+          status: m.status || 'unread',
+          is_starred: m.is_starred || false,
+          folder: 'inbox',
+          received_at: m.received_at || m.date,
+          external_message_id: m.external_message_id,
+        }));
+        
+        await supabase.from('email_messages').upsert(messagesToSave, {
+          onConflict: 'id',
+        });
+      }
 
       // Sort by date DESC (newest first)
       const sortedMessages = (data.messages || []).sort((a: any, b: any) => {
         const dateA = new Date(a.received_at || a.date).getTime();
         const dateB = new Date(b.received_at || b.date).getTime();
-        return dateB - dateA; // Newest first
+        return dateB - dateA;
       });
 
       setState(prev => ({

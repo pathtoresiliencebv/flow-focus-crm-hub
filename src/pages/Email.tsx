@@ -49,33 +49,69 @@ export default function Email() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  // Email actions - work on in-memory state (LIVE emails)
-  const handleStarToggle = (messageId: string, currentlyStarred: boolean) => {
-    // Update in-memory state immediately
-    const updatedMessages = messages.map(m => 
-      m.id === messageId ? { ...m, is_starred: !currentlyStarred } : m
-    );
-    
-    // Force re-render by updating parent (hack but works for LIVE mode)
-    window.location.reload(); // Simple reload to see updated star
-    
-    toast({
-      title: currentlyStarred ? "Ster verwijderd" : "Met ster gemarkeerd",
-      description: "Let op: Stars zijn niet persistent in LIVE mode",
-    });
+  // Email actions - work on database
+  const handleStarToggle = async (messageId: string, currentlyStarred: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('email_messages')
+        .update({ is_starred: !currentlyStarred })
+        .eq('id', messageId);
+      
+      if (error) throw error;
+      
+      // Reload emails to show updated state
+      if (primaryAccount?.id) {
+        if (selectedFolder === 'inbox') {
+          await syncEmails(primaryAccount.id, { maxMessages: 200 });
+        } else {
+          await fetchEmails(primaryAccount.id, selectedFolder);
+        }
+      }
+      
+      toast({
+        title: currentlyStarred ? "Ster verwijderd" : "Met ster gemarkeerd",
+      });
+    } catch (err: any) {
+      toast({
+        title: "Fout",
+        description: err.message,
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDelete = (messageId: string) => {
-    // Simple: Just remove from view (LIVE mode, not persistent)
-    setSelectedThread(null);
-    
-    // Filter out deleted message
-    // This is temporary until page refresh
-    
-    toast({
-      title: "Email verborgen",
-      description: "Email verborgen (refresh om terug te zien - LIVE mode)",
-    });
+  const handleDelete = async (messageId: string) => {
+    try {
+      // Move to trash folder
+      const { error } = await supabase
+        .from('email_messages')
+        .update({ folder: 'trash' })
+        .eq('id', messageId);
+      
+      if (error) throw error;
+      
+      setSelectedThread(null);
+      
+      // Reload current folder
+      if (primaryAccount?.id) {
+        if (selectedFolder === 'inbox') {
+          await syncEmails(primaryAccount.id, { maxMessages: 200 });
+        } else {
+          await fetchEmails(primaryAccount.id, selectedFolder);
+        }
+      }
+      
+      toast({
+        title: "Email verwijderd",
+        description: "Email verplaatst naar prullenbak",
+      });
+    } catch (err: any) {
+      toast({
+        title: "Fout bij verwijderen",
+        description: err.message,
+        variant: "destructive",
+      });
+    }
   };
 
   // Filter out old accounts without SMTP/IMAP configuration
