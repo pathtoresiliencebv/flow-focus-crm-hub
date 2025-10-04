@@ -7,6 +7,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { decryptPassword } from '../_shared/emailEncryption.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -300,8 +301,8 @@ serve(async (req) => {
 
     console.log('📧 Sending email from:', account.email_address);
 
-    // Decrypt password (basic for now - use actual decryption in prod)
-    const smtpPassword = account.smtp_password;
+    // Decrypt password using AES-256-GCM
+    const smtpPassword = await decryptPassword(account.smtp_password);
 
     // Connect to SMTP
     const smtp = new SMTPClient();

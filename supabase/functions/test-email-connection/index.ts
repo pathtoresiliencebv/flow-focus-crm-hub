@@ -7,7 +7,6 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts';
 
 // CORS headers
 const corsHeaders = {
@@ -54,59 +53,102 @@ serve(async (req) => {
         host: requestData.smtp.host,
         port: requestData.smtp.port,
         username: requestData.smtp.username,
+        encryption: requestData.smtp.encryption,
       });
 
       try {
-        const smtpClient = new SMTPClient({
-          connection: {
+        // Use basic TCP/TLS connection test
+        let connection: Deno.Conn;
+        
+        // For STARTTLS (port 587), start with plain connection
+        if (requestData.smtp.port === 587 || requestData.smtp.encryption === 'tls') {
+          console.log('🔓 Testing SMTP with STARTTLS on port 587...');
+          connection = await Deno.connect({
             hostname: requestData.smtp.host,
             port: requestData.smtp.port,
-            tls: requestData.smtp.encryption !== 'none',
-            auth: {
-              username: requestData.smtp.username,
-              password: requestData.smtp.password,
-            },
-          },
-        });
-
-        // SMTPClient connects automatically when sending
-        // No need to call connect() explicitly
-        
-        // Optionally send a test email
-        if (requestData.testEmail) {
-          await smtpClient.send({
-            from: requestData.smtp.username,
-            to: requestData.testEmail,
-            subject: '✅ SMTP Test Email - Connection Successful',
-            content: 'This is a test email sent from your CRM system.\n\nYour SMTP configuration is working correctly!',
-            html: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #d9230f;">✅ SMTP Test Successful!</h2>
-                <p>This is a test email sent from your <strong>Flow Focus CRM</strong> system.</p>
-                <p>Your SMTP configuration is working correctly!</p>
-                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-                <p style="color: #666; font-size: 12px;">
-                  Sent on: ${new Date().toLocaleString()}<br>
-                  From: ${requestData.smtp.username}<br>
-                  Server: ${requestData.smtp.host}:${requestData.smtp.port}
-                </p>
-              </div>
-            `,
+          }) as Deno.TcpConn;
+          
+          // Read greeting
+          const buffer = new Uint8Array(1024);
+          const bytesRead = await connection.read(buffer);
+          const greeting = new TextDecoder().decode(buffer.subarray(0, bytesRead || 0));
+          console.log('SMTP greeting:', greeting.substring(0, 100));
+          
+          if (!greeting.startsWith('220')) {
+            throw new Error('Invalid SMTP greeting');
+          }
+          
+          // Send EHLO
+          await connection.write(new TextEncoder().encode('EHLO localhost\r\n'));
+          const ehloBuffer = new Uint8Array(2048);
+          const ehloBytes = await connection.read(ehloBuffer);
+          const ehloResponse = new TextDecoder().decode(ehloBuffer.subarray(0, ehloBytes || 0));
+          console.log('EHLO response:', ehloResponse.substring(0, 100));
+          
+          // Send STARTTLS
+          await connection.write(new TextEncoder().encode('STARTTLS\r\n'));
+          const tlsBuffer = new Uint8Array(1024);
+          const tlsBytes = await connection.read(tlsBuffer);
+          const tlsResponse = new TextDecoder().decode(tlsBuffer.subarray(0, tlsBytes || 0));
+          console.log('STARTTLS response:', tlsResponse.substring(0, 100));
+          
+          if (!tlsResponse.startsWith('220')) {
+            throw new Error('STARTTLS not supported or failed');
+          }
+          
+          // Upgrade to TLS
+          const tlsConn = await Deno.startTls(connection, {
+            hostname: requestData.smtp.host,
           });
-          console.log('✅ Test email sent successfully');
+          connection = tlsConn;
+          
+          // Send EHLO again after TLS
+          await connection.write(new TextEncoder().encode('EHLO localhost\r\n'));
+          const ehlo2Buffer = new Uint8Array(2048);
+          await connection.read(ehlo2Buffer);
+          
+          console.log('✅ SMTP STARTTLS connection successful');
+        } else if (requestData.smtp.encryption === 'ssl' || requestData.smtp.port === 465) {
+          // Direct TLS connection (port 465)
+          console.log('🔐 Testing SMTP with direct TLS on port 465...');
+          connection = await Deno.connectTls({
+            hostname: requestData.smtp.host,
+            port: requestData.smtp.port,
+          });
+          
+          const buffer = new Uint8Array(1024);
+          const bytesRead = await connection.read(buffer);
+          const greeting = new TextDecoder().decode(buffer.subarray(0, bytesRead || 0));
+          
+          if (!greeting.startsWith('220')) {
+            throw new Error('Invalid SMTP greeting');
+          }
+          
+          console.log('✅ SMTP SSL connection successful');
         } else {
-          // If no test email, just try to connect by sending a minimal NOOP command
-          // Actually, we'll skip this and just report success if no error occurred
-          console.log('✅ SMTP client configured successfully (no test email sent)');
+          // Plain connection (no encryption)
+          console.log('🔓 Testing SMTP without encryption...');
+          connection = await Deno.connect({
+            hostname: requestData.smtp.host,
+            port: requestData.smtp.port,
+          }) as Deno.TcpConn;
+          
+          const buffer = new Uint8Array(1024);
+          const bytesRead = await connection.read(buffer);
+          const greeting = new TextDecoder().decode(buffer.subarray(0, bytesRead || 0));
+          
+          if (!greeting.startsWith('220')) {
+            throw new Error('Invalid SMTP greeting');
+          }
+          
+          console.log('✅ SMTP plain connection successful');
         }
-
-        await smtpClient.close();
+        
+        connection.close();
 
         results.smtp = {
           success: true,
-          message: requestData.testEmail 
-            ? 'SMTP connection successful (test email sent)' 
-            : 'SMTP configuration valid (send test email to fully verify)',
+          message: 'SMTP connection successful',
           details: {
             host: requestData.smtp.host,
             port: requestData.smtp.port,
