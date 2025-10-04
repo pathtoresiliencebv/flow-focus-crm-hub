@@ -241,10 +241,22 @@ class IMAPClient {
       }
 
       console.log(`✅ Successfully parsed ${messages.length}/${messageBlocks.length} messages`);
+      
+      // Debug: Log first message to verify structure
+      if (messages.length > 0) {
+        console.log('📧 Sample message:', {
+          subject: messages[0].subject,
+          from: messages[0].from_email,
+          hasHtml: !!messages[0].body_html,
+          hasText: !!messages[0].body_text,
+          hasAttachments: !!messages[0].attachments,
+        });
+      }
     } catch (error) {
       console.error('❌ Fatal parsing error:', error);
     }
 
+    console.log(`📦 Returning ${messages.length} total messages to frontend`);
     return messages;
   }
 
