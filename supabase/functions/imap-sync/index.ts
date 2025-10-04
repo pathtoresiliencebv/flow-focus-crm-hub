@@ -108,8 +108,8 @@ class IMAPClient {
     const tag = this.nextTag();
     const range = end === -1 ? `${start}:*` : `${start}:${end}`;
     
-    // Simplified FETCH - only get essential fields that ALWAYS parse correctly
-    await this.sendCommand(tag, `FETCH ${range} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)] BODY.PEEK[TEXT]<0.500>)`);
+    // KEEP SIMPLE QUERY - just add BODYSTRUCTURE for attachment detection
+    await this.sendCommand(tag, `FETCH ${range} (UID FLAGS BODYSTRUCTURE BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)] BODY.PEEK[TEXT]<0.500>)`);
     const response = await this.readResponse(60000); // Longer timeout for many emails
 
     return this.parseMessages(response);
@@ -182,6 +182,22 @@ class IMAPClient {
             body = bodyText.substring(0, 500).trim();
           }
 
+          // Simple attachment detection from BODYSTRUCTURE
+          const attachments: any[] = [];
+          const structureMatch = block.match(/BODYSTRUCTURE \(([^\)]+\))/);
+          if (structureMatch) {
+            const structure = structureMatch[1];
+            // Look for "name" or "filename" in structure (indicates attachment)
+            if (structure.includes('"name"') || structure.includes('"filename"')) {
+              // Extract filename if possible
+              const nameMatch = structure.match(/(?:"name"|"filename")\s+"([^"]+)"/i);
+              attachments.push({
+                filename: nameMatch ? nameMatch[1] : 'bijlage',
+                name: nameMatch ? nameMatch[1] : 'bijlage',
+              });
+            }
+          }
+
           // Create message object compatible with frontend
           messages.push({
             id: `${uid}`,
@@ -193,6 +209,7 @@ class IMAPClient {
             date,
             body_text: body,
             body_html: null,
+            attachments: attachments.length > 0 ? attachments : null,
             status: flags.includes('\\Seen') ? 'read' : 'unread',
             is_starred: flags.includes('\\Flagged'),
             folder: 'inbox',
