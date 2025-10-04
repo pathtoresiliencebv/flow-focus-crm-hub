@@ -70,12 +70,13 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
   ];
 
   // Communication links
-  const communicationLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null}[] = [
+  const communicationLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null, href?: string}[] = [
     {
       label: "Postvak IN",
       icon: <Mail className="h-5 w-5" />,
       key: "email",
-      permission: "users_view", // Alleen voor administratie (users_view is alleen voor Admin/Administratie)
+      href: "/webmail", // Direct link to standalone webmail page
+      permission: null, // Everyone can access email
     },
     {
       label: "Chat",

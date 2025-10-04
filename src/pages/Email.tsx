@@ -412,12 +412,22 @@ export default function Email() {
 
                     {/* Email Body */}
                     <div className="prose prose-sm max-w-none">
-                      <div 
-                        className="text-gray-700 whitespace-pre-wrap break-words"
-                        style={{ wordBreak: 'break-word' }}
-                      >
-                        {selectedMessage.body_text || selectedMessage.body_html || '(Geen inhoud)'}
-                      </div>
+                      {selectedMessage.body_html ? (
+                        // Render HTML emails properly
+                        <div 
+                          className="text-gray-700"
+                          dangerouslySetInnerHTML={{ __html: selectedMessage.body_html }}
+                          style={{ wordBreak: 'break-word' }}
+                        />
+                      ) : (
+                        // Plain text emails
+                        <div 
+                          className="text-gray-700 whitespace-pre-wrap break-words"
+                          style={{ wordBreak: 'break-word' }}
+                        >
+                          {selectedMessage.body_text || '(Geen inhoud)'}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

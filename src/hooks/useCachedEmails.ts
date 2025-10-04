@@ -68,15 +68,28 @@ export const useCachedEmails = () => {
         return data;
       }
       
-      // For INBOX: Don't auto-fetch - user must click Synchroniseren
-      console.log('📭 Inbox ready - click Synchroniseren to load emails');
+      // For INBOX: Try to load from database first (cached), then user can sync
+      console.log('💾 Loading inbox from database (cached)...');
+      
+      const { data, error } = await supabase
+        .from('email_messages')
+        .select('*')
+        .eq('folder', 'inbox')
+        .order('received_at', { ascending: false })
+        .limit(200);
+      
+      if (error) {
+        console.error('Database load failed:', error);
+      }
+      
       setState({
-        messages: [],
+        messages: data || [],
         loading: false,
         error: null,
       });
       
-      return [];
+      console.log('✅ Loaded', data?.length || 0, 'cached inbox emails (click Synchroniseren for latest)');
+      return data || [];
     } catch (err: any) {
       console.error('❌ Error fetching emails:', err);
       setState(prev => ({ ...prev, error: err.message, loading: false }));
@@ -122,23 +135,50 @@ export const useCachedEmails = () => {
 
       console.log('✅ Live emails fetched:', data);
 
-      // HYBRID: Save SENT emails to database for history
-      const sentMessages = (data.messages || []).filter((m: any) => 
-        m.folder === 'sent' || m.status === 'sent'
+      // HYBRID: Save ALL inbox emails to database (persistent across refreshes)
+      const inboxMessages = (data.messages || []).filter((m: any) => 
+        m.folder === 'inbox' || !m.folder
       );
       
-      if (sentMessages.length > 0) {
-        console.log('💾 Saving', sentMessages.length, 'sent emails to database...');
-        await supabase.from('email_messages').upsert(sentMessages, {
-          onConflict: 'external_message_id',
+      if (inboxMessages.length > 0) {
+        console.log('💾 Saving', inboxMessages.length, 'inbox emails to database for persistence...');
+        
+        // Get current user
+        const { data: userData } = await supabase.auth.getUser();
+        
+        // Prepare messages for database
+        const messagesToSave = inboxMessages.map((m: any) => ({
+          ...m,
+          user_id: userData.user?.id,
+          id: m.id || `imap:${m.uid}`,
+          // Ensure all required fields exist
+          direction: m.direction || 'inbound',
+          from_email: m.from_email || m.from || 'unknown',
+          to_email: Array.isArray(m.to_email) ? m.to_email : [m.to_email].filter(Boolean),
+          subject: m.subject || '(Geen onderwerp)',
+          status: m.status || 'unread',
+          folder: 'inbox',
+        }));
+        
+        await supabase.from('email_messages').upsert(messagesToSave, {
+          onConflict: 'id',
+          ignoreDuplicates: false,
         });
+        console.log('✅ Emails saved to database - will persist after refresh');
       }
 
       // Update state (append if loadMore, replace otherwise)
+      // Sort by date DESC (newest first)
+      const sortedMessages = (data.messages || []).sort((a: any, b: any) => {
+        const dateA = new Date(a.received_at || a.date).getTime();
+        const dateB = new Date(b.received_at || b.date).getTime();
+        return dateB - dateA; // Newest first
+      });
+
       setState(prev => ({
         messages: loadMore 
-          ? [...prev.messages, ...(data.messages || [])]
-          : data.messages || [],
+          ? [...prev.messages, ...sortedMessages]
+          : sortedMessages,
         loading: false,
         error: null,
       }));
