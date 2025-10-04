@@ -16,9 +16,18 @@ import {
   Paperclip,
   MoreVertical,
   Loader2,
-  Receipt
+  Receipt,
+  Reply,
+  Forward,
+  StarOff
 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
 import { cn } from '@/lib/utils';
 import { useEmailAccounts } from '@/hooks/useEmailAccounts';
 import { useCachedEmails } from '@/hooks/useCachedEmails';
@@ -39,6 +48,63 @@ export default function Email() {
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
   const isMobile = useIsMobile();
+
+  // Email actions
+  const handleStarToggle = async (messageId: string, currentlyStarred: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('email_messages')
+        .update({ is_starred: !currentlyStarred })
+        .eq('id', messageId);
+      
+      if (error) throw error;
+      
+      // Update local state
+      if (primaryAccount?.id) {
+        await fetchEmails(primaryAccount.id, selectedFolder);
+      }
+      
+      toast({
+        title: currentlyStarred ? "Ster verwijderd" : "Met ster gemarkeerd",
+      });
+    } catch (err: any) {
+      toast({
+        title: "Fout",
+        description: err.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = async (messageId: string) => {
+    try {
+      // Move to trash instead of deleting
+      const { error } = await supabase
+        .from('email_messages')
+        .update({ folder: 'trash', status: 'archived' })
+        .eq('id', messageId);
+      
+      if (error) throw error;
+      
+      // Update local state
+      if (primaryAccount?.id) {
+        await fetchEmails(primaryAccount.id, selectedFolder);
+      }
+      
+      setSelectedThread(null);
+      
+      toast({
+        title: "Email verwijderd",
+        description: "Email verplaatst naar prullenbak",
+      });
+    } catch (err: any) {
+      toast({
+        title: "Fout bij verwijderen",
+        description: err.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   // Filter out old accounts without SMTP/IMAP configuration
   const validAccounts = accounts.filter(acc => acc.smtp_host && acc.imap_host);
@@ -307,15 +373,16 @@ export default function Email() {
                   const hasAttachments = message.attachments && message.attachments.length > 0;
                   
                   return (
-                  <div
-                    key={message.id}
-                    onClick={() => setSelectedThread(message.id)}
-                    className={cn(
-                      "p-3 border-b cursor-pointer transition-colors hover:bg-gray-50",
-                      selectedThread === message.id ? "bg-blue-50" : "",
-                      message.status === 'unread' ? "bg-blue-50/30" : ""
-                    )}
-                  >
+                  <ContextMenu key={message.id}>
+                    <ContextMenuTrigger asChild>
+                      <div
+                        onClick={() => setSelectedThread(message.id)}
+                        className={cn(
+                          "p-3 border-b cursor-pointer transition-colors hover:bg-gray-50",
+                          selectedThread === message.id ? "bg-blue-50" : "",
+                          message.status === 'unread' ? "bg-blue-50/30" : ""
+                        )}
+                      >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -355,6 +422,47 @@ export default function Email() {
                       </div>
                     </div>
                   </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem
+                        onClick={() => {
+                          setReplyTo({
+                            to: message.from_email,
+                            subject: message.subject?.startsWith('Re:') ? message.subject : `Re: ${message.subject}`,
+                            messageId: message.external_message_id,
+                          });
+                          setComposerOpen(true);
+                        }}
+                      >
+                        <Reply className="h-4 w-4 mr-2" />
+                        Beantwoorden
+                      </ContextMenuItem>
+                      <ContextMenuItem
+                        onClick={() => {
+                          toast({ title: "Forward", description: "Doorsturen functie komt binnenkort" });
+                        }}
+                      >
+                        <Forward className="h-4 w-4 mr-2" />
+                        Doorsturen
+                      </ContextMenuItem>
+                      <ContextMenuItem
+                        onClick={() => handleStarToggle(message.id, message.is_starred)}
+                      >
+                        {message.is_starred ? (
+                          <><StarOff className="h-4 w-4 mr-2" />Ster verwijderen</>
+                        ) : (
+                          <><Star className="h-4 w-4 mr-2" />Met ster markeren</>
+                        )}
+                      </ContextMenuItem>
+                      <ContextMenuItem
+                        onClick={() => handleDelete(message.id)}
+                        className="text-red-600"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Verwijderen
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                   );
                 })}
                 
@@ -417,17 +525,28 @@ export default function Email() {
                       variant="ghost" 
                       size="icon"
                       className={selectedMessage.is_starred ? "text-yellow-500" : ""}
+                      onClick={() => handleStarToggle(selectedMessage.id, selectedMessage.is_starred)}
+                      title={selectedMessage.is_starred ? "Ster verwijderen" : "Met ster markeren"}
                     >
                       <Star className={cn("h-4 w-4", selectedMessage.is_starred && "fill-yellow-500")} />
                     </Button>
-                    <Button variant="ghost" size="icon">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => {
+                        toast({ title: "Archiveren", description: "Archief functie komt binnenkort" });
+                      }}
+                      title="Archiveren"
+                    >
                       <Archive className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <MoreVertical className="h-4 w-4" />
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleDelete(selectedMessage.id)}
+                      title="Verwijderen"
+                    >
+                      <Trash2 className="h-4 w-4 text-red-600" />
                     </Button>
                   </div>
                 </div>
