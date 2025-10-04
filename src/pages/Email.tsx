@@ -42,12 +42,21 @@ export default function Email() {
   // ✅ USE CACHED EMAILS from database (synced from IMAP)
   const { messages, loading: messagesLoading, fetchEmails, syncEmails, getFolders } = useCachedEmails();
 
-  // Auto-fetch emails from cache when account changes
+  // Auto-fetch emails when account or folder changes
   useEffect(() => {
     if (primaryAccount?.id) {
-      fetchEmails(primaryAccount.id, selectedFolder).catch(err => {
-        console.error('Failed to fetch cached emails on mount:', err);
-      });
+      // Auto-load emails for current folder
+      if (selectedFolder === 'inbox') {
+        // For inbox: fetch cached first, then optionally sync
+        fetchEmails(primaryAccount.id, selectedFolder).catch(err => {
+          console.error('Failed to fetch cached emails:', err);
+        });
+      } else {
+        // For other folders: always fetch from database
+        fetchEmails(primaryAccount.id, selectedFolder).catch(err => {
+          console.error('Failed to fetch folder emails:', err);
+        });
+      }
     }
   }, [primaryAccount?.id, selectedFolder, fetchEmails]);
 
@@ -253,9 +262,25 @@ export default function Email() {
             {/* Email Messages (LIVE from IMAP) */}
             <div className="flex-1 overflow-y-auto">
               {messagesLoading ? (
-                <div className="p-8 text-center text-gray-500">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-300 mx-auto mb-2"></div>
-                  <p className="text-sm">Emails laden...</p>
+                // Loading skeletons (placeholders)
+                <div className="space-y-0">
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                    <div key={i} className="p-3 border-b animate-pulse">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-gray-200"></div>
+                            <div className="h-4 w-32 bg-gray-200 rounded"></div>
+                          </div>
+                          <div className="h-4 w-48 bg-gray-200 rounded"></div>
+                          <div className="h-3 w-64 bg-gray-100 rounded"></div>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          <div className="h-3 w-12 bg-gray-200 rounded"></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : messages && messages.length > 0 ? (
                 <>
