@@ -15,7 +15,8 @@ import {
   ChevronLeft,
   Paperclip,
   MoreVertical,
-  Loader2
+  Loader2,
+  Receipt
 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
@@ -629,7 +630,7 @@ export default function Email() {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="border-t p-4 flex gap-2">
+                <div className="border-t p-4 flex gap-2 flex-wrap">
                   <Button 
                     className="bg-red-600 hover:bg-red-700"
                     onClick={() => {
@@ -676,6 +677,54 @@ export default function Email() {
                   >
                     Doorsturen
                   </Button>
+
+                  {/* Save as Receipt button - only if email has attachments */}
+                  {selectedMessage.attachments && selectedMessage.attachments.length > 0 && (
+                    <Button
+                      variant="outline"
+                      className="ml-auto bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                      onClick={async () => {
+                        try {
+                          // Get current user
+                          const { data: userData } = await supabase.auth.getUser();
+                          
+                          // Create receipt for each attachment
+                          const receipts = selectedMessage.attachments.map((attachment: any) => ({
+                            user_id: userData.user?.id,
+                            email_from: selectedMessage.from_email,
+                            subject: selectedMessage.subject,
+                            description: `Email van ${selectedMessage.from_email} - ${selectedMessage.subject}`,
+                            receipt_file_url: attachment.url || attachment.storage_url,
+                            receipt_file_name: attachment.filename || attachment.name || 'bijlage.pdf',
+                            receipt_file_type: attachment.mime_type || 'application/pdf',
+                            status: 'pending',
+                            email_message_id: selectedMessage.external_message_id,
+                            category: 'email',
+                          }));
+
+                          const { error } = await supabase
+                            .from('receipts')
+                            .insert(receipts);
+
+                          if (error) throw error;
+
+                          toast({
+                            title: "✅ Opgeslagen als bon",
+                            description: `${receipts.length} bijlage(n) opgeslagen als bonnetje (status: in behandeling)`,
+                          });
+                        } catch (err: any) {
+                          toast({
+                            title: "Fout bij opslaan bon",
+                            description: err.message,
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                    >
+                      <Receipt className="h-4 w-4 mr-2" />
+                      Opslaan als bon
+                    </Button>
+                  )}
                 </div>
               </>
             ) : (
