@@ -146,7 +146,7 @@ export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
   ];
 
   const communication = [
-    { key: "email", label: "E-mail", icon: <Mail className="h-5 w-5" />, permission: null },
+    { key: "email", label: "E-mail", icon: <Mail className="h-5 w-5" />, permission: null, href: "/webmail" },
     { key: "chat", label: "Chat", icon: <MessageCircle className="h-5 w-5" />, permission: null },
   ];
 
