@@ -582,22 +582,32 @@ export default function Email() {
 
                     {/* Email Body */}
                     <div className="prose prose-sm max-w-none">
-                      {selectedMessage.body_html ? (
-                        // Render HTML emails properly
-                        <div 
-                          className="text-gray-700"
-                          dangerouslySetInnerHTML={{ __html: selectedMessage.body_html }}
-                          style={{ wordBreak: 'break-word' }}
-                        />
-                      ) : (
-                        // Plain text emails
-                        <div 
-                          className="text-gray-700 whitespace-pre-wrap break-words"
-                          style={{ wordBreak: 'break-word' }}
-                        >
-                          {selectedMessage.body_text || '(Geen inhoud)'}
-                        </div>
-                      )}
+                      {(() => {
+                        // Check if body contains HTML
+                        const body = selectedMessage.body_html || selectedMessage.body_text || '';
+                        const isHtml = body.includes('<html') || body.includes('<!DOCTYPE') || body.includes('<div') || body.includes('<p>');
+                        
+                        if (isHtml) {
+                          // Render as HTML
+                          return (
+                            <div 
+                              className="text-gray-700"
+                              dangerouslySetInnerHTML={{ __html: body }}
+                              style={{ wordBreak: 'break-word' }}
+                            />
+                          );
+                        } else {
+                          // Render as plain text with line breaks
+                          return (
+                            <div 
+                              className="text-gray-700 whitespace-pre-wrap break-words"
+                              style={{ wordBreak: 'break-word' }}
+                            >
+                              {body || '(Geen inhoud)'}
+                            </div>
+                          );
+                        }
+                      })()}
                     </div>
 
                     {/* Attachments Section */}
