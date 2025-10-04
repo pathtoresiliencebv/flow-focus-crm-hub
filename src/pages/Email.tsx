@@ -36,7 +36,7 @@ import { EmailComposer } from '@/components/email/EmailComposer';
 import { EmailDebug } from '@/components/email/EmailDebug';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+// import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function Email() {
@@ -826,17 +826,25 @@ export default function Email() {
         />
       )}
 
-      {/* Debug Dialog */}
-      <Dialog open={showDebug} onOpenChange={setShowDebug}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>🔍 Email Debug Tool</DialogTitle>
-          </DialogHeader>
-          {primaryAccount && (
-            <EmailDebug accountId={primaryAccount.id} />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Debug Modal */}
+      {showDebug && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-4xl max-h-[80vh] overflow-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">🔍 Email Debug Tool</h2>
+              <button 
+                onClick={() => setShowDebug(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            {primaryAccount && (
+              <EmailDebug accountId={primaryAccount.id} />
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Custom folders dialog temporarily disabled */}
     </div>

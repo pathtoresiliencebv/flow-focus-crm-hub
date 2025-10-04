@@ -173,8 +173,8 @@ export const useCachedEmails = () => {
 
     console.log('✅ Live emails fetched:', data);
 
-      // Save to database for persistence (delete/star must work!)
-      if (data.messages && data.messages.length > 0) {
+    // Save to database for persistence (delete/star must work!)
+    if (data.messages && data.messages.length > 0) {
         console.log('💾 Saving', data.messages.length, 'emails to database...');
         
         const { data: userData } = await supabase.auth.getUser();

@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -8,7 +7,7 @@ interface EmailDebugProps {
   accountId: string;
 }
 
-export const EmailDebug: React.FC<EmailDebugProps> = ({ accountId }) => {
+export const EmailDebug = ({ accountId }: EmailDebugProps) => {
   const [debugResult, setDebugResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -61,11 +60,11 @@ export const EmailDebug: React.FC<EmailDebugProps> = ({ accountId }) => {
   };
 
   return (
-    <Card className="w-full max-w-2xl">
-      <CardHeader>
-        <CardTitle>🔍 Email Debug Tool</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="w-full max-w-2xl p-4 border rounded-lg bg-white">
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold">🔍 Email Debug Tool</h3>
+      </div>
+      <div className="space-y-4">
         <Button 
           onClick={runDebug} 
           disabled={loading}
@@ -82,7 +81,7 @@ export const EmailDebug: React.FC<EmailDebugProps> = ({ accountId }) => {
             </pre>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
