@@ -419,12 +419,18 @@ serve(async (req) => {
         : Math.max(1, mailboxInfo.exists - maxMessages + 1);  // Laatste 200 messages
       const end = mailboxInfo.exists;
 
+      console.log(`📊 Mailbox stats: exists=${mailboxInfo.exists}, recent=${mailboxInfo.recent}`);
+      console.log(`📊 Fetching range: ${start}:${end} (${end - start + 1} messages)`);
+
       let messages: any[] = [];
       
       if (end > 0) {
         messages = await imap.fetchMessages(start, end);
-        console.log(`📥 Fetched ${messages.length} messages (LIVE - not stored)`);
+        console.log(`📥 Parser returned ${messages.length} messages`);
+        console.log(`📦 Expected ~${end - start + 1} messages, got ${messages.length}`);
         syncedCount = messages.length;
+      } else {
+        console.log('⚠️ Mailbox is empty (exists=0)');
       }
 
       // Logout
