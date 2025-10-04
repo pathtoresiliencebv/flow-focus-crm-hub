@@ -37,21 +37,51 @@ export const useCachedEmails = () => {
   });
 
   /**
-   * Fetch emails LIVE from IMAP (called on component mount)
-   * For initial load - syncEmails() is called when user clicks refresh
+   * Fetch emails from database or IMAP depending on folder
+   * 
+   * @param accountId - Email account ID
+   * @param folder - Folder name (inbox, sent, drafts, etc.)
    */
   const fetchEmails = useCallback(async (accountId: string, folder: string = 'inbox') => {
-    // Don't auto-fetch on mount - user must click Synchroniseren
-    // This prevents hammering the IMAP server
-    console.log('📭 Ready to fetch emails - click Synchroniseren button');
+    setState(prev => ({ ...prev, loading: true, error: null }));
     
-    setState({
-      messages: [],
-      loading: false,
-      error: null,
-    });
-    
-    return [];
+    try {
+      // For SENT/DRAFTS/ARCHIVE folders: fetch from database
+      if (folder === 'sent' || folder === 'drafts' || folder === 'archive' || folder === 'trash') {
+        console.log('💾 Fetching', folder, 'emails from database...');
+        
+        const { data, error } = await supabase
+          .from('email_messages')
+          .select('*')
+          .eq('folder', folder)
+          .order('sent_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        setState({
+          messages: data || [],
+          loading: false,
+          error: null,
+        });
+        
+        console.log('✅ Loaded', data?.length || 0, 'emails from database');
+        return data;
+      }
+      
+      // For INBOX: Don't auto-fetch - user must click Synchroniseren
+      console.log('📭 Inbox ready - click Synchroniseren to load emails');
+      setState({
+        messages: [],
+        loading: false,
+        error: null,
+      });
+      
+      return [];
+    } catch (err: any) {
+      console.error('❌ Error fetching emails:', err);
+      setState(prev => ({ ...prev, error: err.message, loading: false }));
+      throw err;
+    }
   }, []);
 
   /**
