@@ -395,7 +395,11 @@ serve(async (req) => {
       if (mailboxInfo.exists === 0) continue;
 
       // Fetch ALL messages in this folder
-      const messages = await imap.fetchAllMessages(1, mailboxInfo.exists, folder);
+      // TEMP: Only fetch 10 messages to test
+      const maxToFetch = Math.min(10, mailboxInfo.exists);
+      console.log(`  🧪 TEST MODE: Fetching only ${maxToFetch} messages`);
+      
+      const messages = await imap.fetchAllMessages(1, maxToFetch, folder);
       console.log(`  ✅ Fetched ${messages.length} messages`);
 
       // Save to Supabase email_messages
