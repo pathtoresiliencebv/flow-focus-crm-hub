@@ -6,9 +6,8 @@
     "strictNullChecks": false,
     "strict": false,
     "useUnknownInCatchVariables": false,
-    "lib": ["deno.window"],
-    "types": [
-      "https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts"
-    ]
+    "lib": ["esnext", "dom"],
+    "skipLibCheck": true,
+    "types": []
   }
 }
