@@ -78,7 +78,7 @@ Location: UPDATE-TO-OX-SERVERS.sql
 
 UPDATE email_accounts SET
   imap_host = 'imap02.hostnet.nl',
-  imap_port = 1143,
+  imap_port = 143,
   smtp_host = 'smtp02.hostnet.nl',
   smtp_port = 25
 ```
@@ -110,7 +110,7 @@ ETA: 23:10
 2. Ga naar SQL Editor
 3. Open: UPDATE-TO-OX-SERVERS.sql
 4. Run de query
-5. ✅ Verify: imap02.hostnet.nl:1143
+5. ✅ Verify: imap02.hostnet.nl:143
 ```
 
 ### **Stap 2: Test Email Systeem**
