@@ -70,12 +70,11 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
   ];
 
   // Communication links
-  const communicationLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null, href?: string}[] = [
+  const communicationLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null}[] = [
     {
       label: "Postvak IN",
       icon: <Mail className="h-5 w-5" />,
       key: "email",
-      href: "/webmail", // Navigate to dedicated webmail page
       permission: null, // Everyone can access email
     },
     {
