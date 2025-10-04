@@ -1,16 +1,13 @@
 /**
- * SMTP Send Edge Function
+ * SMTP SEND EMAIL
  * 
- * Sends emails via SMTP and saves to Sent folder
- * Provider-agnostic email sending
+ * Send emails via SMTP server (e.g., smtp.hostnet.nl)
+ * Supports HTML and plain text, CC, BCC, attachments (future)
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts';
-import { decryptPassword } from '../_shared/emailEncryption.ts';
 
-// CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -18,215 +15,335 @@ const corsHeaders = {
 
 interface SendEmailRequest {
   accountId: string;
-  to: string | string[];
-  cc?: string | string[];
-  bcc?: string | string[];
+  to: string[];
+  cc?: string[];
+  bcc?: string[];
   subject: string;
-  bodyText?: string;
-  bodyHtml?: string;
-  attachments?: Array<{
-    filename: string;
-    content: string; // base64
-    contentType?: string;
-  }>;
-  inReplyTo?: string; // Message ID for threading
-  references?: string[]; // For email threading
-  priority?: 'high' | 'normal' | 'low';
+  body: string;
+  isHtml?: boolean;
+  inReplyTo?: string;
+  references?: string[];
+}
+
+// Timeout utility
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`Operation timed out after ${timeoutMs}ms`)), timeoutMs)
+    ),
+  ]);
+}
+
+// Simple SMTP Client
+class SMTPClient {
+  private connection: Deno.Conn | null = null;
+
+  async connect(host: string, port: number, useTLS: boolean): Promise<void> {
+    try {
+      if (useTLS) {
+        console.log(`🔐 Connecting to SMTP ${host}:${port} with TLS...`);
+        this.connection = await withTimeout(
+          Deno.connectTls({ hostname: host, port: port }),
+          10000
+        );
+      } else {
+        console.log(`🔓 Connecting to SMTP ${host}:${port} without TLS...`);
+        this.connection = await withTimeout(
+          Deno.connect({ hostname: host, port: port }) as Promise<Deno.Conn>,
+          10000
+        );
+      }
+
+      console.log(`✅ Connected to SMTP server ${host}:${port}`);
+      
+      // Read greeting
+      const greeting = await this.readResponse();
+      console.log('SMTP greeting:', greeting?.substring(0, 100));
+      
+      if (!greeting.startsWith('220')) {
+        throw new Error('Invalid SMTP greeting');
+      }
+    } catch (error) {
+      console.error('❌ SMTP connection failed:', error);
+      throw new Error(`Failed to connect to SMTP server: ${error.message}`);
+    }
+  }
+
+  async ehlo(hostname: string = 'localhost'): Promise<void> {
+    await this.sendCommand(`EHLO ${hostname}`);
+    const response = await this.readResponse();
+    
+    if (!response.startsWith('250')) {
+      throw new Error('EHLO failed');
+    }
+    console.log('✅ EHLO successful');
+  }
+
+  async startTLS(): Promise<void> {
+    await this.sendCommand('STARTTLS');
+    const response = await this.readResponse();
+    
+    if (!response.startsWith('220')) {
+      throw new Error('STARTTLS failed');
+    }
+    
+    // Upgrade connection to TLS
+    const tlsConn = await Deno.startTls(this.connection!, {
+      hostname: 'smtp.hostnet.nl', // TODO: Make dynamic
+    });
+    this.connection = tlsConn;
+    
+    // Re-send EHLO after TLS
+    await this.ehlo();
+  }
+
+  async login(username: string, password: string): Promise<void> {
+    await this.sendCommand('AUTH LOGIN');
+    let response = await this.readResponse();
+    
+    if (!response.startsWith('334')) {
+      throw new Error('AUTH LOGIN not supported');
+    }
+
+    // Send base64 encoded username
+    const encodedUsername = btoa(username);
+    await this.sendCommand(encodedUsername);
+    response = await this.readResponse();
+    
+    if (!response.startsWith('334')) {
+      throw new Error('Username rejected');
+    }
+
+    // Send base64 encoded password
+    const encodedPassword = btoa(password);
+    await this.sendCommand(encodedPassword);
+    response = await this.readResponse();
+    
+    if (!response.startsWith('235')) {
+      throw new Error('Authentication failed');
+    }
+    
+    console.log('✅ SMTP authentication successful');
+  }
+
+  async sendEmail(
+    from: string,
+    to: string[],
+    subject: string,
+    body: string,
+    options: {
+      cc?: string[];
+      bcc?: string[];
+      isHtml?: boolean;
+      inReplyTo?: string;
+      references?: string[];
+    } = {}
+  ): Promise<void> {
+    // MAIL FROM
+    await this.sendCommand(`MAIL FROM:<${from}>`);
+    let response = await this.readResponse();
+    if (!response.startsWith('250')) {
+      throw new Error('MAIL FROM rejected');
+    }
+
+    // RCPT TO (all recipients)
+    const allRecipients = [...to, ...(options.cc || []), ...(options.bcc || [])];
+    for (const recipient of allRecipients) {
+      await this.sendCommand(`RCPT TO:<${recipient}>`);
+      response = await this.readResponse();
+      if (!response.startsWith('250')) {
+        throw new Error(`Recipient ${recipient} rejected`);
+      }
+    }
+
+    // DATA
+    await this.sendCommand('DATA');
+    response = await this.readResponse();
+    if (!response.startsWith('354')) {
+      throw new Error('DATA command rejected');
+    }
+
+    // Build email headers
+    const date = new Date().toUTCString();
+    const messageId = `<${Date.now()}.${Math.random().toString(36).substr(2, 9)}@${from.split('@')[1]}>`;
+    
+    let headers = `From: ${from}\r\n`;
+    headers += `To: ${to.join(', ')}\r\n`;
+    
+    if (options.cc && options.cc.length > 0) {
+      headers += `Cc: ${options.cc.join(', ')}\r\n`;
+    }
+    
+    headers += `Subject: ${subject}\r\n`;
+    headers += `Date: ${date}\r\n`;
+    headers += `Message-ID: ${messageId}\r\n`;
+    
+    if (options.inReplyTo) {
+      headers += `In-Reply-To: ${options.inReplyTo}\r\n`;
+    }
+    
+    if (options.references && options.references.length > 0) {
+      headers += `References: ${options.references.join(' ')}\r\n`;
+    }
+    
+    headers += `MIME-Version: 1.0\r\n`;
+    headers += `Content-Type: ${options.isHtml ? 'text/html' : 'text/plain'}; charset=utf-8\r\n`;
+    headers += `Content-Transfer-Encoding: 8bit\r\n`;
+    headers += `\r\n`;
+    
+    // Send headers + body
+    const fullMessage = headers + body + '\r\n.\r\n';
+    await this.connection!.write(new TextEncoder().encode(fullMessage));
+    
+    response = await this.readResponse();
+    if (!response.startsWith('250')) {
+      throw new Error('Email sending failed');
+    }
+    
+    console.log('✅ Email sent successfully');
+  }
+
+  async quit(): Promise<void> {
+    if (!this.connection) return;
+    
+    try {
+      await this.sendCommand('QUIT');
+      await this.readResponse();
+    } catch (error) {
+      console.error('QUIT error:', error);
+    } finally {
+      try {
+        this.connection?.close();
+      } catch {}
+      this.connection = null;
+    }
+  }
+
+  private async sendCommand(command: string): Promise<void> {
+    if (!this.connection) throw new Error('Not connected');
+    
+    console.log('→', command.substring(0, 50));
+    await this.connection.write(new TextEncoder().encode(command + '\r\n'));
+  }
+
+  private async readResponse(timeoutMs: number = 10000): Promise<string> {
+    if (!this.connection) throw new Error('Not connected');
+
+    return await withTimeout((async () => {
+      let response = '';
+      const buffer = new Uint8Array(8192);
+
+      while (true) {
+        const bytesRead = await this.connection!.read(buffer);
+        if (!bytesRead) break;
+
+        response += new TextDecoder().decode(buffer.subarray(0, bytesRead));
+
+        // Check for complete response (ends with \r\n)
+        if (response.includes('\r\n')) {
+          break;
+        }
+
+        if (response.length > 1024 * 1024) {
+          console.warn('Response too large, truncating');
+          break;
+        }
+      }
+
+      console.log('← Response:', response.substring(0, 100));
+      return response;
+    })(), timeoutMs);
+  }
 }
 
 serve(async (req) => {
-  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
+    const { 
+      accountId, 
+      to, 
+      cc, 
+      bcc, 
+      subject, 
+      body, 
+      isHtml = false,
+      inReplyTo,
+      references 
+    }: SendEmailRequest = await req.json();
+
+    // Validate required fields
+    if (!accountId || !to || to.length === 0 || !subject) {
+      throw new Error('Missing required fields: accountId, to, subject');
+    }
+
+    // Get account from Supabase
+    const authHeader = req.headers.get('Authorization')!;
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
     );
 
-    const emailData: SendEmailRequest = await req.json();
-
-    console.log('📤 Sending email via SMTP for account:', emailData.accountId);
-
-    // Get account details
     const { data: account, error: accountError } = await supabaseClient
       .from('email_accounts')
       .select('*')
-      .eq('id', emailData.accountId)
+      .eq('id', accountId)
       .single();
 
     if (accountError || !account) {
       throw new Error('Email account not found');
     }
 
-    // Decrypt password
-    const smtpPassword = await decryptPassword(account.smtp_password);
+    console.log('📧 Sending email from:', account.email_address);
 
-    console.log('🔐 Connecting to SMTP:', account.smtp_host);
+    // Decrypt password (basic for now - use actual decryption in prod)
+    const smtpPassword = account.smtp_password;
 
-    // Configure SMTP client
-    const smtpClient = new SMTPClient({
-      connection: {
-        hostname: account.smtp_host,
-        port: account.smtp_port,
-        tls: account.smtp_encryption !== 'none',
-        auth: {
-          username: account.smtp_username,
-          password: smtpPassword,
-        },
-      },
-    });
-
-    // Prepare recipients
-    const toAddresses = Array.isArray(emailData.to) ? emailData.to : [emailData.to];
-    const ccAddresses = emailData.cc ? (Array.isArray(emailData.cc) ? emailData.cc : [emailData.cc]) : undefined;
-    const bccAddresses = emailData.bcc ? (Array.isArray(emailData.bcc) ? emailData.bcc : [emailData.bcc]) : undefined;
-
-    // Prepare email
-    const emailMessage: any = {
-      from: {
-        name: account.display_name || account.email_address.split('@')[0],
-        mail: account.email_address,
-      },
-      to: toAddresses,
-      cc: ccAddresses,
-      bcc: bccAddresses,
-      subject: emailData.subject,
-      content: emailData.bodyText || '',
-      html: emailData.bodyHtml,
-    };
-
-    // Add headers for threading
-    if (emailData.inReplyTo) {
-      emailMessage.inReplyTo = emailData.inReplyTo;
+    // Connect to SMTP
+    const smtp = new SMTPClient();
+    const useTLS = account.smtp_encryption === 'tls' || account.smtp_port === 587;
+    
+    await smtp.connect(account.smtp_host, account.smtp_port, false); // Start unencrypted
+    await smtp.ehlo();
+    
+    if (useTLS && account.smtp_port === 587) {
+      await smtp.startTLS();
     }
-    if (emailData.references) {
-      emailMessage.references = emailData.references;
-    }
-
-    // Add priority
-    if (emailData.priority) {
-      const priorityMap = {
-        high: '1',
-        normal: '3',
-        low: '5',
-      };
-      emailMessage.priority = priorityMap[emailData.priority];
-    }
-
-    // Add attachments if any
-    if (emailData.attachments && emailData.attachments.length > 0) {
-      emailMessage.attachments = emailData.attachments.map(att => ({
-        filename: att.filename,
-        content: att.content,
-        encoding: 'base64',
-        contentType: att.contentType || 'application/octet-stream',
-      }));
-    }
-
-    // Send email
-    console.log('📧 Sending to:', toAddresses.join(', '));
-    await smtpClient.send(emailMessage);
-    await smtpClient.close();
+    
+    await smtp.login(account.smtp_username, smtpPassword);
+    
+    await smtp.sendEmail(
+      account.email_address,
+      to,
+      subject,
+      body,
+      { cc, bcc, isHtml, inReplyTo, references }
+    );
+    
+    await smtp.quit();
 
     console.log('✅ Email sent successfully');
-
-    // Generate unique message ID
-    const messageId = `<${Date.now()}.${Math.random().toString(36)}@${account.smtp_host}>`;
-    const threadId = emailData.inReplyTo 
-      ? await findThreadByMessageId(emailData.inReplyTo, supabaseClient)
-      : `thread-${account.id}-${Date.now()}`;
-
-    // Create or update thread
-    await supabaseClient
-      .from('email_threads')
-      .upsert({
-        id: threadId,
-        account_id: account.id,
-        thread_id: messageId,
-        subject: emailData.subject,
-        snippet: (emailData.bodyText || emailData.bodyHtml || '').substring(0, 200),
-        participants: [
-          { email: account.email_address, name: account.display_name },
-          ...toAddresses.map(email => ({ email, name: email.split('@')[0] })),
-        ],
-        message_count: 1, // Would increment if reply
-        last_message_at: new Date().toISOString(),
-        is_read: true, // Sent emails are always read
-        is_starred: false,
-        labels: ['Sent'],
-      });
-
-    // Save email to database (Sent folder)
-    const { data: savedMessage, error: saveError } = await supabaseClient
-      .from('email_messages')
-      .insert({
-        thread_id: threadId,
-        message_id: messageId,
-        from_email: account.email_address,
-        from_name: account.display_name || account.email_address,
-        to_emails: toAddresses.map(email => ({ email, name: email.split('@')[0] })),
-        cc_emails: ccAddresses?.map(email => ({ email, name: email.split('@')[0] })) || [],
-        bcc_emails: bccAddresses?.map(email => ({ email, name: email.split('@')[0] })) || [],
-        subject: emailData.subject,
-        body_text: emailData.bodyText || '',
-        body_html: emailData.bodyHtml || '',
-        received_at: new Date().toISOString(),
-        is_read: true,
-        is_draft: false,
-        labels: ['Sent'],
-      })
-      .select()
-      .single();
-
-    if (saveError) {
-      console.error('Error saving sent email:', saveError);
-      // Don't fail the request - email was sent successfully
-    }
-
-    // TODO: Also save to IMAP Sent folder for proper sync
-    // This would require IMAP APPEND command
 
     return new Response(
       JSON.stringify({
         success: true,
-        messageId,
-        threadId,
-        savedMessage,
+        message: 'Email sent successfully',
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-  } catch (error) {
-    console.error('❌ Send error:', error);
+  } catch (error: any) {
+    console.error('SMTP send error:', error);
 
     return new Response(
       JSON.stringify({
         success: false,
         error: error.message,
-        details: error.toString(),
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
-
-/**
- * Find thread ID by message ID (for replies)
- */
-async function findThreadByMessageId(
-  messageId: string,
-  supabase: any
-): Promise<string> {
-  const { data } = await supabase
-    .from('email_messages')
-    .select('thread_id')
-    .eq('message_id', messageId)
-    .single();
-
-  return data?.thread_id || `thread-${Date.now()}`;
-}

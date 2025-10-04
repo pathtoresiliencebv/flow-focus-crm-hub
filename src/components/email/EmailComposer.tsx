@@ -61,11 +61,12 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
       const response = await supabase.functions.invoke(functionName, {
         body: {
           accountId: account.id,
-          to,
+          to: to.split(',').map(e => e.trim()), // Array of recipients
           cc: cc ? cc.split(',').map(e => e.trim()) : [],
           bcc: bcc ? bcc.split(',').map(e => e.trim()) : [],
           subject,
           body: body.replace(/\n/g, '<br>'), // Simple HTML conversion
+          isHtml: true, // Since we're converting newlines to <br>
         }
       });
 
