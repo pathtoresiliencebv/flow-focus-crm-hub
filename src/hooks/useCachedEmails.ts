@@ -116,39 +116,11 @@ export const useCachedEmails = () => {
 
       console.log('✅ Live emails fetched:', data);
 
-      // HYBRID: Save ALL inbox emails to database (persistent across refreshes)
-      const inboxMessages = (data.messages || []).filter((m: any) => 
-        m.folder === 'inbox' || !m.folder
-      );
+      // NO database storage - pure LIVE like Roundcube!
+      // Just show messages directly from IMAP
       
-      if (inboxMessages.length > 0) {
-        console.log('💾 Saving', inboxMessages.length, 'inbox emails to database for persistence...');
-        
-        // Get current user
-        const { data: userData } = await supabase.auth.getUser();
-        
-        // Prepare messages for database
-        const messagesToSave = inboxMessages.map((m: any) => ({
-          ...m,
-          user_id: userData.user?.id,
-          id: m.id || `imap:${m.uid}`,
-          // Ensure all required fields exist
-          direction: m.direction || 'inbound',
-          from_email: m.from_email || m.from || 'unknown',
-          to_email: Array.isArray(m.to_email) ? m.to_email : [m.to_email].filter(Boolean),
-          subject: m.subject || '(Geen onderwerp)',
-          status: m.status || 'unread',
-          folder: 'inbox',
-        }));
-        
-        await supabase.from('email_messages').upsert(messagesToSave, {
-          onConflict: 'id',
-          ignoreDuplicates: false,
-        });
-        console.log('✅ Emails saved to database - will persist after refresh');
-      }
+      console.log('📧 Displaying', data.messages?.length || 0, 'LIVE messages (no database)');
 
-      // Update state (append if loadMore, replace otherwise)
       // Sort by date DESC (newest first)
       const sortedMessages = (data.messages || []).sort((a: any, b: any) => {
         const dateA = new Date(a.received_at || a.date).getTime();
