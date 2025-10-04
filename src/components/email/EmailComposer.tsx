@@ -63,8 +63,8 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
     try {
       setSending(true);
 
-      // All accounts now use SMTP/IMAP
-      const functionName = 'smtp-send';
+      // Use OX Mail API for sending
+      const functionName = 'ox-mail-send';
 
       console.log('Sending email via:', functionName, {
         accountId: account.id,
@@ -79,8 +79,8 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
           cc: cc ? cc.split(',').map(e => e.trim()) : [],
           bcc: bcc ? bcc.split(',').map(e => e.trim()) : [],
           subject,
-          body: body.replace(/\n/g, '<br>'), // Simple HTML conversion
-          isHtml: true, // Since we're converting newlines to <br>
+          bodyText: body, // Plain text version
+          bodyHtml: body.replace(/\n/g, '<br>'), // HTML version
         }
       });
 
@@ -105,29 +105,8 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
         throw new Error(errorDetails);
       }
 
-      // Save sent email to database for history
-      try {
-        await supabase.from('email_messages').insert({
-          user_id: (await supabase.auth.getUser()).data.user?.id,
-          direction: 'outbound',
-          from_email: account.email_address,
-          to_email: to.split(',').map(e => e.trim()),
-          cc_email: cc ? cc.split(',').map(e => e.trim()) : null,
-          bcc_email: bcc ? bcc.split(',').map(e => e.trim()) : null,
-          subject,
-          body_text: body,
-          body_html: body.replace(/\n/g, '<br>'),
-          status: 'sent',
-          folder: 'sent',
-          sent_at: new Date().toISOString(),
-          received_at: new Date().toISOString(),
-          external_message_id: `sent:${Date.now()}`,
-        });
-        console.log('💾 Sent email saved to database');
-      } catch (dbError) {
-        console.error('⚠️ Failed to save sent email to database:', dbError);
-        // Don't fail the send if database save fails
-      }
+      // Email saved to database by OX Mail send function
+      console.log('✅ Email sent and saved via OX Mail API');
 
       toast({
         title: "Email verzonden! ✓",
