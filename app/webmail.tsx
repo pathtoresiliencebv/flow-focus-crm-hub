@@ -7,10 +7,11 @@ import Email from '@/pages/Email';
  * Accessible at: /webmail
  * 
  * Full-page email interface (not embedded in dashboard)
+ * No sidebar, no navigation - pure email client
  */
 export default function WebmailPage() {
   return (
-    <div className="h-screen w-screen overflow-hidden">
+    <div className="h-screen w-screen overflow-hidden bg-white">
       <Email />
     </div>
   );
