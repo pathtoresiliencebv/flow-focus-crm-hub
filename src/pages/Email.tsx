@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -141,14 +141,8 @@ export default function Email() {
     );
   }
 
-  // Load custom folders
-  useEffect(() => {
-    if (primaryAccount?.id) {
-      loadCustomFolders();
-    }
-  }, [primaryAccount?.id]);
-
-  const loadCustomFolders = async () => {
+  const loadCustomFolders = useCallback(async () => {
+    if (!primaryAccount?.id) return;
     try {
       const { data, error } = await supabase
         .from('email_labels')
@@ -167,7 +161,12 @@ export default function Email() {
     } catch (err) {
       console.error('Failed to load custom folders:', err);
     }
-  };
+  }, [primaryAccount?.id]);
+
+  // Load custom folders on mount
+  useEffect(() => {
+    loadCustomFolders();
+  }, [loadCustomFolders]);
 
   const handleCreateFolder = async () => {
     if (!newFolderName.trim() || !primaryAccount?.id) return;
