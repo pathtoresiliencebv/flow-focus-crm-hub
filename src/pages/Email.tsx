@@ -33,17 +33,15 @@ import { useEmailAccounts } from '@/hooks/useEmailAccounts';
 import { useCachedEmails } from '@/hooks/useCachedEmails';
 import { SMTPIMAPSetup } from '@/components/email/SMTPIMAPSetup';
 import { EmailComposer } from '@/components/email/EmailComposer';
-// import { EmailDebug } from '@/components/email/EmailDebug';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-// import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function Email() {
   const { accounts, loading: accountsLoading } = useEmailAccounts();
   const [showAccountSetup, setShowAccountSetup] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
-  // const [showDebug, setShowDebug] = useState(false);
   const [replyTo, setReplyTo] = useState<{ to: string; subject: string; messageId?: string } | undefined>();
   const [selectedFolder, setSelectedFolder] = useState('inbox');
   const [selectedThread, setSelectedThread] = useState<string | null>(null);
@@ -160,7 +158,7 @@ export default function Email() {
       };
       loadEmails();
     }
-  }, [primaryAccount?.id, selectedFolder]); // Remove function dependencies to prevent infinite loop
+  }, [primaryAccount?.id, selectedFolder, syncEmails, fetchEmails]); // Include all dependencies
 
   const handleSync = async (loadMore: boolean = false) => {
     if (!primaryAccount) return;
@@ -282,14 +280,6 @@ export default function Email() {
           >
             <Settings className="h-4 w-4" />
           </Button>
-          {/* Debug button temporarily disabled */}
-          {/* <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowDebug(true)}
-          >
-            🔍 Debug
-          </Button> */}
           
           <Button 
             size="sm" 
@@ -826,26 +816,6 @@ export default function Email() {
           replyTo={replyTo}
         />
       )}
-
-      {/* Debug Modal temporarily disabled */}
-      {/* {showDebug && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-4xl max-h-[80vh] overflow-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">🔍 Email Debug Tool</h2>
-              <button 
-                onClick={() => setShowDebug(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
-            {primaryAccount && (
-              <EmailDebug accountId={primaryAccount.id} />
-            )}
-          </div>
-        </div>
-      )} */}
 
       {/* Custom folders dialog temporarily disabled */}
     </div>

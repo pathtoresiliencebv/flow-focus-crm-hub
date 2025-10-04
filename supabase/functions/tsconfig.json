@@ -1,14 +1,14 @@
 {
   "compilerOptions": {
-    "target": "es2020",
-    "lib": ["es2020"],
-    "module": "esnext",
-    "moduleResolution": "node",
+    "target": "esnext",
     "allowJs": true,
-    "strict": false,
     "noImplicitAny": false,
     "strictNullChecks": false,
-    "skipLibCheck": true,
-    "types": []
+    "strict": false,
+    "useUnknownInCatchVariables": false,
+    "lib": ["deno.window"],
+    "types": [
+      "https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts"
+    ]
   }
 }
