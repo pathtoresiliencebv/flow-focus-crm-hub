@@ -37,27 +37,29 @@ export const useCachedEmails = () => {
   });
 
   /**
-   * Fetch emails - ALWAYS fetch LIVE from IMAP for inbox
-   * Database for other folders
+   * Fetch emails from database
    */
   const fetchEmails = useCallback(async (accountId: string, folder: string = 'inbox') => {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      // For INBOX: ALWAYS sync LIVE from IMAP (auto-sync!)
-      if (folder === 'inbox') {
-        console.log('🔄 Auto-syncing inbox from IMAP...');
-        return await syncEmails(accountId, { maxMessages: 200, loadMore: false });
-      }
-      
-      // For SENT/DRAFTS/ARCHIVE folders: fetch from database
       console.log('💾 Fetching', folder, 'emails from database...');
       
-      const { data, error } = await supabase
+      const query = supabase
         .from('email_messages')
         .select('*')
-        .eq('folder', folder)
-        .order('sent_at', { ascending: false });
+        .eq('folder', folder);
+      
+      // Sort by appropriate date field
+      if (folder === 'sent') {
+        query.order('sent_at', { ascending: false });
+      } else {
+        query.order('received_at', { ascending: false });
+      }
+      
+      query.limit(200);
+      
+      const { data, error } = await query;
       
       if (error) throw error;
       
@@ -67,7 +69,7 @@ export const useCachedEmails = () => {
         error: null,
       });
       
-      console.log('✅ Loaded', data?.length || 0, 'emails from database');
+      console.log('✅ Loaded', data?.length || 0, folder, 'emails from database');
       return data;
     } catch (err: any) {
       console.error('❌ Error fetching emails:', err);

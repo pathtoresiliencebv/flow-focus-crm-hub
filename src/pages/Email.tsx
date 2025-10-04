@@ -47,13 +47,19 @@ export default function Email() {
   // ✅ USE CACHED EMAILS from database (synced from IMAP)
   const { messages, loading: messagesLoading, fetchEmails, syncEmails, getFolders } = useCachedEmails();
 
-  // Auto-fetch emails when folder changes (NOT on account change to prevent loops)
+  // Auto-fetch/sync emails when folder changes
   useEffect(() => {
     if (primaryAccount?.id && selectedFolder) {
-      // Simple direct call without function dependency
       const loadEmails = async () => {
         try {
-          await fetchEmails(primaryAccount.id, selectedFolder);
+          // For inbox: Always sync LIVE from IMAP
+          if (selectedFolder === 'inbox') {
+            console.log('🔄 Auto-syncing inbox from IMAP...');
+            await syncEmails(primaryAccount.id, { maxMessages: 200 });
+          } else {
+            // Other folders: Load from database
+            await fetchEmails(primaryAccount.id, selectedFolder);
+          }
         } catch (err) {
           console.error('Failed to auto-load emails:', err);
         }
@@ -61,7 +67,7 @@ export default function Email() {
       loadEmails();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [primaryAccount?.id, selectedFolder]); // Only account ID and folder - NO function deps!
+  }, [primaryAccount?.id, selectedFolder]); // Trigger on folder change
 
   const handleSync = async (loadMore: boolean = false) => {
     if (!primaryAccount) return;
