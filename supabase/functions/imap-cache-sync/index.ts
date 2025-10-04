@@ -12,6 +12,28 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+// Password decryption (inline to avoid module issues)
+async function decryptPassword(encrypted: string): Promise<string> {
+  if (!encrypted) throw new Error('Encrypted password cannot be empty');
+  
+  const keyString = Deno.env.get('EMAIL_ENCRYPTION_KEY');
+  if (!keyString) throw new Error('EMAIL_ENCRYPTION_KEY not set');
+  
+  const keyData = new TextEncoder().encode(keyString);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', keyData);
+  const key = await crypto.subtle.importKey('raw', hashBuffer, { name: 'AES-GCM', length: 256 }, false, ['decrypt']);
+  
+  const parts = encrypted.split(':');
+  if (parts.length !== 2) throw new Error('Invalid encrypted password format');
+  
+  const [ivBase64, encryptedBase64] = parts;
+  const iv = Uint8Array.from(atob(ivBase64), c => c.charCodeAt(0));
+  const encryptedData = Uint8Array.from(atob(encryptedBase64), c => c.charCodeAt(0));
+  
+  const decryptedBuffer = await crypto.subtle.decrypt({ name: 'AES-GCM', iv, tagLength: 128 }, key, encryptedData);
+  return new TextDecoder().decode(decryptedBuffer);
+}
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -326,11 +348,19 @@ serve(async (req) => {
       encryption: account.imap_encryption
     });
 
-    // Decrypt password (basic for now - use actual decryption in prod)
-    const imapPassword = account.imap_password;
-    
-    if (!imapPassword) {
+    // Decrypt password
+    if (!account.imap_password) {
       throw new Error('IMAP password not found in account settings');
+    }
+    
+    let imapPassword: string;
+    try {
+      console.log('🔐 Decrypting IMAP password...');
+      imapPassword = await decryptPassword(account.imap_password);
+      console.log('✅ Password decrypted successfully');
+    } catch (decryptError: any) {
+      console.error('❌ Password decryption failed:', decryptError);
+      throw new Error(`Failed to decrypt IMAP password: ${decryptError.message}`);
     }
 
     // Connect to IMAP
