@@ -28,6 +28,7 @@ export default function Email() {
   const { accounts, loading: accountsLoading } = useEmailAccounts();
   const [showAccountSetup, setShowAccountSetup] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
+  const [replyTo, setReplyTo] = useState<{ to: string; subject: string; messageId?: string } | undefined>();
   const [selectedFolder, setSelectedFolder] = useState('inbox');
   const [selectedThread, setSelectedThread] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -165,7 +166,10 @@ export default function Email() {
           <Button 
             size="sm" 
             className="bg-red-600 hover:bg-red-700"
-            onClick={() => setComposerOpen(true)}
+            onClick={() => {
+              setReplyTo(undefined); // Reset reply when composing new email
+              setComposerOpen(true);
+            }}
             disabled={!primaryAccount}
           >
             <Plus className="h-4 w-4 mr-1" />
@@ -401,11 +405,14 @@ export default function Email() {
                   <Button 
                     className="bg-red-600 hover:bg-red-700"
                     onClick={() => {
-                      // TODO: Implement reply
-                      toast({
-                        title: "Reply functie",
-                        description: "Reply functionaliteit wordt nog geïmplementeerd",
+                      setReplyTo({
+                        to: selectedMessage.from_email,
+                        subject: selectedMessage.subject?.startsWith('Re:') 
+                          ? selectedMessage.subject 
+                          : `Re: ${selectedMessage.subject}`,
+                        messageId: selectedMessage.external_message_id,
                       });
+                      setComposerOpen(true);
                     }}
                   >
                     Beantwoorden
@@ -413,10 +420,19 @@ export default function Email() {
                   <Button 
                     variant="outline"
                     onClick={() => {
-                      toast({
-                        title: "Reply all functie",
-                        description: "Reply all functionaliteit wordt nog geïmplementeerd",
+                      const allRecipients = [
+                        selectedMessage.from_email,
+                        ...(selectedMessage.to_email || [])
+                      ].filter(email => email !== primaryAccount?.email_address).join(', ');
+                      
+                      setReplyTo({
+                        to: allRecipients,
+                        subject: selectedMessage.subject?.startsWith('Re:') 
+                          ? selectedMessage.subject 
+                          : `Re: ${selectedMessage.subject}`,
+                        messageId: selectedMessage.external_message_id,
                       });
+                      setComposerOpen(true);
                     }}
                   >
                     Allen beantwoorden
@@ -451,7 +467,13 @@ export default function Email() {
         <EmailComposer
           account={primaryAccount}
           open={composerOpen}
-          onOpenChange={setComposerOpen}
+          onOpenChange={(open) => {
+            setComposerOpen(open);
+            if (!open) {
+              setReplyTo(undefined); // Reset reply data when closing
+            }
+          }}
+          replyTo={replyTo}
         />
       )}
     </div>

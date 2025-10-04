@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,10 +31,24 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
   const [to, setTo] = useState(replyTo?.to || '');
   const [cc, setCc] = useState('');
   const [bcc, setBcc] = useState('');
-  const [subject, setSubject] = useState(replyTo?.subject ? `Re: ${replyTo.subject}` : '');
+  const [subject, setSubject] = useState(replyTo?.subject || '');
   const [body, setBody] = useState('');
   const [showCc, setShowCc] = useState(false);
   const [showBcc, setShowBcc] = useState(false);
+
+  // Update fields when replyTo changes
+  useEffect(() => {
+    if (replyTo) {
+      setTo(replyTo.to);
+      setSubject(replyTo.subject);
+    } else {
+      setTo('');
+      setSubject('');
+      setBody('');
+      setCc('');
+      setBcc('');
+    }
+  }, [replyTo]);
 
   const handleSend = async () => {
     if (!to || !subject || !body) {
