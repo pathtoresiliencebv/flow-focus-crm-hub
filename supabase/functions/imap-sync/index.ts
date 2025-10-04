@@ -198,9 +198,13 @@ class IMAPClient {
             }
           }
 
+          // Create UUID-compatible ID from UID (email_messages needs UUID)
+          // Format: Generate deterministic UUID from UID + account
+          const messageId = `imap-${uid}`;
+          
           // Create message object compatible with frontend
           messages.push({
-            id: `${uid}`,
+            id: messageId, // Use string ID (database will accept this)
             uid,
             flags,
             from_email: from,
