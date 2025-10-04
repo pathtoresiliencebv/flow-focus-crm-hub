@@ -105,6 +105,30 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
         throw new Error(errorDetails);
       }
 
+      // Save sent email to database for history
+      try {
+        await supabase.from('email_messages').insert({
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+          direction: 'outbound',
+          from_email: account.email_address,
+          to_email: to.split(',').map(e => e.trim()),
+          cc_email: cc ? cc.split(',').map(e => e.trim()) : null,
+          bcc_email: bcc ? bcc.split(',').map(e => e.trim()) : null,
+          subject,
+          body_text: body,
+          body_html: body.replace(/\n/g, '<br>'),
+          status: 'sent',
+          folder: 'sent',
+          sent_at: new Date().toISOString(),
+          received_at: new Date().toISOString(),
+          external_message_id: `sent:${Date.now()}`,
+        });
+        console.log('💾 Sent email saved to database');
+      } catch (dbError) {
+        console.error('⚠️ Failed to save sent email to database:', dbError);
+        // Don't fail the send if database save fails
+      }
+
       toast({
         title: "Email verzonden! ✓",
         description: `Bericht verzonden naar ${to}`,
