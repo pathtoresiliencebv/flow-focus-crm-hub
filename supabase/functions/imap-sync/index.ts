@@ -108,8 +108,8 @@ class IMAPClient {
     const tag = this.nextTag();
     const range = end === -1 ? `${start}:*` : `${start}:${end}`;
     
-    // Keep it SIMPLE for reliability - just essential fields
-    await this.sendCommand(tag, `FETCH ${range} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)] BODY[])`);
+    // Simplified FETCH - only get essential fields that ALWAYS parse correctly
+    await this.sendCommand(tag, `FETCH ${range} (UID FLAGS BODY.PEEK[HEADER.FIELDS (FROM SUBJECT DATE)] BODY.PEEK[TEXT]<0.500>)`);
     const response = await this.readResponse(60000); // Longer timeout for many emails
 
     return this.parseMessages(response);
@@ -174,42 +174,12 @@ class IMAPClient {
             }
           }
 
-          // Extract BODY (try to get both text and HTML if present)
-          let bodyText = '';
-          let bodyHtml = '';
-          
-          // Match BODY[] with content
-          const bodyMatch = block.match(/BODY\[\]\s*(?:\{(\d+)\})?\r?\n?([\s\S]*?)(?=\r?\n\)|$)/);
+          // Extract BODY (first 500 chars)
+          let body = '';
+          const bodyMatch = block.match(/BODY\[TEXT\](?:<\d+\.\d+>)?\s*(?:\{(\d+)\})?\r?\n?([\s\S]*)/);
           if (bodyMatch) {
-            const fullBody = bodyMatch[2] || '';
-            
-            // Check if it's HTML (contains tags)
-            if (fullBody.includes('<html') || fullBody.includes('<!DOCTYPE')) {
-              bodyHtml = fullBody.substring(0, 10000).trim();
-              // Also extract text version by stripping tags
-              bodyText = fullBody.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').substring(0, 1000).trim();
-            } else {
-              // Plain text email
-              bodyText = fullBody.substring(0, 5000).trim();
-            }
-          }
-
-          // Attachment detection - ONLY if Content-Disposition: attachment found
-          const attachments: any[] = [];
-          
-          // More specific check: Look for actual attachment headers
-          const hasAttachment = block.match(/Content-Disposition:\s*attachment/i) ||
-                               block.match(/Content-Type:.*name=/i);
-          
-          if (hasAttachment) {
-            // Try to extract filename from Content-Disposition or Content-Type
-            const filenameMatch = block.match(/(?:filename|name)=["']?([^"'\r\n;]+)["']?/i);
-            const filename = filenameMatch ? filenameMatch[1] : 'bijlage';
-            
-            attachments.push({
-              filename: filename,
-              name: filename,
-            });
+            const bodyText = bodyMatch[2] || '';
+            body = bodyText.substring(0, 500).trim();
           }
 
           // Create message object compatible with frontend
@@ -221,9 +191,8 @@ class IMAPClient {
             to_email: [], // Not fetched for performance
             subject,
             date,
-            body_text: bodyText,
-            body_html: bodyHtml || null,
-            attachments: attachments.length > 0 ? attachments : null,
+            body_text: body,
+            body_html: null,
             status: flags.includes('\\Seen') ? 'read' : 'unread',
             is_starred: flags.includes('\\Flagged'),
             folder: 'inbox',
@@ -241,22 +210,10 @@ class IMAPClient {
       }
 
       console.log(`✅ Successfully parsed ${messages.length}/${messageBlocks.length} messages`);
-      
-      // Debug: Log first message to verify structure
-      if (messages.length > 0) {
-        console.log('📧 Sample message:', {
-          subject: messages[0].subject,
-          from: messages[0].from_email,
-          hasHtml: !!messages[0].body_html,
-          hasText: !!messages[0].body_text,
-          hasAttachments: !!messages[0].attachments,
-        });
-      }
     } catch (error) {
       console.error('❌ Fatal parsing error:', error);
     }
 
-    console.log(`📦 Returning ${messages.length} total messages to frontend`);
     return messages;
   }
 
@@ -292,9 +249,10 @@ class IMAPClient {
   private async readResponse(timeoutMs: number = 10000, expectTag: boolean = true): Promise<string> {
     if (!this.connection) throw new Error('Not connected');
 
+    // ✅ FIX: Call the async function immediately to get a Promise!
     return await withTimeout((async () => {
       let response = '';
-      const buffer = new Uint8Array(65536); // 64KB buffer (was 8KB - TOO SMALL!)
+      const buffer = new Uint8Array(8192);
 
       while (true) {
         const bytesRead = await this.connection!.read(buffer);
@@ -315,9 +273,9 @@ class IMAPClient {
           }
         }
 
-        // Prevent infinite loop - increase max to 10MB for large mailboxes
-        if (response.length > 10 * 1024 * 1024) { // 10MB max
-          console.warn('Response too large, truncating at', response.length, 'bytes');
+        // Prevent infinite loop
+        if (response.length > 1024 * 1024) { // 1MB max
+          console.warn('Response too large, truncating');
           break;
         }
         
@@ -328,9 +286,9 @@ class IMAPClient {
         }
       }
 
-      console.log('← Response length:', response.length, 'bytes, expectTag:', expectTag);
+      console.log('← Response length:', response.length, 'expectTag:', expectTag);
       return response;
-    })(), timeoutMs);
+    })(), timeoutMs); // ✅ Note the () after the arrow function!
   }
 }
 
@@ -418,18 +376,12 @@ serve(async (req) => {
         : Math.max(1, mailboxInfo.exists - maxMessages + 1);  // Laatste 200 messages
       const end = mailboxInfo.exists;
 
-      console.log(`📊 Mailbox stats: exists=${mailboxInfo.exists}, recent=${mailboxInfo.recent}`);
-      console.log(`📊 Fetching range: ${start}:${end} (${end - start + 1} messages)`);
-
       let messages: any[] = [];
       
       if (end > 0) {
         messages = await imap.fetchMessages(start, end);
-        console.log(`📥 Parser returned ${messages.length} messages`);
-        console.log(`📦 Expected ~${end - start + 1} messages, got ${messages.length}`);
+        console.log(`📥 Fetched ${messages.length} messages (LIVE - not stored)`);
         syncedCount = messages.length;
-      } else {
-        console.log('⚠️ Mailbox is empty (exists=0)');
       }
 
       // Logout
