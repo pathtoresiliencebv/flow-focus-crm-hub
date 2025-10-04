@@ -97,27 +97,81 @@ export const useCachedEmails = () => {
     try {
       console.log('🔄 Fetching emails LIVE from IMAP server...', { maxMessages, loadMore });
 
-      // Use OX Mail API exclusively
+      // Try OX Mail API first, fallback to IMAP if it fails
       console.log('📧 Calling ox-mail-sync with:', { accountId, maxMessages });
       
-      const { data, error } = await supabase.functions.invoke('ox-mail-sync', {
-        body: {
-          accountId,
-          maxMessages,
-        }
-      });
+      let data, error;
       
-      console.log('📧 OX response:', { data, error });
+      try {
+        const oxResponse = await supabase.functions.invoke('ox-mail-sync', {
+          body: {
+            accountId,
+            maxMessages,
+          }
+        });
+        
+        data = oxResponse.data;
+        error = oxResponse.error;
+        
+        console.log('📧 OX response:', { data, error });
+        
+        if (error || !data?.success) {
+          throw new Error(error?.message || data?.error || 'OX Mail sync failed');
+        }
+      } catch (oxError: any) {
+        console.warn('⚠️ OX Mail sync failed, falling back to IMAP:', oxError.message);
+        
+        // Fallback to IMAP sync
+        const imapResponse = await supabase.functions.invoke('imap-sync', {
+          body: {
+            accountId,
+            maxMessages,
+          }
+        });
+        
+        data = imapResponse.data;
+        error = imapResponse.error;
+        
+        console.log('📧 IMAP fallback response:', { data, error });
+        
+        if (error) {
+          throw new Error(error.message || 'Failed to fetch emails');
+        }
 
-      if (error) {
-        throw new Error(error.message || 'Failed to fetch emails via OX Mail API');
+        if (!data.success) {
+          throw new Error(data.error || 'Fetch failed');
+        }
       }
-
-      if (!data.success) {
-        throw new Error(data.error || 'OX Mail sync failed');
+    } catch (allErrors: any) {
+      console.warn('⚠️ Both OX Mail and IMAP failed, trying database fallback:', allErrors.message);
+      
+      // Final fallback: try to load from database
+      try {
+        const { data: dbData, error: dbError } = await supabase
+          .from('email_messages')
+          .select('*')
+          .eq('folder', 'inbox')
+          .order('received_at', { ascending: false })
+          .limit(maxMessages);
+        
+        if (dbError) throw dbError;
+        
+        console.log('📧 Database fallback loaded:', dbData?.length || 0, 'emails');
+        
+        setState(prev => ({
+          messages: dbData || [],
+          loading: false,
+          error: null,
+        }));
+        
+        return { success: true, messages: dbData || [], messageCount: dbData?.length || 0 };
+      } catch (dbFallbackError: any) {
+        console.error('❌ Database fallback also failed:', dbFallbackError);
+        throw new Error('All email sync methods failed. Please check your email configuration.');
       }
+    }
 
-      console.log('✅ Live emails fetched:', data);
+    console.log('✅ Live emails fetched:', data);
 
       // Save to database for persistence (delete/star must work!)
       if (data.messages && data.messages.length > 0) {

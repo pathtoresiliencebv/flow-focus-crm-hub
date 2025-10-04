@@ -33,6 +33,7 @@ import { useEmailAccounts } from '@/hooks/useEmailAccounts';
 import { useCachedEmails } from '@/hooks/useCachedEmails';
 import { SMTPIMAPSetup } from '@/components/email/SMTPIMAPSetup';
 import { EmailComposer } from '@/components/email/EmailComposer';
+import { EmailDebug } from '@/components/email/EmailDebug';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -42,6 +43,7 @@ export default function Email() {
   const { accounts, loading: accountsLoading } = useEmailAccounts();
   const [showAccountSetup, setShowAccountSetup] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
+  const [showDebug, setShowDebug] = useState(false);
   const [replyTo, setReplyTo] = useState<{ to: string; subject: string; messageId?: string } | undefined>();
   const [selectedFolder, setSelectedFolder] = useState('inbox');
   const [selectedThread, setSelectedThread] = useState<string | null>(null);
@@ -158,7 +160,7 @@ export default function Email() {
       };
       loadEmails();
     }
-  }, [primaryAccount?.id, selectedFolder, syncEmails, fetchEmails]); // Include all dependencies
+  }, [primaryAccount?.id, selectedFolder]); // Remove function dependencies to prevent infinite loop
 
   const handleSync = async (loadMore: boolean = false) => {
     if (!primaryAccount) return;
@@ -279,6 +281,13 @@ export default function Email() {
             onClick={() => setShowAccountSetup(true)}
           >
             <Settings className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDebug(true)}
+          >
+            🔍 Debug
           </Button>
           
           <Button 
@@ -816,6 +825,18 @@ export default function Email() {
           replyTo={replyTo}
         />
       )}
+
+      {/* Debug Dialog */}
+      <Dialog open={showDebug} onOpenChange={setShowDebug}>
+        <DialogContent className="max-w-4xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>🔍 Email Debug Tool</DialogTitle>
+          </DialogHeader>
+          {primaryAccount && (
+            <EmailDebug accountId={primaryAccount.id} />
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Custom folders dialog temporarily disabled */}
     </div>
