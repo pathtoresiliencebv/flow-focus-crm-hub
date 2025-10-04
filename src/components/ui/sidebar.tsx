@@ -196,6 +196,31 @@ export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
 
     const isActive = activeTab === link.key;
 
+    // If link has href, render as anchor for navigation
+    if (link.href) {
+      return (
+        <li key={link.key} className="relative group">
+          <a
+            href={link.href}
+            className={`w-full flex items-center ${mini ? 'justify-center' : 'justify-start'} gap-3 px-4 py-2.5 text-sm rounded-xl transition-colors ${
+              window.location.pathname === link.href
+                ? "bg-red-600 text-white"
+                : "text-gray-700 hover:bg-gray-100"
+            }`}
+            title={mini ? link.label : undefined}
+          >
+            {!isCollapsible && link.icon}
+            {!mini && link.label}
+            {mini && !isCollapsible && (
+              <span className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                {link.label}
+              </span>
+            )}
+          </a>
+        </li>
+      );
+    }
+
     return (
       <li key={link.key} className="relative group">
         <button
