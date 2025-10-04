@@ -97,50 +97,24 @@ export const useCachedEmails = () => {
     try {
       console.log('🔄 Fetching emails LIVE from IMAP server...', { maxMessages, loadMore });
 
-      // Try OX Mail sync first, fallback to IMAP if it fails
+      // Use OX Mail API exclusively
       console.log('📧 Calling ox-mail-sync with:', { accountId, maxMessages });
       
-      let data, error;
+      const { data, error } = await supabase.functions.invoke('ox-mail-sync', {
+        body: {
+          accountId,
+          maxMessages,
+        }
+      });
       
-      try {
-        const oxResponse = await supabase.functions.invoke('ox-mail-sync', {
-          body: {
-            accountId,
-            maxMessages,
-          }
-        });
-        
-        data = oxResponse.data;
-        error = oxResponse.error;
-        
-        console.log('📧 OX response:', { data, error });
-        
-        if (error || !data?.success) {
-          throw new Error(error?.message || data?.error || 'OX Mail sync failed');
-        }
-      } catch (oxError: any) {
-        console.warn('⚠️ OX Mail sync failed, falling back to IMAP:', oxError.message);
-        
-        // Fallback to IMAP sync
-        const imapResponse = await supabase.functions.invoke('imap-sync', {
-          body: {
-            accountId,
-            maxMessages,
-          }
-        });
-        
-        data = imapResponse.data;
-        error = imapResponse.error;
-        
-        console.log('📧 IMAP fallback response:', { data, error });
-        
-        if (error) {
-          throw new Error(error.message || 'Failed to fetch emails');
-        }
+      console.log('📧 OX response:', { data, error });
 
-        if (!data.success) {
-          throw new Error(data.error || 'Fetch failed');
-        }
+      if (error) {
+        throw new Error(error.message || 'Failed to fetch emails via OX Mail API');
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'OX Mail sync failed');
       }
 
       console.log('✅ Live emails fetched:', data);
