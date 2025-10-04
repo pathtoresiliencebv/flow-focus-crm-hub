@@ -37,80 +37,65 @@ export const useCachedEmails = () => {
   });
 
   /**
-   * Fetch emails from database cache
+   * Fetch emails LIVE from IMAP (called on component mount)
+   * For initial load - syncEmails() is called when user clicks refresh
    */
   const fetchEmails = useCallback(async (accountId: string, folder: string = 'inbox') => {
+    // Don't auto-fetch on mount - user must click Synchroniseren
+    // This prevents hammering the IMAP server
+    console.log('📭 Ready to fetch emails - click Synchroniseren button');
+    
+    setState({
+      messages: [],
+      loading: false,
+      error: null,
+    });
+    
+    return [];
+  }, []);
+
+  /**
+   * Fetch emails LIVE from IMAP (no database storage - pure Roundcube style)
+   */
+  const syncEmails = useCallback(async (accountId: string) => {
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      console.log('📥 Fetching cached emails from database...', { accountId, folder });
+      console.log('🔄 Fetching emails LIVE from IMAP server...');
 
-      // Query email_messages table
-      const query = supabase
-        .from('email_messages')
-        .select('*')
-        .eq('folder', folder)
-        .order('received_at', { ascending: false });
-
-      const { data, error } = await query;
+      // Use imap-sync for LIVE email fetching (no DB storage)
+      const { data, error } = await supabase.functions.invoke('imap-sync', {
+        body: {
+          accountId,
+          fullSync: false, // Laatste 200 emails
+          maxMessages: 200,
+        }
+      });
 
       if (error) {
-        throw new Error(error.message || 'Failed to fetch emails from cache');
+        throw new Error(error.message || 'Failed to fetch emails');
       }
 
-      console.log('✅ Cached emails fetched:', { count: data?.length || 0 });
+      if (!data.success) {
+        throw new Error(data.error || 'Fetch failed');
+      }
 
+      console.log('✅ Live emails fetched:', data);
+
+      // Update state with LIVE messages (not from database)
       setState({
-        messages: (data as CachedEmail[]) || [],
+        messages: data.messages || [],
         loading: false,
         error: null,
       });
 
       return data;
     } catch (err: any) {
-      console.error('❌ Error fetching cached emails:', err);
+      console.error('❌ Error fetching live emails:', err);
       setState(prev => ({ ...prev, error: err.message, loading: false }));
       throw err;
     }
   }, []);
-
-  /**
-   * Sync emails from IMAP to database cache
-   */
-  const syncEmails = useCallback(async (accountId: string) => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
-
-    try {
-      console.log('🔄 Syncing emails from IMAP to cache...');
-
-      // TEMP: Use debug version to get detailed logs
-      const { data, error } = await supabase.functions.invoke('imap-cache-sync-debug', {
-        body: {
-          accountId,
-          fullSync: true,
-        }
-      });
-
-      if (error) {
-        throw new Error(error.message || 'Failed to sync emails');
-      }
-
-      if (!data.success) {
-        throw new Error(data.error || 'Sync failed');
-      }
-
-      console.log('✅ Email sync completed:', data);
-
-      // Refresh emails from cache
-      await fetchEmails(accountId);
-
-      return data;
-    } catch (err: any) {
-      console.error('❌ Error syncing emails:', err);
-      setState(prev => ({ ...prev, error: err.message, loading: false }));
-      throw err;
-    }
-  }, [fetchEmails]);
 
   /**
    * Get all folders with message counts
