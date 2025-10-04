@@ -51,20 +51,25 @@ export default function Email() {
     }
   }, [primaryAccount?.id, selectedFolder, fetchEmails]);
 
-  const handleSync = async () => {
+  const handleSync = async (loadMore: boolean = false) => {
     if (!primaryAccount) return;
     
     try {
-      console.log('🔄 Starting CACHE sync for account:', primaryAccount.id);
+      console.log('🔄 Starting email sync:', { accountId: primaryAccount.id, loadMore });
       
-      // Sync from IMAP to database cache
-      const result = await syncEmails(primaryAccount.id);
+      // Sync emails LIVE from IMAP
+      const result = await syncEmails(primaryAccount.id, { 
+        maxMessages: 200,
+        loadMore 
+      });
       
-      console.log('✅ Cache sync completed:', result);
+      console.log('✅ Sync completed:', result);
+      
+      const messageCount = result.messageCount || result.messages?.length || 0;
       
       toast({
         title: "Synchronisatie voltooid",
-        description: `${result.totalMessages || 0} berichten opgehaald van ${result.folders || 0} mappen.`,
+        description: `${messageCount} berichten opgehaald`,
       });
     } catch (error: any) {
       console.error('❌ Sync failed:', error);
@@ -245,7 +250,7 @@ export default function Email() {
               </div>
             </div>
 
-            {/* Email Messages (CACHED from database) */}
+            {/* Email Messages (LIVE from IMAP) */}
             <div className="flex-1 overflow-y-auto">
               {messagesLoading ? (
                 <div className="p-8 text-center text-gray-500">
@@ -253,7 +258,8 @@ export default function Email() {
                   <p className="text-sm">Emails laden...</p>
                 </div>
               ) : messages && messages.length > 0 ? (
-                messages.map((message) => (
+                <>
+                {messages.map((message) => (
                   <div
                     key={message.id}
                     onClick={() => setSelectedThread(message.id)}
@@ -299,7 +305,23 @@ export default function Email() {
                       </div>
                     </div>
                   </div>
-                ))
+                ))}
+                
+                {/* Load More Button */}
+                {messages.length > 0 && messages.length % 200 === 0 && (
+                  <div className="p-4 border-t bg-gray-50">
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => handleSync(true)}
+                      disabled={messagesLoading}
+                    >
+                      <RefreshCw className={cn("h-4 w-4 mr-2", messagesLoading && "animate-spin")} />
+                      Laad oudere emails (200 meer)
+                    </Button>
+                  </div>
+                )}
+                </>
               ) : (
                 <div className="p-8 text-center">
                   <Mail className="h-12 w-12 text-gray-300 mx-auto mb-3" />

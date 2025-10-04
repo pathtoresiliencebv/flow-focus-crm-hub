@@ -55,20 +55,30 @@ export const useCachedEmails = () => {
   }, []);
 
   /**
-   * Fetch emails LIVE from IMAP (no database storage - pure Roundcube style)
+   * Fetch emails LIVE from IMAP (HYBRID mode)
+   * 
+   * @param accountId - Email account ID
+   * @param options - Fetch options
+   *   - maxMessages: Number of recent messages to fetch (default: 200)
+   *   - loadMore: Append to existing messages (pagination)
    */
-  const syncEmails = useCallback(async (accountId: string) => {
+  const syncEmails = useCallback(async (
+    accountId: string, 
+    options: { maxMessages?: number; loadMore?: boolean } = {}
+  ) => {
+    const { maxMessages = 200, loadMore = false } = options;
+    
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      console.log('🔄 Fetching emails LIVE from IMAP server...');
+      console.log('🔄 Fetching emails LIVE from IMAP server...', { maxMessages, loadMore });
 
-      // Use imap-sync for LIVE email fetching (no DB storage)
+      // Use imap-sync for LIVE email fetching
       const { data, error } = await supabase.functions.invoke('imap-sync', {
         body: {
           accountId,
-          fullSync: false, // Laatste 200 emails
-          maxMessages: 200,
+          fullSync: false,
+          maxMessages,
         }
       });
 
@@ -82,12 +92,26 @@ export const useCachedEmails = () => {
 
       console.log('✅ Live emails fetched:', data);
 
-      // Update state with LIVE messages (not from database)
-      setState({
-        messages: data.messages || [],
+      // HYBRID: Save SENT emails to database for history
+      const sentMessages = (data.messages || []).filter((m: any) => 
+        m.folder === 'sent' || m.status === 'sent'
+      );
+      
+      if (sentMessages.length > 0) {
+        console.log('💾 Saving', sentMessages.length, 'sent emails to database...');
+        await supabase.from('email_messages').upsert(sentMessages, {
+          onConflict: 'external_message_id',
+        });
+      }
+
+      // Update state (append if loadMore, replace otherwise)
+      setState(prev => ({
+        messages: loadMore 
+          ? [...prev.messages, ...(data.messages || [])]
+          : data.messages || [],
         loading: false,
         error: null,
-      });
+      }));
 
       return data;
     } catch (err: any) {
