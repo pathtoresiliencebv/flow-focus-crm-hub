@@ -37,50 +37,29 @@ export const useCachedEmails = () => {
   });
 
   /**
-   * Fetch emails from database or IMAP depending on folder
-   * 
-   * @param accountId - Email account ID
-   * @param folder - Folder name (inbox, sent, drafts, etc.)
+   * Fetch emails - ALWAYS fetch LIVE from IMAP for inbox
+   * Database for other folders
    */
   const fetchEmails = useCallback(async (accountId: string, folder: string = 'inbox') => {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      // For SENT/DRAFTS/ARCHIVE folders: fetch from database
-      if (folder === 'sent' || folder === 'drafts' || folder === 'archive' || folder === 'trash') {
-        console.log('💾 Fetching', folder, 'emails from database...');
-        
-        const { data, error } = await supabase
-          .from('email_messages')
-          .select('*')
-          .eq('folder', folder)
-          .order('sent_at', { ascending: false });
-        
-        if (error) throw error;
-        
-        setState({
-          messages: data || [],
-          loading: false,
-          error: null,
-        });
-        
-        console.log('✅ Loaded', data?.length || 0, 'emails from database');
-        return data;
+      // For INBOX: ALWAYS sync LIVE from IMAP (auto-sync!)
+      if (folder === 'inbox') {
+        console.log('🔄 Auto-syncing inbox from IMAP...');
+        return await syncEmails(accountId, { maxMessages: 200, loadMore: false });
       }
       
-      // For INBOX: Try to load from database first (cached), then user can sync
-      console.log('💾 Loading inbox from database (cached)...');
+      // For SENT/DRAFTS/ARCHIVE folders: fetch from database
+      console.log('💾 Fetching', folder, 'emails from database...');
       
       const { data, error } = await supabase
         .from('email_messages')
         .select('*')
-        .eq('folder', 'inbox')
-        .order('received_at', { ascending: false })
-        .limit(200);
+        .eq('folder', folder)
+        .order('sent_at', { ascending: false });
       
-      if (error) {
-        console.error('Database load failed:', error);
-      }
+      if (error) throw error;
       
       setState({
         messages: data || [],
@@ -88,8 +67,8 @@ export const useCachedEmails = () => {
         error: null,
       });
       
-      console.log('✅ Loaded', data?.length || 0, 'cached inbox emails (click Synchroniseren for latest)');
-      return data || [];
+      console.log('✅ Loaded', data?.length || 0, 'emails from database');
+      return data;
     } catch (err: any) {
       console.error('❌ Error fetching emails:', err);
       setState(prev => ({ ...prev, error: err.message, loading: false }));
