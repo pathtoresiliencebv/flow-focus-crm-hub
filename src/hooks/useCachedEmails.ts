@@ -83,7 +83,8 @@ export const useCachedEmails = () => {
     try {
       console.log('🔄 Syncing emails from IMAP to cache...');
 
-      const { data, error } = await supabase.functions.invoke('imap-cache-sync', {
+      // TEMP: Use debug version to get detailed logs
+      const { data, error } = await supabase.functions.invoke('imap-cache-sync-debug', {
         body: {
           accountId,
           fullSync: true,
