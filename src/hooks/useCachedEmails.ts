@@ -97,17 +97,14 @@ export const useCachedEmails = () => {
     try {
       console.log('🔄 Fetching emails LIVE from IMAP server...', { maxMessages, loadMore });
 
-      // Use OX Mail API
-      console.log('📧 Calling ox-mail-sync with:', { accountId, maxMessages });
-      
-      const { data, error } = await supabase.functions.invoke('ox-mail-sync', {
+      // Use IMAP sync (reliable)
+      const { data, error } = await supabase.functions.invoke('imap-sync', {
         body: {
           accountId,
+          fullSync: false,
           maxMessages,
         }
       });
-      
-      console.log('📧 OX response:', { data, error });
 
       if (error) {
         throw new Error(error.message || 'Failed to fetch emails');
