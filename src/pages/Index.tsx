@@ -51,7 +51,6 @@ const Index = () => {
     if (window.location.pathname === "/invoices") return "invoices";
     if (window.location.pathname === "/quotes/new") return "quotes";
     if (window.location.pathname === "/quotes") return "quotes";
-    if (window.location.pathname === "/webmail") return "email";
     
     // Check for tab parameter in URL
     const urlParams = new URLSearchParams(window.location.search);
