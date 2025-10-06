@@ -248,21 +248,32 @@ export const InvoicesTable = ({
                           };
 
                           // Generate and download PDF
-                          // Use PDF service for generation
-                          const { PDFService } = await import('../../services/pdfService');
-                          
+                          // Simple PDF generation using browser print
                           try {
-                            await PDFService.generatePDF(tempDiv, {
-                              filename: filename,
-                              title: filename,
-                              orientation: 'portrait',
-                              margin: 20
-                            });
-                            
-                            toast({
-                              title: "PDF Geopend! ✓",
-                              description: `${filename} is geopend voor printen.`,
-                            });
+                            const printWindow = window.open('', '_blank');
+                            if (printWindow) {
+                              printWindow.document.write(`
+                                <!DOCTYPE html>
+                                <html>
+                                  <head>
+                                    <title>${filename}</title>
+                                    <meta charset="utf-8">
+                                    <style>
+                                      @media print { @page { size: A4; margin: 20mm; } body { font-family: Arial, sans-serif; } }
+                                    </style>
+                                  </head>
+                                  <body>${tempDiv.innerHTML}</body>
+                                </html>
+                              `);
+                              printWindow.document.close();
+                              printWindow.focus();
+                              printWindow.print();
+                              
+                              toast({
+                                title: "PDF Geopend! ✓",
+                                description: `${filename} is geopend voor printen.`,
+                              });
+                            }
                           } catch (error) {
                             console.error('PDF generation error:', error);
                             toast({
@@ -332,21 +343,32 @@ export const InvoicesTable = ({
                           };
 
                           // Generate PDF and open in new tab
-                          // Use PDF service for generation
-                          const { PDFService } = await import('../../services/pdfService');
-                          
+                          // Simple PDF generation using browser print
                           try {
-                            await PDFService.generatePDF(tempDiv, {
-                              filename: 'Factuur.pdf',
-                              title: 'Factuur',
-                              orientation: 'portrait',
-                              margin: 20
-                            });
-                            
-                            toast({
-                              title: "PDF Geopend! ✓",
-                              description: "De factuur is geopend voor printen.",
-                            });
+                            const printWindow = window.open('', '_blank');
+                            if (printWindow) {
+                              printWindow.document.write(`
+                                <!DOCTYPE html>
+                                <html>
+                                  <head>
+                                    <title>Factuur</title>
+                                    <meta charset="utf-8">
+                                    <style>
+                                      @media print { @page { size: A4; margin: 20mm; } body { font-family: Arial, sans-serif; } }
+                                    </style>
+                                  </head>
+                                  <body>${tempDiv.innerHTML}</body>
+                                </html>
+                              `);
+                              printWindow.document.close();
+                              printWindow.focus();
+                              printWindow.print();
+                              
+                              toast({
+                                title: "PDF Geopend! ✓",
+                                description: "De factuur is geopend voor printen.",
+                              });
+                            }
                           } catch (error) {
                             console.error('PDF generation error:', error);
                             toast({
