@@ -87,43 +87,16 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
         };
 
         // Generate and download PDF
-        // Simple PDF generation using browser print
-        try {
-          const printWindow = window.open('', '_blank');
-          if (printWindow) {
-            printWindow.document.write(`
-              <!DOCTYPE html>
-              <html>
-                <head>
-                  <title>${filename}</title>
-                  <meta charset="utf-8">
-                  <style>
-                    @media print { @page { size: A4; margin: 20mm; } body { font-family: Arial, sans-serif; } }
-                  </style>
-                </head>
-                <body>${tempDiv.innerHTML}</body>
-              </html>
-            `);
-            printWindow.document.close();
-            printWindow.focus();
-            printWindow.print();
-            
-            toast({
-              title: "PDF Geopend! ✓",
-              description: `${filename} is geopend voor printen.`,
-            });
-          }
-        } catch (error) {
-          console.error('PDF generation error:', error);
-          toast({
-            title: "PDF Fout",
-            description: "Er ging iets mis bij het genereren van de PDF.",
-            variant: "destructive",
-          });
-        } finally {
-          // Clean up temp div
-          document.body.removeChild(tempDiv);
-        }
+        // Temporarily disabled PDF generation
+        console.log('PDF generation temporarily disabled');
+        
+        // Clean up temp div
+        document.body.removeChild(tempDiv);
+        
+        toast({
+          title: "PDF Tijdelijk Uitgeschakeld",
+          description: "PDF generatie is tijdelijk uitgeschakeld voor build fixes.",
+        });
       } else {
         console.error('❌ No HTML content in response:', data);
         toast({
@@ -184,43 +157,16 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
         };
 
         // Generate PDF and open in new tab
-        // Simple PDF generation using browser print
-        try {
-          const printWindow = window.open('', '_blank');
-          if (printWindow) {
-            printWindow.document.write(`
-              <!DOCTYPE html>
-              <html>
-                <head>
-                  <title>Offerte</title>
-                  <meta charset="utf-8">
-                  <style>
-                    @media print { @page { size: A4; margin: 20mm; } body { font-family: Arial, sans-serif; } }
-                  </style>
-                </head>
-                <body>${tempDiv.innerHTML}</body>
-              </html>
-            `);
-            printWindow.document.close();
-            printWindow.focus();
-            printWindow.print();
-            
-            toast({
-              title: "PDF Geopend! ✓",
-              description: "De offerte is geopend voor printen.",
-            });
-          }
-        } catch (error) {
-          console.error('PDF generation error:', error);
-          toast({
-            title: "PDF Fout",
-            description: "Er ging iets mis bij het genereren van de PDF.",
-            variant: "destructive",
-          });
-        } finally {
-          // Clean up temp div
-          document.body.removeChild(tempDiv);
-        }
+        // Temporarily disabled PDF generation
+        console.log('PDF generation temporarily disabled');
+        
+        // Clean up temp div
+        document.body.removeChild(tempDiv);
+        
+        toast({
+          title: "PDF Tijdelijk Uitgeschakeld",
+          description: "PDF generatie is tijdelijk uitgeschakeld voor build fixes.",
+        });
       } else {
         console.error('❌ No HTML content for printing:', data);
         toast({
