@@ -124,14 +124,10 @@ export function SimplifiedPlanningManagement() {
           return (
             <div
               key={index}
-              className={`min-h-[120px] p-1 border border-gray-200 cursor-pointer hover:bg-gray-50 ${
-                isCurrentMonth ? 'bg-white' : 'bg-gray-50'
-              } ${isToday ? 'bg-blue-50 border-blue-300' : ''}`}
+              className="min-h-[120px] p-1 border border-gray-200 cursor-pointer hover:bg-gray-50 bg-white"
               onClick={() => handleDateClick(date)}
             >
-              <div className={`text-sm font-medium mb-1 ${
-                isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
-              } ${isToday ? 'text-blue-600 font-bold' : ''}`}>
+              <div className="text-sm font-medium mb-1 text-gray-900">
                 {date.getDate()}
               </div>
               
@@ -140,8 +136,7 @@ export function SimplifiedPlanningManagement() {
                 {events.slice(0, 3).map((event, eventIndex) => (
                   <div
                     key={eventIndex}
-                    className="text-xs p-1 rounded text-white truncate cursor-pointer"
-                    style={{ backgroundColor: '#3B82F6' }}
+                    className="text-xs p-1 rounded text-white truncate cursor-pointer bg-blue-500"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleEventClick(event);
