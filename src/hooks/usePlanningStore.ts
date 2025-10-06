@@ -201,8 +201,10 @@ export const usePlanningStore = () => {
   };
 
   useEffect(() => {
-    fetchPlanningItems();
-  }, [user]);
+    if (user) {
+      fetchPlanningItems();
+    }
+  }, [user?.id]);
 
   return {
     planningItems,
