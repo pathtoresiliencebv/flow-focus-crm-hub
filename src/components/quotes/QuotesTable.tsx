@@ -87,14 +87,29 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
         };
 
         // Generate and download PDF
-        // html2pdf().set(opt).from(tempDiv).save().then(() => { // Temporarily disabled
-        console.log('PDF generation temporarily disabled'); // Temporary fallback
-        if (true) { // Temporary condition
-          document.body.removeChild(tempDiv);
-          toast({
-            title: "PDF Gedownload! ✓",
-            description: `${filename} is succesvol gedownload.`,
-          });
+        // Temporarily use print functionality instead of PDF generation
+        console.log('PDF generation temporarily disabled - using print instead');
+        
+        // Clean up temp div
+        document.body.removeChild(tempDiv);
+        
+        // Use browser print functionality as fallback
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(`
+            <html>
+              <head><title>${filename}</title></head>
+              <body>${tempDiv.innerHTML}</body>
+            </html>
+          `);
+          printWindow.document.close();
+          printWindow.focus();
+          printWindow.print();
+        }
+        
+        toast({
+          title: "Print Geopend! ✓",
+          description: `${filename} is geopend voor printen.`,
         });
       } else {
         console.error('❌ No HTML content in response:', data);
@@ -156,19 +171,29 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
         };
 
         // Generate PDF and open in new tab
-        // html2pdf().set(opt).from(tempDiv).outputPdf('blob').then((pdfBlob: Blob) => { // Temporarily disabled
-        console.log('PDF generation temporarily disabled'); // Temporary fallback
-        if (true) { // Temporary condition
-          document.body.removeChild(tempDiv);
-          
-          // Open PDF in new window
-          const pdfUrl = URL.createObjectURL(pdfBlob);
-          window.open(pdfUrl, '_blank');
-          
-          toast({
-            title: "PDF Geopend! ✓",
-            description: "De PDF is geopend in een nieuw tabblad.",
-          });
+        // Temporarily use print functionality instead of PDF generation
+        console.log('PDF generation temporarily disabled - using print instead');
+        
+        // Clean up temp div
+        document.body.removeChild(tempDiv);
+        
+        // Use browser print functionality as fallback
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(`
+            <html>
+              <head><title>Offerte Print</title></head>
+              <body>${tempDiv.innerHTML}</body>
+            </html>
+          `);
+          printWindow.document.close();
+          printWindow.focus();
+          printWindow.print();
+        }
+        
+        toast({
+          title: "Print Geopend! ✓",
+          description: "De offerte is geopend voor printen.",
         });
       } else {
         console.error('❌ No HTML content for printing:', data);
