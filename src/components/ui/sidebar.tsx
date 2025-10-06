@@ -121,8 +121,8 @@ interface SidebarProps {
 export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
   const { user, profile, logout, hasPermission } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  // Default collapsed state for email tab
-  const [isCollapsed, setIsCollapsed] = useState(activeTab === 'email');
+  // Default collapsed state for all tabs
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
   // Auto-collapse when switching to email tab
   useEffect(() => {
