@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Calendar as CalendarIcon, Plus, ChevronLeft, ChevronRight, LayoutDay, LayoutWeek, LayoutGrid, Filter } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, LayoutDay, LayoutWeek, LayoutGrid, Filter } from "lucide-react";
 import { usePlanningStore } from '@/hooks/usePlanningStore';
 import { useRealUserStore } from '@/hooks/useRealUserStore';
 import { useCrmStore } from '@/hooks/useCrmStore';
@@ -244,7 +244,7 @@ export function SimplifiedPlanningManagement() {
                 variant="outline"
                 size="sm"
                 onClick={() => toggleFilter(installer.id)}
-                className={activeFilters.includes(installer.id) ? 'bg-blue-100' : ''}
+                className={`${activeFilters.includes(installer.id) ? 'bg-blue-100' : ''}`}
               >
                 <div 
                   className="w-2 h-2 rounded-full mr-1 bg-blue-500"
