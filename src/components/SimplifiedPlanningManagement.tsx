@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Calendar as CalendarIcon, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar as CalendarIcon, Plus, ChevronLeft, ChevronRight, LayoutDay, LayoutWeek, LayoutGrid, Filter } from "lucide-react";
 import { usePlanningStore } from '@/hooks/usePlanningStore';
 import { useRealUserStore } from '@/hooks/useRealUserStore';
 import { useCrmStore } from '@/hooks/useCrmStore';
@@ -28,6 +28,9 @@ export function SimplifiedPlanningManagement() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedInstaller, setSelectedInstaller] = useState<string>('');
+  const [calendarView, setCalendarView] = useState<'day' | 'week' | 'month'>('month');
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
 
   const { 
     planningItems, 
@@ -37,6 +40,20 @@ export function SimplifiedPlanningManagement() {
 
   const { installers } = useRealUserStore();
   const { projects } = useCrmStore();
+
+  // User colors for legend
+  const userColors = [
+    '#EF4444', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6',
+    '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'
+  ];
+
+  const toggleFilter = (installerId: string) => {
+    setActiveFilters(prev => 
+      prev.includes(installerId) 
+        ? prev.filter(id => id !== installerId)
+        : [...prev, installerId]
+    );
+  };
 
   // Filter projects that need planning
   const projectsToSchedule = projects.filter(p => 
@@ -84,9 +101,18 @@ export function SimplifiedPlanningManagement() {
   };
 
   const getEventsForDate = (date: Date) => {
-    return planningItems.filter(item => 
+    let events = planningItems.filter(item => 
       isSameDay(new Date(item.start_date), date)
     );
+
+    // Apply installer filters
+    if (activeFilters.length > 0) {
+      events = events.filter(event => 
+        activeFilters.includes(event.assigned_user_id)
+      );
+    }
+
+    return events;
   };
 
   const getStatusColor = (status: string) => {
@@ -159,44 +185,78 @@ export function SimplifiedPlanningManagement() {
   };
 
   return (
-    <div className="flex-1 overflow-auto p-6 space-y-6">
+    <div className="h-screen flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="bg-white border-b p-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold">Planning</h1>
-          <p className="text-gray-600">Beheer projecten en planning</p>
-        </div>
-        <div className="flex gap-2">
           <Button onClick={() => setShowPlanningDialog(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-5 w-5 mr-2" />
             Planning Toevoegen
+          </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="font-medium">{format(currentDate, 'MMMM yyyy', { locale: nl })}</span>
+          <Button variant="outline" size="icon" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      {/* Calendar */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <CalendarIcon className="h-5 w-5" />
-              Planning Kalender
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
-                <ChevronLeft className="h-4 w-4" />
+      {/* Main Calendar Content */}
+      <div className="flex-1 overflow-auto p-4">
+        <Card className="shadow-lg">
+          <CardContent className="p-0">
+            {renderMonthView()}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Footer Controls */}
+      <div className="bg-white border-t p-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Button variant={calendarView === 'day' ? 'default' : 'outline'} onClick={() => setCalendarView('day')} size="sm">
+            <LayoutDay className="h-4 w-4 mr-2" /> Dag
+          </Button>
+          <Button variant={calendarView === 'week' ? 'default' : 'outline'} onClick={() => setCalendarView('week')} size="sm">
+            <LayoutWeek className="h-4 w-4 mr-2" /> Week
+          </Button>
+          <Button variant={calendarView === 'month' ? 'default' : 'outline'} onClick={() => setCalendarView('month')} size="sm">
+            <LayoutGrid className="h-4 w-4 mr-2" /> Maand
+          </Button>
+        </div>
+        
+        {/* Filter Toggle and Installer Legend */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <Filter className="h-4 w-4 mr-2" />
+            Filters
+          </Button>
+          
+          {/* Installer Legend */}
+          <div className="flex gap-2">
+            {installers.slice(0, 6).map((installer, index) => (
+              <Button
+                key={installer.id}
+                variant="outline"
+                size="sm"
+                onClick={() => toggleFilter(installer.id)}
+                className={activeFilters.includes(installer.id) ? 'bg-blue-100' : ''}
+              >
+                <div className="w-2 h-2 rounded-full mr-1" style={{ backgroundColor: userColors[index % userColors.length] }}></div>
+                {installer.full_name || installer.email}
               </Button>
-              <span className="font-medium">{format(currentDate, 'MMMM yyyy', { locale: nl })}</span>
-              <Button variant="outline" size="icon" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+            ))}
           </div>
-        </CardHeader>
-        <CardContent>
-          {renderMonthView()}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Project Sidebar - shown when clicking empty date */}
       <Sheet open={showProjectSidebar} onOpenChange={setShowProjectSidebar}>
