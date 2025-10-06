@@ -41,11 +41,7 @@ export function SimplifiedPlanningManagement() {
   const { installers } = useRealUserStore();
   const { projects } = useCrmStore();
 
-  // User colors for legend
-  const userColors = [
-    '#EF4444', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6',
-    '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'
-  ];
+  // User colors for legend - using Tailwind classes instead
 
   const toggleFilter = (installerId: string) => {
     setActiveFilters(prev => 
@@ -250,7 +246,9 @@ export function SimplifiedPlanningManagement() {
                 onClick={() => toggleFilter(installer.id)}
                 className={activeFilters.includes(installer.id) ? 'bg-blue-100' : ''}
               >
-                <div className="w-2 h-2 rounded-full mr-1" style={{ backgroundColor: userColors[index % userColors.length] }}></div>
+                <div 
+                  className="w-2 h-2 rounded-full mr-1 bg-blue-500"
+                ></div>
                 {installer.full_name || installer.email}
               </Button>
             ))}
