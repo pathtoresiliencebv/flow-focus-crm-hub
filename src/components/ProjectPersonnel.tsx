@@ -62,14 +62,6 @@ export const ProjectPersonnel = ({ projectId }: ProjectPersonnelProps) => {
   // Check if user has permission to manage personnel
   const canManagePersonnel = profile?.role === 'Administrator' || profile?.role === 'Administratie';
 
-  // DEBUG LOGGING
-  console.log('🔍 [ProjectPersonnel Debug]');
-  console.log('Current user profile:', profile);
-  console.log('Can manage personnel:', canManagePersonnel);
-  console.log('Available monteurs:', monteurs);
-  console.log('Monteurs count:', monteurs.length);
-  console.log('Users loading:', usersLoading);
-  console.log('Assignments loading:', loading);
 
   return (
     <Card>
@@ -187,30 +179,6 @@ export const ProjectPersonnel = ({ projectId }: ProjectPersonnelProps) => {
         )}
       </CardHeader>
       <CardContent>
-        {/* DEBUG SECTION - Only visible for administrators */}
-        {canManagePersonnel && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 space-y-2 mb-6">
-            <h4 className="font-semibold text-yellow-800">🔍 Debug Info (Administrator Only)</h4>
-            <div className="text-sm text-yellow-700 space-y-1">
-              <p><strong>Uw rol:</strong> {profile?.role}</p>
-              <p><strong>Totaal beschikbare monteurs:</strong> {monteurs.length}</p>
-              <p><strong>Loading states:</strong> Users: {usersLoading ? 'Loading...' : 'Loaded'}, Assignments: {loading ? 'Loading...' : 'Loaded'}</p>
-              {monteurs.length === 0 && (
-                <p className="text-red-600 font-medium">⚠️ PROBLEEM: Geen monteurs gevonden!</p>
-              )}
-              {monteurs.length > 0 && (
-                <div>
-                  <p><strong>Beschikbare monteurs:</strong></p>
-                  <ul className="list-disc list-inside ml-4">
-                    {monteurs.map(monteur => (
-                      <li key={monteur.id}>{monteur.full_name} ({monteur.email})</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
         {!canManagePersonnel ? (
           <div className="text-center py-12 space-y-4">
             <Lock className="h-12 w-12 text-muted-foreground mx-auto" />

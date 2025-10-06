@@ -121,75 +121,77 @@ const ProjectDetail = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-          <Button variant="outline" onClick={() => navigate(-1)} className="w-fit">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Terug
-          </Button>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <h2 className="text-xl sm:text-2xl font-bold">{project.title}</h2>
-            <span className={`px-2 py-1 rounded-full text-xs w-fit ${
-              project.status === "gepland" ? "bg-orange-100 text-orange-800" :
-              project.status === "afgerond" ? "bg-green-100 text-green-800" :
-              project.status === "herkeuring" ? "bg-gray-100 text-gray-800" :
-              project.status === 'in-uitvoering' ? 'bg-blue-100 text-blue-800' :
-              "bg-red-100 text-red-800"
-            }`}>
-              {project.status === "te-plannen" ? "Te plannen" :
-               project.status === "gepland" ? "Gepland" :
-               project.status === "in-uitvoering" ? "In uitvoering" :
-               project.status === "herkeuring" ? "Herkeuring" :
-               project.status === "afgerond" ? "Afgerond" :
-               "Onbekend"}
-            </span>
-          </div>
-        </div>
-        
-        <div className="flex gap-2">
-          {!isEditing ? (
-            <Button onClick={handleEditStart} size="sm" className="w-full sm:w-auto">
-              <Edit className="mr-2 h-4 w-4" />
-              Bewerken
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+            <Button variant="outline" onClick={() => navigate(-1)} className="w-fit">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Terug
             </Button>
-          ) : (
-            <>
-              <Button variant="outline" onClick={handleEditCancel} size="sm" className="flex-1 sm:flex-none">
-                <X className="mr-2 h-4 w-4" />
-                Annuleren
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <h2 className="text-xl sm:text-2xl font-bold">{project.title}</h2>
+              <span className={`px-2 py-1 rounded-full text-xs w-fit ${
+                project.status === "gepland" ? "bg-orange-100 text-orange-800" :
+                project.status === "afgerond" ? "bg-green-100 text-green-800" :
+                project.status === "herkeuring" ? "bg-gray-100 text-gray-800" :
+                project.status === 'in-uitvoering' ? 'bg-blue-100 text-blue-800' :
+                "bg-red-100 text-red-800"
+              }`}>
+                {project.status === "te-plannen" ? "Te plannen" :
+                 project.status === "gepland" ? "Gepland" :
+                 project.status === "in-uitvoering" ? "In uitvoering" :
+                 project.status === "herkeuring" ? "Herkeuring" :
+                 project.status === "afgerond" ? "Afgerond" :
+                 "Onbekend"}
+              </span>
+            </div>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-2">
+            {!isEditing ? (
+              <Button onClick={handleEditStart} size="sm" className="w-full sm:w-auto">
+                <Edit className="mr-2 h-4 w-4" />
+                Bewerken
               </Button>
-              <Button onClick={handleEditSave} size="sm" className="flex-1 sm:flex-none">
-                <Save className="mr-2 h-4 w-4" />
-                Opslaan
-              </Button>
-            </>
-          )}
-        </div>
-
-        {/* Project Action Buttons for Installateurs */}
-        {canManageProject && (
-          <div className="flex gap-2">
-            {project.status === 'gepland' && (
-              <Button 
-                onClick={handleStartProject}
-                disabled={isStarting}
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                {isStarting ? 'Project starten...' : 'Project Starten'}
-              </Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={handleEditCancel} size="sm" className="flex-1 sm:flex-none">
+                  <X className="mr-2 h-4 w-4" />
+                  Annuleren
+                </Button>
+                <Button onClick={handleEditSave} size="sm" className="flex-1 sm:flex-none">
+                  <Save className="mr-2 h-4 w-4" />
+                  Opslaan
+                </Button>
+              </>
             )}
-            
-            {project.status === 'in-uitvoering' && (
-              <Button 
-                onClick={handleCompleteProject}
-                disabled={isCompleting}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                Project Opleveren
-              </Button>
+
+            {/* Project Action Buttons for Installateurs */}
+            {canManageProject && (
+              <div className="flex gap-2">
+                {project.status === 'gepland' && (
+                  <Button 
+                    onClick={handleStartProject}
+                    disabled={isStarting}
+                    className="bg-green-600 hover:bg-green-700 text-white w-full sm:w-auto"
+                  >
+                    {isStarting ? 'Project starten...' : 'Project Starten'}
+                  </Button>
+                )}
+                
+                {project.status === 'in-uitvoering' && (
+                  <Button 
+                    onClick={handleCompleteProject}
+                    disabled={isCompleting}
+                    className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
+                  >
+                    Project Opleveren
+                  </Button>
+                )}
+              </div>
             )}
           </div>
-        )}
+        </div>
       </div>
       
       <div className={`grid grid-cols-1 ${profile?.role === 'Installateur' ? 'lg:grid-cols-2' : 'lg:grid-cols-3'} gap-4 sm:gap-6`}>
@@ -351,10 +353,10 @@ const ProjectDetail = () => {
       </div>
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <Sheet open={showPlanning} onOpenChange={setShowPlanning}>
           <SheetTrigger asChild>
-            <Button variant="outline" className="flex flex-col gap-2 py-6 h-auto">
+            <Button variant="outline" className="flex flex-col gap-2 py-6 h-auto w-full">
               <Calendar className="h-6 w-6" />
               <span className="font-medium">Planning</span>
             </Button>
@@ -371,7 +373,7 @@ const ProjectDetail = () => {
 
         <Sheet open={showMaterials} onOpenChange={setShowMaterials}>
           <SheetTrigger asChild>
-            <Button variant="outline" className="flex flex-col gap-2 py-6 h-auto">
+            <Button variant="outline" className="flex flex-col gap-2 py-6 h-auto w-full">
               <Package className="h-6 w-6" />
               <span className="font-medium">Materialen</span>
             </Button>
@@ -388,7 +390,7 @@ const ProjectDetail = () => {
 
         <Sheet open={showPersonnel} onOpenChange={setShowPersonnel}>
           <SheetTrigger asChild>
-            <Button variant="outline" className="flex flex-col gap-2 py-6 h-auto">
+            <Button variant="outline" className="flex flex-col gap-2 py-6 h-auto w-full">
               <UserCog className="h-6 w-6" />
               <span className="font-medium">Personeel</span>
             </Button>

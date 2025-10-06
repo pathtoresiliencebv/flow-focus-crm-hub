@@ -35,7 +35,7 @@ const CustomerDetail = () => {
         const { data: invoiceData, error: invoiceError } = await supabase
           .from('invoices')
           .select('*')
-          .or(`customer_id.eq.${customerId},customer_name.eq.${customer.name}`)
+          .or(`customer_id.eq.${customerId},customer_name.ilike.%${customer.name}%`)
           .order('created_at', { ascending: false });
 
         if (!invoiceError && invoiceData) {
@@ -48,7 +48,7 @@ const CustomerDetail = () => {
         const { data: quoteData, error: quoteError } = await supabase
           .from('quotes')
           .select('*')
-          .or(`customer_id.eq.${customerId},customer_name.eq.${customer.name}`)
+          .or(`customer_id.eq.${customerId},customer_name.ilike.%${customer.name}%`)
           .order('created_at', { ascending: false });
 
         if (!quoteError && quoteData) {
