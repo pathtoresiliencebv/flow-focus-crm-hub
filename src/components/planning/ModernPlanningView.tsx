@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -39,7 +39,7 @@ export function ModernPlanningView({ onEventClick, onDateClick }: ModernPlanning
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const [showLegend, setShowLegend] = useState(true);
+  const [showLegend] = useState(true);
 
   const { 
     planningItems, 
