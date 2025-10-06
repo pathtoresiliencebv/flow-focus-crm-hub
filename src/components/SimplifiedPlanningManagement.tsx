@@ -2,28 +2,31 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar } from "@/components/ui/calendar";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar as CalendarIcon, Clock, MapPin, User, Plus, Search, Filter } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Calendar as CalendarIcon, Clock, MapPin, User, Plus, Search, Filter, ChevronLeft, ChevronRight } from "lucide-react";
 import { usePlanningStore } from '@/hooks/usePlanningStore';
 import { useRealUserStore } from '@/hooks/useRealUserStore';
 import { useCrmStore } from '@/hooks/useCrmStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { format, isSameDay, addDays, startOfWeek, endOfWeek } from 'date-fns';
+import { format, isSameDay, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
 export function SimplifiedPlanningManagement() {
   const { toast } = useToast();
   const { user, hasPermission } = useAuth();
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [showPlanningDialog, setShowPlanningDialog] = useState(false);
-  const [showProjectOverview, setShowProjectOverview] = useState(true);
+  const [showProjectSidebar, setShowProjectSidebar] = useState(false);
+  const [showEventDetails, setShowEventDetails] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedInstaller, setSelectedInstaller] = useState<string>('');
 
@@ -48,7 +51,12 @@ export function SimplifiedPlanningManagement() {
 
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
-    setShowPlanningDialog(true);
+    setShowProjectSidebar(true);
+  };
+
+  const handleEventClick = (event: any) => {
+    setSelectedEvent(event);
+    setShowEventDetails(true);
   };
 
   const handlePlanningSubmit = async (planningData: any) => {
@@ -65,6 +73,7 @@ export function SimplifiedPlanningManagement() {
       });
       
       setShowPlanningDialog(false);
+      setShowProjectSidebar(false);
     } catch (error) {
       console.error('Error adding planning:', error);
       toast({
@@ -89,6 +98,72 @@ export function SimplifiedPlanningManagement() {
     }
   };
 
+  // Calendar month view
+  const renderMonthView = () => {
+    const monthStart = startOfMonth(currentDate);
+    const monthEnd = endOfMonth(currentDate);
+    const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
+    const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
+    
+    const allDays = eachDayOfInterval({ start: startDate, end: endDate });
+    
+    return (
+      <div className="grid grid-cols-7 gap-1">
+        {/* Day headers */}
+        {['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'].map(day => (
+          <div key={day} className="p-2 text-center text-sm font-medium text-gray-500 bg-gray-50">
+            {day}
+          </div>
+        ))}
+        
+        {/* Calendar days */}
+        {allDays.map((date, index) => {
+          const events = getEventsForDate(date);
+          const isToday = isSameDay(date, new Date());
+          const isCurrentMonth = date.getMonth() === currentDate.getMonth();
+          
+          return (
+            <div
+              key={index}
+              className={`min-h-[120px] p-1 border border-gray-200 cursor-pointer hover:bg-gray-50 ${
+                isCurrentMonth ? 'bg-white' : 'bg-gray-50'
+              } ${isToday ? 'bg-blue-50 border-blue-300' : ''}`}
+              onClick={() => handleDateClick(date)}
+            >
+              <div className={`text-sm font-medium mb-1 ${
+                isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
+              } ${isToday ? 'text-blue-600 font-bold' : ''}`}>
+                {date.getDate()}
+              </div>
+              
+              {/* Events for this day */}
+              <div className="space-y-1">
+                {events.slice(0, 3).map((event, eventIndex) => (
+                  <div
+                    key={eventIndex}
+                    className="text-xs p-1 rounded text-white truncate cursor-pointer"
+                    style={{ backgroundColor: '#3B82F6' }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEventClick(event);
+                    }}
+                  >
+                    {event.title}
+                  </div>
+                ))}
+                {events.length > 3 && (
+                  <div className="text-xs text-gray-500">
+                    +{events.length - 3} meer
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="flex-1 overflow-auto p-6 space-y-6">
       {/* Header */}
@@ -98,13 +173,6 @@ export function SimplifiedPlanningManagement() {
           <p className="text-gray-600">Beheer projecten en planning</p>
         </div>
         <div className="flex gap-2">
-          <Button 
-            variant={showProjectOverview ? "default" : "outline"}
-            onClick={() => setShowProjectOverview(!showProjectOverview)}
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            Projecten
-          </Button>
           <Button onClick={() => setShowPlanningDialog(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Planning Toevoegen
@@ -112,121 +180,121 @@ export function SimplifiedPlanningManagement() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Project Overview */}
-        {showProjectOverview && (
-          <div className="lg:col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Search className="h-5 w-5" />
-                  Te Plannen Projecten
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <Input
-                    placeholder="Zoek projecten..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full"
-                  />
-                  
-                  <div className="space-y-2 max-h-96 overflow-y-auto">
-                    {filteredProjects.map((project) => (
-                      <div
-                        key={project.id}
-                        className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
-                        onClick={() => {
-                          setSelectedDate(new Date(project.date || new Date()));
-                          setShowPlanningDialog(true);
-                        }}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-sm">{project.title}</h4>
-                            <p className="text-xs text-gray-600">{project.customer_name}</p>
-                            <p className="text-xs text-gray-500">
-                              {project.date ? format(new Date(project.date), 'dd MMM yyyy', { locale: nl }) : 'Geen datum'}
-                            </p>
-                          </div>
-                          <Badge className={getStatusColor(project.status)}>
-                            {project.status}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+      {/* Calendar */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <CalendarIcon className="h-5 w-5" />
+              Planning Kalender
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" onClick={() => setCurrentDate(subMonths(currentDate, 1))}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="font-medium">{format(currentDate, 'MMMM yyyy', { locale: nl })}</span>
+              <Button variant="outline" size="icon" onClick={() => setCurrentDate(addMonths(currentDate, 1))}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        )}
+        </CardHeader>
+        <CardContent>
+          {renderMonthView()}
+        </CardContent>
+      </Card>
 
-        {/* Calendar */}
-        <div className={cn("lg:col-span-2", !showProjectOverview && "lg:col-span-3")}>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CalendarIcon className="h-5 w-5" />
-                Planning Kalender
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                onDayClick={handleDateClick}
-                className="rounded-md border"
-                locale={nl}
-                modifiers={{
-                  hasEvents: (date) => getEventsForDate(date).length > 0
-                }}
-                modifiersStyles={{
-                  hasEvents: {
-                    backgroundColor: '#3B82F6',
-                    color: 'white',
-                    borderRadius: '4px'
-                  }
-                }}
-              />
-              
-              {/* Events for selected date */}
-              {selectedDate && (
-                <div className="mt-4">
-                  <h4 className="font-medium mb-2">
-                    Planning voor {format(selectedDate, 'dd MMMM yyyy', { locale: nl })}
-                  </h4>
-                  <div className="space-y-2">
-                    {getEventsForDate(selectedDate).map((item) => (
-                      <div key={item.id} className="p-2 bg-blue-50 rounded border">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium text-sm">{item.title}</p>
-                            <p className="text-xs text-gray-600">
-                              {item.start_time} - {item.end_time}
-                            </p>
-                          </div>
-                          <Badge variant="outline">{item.status}</Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Planning Dialog */}
-      <Sheet open={showPlanningDialog} onOpenChange={setShowPlanningDialog}>
+      {/* Project Sidebar - shown when clicking empty date */}
+      <Sheet open={showProjectSidebar} onOpenChange={setShowProjectSidebar}>
         <SheetContent side="right" className="w-full sm:max-w-md">
           <SheetHeader>
-            <SheetTitle>Planning Toevoegen</SheetTitle>
+            <SheetTitle>Projecten Plannen - {selectedDate ? format(selectedDate, 'dd MMMM yyyy', { locale: nl }) : ''}</SheetTitle>
           </SheetHeader>
           <div className="mt-6 space-y-4">
+            <Input
+              placeholder="Zoek projecten..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full"
+            />
+            
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {filteredProjects.map((project) => (
+                <div
+                  key={project.id}
+                  className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                  onClick={() => {
+                    setSelectedDate(new Date(project.date || new Date()));
+                    setShowPlanningDialog(true);
+                  }}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-sm">{project.title}</h4>
+                      <p className="text-xs text-gray-600">{project.customer_name}</p>
+                      <p className="text-xs text-gray-500">
+                        {project.date ? format(new Date(project.date), 'dd MMM yyyy', { locale: nl }) : 'Geen datum'}
+                      </p>
+                    </div>
+                    <Badge className={getStatusColor(project.status)}>
+                      {project.status}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Event Details Dialog */}
+      <Dialog open={showEventDetails} onOpenChange={setShowEventDetails}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Planning Details</DialogTitle>
+          </DialogHeader>
+          {selectedEvent && (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium">Titel</Label>
+                <p className="text-sm text-gray-600">{selectedEvent.title}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium">Beschrijving</Label>
+                <p className="text-sm text-gray-600">{selectedEvent.description || 'Geen beschrijving'}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium">Start Tijd</Label>
+                  <p className="text-sm text-gray-600">{selectedEvent.start_time}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Eind Tijd</Label>
+                  <p className="text-sm text-gray-600">{selectedEvent.end_time}</p>
+                </div>
+              </div>
+              {selectedEvent.location && (
+                <div>
+                  <Label className="text-sm font-medium">Locatie</Label>
+                  <p className="text-sm text-gray-600">{selectedEvent.location}</p>
+                </div>
+              )}
+              <div>
+                <Label className="text-sm font-medium">Status</Label>
+                <Badge variant="outline">{selectedEvent.status}</Badge>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Planning Dialog */}
+      <Dialog open={showPlanningDialog} onOpenChange={setShowPlanningDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Planning Toevoegen</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
             <div>
               <Label htmlFor="title">Titel</Label>
               <Input id="title" placeholder="Planning titel" />
@@ -296,8 +364,8 @@ export function SimplifiedPlanningManagement() {
               </Button>
             </div>
           </div>
-        </SheetContent>
-      </Sheet>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
