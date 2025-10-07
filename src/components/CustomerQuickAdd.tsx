@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2 } from "lucide-react";
 import { useCrmStore } from "@/hooks/useCrmStore";
 import { useToast } from "@/hooks/use-toast";
+import { LocationSearch } from "./LocationSearch";
 
 interface CustomerQuickAddProps {
   onCustomerAdded?: (customer: any) => void;
@@ -249,25 +250,19 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="address">Adres</Label>
-              <Input
-                id="address"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <Label htmlFor="city">Plaats</Label>
-              <Input
-                id="city"
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-              />
-            </div>
+          <div>
+            <LocationSearch
+              initialValue={formData.address}
+              onLocationSelect={(location) => {
+                setFormData((prev) => ({
+                  ...prev,
+                  address: location.display_name,
+                  city: location.address?.city || prev.city
+                }));
+              }}
+              placeholder="Zoek adres..."
+              label="Adres"
+            />
           </div>
 
           <div className="flex gap-2 pt-4">

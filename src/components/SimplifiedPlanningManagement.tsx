@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, X } from "lucide-react";
+import { LocationSearch } from './LocationSearch';
 import { usePlanningStore } from '@/hooks/usePlanningStore';
 import { useRealUserStore } from '@/hooks/useRealUserStore';
 import { useCrmStore } from '@/hooks/useCrmStore';
@@ -29,6 +30,8 @@ export function SimplifiedPlanningManagement() {
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedInstaller, setSelectedInstaller] = useState<string>('');
+  const [selectedLocation, setSelectedLocation] = useState<any>(null);
+  const [locationKey, setLocationKey] = useState(0); // Key to force LocationSearch re-render
   // Simplified state - removed complex features for build stability
 
   const { 
@@ -91,6 +94,7 @@ export function SimplifiedPlanningManagement() {
       setShowProjectSidebar(false);
       setSelectedProject(null);
       setSelectedInstaller('');
+      setSelectedLocation(null);
     } catch (error) {
       console.error('Error adding planning:', error);
       toast({
@@ -236,6 +240,7 @@ export function SimplifiedPlanningManagement() {
                   onClick={() => {
                     setSelectedProject(project);
                     setSelectedDate(new Date(project.date || new Date()));
+                    setLocationKey(prev => prev + 1); // Force LocationSearch to re-render with new initial value
                     setShowPlanningDialog(true);
                   }}
                 >
@@ -305,6 +310,7 @@ export function SimplifiedPlanningManagement() {
         if (!open) {
           setSelectedProject(null);
           setSelectedInstaller('');
+          setSelectedLocation(null);
         }
       }}>
         <DialogContent className="max-w-md">
@@ -364,14 +370,16 @@ export function SimplifiedPlanningManagement() {
             </div>
             
             <div>
-              <Label htmlFor="location">Locatie</Label>
-              <Input 
-                id="location" 
-                placeholder="Locatie" 
-                defaultValue={selectedProject && selectedProject.customer_id ? 
+              <LocationSearch
+                key={locationKey}
+                initialValue={selectedProject && selectedProject.customer_id ? 
                   customers.find(c => c.id === selectedProject.customer_id)?.address || '' : ''
                 }
-                key={`location-${selectedProject?.id || 'no-project'}`}
+                onLocationSelect={(location) => {
+                  setSelectedLocation(location);
+                }}
+                placeholder="Zoek locatie..."
+                label="Locatie"
               />
             </div>
             
@@ -391,7 +399,7 @@ export function SimplifiedPlanningManagement() {
                     start_date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
                     start_time: (document.getElementById('startTime') as HTMLInputElement)?.value || '08:00',
                     end_time: (document.getElementById('endTime') as HTMLInputElement)?.value || '17:00',
-                    location: (document.getElementById('location') as HTMLInputElement)?.value || '',
+                    location: selectedLocation?.display_name || (document.getElementById('location') as HTMLInputElement)?.value || '',
                     assigned_user_id: selectedInstaller || selectedProject?.assigned_user_id,
                     project_id: selectedProject?.id || null
                   };

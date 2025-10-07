@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCrmStore, Customer } from "@/hooks/useCrmStore";
+import { LocationSearch } from "./LocationSearch";
 
 interface CustomerFormProps {
   onClose: () => void;
@@ -102,12 +103,17 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="address">Adres</Label>
-          <Input
-            id="address"
-            name="address"
-            value={formData.address}
-            onChange={handleChange}
+          <LocationSearch
+            initialValue={formData.address}
+            onLocationSelect={(location) => {
+              setFormData((prev) => ({
+                ...prev,
+                address: location.display_name,
+                city: location.address?.city || prev.city
+              }));
+            }}
+            placeholder="Zoek adres..."
+            label="Adres"
           />
         </div>
 
