@@ -26,6 +26,7 @@ export function SimplifiedPlanningManagement() {
   const [showProjectSidebar, setShowProjectSidebar] = useState(false);
   const [showEventDetails, setShowEventDetails] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedInstaller, setSelectedInstaller] = useState<string>('');
   // Simplified state - removed complex features for build stability
@@ -37,7 +38,7 @@ export function SimplifiedPlanningManagement() {
   } = usePlanningStore();
 
   const { installers } = useRealUserStore();
-  const { projects } = useCrmStore();
+  const { projects, customers } = useCrmStore();
 
   // Simplified component - removed complex features for build stability
 
@@ -88,6 +89,8 @@ export function SimplifiedPlanningManagement() {
       
       setShowPlanningDialog(false);
       setShowProjectSidebar(false);
+      setSelectedProject(null);
+      setSelectedInstaller('');
     } catch (error) {
       console.error('Error adding planning:', error);
       toast({
@@ -231,6 +234,7 @@ export function SimplifiedPlanningManagement() {
                   key={project.id}
                   className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
                   onClick={() => {
+                    setSelectedProject(project);
                     setSelectedDate(new Date(project.date || new Date()));
                     setShowPlanningDialog(true);
                   }}
@@ -296,7 +300,13 @@ export function SimplifiedPlanningManagement() {
       </Dialog>
 
       {/* Planning Dialog */}
-      <Dialog open={showPlanningDialog} onOpenChange={setShowPlanningDialog}>
+      <Dialog open={showPlanningDialog} onOpenChange={(open) => {
+        setShowPlanningDialog(open);
+        if (!open) {
+          setSelectedProject(null);
+          setSelectedInstaller('');
+        }
+      }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Planning Toevoegen</DialogTitle>
@@ -304,17 +314,31 @@ export function SimplifiedPlanningManagement() {
           <div className="space-y-4">
             <div>
               <Label htmlFor="title">Titel</Label>
-              <Input id="title" placeholder="Planning titel" />
+              <Input 
+                id="title" 
+                placeholder="Planning titel" 
+                defaultValue={selectedProject ? `Project: ${selectedProject.title}` : ''}
+                key={selectedProject?.id || 'no-project'}
+              />
             </div>
             
             <div>
               <Label htmlFor="description">Beschrijving</Label>
-              <Textarea id="description" placeholder="Beschrijving van de planning" />
+              <Textarea 
+                id="description" 
+                placeholder="Beschrijving van de planning" 
+                defaultValue={selectedProject?.description || ''}
+                key={`desc-${selectedProject?.id || 'no-project'}`}
+              />
             </div>
             
             <div>
               <Label htmlFor="installer">Monteur</Label>
-              <Select onValueChange={setSelectedInstaller}>
+              <Select 
+                onValueChange={setSelectedInstaller}
+                defaultValue={selectedProject?.assigned_user_id || ''}
+                key={`installer-${selectedProject?.id || 'no-project'}`}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecteer monteur" />
                 </SelectTrigger>
@@ -341,7 +365,14 @@ export function SimplifiedPlanningManagement() {
             
             <div>
               <Label htmlFor="location">Locatie</Label>
-              <Input id="location" placeholder="Locatie" />
+              <Input 
+                id="location" 
+                placeholder="Locatie" 
+                defaultValue={selectedProject && selectedProject.customer_id ? 
+                  customers.find(c => c.id === selectedProject.customer_id)?.address || '' : ''
+                }
+                key={`location-${selectedProject?.id || 'no-project'}`}
+              />
             </div>
             
             <div className="flex gap-2 pt-4">
@@ -361,7 +392,8 @@ export function SimplifiedPlanningManagement() {
                     start_time: (document.getElementById('startTime') as HTMLInputElement)?.value || '08:00',
                     end_time: (document.getElementById('endTime') as HTMLInputElement)?.value || '17:00',
                     location: (document.getElementById('location') as HTMLInputElement)?.value || '',
-                    assigned_user_id: selectedInstaller
+                    assigned_user_id: selectedInstaller || selectedProject?.assigned_user_id,
+                    project_id: selectedProject?.id || null
                   };
                   handlePlanningSubmit(formData);
                 }}
