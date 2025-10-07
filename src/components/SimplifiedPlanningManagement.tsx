@@ -9,6 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, X } from "lucide-react";
+import { usePlanningStore } from '@/hooks/usePlanningStore';
+import { useRealUserStore } from '@/hooks/useRealUserStore';
+import { useCrmStore } from '@/hooks/useCrmStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { format, isSameDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths } from 'date-fns';
@@ -32,15 +35,14 @@ export function SimplifiedPlanningManagement() {
   const [availabilityError, setAvailabilityError] = useState<string>('');
   // Simplified state - removed complex features for build stability
 
-  // Mock data to avoid store dependencies
-  const planningItems: any[] = [];
-  const loading = false;
-  const installers: any[] = [];
-  const projects: any[] = [];
+  const { 
+    planningItems, 
+    loading, 
+    addPlanningItem,
+  } = usePlanningStore();
 
-  const addPlanningItem = async (data: any) => {
-    console.log('Planning item added:', data);
-  };
+  const { installers } = useRealUserStore();
+  const { projects } = useCrmStore();
 
   // Simplified component - removed complex features for build stability
 

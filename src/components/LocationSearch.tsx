@@ -43,20 +43,11 @@ export const LocationSearch: React.FC<LocationSearchProps> = ({
 
     setIsLoading(true);
     try {
-      // Simulate search with mock data to avoid CORS issues
-      const mockResults = [
-        {
-          place_id: '1',
-          display_name: `${query}, Nederland`,
-          lat: '52.3676',
-          lon: '4.9041',
-          address: {
-            city: 'Amsterdam',
-            country: 'Nederland'
-          }
-        }
-      ];
-      setResults(mockResults);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1&countrycodes=nl`
+      );
+      const data = await response.json();
+      setResults(data);
     } catch (error) {
       console.error('Error searching locations:', error);
       setResults([]);
