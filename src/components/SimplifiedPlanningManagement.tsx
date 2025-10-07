@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, X } from "lucide-react";
 import { usePlanningStore } from '@/hooks/usePlanningStore';
 import { useRealUserStore } from '@/hooks/useRealUserStore';
 import { useCrmStore } from '@/hooks/useCrmStore';
@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { format, isSameDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths } from 'date-fns';
 import { nl } from 'date-fns/locale';
+import { LocationSearch } from './LocationSearch';
 
 export function SimplifiedPlanningManagement() {
   const { toast } = useToast();
@@ -28,6 +29,10 @@ export function SimplifiedPlanningManagement() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedInstaller, setSelectedInstaller] = useState<string>('');
+  const [showProjectDetails, setShowProjectDetails] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [selectedLocation, setSelectedLocation] = useState<any>(null);
+  const [availabilityError, setAvailabilityError] = useState<string>('');
   // Simplified state - removed complex features for build stability
 
   const { 
@@ -98,6 +103,48 @@ export function SimplifiedPlanningManagement() {
       case 'gepland': return 'bg-orange-100 text-orange-800 border-orange-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
+  };
+
+  const checkAvailability = (installerId: string, date: Date, startTime: string, endTime: string) => {
+    if (!installerId || !date || !startTime || !endTime) {
+      setAvailabilityError('');
+      return true;
+    }
+
+    // Check if the selected date is a weekend (Saturday = 6, Sunday = 0)
+    const dayOfWeek = date.getDay();
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      setAvailabilityError('Monteurs werken niet in het weekend');
+      return false;
+    }
+
+    // Check for existing planning conflicts
+    const selectedDateStr = format(date, 'yyyy-MM-dd');
+    const existingPlannings = planningItems.filter(item => 
+      item.assigned_user_id === installerId && 
+      item.start_date === selectedDateStr
+    );
+
+    // Check for time conflicts
+    const hasConflict = existingPlannings.some(item => {
+      const itemStart = item.start_time;
+      const itemEnd = item.end_time;
+      
+      // Check if the new time slot overlaps with existing ones
+      return (
+        (startTime >= itemStart && startTime < itemEnd) ||
+        (endTime > itemStart && endTime <= itemEnd) ||
+        (startTime <= itemStart && endTime >= itemEnd)
+      );
+    });
+
+    if (hasConflict) {
+      setAvailabilityError('Monteur is niet beschikbaar op dit tijdstip');
+      return false;
+    }
+
+    setAvailabilityError('');
+    return true;
   };
 
   // Calendar month view
@@ -213,14 +260,14 @@ export function SimplifiedPlanningManagement() {
               className="w-full"
             />
             
-            <div className="space-y-2 max-h-96 overflow-y-auto">
+            <div className="space-y-2 h-[calc(100vh-200px)] overflow-y-auto">
               {filteredProjects.map((project) => (
                 <div
                   key={project.id}
                   className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
                   onClick={() => {
-                    setSelectedDate(new Date(project.date || new Date()));
-                    setShowPlanningDialog(true);
+                    setSelectedProject(project);
+                    setShowProjectDetails(true);
                   }}
                 >
                   <div className="flex items-start justify-between">
@@ -361,6 +408,189 @@ export function SimplifiedPlanningManagement() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Project Details Slide-in Popup */}
+      {showProjectDetails && (
+        <>
+          {/* Overlay */}
+          <div 
+            className="fixed inset-0 bg-black/50 z-50 transition-opacity"
+            onClick={() => setShowProjectDetails(false)}
+          />
+          
+          {/* Slide-in Panel */}
+          <div className="
+            fixed top-0 right-0 h-full w-full sm:w-[600px] bg-white shadow-2xl z-50
+            transform transition-transform duration-300 ease-in-out
+            translate-x-0
+            overflow-y-auto
+          ">
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-6 shadow-lg z-10">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold flex items-center gap-2">
+                    <CalendarIcon className="h-6 w-6" />
+                    Project Details
+                  </h2>
+                  <p className="text-blue-100 mt-1 text-sm">
+                    Bewerk project informatie
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowProjectDetails(false)}
+                  className="text-white hover:bg-white/20 h-8 w-8 p-0"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {selectedProject && (
+                <>
+                  {/* Project Title */}
+                  <div>
+                    <Label htmlFor="projectTitle">Project Titel</Label>
+                    <Input 
+                      id="projectTitle" 
+                      defaultValue={selectedProject.title}
+                      placeholder="Project titel"
+                    />
+                  </div>
+                  
+                  {/* Project Description */}
+                  <div>
+                    <Label htmlFor="projectDescription">Beschrijving</Label>
+                    <Textarea 
+                      id="projectDescription" 
+                      defaultValue={selectedProject.description || ''}
+                      placeholder="Project beschrijving"
+                      rows={4}
+                    />
+                  </div>
+                  
+                  {/* Monteur Selection */}
+                  <div>
+                    <Label htmlFor="projectMonteur">Monteur</Label>
+                    <Select onValueChange={(value) => {
+                      setSelectedInstaller(value);
+                      const startTime = (document.getElementById('startTime') as HTMLInputElement)?.value;
+                      const endTime = (document.getElementById('endTime') as HTMLInputElement)?.value;
+                      if (value && selectedDate && startTime && endTime) {
+                        checkAvailability(value, selectedDate, startTime, endTime);
+                      }
+                    }}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecteer monteur" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {installers.map((installer) => (
+                          <SelectItem key={installer.id} value={installer.id}>
+                            {installer.full_name || installer.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Time Selection */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="startTime">Start Tijd</Label>
+                      <Input 
+                        id="startTime" 
+                        type="time" 
+                        defaultValue="08:00"
+                        onChange={() => {
+                          const startTime = (document.getElementById('startTime') as HTMLInputElement)?.value;
+                          const endTime = (document.getElementById('endTime') as HTMLInputElement)?.value;
+                          if (selectedInstaller && selectedDate && startTime && endTime) {
+                            checkAvailability(selectedInstaller, selectedDate, startTime, endTime);
+                          }
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="endTime">Eind Tijd</Label>
+                      <Input 
+                        id="endTime" 
+                        type="time" 
+                        defaultValue="17:00"
+                        onChange={() => {
+                          const startTime = (document.getElementById('startTime') as HTMLInputElement)?.value;
+                          const endTime = (document.getElementById('endTime') as HTMLInputElement)?.value;
+                          if (selectedInstaller && selectedDate && startTime && endTime) {
+                            checkAvailability(selectedInstaller, selectedDate, startTime, endTime);
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Availability Error */}
+                  {availabilityError && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                      <p className="text-sm text-red-600">{availabilityError}</p>
+                    </div>
+                  )}
+                  
+                  {/* Location */}
+                  <LocationSearch
+                    onLocationSelect={(location) => {
+                      setSelectedLocation(location);
+                    }}
+                    placeholder="Zoek locatie..."
+                    label="Locatie"
+                  />
+                  
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 pt-4">
+                    <Button 
+                      onClick={() => setShowProjectDetails(false)}
+                      variant="outline"
+                      className="flex-1"
+                    >
+                      Annuleren
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        const startTime = (document.getElementById('startTime') as HTMLInputElement)?.value || '08:00';
+                        const endTime = (document.getElementById('endTime') as HTMLInputElement)?.value || '17:00';
+                        
+                        // Check availability before submitting
+                        if (!checkAvailability(selectedInstaller, selectedDate || new Date(), startTime, endTime)) {
+                          return; // Don't submit if not available
+                        }
+                        
+                        // Handle project update and planning
+                        const formData = {
+                          title: (document.getElementById('projectTitle') as HTMLInputElement)?.value || selectedProject.title,
+                          description: (document.getElementById('projectDescription') as HTMLInputElement)?.value || '',
+                          start_date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+                          start_time: startTime,
+                          end_time: endTime,
+                          location: selectedLocation?.display_name || '',
+                          assigned_user_id: selectedInstaller
+                        };
+                        handlePlanningSubmit(formData);
+                        setShowProjectDetails(false);
+                      }}
+                      className="flex-1"
+                      disabled={!!availabilityError}
+                    >
+                      Plannen
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
