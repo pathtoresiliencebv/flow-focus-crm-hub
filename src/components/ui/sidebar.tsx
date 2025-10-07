@@ -234,9 +234,7 @@ export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
           {!mini ? (
             <img src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="SMANS Logo" className="h-10 w-auto" />
           ) : (
-            <div className="w-10 h-10 bg-red-600 rounded-md flex items-center justify-center">
-              <span className="text-white font-bold text-lg">S</span>
-            </div>
+            <img src="/logo-collapsed.svg" alt="SMANS Logo" className="w-10 h-10" />
           )}
         </div>
       </div>

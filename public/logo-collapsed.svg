@@ -1,0 +1,29 @@
+<svg width="40" height="40" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Red squares pattern matching the uploaded image -->
+  <rect x="0" y="0" width="25" height="25" fill="#B91C1C"/>
+  
+  <rect x="0" y="35" width="25" height="25" fill="#B91C1C"/>
+  <rect x="35" y="35" width="25" height="25" fill="#B91C1C"/>
+  
+  <rect x="0" y="70" width="25" height="25" fill="#B91C1C"/>
+  <rect x="35" y="70" width="25" height="25" fill="#B91C1C"/>
+  <rect x="70" y="70" width="25" height="25" fill="#B91C1C"/>
+  
+  <rect x="0" y="105" width="25" height="25" fill="#B91C1C"/>
+  <rect x="35" y="105" width="25" height="25" fill="#B91C1C"/>
+  <rect x="70" y="105" width="25" height="25" fill="#B91C1C"/>
+  <rect x="105" y="105" width="25" height="25" fill="#B91C1C"/>
+  
+  <rect x="0" y="140" width="25" height="25" fill="#B91C1C"/>
+  <rect x="35" y="140" width="25" height="25" fill="#B91C1C"/>
+  <rect x="70" y="140" width="25" height="25" fill="#B91C1C"/>
+  <rect x="105" y="140" width="25" height="25" fill="#B91C1C"/>
+  <rect x="140" y="140" width="25" height="25" fill="#B91C1C"/>
+  
+  <rect x="0" y="175" width="25" height="25" fill="#B91C1C"/>
+  <rect x="35" y="175" width="25" height="25" fill="#B91C1C"/>
+  <rect x="70" y="175" width="25" height="25" fill="#B91C1C"/>
+  <rect x="105" y="175" width="25" height="25" fill="#B91C1C"/>
+  <rect x="140" y="175" width="25" height="25" fill="#B91C1C"/>
+  <rect x="175" y="175" width="25" height="25" fill="#B91C1C"/>
+</svg>
