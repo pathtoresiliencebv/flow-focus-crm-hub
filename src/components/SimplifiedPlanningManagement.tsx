@@ -414,27 +414,27 @@ export function SimplifiedPlanningManagement() {
         <>
           {/* Overlay */}
           <div 
-            className="fixed inset-0 bg-black/50 z-50 transition-opacity"
+            className="fixed inset-0 bg-red-500/20 z-[60] transition-opacity"
             onClick={() => setShowProjectDetails(false)}
           />
           
           {/* Slide-in Panel */}
           <div className="
-            fixed top-0 right-0 h-full w-full sm:w-[600px] bg-white shadow-2xl z-50
+            fixed top-0 right-0 h-full w-full sm:w-[600px] bg-white shadow-2xl z-[70]
             transform transition-transform duration-300 ease-in-out
             translate-x-0
             overflow-y-auto
           ">
             {/* Header */}
-            <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-6 shadow-lg z-10">
+            <div className="sticky top-0 bg-gradient-to-r from-red-500 to-red-600 text-white p-6 shadow-lg z-10">
               <div className="flex items-start justify-between">
                 <div>
                   <h2 className="text-2xl font-bold flex items-center gap-2">
                     <CalendarIcon className="h-6 w-6" />
                     Project Details
                   </h2>
-                  <p className="text-blue-100 mt-1 text-sm">
-                    Bewerk project informatie
+                  <p className="text-red-100 mt-1 text-sm">
+                    Bewerk project informatie - {selectedDate ? format(selectedDate, 'dd MMMM yyyy', { locale: nl }) : 'Geen datum'}
                   </p>
                 </div>
                 <Button
