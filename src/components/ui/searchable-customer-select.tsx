@@ -40,15 +40,19 @@ export function SearchableCustomerSelect({
 
   // Filter customers based on search query
   const filteredCustomers = useMemo(() => {
+    if (!customers || customers.length === 0) return [];
     if (!searchQuery) return customers;
     
     const query = searchQuery.toLowerCase();
-    return customers.filter(customer => 
-      customer.name.toLowerCase().includes(query) ||
-      customer.email?.toLowerCase().includes(query) ||
-      customer.phone?.includes(query) ||
-      customer.company_name?.toLowerCase().includes(query)
-    );
+    return customers.filter(customer => {
+      if (!customer) return false;
+      return (
+        (customer.name && customer.name.toLowerCase().includes(query)) ||
+        (customer.email && customer.email.toLowerCase().includes(query)) ||
+        (customer.phone && customer.phone.includes(query)) ||
+        (customer.company_name && customer.company_name.toLowerCase().includes(query))
+      );
+    });
   }, [customers, searchQuery]);
 
   const handleSelect = (customerId: string) => {

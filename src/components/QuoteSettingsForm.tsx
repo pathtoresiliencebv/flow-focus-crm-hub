@@ -9,6 +9,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Save, Building } from "lucide-react";
+import { DefaultAttachmentsManager } from "./DefaultAttachmentsManager";
+
+interface DefaultAttachment {
+  id: string;
+  name: string;
+  url: string;
+  size: number;
+  type: string;
+  uploadedAt: string;
+}
 
 interface QuoteSettingsFormData {
   terms_and_conditions: string;
@@ -25,6 +35,7 @@ export function QuoteSettingsForm() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [settingsId, setSettingsId] = useState<string | null>(null);
+  const [defaultAttachments, setDefaultAttachments] = useState<DefaultAttachment[]>([]);
 
   const form = useForm<QuoteSettingsFormData>({
     defaultValues: {
@@ -67,6 +78,11 @@ export function QuoteSettingsForm() {
           company_vat_number: data.company_vat_number || 'NL123456789B01',
           company_kvk_number: data.company_kvk_number || '12345678',
         });
+        
+        // Load default attachments
+        if (data.default_attachments) {
+          setDefaultAttachments(data.default_attachments);
+        }
       }
     } catch (error) {
       console.error('Error:', error);
@@ -82,6 +98,7 @@ export function QuoteSettingsForm() {
           .from('quote_settings')
           .update({
             ...data,
+            default_attachments: defaultAttachments,
             updated_at: new Date().toISOString()
           })
           .eq('id', settingsId);
@@ -99,7 +116,10 @@ export function QuoteSettingsForm() {
         // Create new settings
         const { data: newSettings, error } = await supabase
           .from('quote_settings')
-          .insert([data])
+          .insert([{
+            ...data,
+            default_attachments: defaultAttachments
+          }])
           .select()
           .single();
 
@@ -274,6 +294,12 @@ export function QuoteSettingsForm() {
           </Form>
         </CardContent>
       </Card>
+
+      {/* Default Attachments Section */}
+      <DefaultAttachmentsManager
+        value={defaultAttachments}
+        onChange={setDefaultAttachments}
+      />
     </div>
   );
 }
