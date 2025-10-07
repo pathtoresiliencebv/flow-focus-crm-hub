@@ -63,8 +63,8 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
     try {
       setSending(true);
 
-      // Use OX Mail API for sending
-      const functionName = 'ox-mail-send';
+      // Use the generic SMTP send function
+      const functionName = 'smtp-send';
 
       console.log('Sending email via:', functionName, {
         accountId: account.id,
@@ -79,8 +79,8 @@ export const EmailComposer: React.FC<EmailComposerProps> = ({
           cc: cc ? cc.split(',').map(e => e.trim()) : [],
           bcc: bcc ? bcc.split(',').map(e => e.trim()) : [],
           subject,
-          bodyText: body, // Plain text version
-          bodyHtml: body.replace(/\n/g, '<br>'), // HTML version
+          body: body, // Use the plain text body
+          isHtml: false, // Set to true if using an HTML editor
         }
       });
 
