@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarDays } from "lucide-react";
-import { WeekCalendar } from "./WeekCalendar";
+import { SimplifiedPlanningManagement } from "./SimplifiedPlanningManagement";
 import { useCrmStore, Customer, NewProject } from "@/hooks/useCrmStore";
 import { usePlanningStore } from "@/hooks/usePlanningStore";
 import { useToast } from "@/hooks/use-toast";
@@ -138,24 +138,8 @@ export const Dashboard = () => {
               </CardContent>
             </Card>
           ) : (
-            /* Calendar Card - Mobile responsive */
-            <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm mx-1 sm:mx-0">
-              <CardHeader className="pb-3 sm:pb-4 px-3 sm:px-6 pt-4 sm:pt-6">
-                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                  <CalendarDays className="h-5 w-5 text-primary" />
-                  <span className="text-base sm:text-xl">Weekplanning</span>
-                </CardTitle>
-                <CardDescription className="text-muted-foreground text-sm">
-                  Overzicht van alle geplande activiteiten deze week
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-0 overflow-hidden">
-                <WeekCalendar 
-                  events={getCalendarEvents()}
-                  onEventClick={handleEventClick}
-                />
-              </CardContent>
-            </Card>
+            /* Planning Management - Full Calendar */
+            <SimplifiedPlanningManagement />
           )}
         </div>
 

@@ -63,15 +63,27 @@ export function SimplifiedPlanningManagement() {
 
   const handlePlanningSubmit = async (planningData: any) => {
     try {
-      await addPlanningItem({
-        ...planningData,
+      // Ensure all required fields are present
+      const completeData = {
+        title: planningData.title || 'Planning',
+        description: planningData.description || '',
+        start_date: planningData.start_date,
+        start_time: planningData.start_time + ':00', // Add seconds if not present
+        end_time: planningData.end_time + ':00', // Add seconds if not present
+        location: planningData.location || '',
+        assigned_user_id: planningData.assigned_user_id || user?.id || '',
         user_id: user?.id || '',
-        status: 'Gepland'
-      });
+        status: 'Gepland',
+        project_id: planningData.project_id || null
+      };
+
+      console.log('Submitting planning data:', completeData);
+
+      await addPlanningItem(completeData);
 
       toast({
         title: "✅ Planning toegevoegd!",
-        description: `Planning is succesvol toegevoegd voor ${format(planningData.start_date, 'dd MMMM yyyy', { locale: nl })}.`,
+        description: `Planning is succesvol toegevoegd voor ${format(new Date(planningData.start_date), 'dd MMMM yyyy', { locale: nl })}.`,
       });
       
       setShowPlanningDialog(false);
