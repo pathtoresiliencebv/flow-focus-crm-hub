@@ -92,28 +92,37 @@ export function QuoteSettingsForm() {
   const onSubmit = async (data: QuoteSettingsFormData) => {
     setLoading(true);
     try {
+      console.log('💾 Saving quote settings...', { data, defaultAttachments });
+      
       if (settingsId) {
         // Update existing settings
-        const { error } = await supabase
+        console.log('📝 Updating existing settings with ID:', settingsId);
+        const { data: updatedData, error } = await supabase
           .from('quote_settings')
           .update({
             ...data,
             default_attachments: defaultAttachments,
             updated_at: new Date().toISOString()
           })
-          .eq('id', settingsId);
+          .eq('id', settingsId)
+          .select()
+          .single();
 
         if (error) {
-          console.error('Error updating settings:', error);
+          console.error('❌ Error updating settings:', error);
           toast({
             title: "Fout bij opslaan",
-            description: "Er is een fout opgetreden bij het opslaan van de instellingen.",
+            description: `Er is een fout opgetreden: ${error.message}`,
             variant: "destructive",
           });
+          setLoading(false);
           return;
         }
+
+        console.log('✅ Settings updated successfully:', updatedData);
       } else {
         // Create new settings
+        console.log('➕ Creating new settings...');
         const { data: newSettings, error } = await supabase
           .from('quote_settings')
           .insert([{
@@ -124,16 +133,18 @@ export function QuoteSettingsForm() {
           .single();
 
         if (error) {
-          console.error('Error creating settings:', error);
+          console.error('❌ Error creating settings:', error);
           toast({
             title: "Fout bij opslaan",
-            description: "Er is een fout opgetreden bij het opslaan van de instellingen.",
+            description: `Er is een fout opgetreden: ${error.message}`,
             variant: "destructive",
           });
+          setLoading(false);
           return;
         }
 
         if (newSettings) {
+          console.log('✅ Settings created successfully:', newSettings);
           setSettingsId(newSettings.id);
         }
       }
@@ -142,14 +153,15 @@ export function QuoteSettingsForm() {
         title: "Instellingen opgeslagen",
         description: "De offerte instellingen zijn succesvol opgeslagen.",
       });
+      
+      setLoading(false);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('❌ Unexpected error:', error);
       toast({
         title: "Fout",
-        description: "Er is een onverwachte fout opgetreden.",
+        description: error instanceof Error ? error.message : "Er is een onverwachte fout opgetreden.",
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
   };

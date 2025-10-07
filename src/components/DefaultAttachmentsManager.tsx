@@ -24,12 +24,21 @@ export const DefaultAttachmentsManager = ({ value, onChange }: DefaultAttachment
   const [uploading, setUploading] = useState(false);
 
   const handleFileUpload = async (files: any[]) => {
+    if (!files || files.length === 0) {
+      console.log('⚠️ No files selected');
+      return;
+    }
+
+    console.log('📤 Starting file upload...', { fileCount: files.length });
     setUploading(true);
+    
     try {
       const { supabase } = await import("@/integrations/supabase/client");
       const newAttachments: DefaultAttachment[] = [];
 
       for (const file of files) {
+        console.log('📄 Processing file:', file.name, { size: file.size, type: file.type });
+        
         // Generate unique filename
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -40,36 +49,43 @@ export const DefaultAttachmentsManager = ({ value, onChange }: DefaultAttachment
           ? 'application/pdf' 
           : file.type;
 
+        console.log('⬆️ Uploading to Storage:', { filePath, contentType });
+
         // Upload to Supabase Storage
         const { data, error } = await supabase.storage
           .from('quote-attachments')
           .upload(filePath, file, {
             cacheControl: '3600',
             upsert: false,
-            contentType: contentType  // Explicitly set MIME type
+            contentType: contentType
           });
 
         if (error) {
-          console.error('Storage upload error:', error);
+          console.error('❌ Storage upload error:', error);
           throw new Error(`Fout bij uploaden van ${file.name}: ${error.message}`);
         }
+
+        console.log('✅ Upload successful:', data);
 
         // Get public URL
         const { data: urlData } = supabase.storage
           .from('quote-attachments')
           .getPublicUrl(filePath);
 
+        console.log('🔗 Public URL generated:', urlData.publicUrl);
+
         const attachment: DefaultAttachment = {
           id: crypto.randomUUID(),
           name: file.name,
           url: urlData.publicUrl,
           size: file.size,
-          type: file.type,
+          type: contentType,
           uploadedAt: new Date().toISOString()
         };
         newAttachments.push(attachment);
       }
 
+      console.log('✅ All files uploaded successfully:', newAttachments);
       onChange([...value, ...newAttachments]);
       
       toast({
@@ -77,13 +93,14 @@ export const DefaultAttachmentsManager = ({ value, onChange }: DefaultAttachment
         description: `${newAttachments.length} bestand(en) toegevoegd als standaard bijlagen.`,
       });
     } catch (error) {
-      console.error('Error uploading files:', error);
+      console.error('❌ Error uploading files:', error);
       toast({
         title: "Upload mislukt",
         description: error instanceof Error ? error.message : "Er is een fout opgetreden bij het uploaden.",
         variant: "destructive",
       });
     } finally {
+      console.log('🏁 Upload process finished');
       setUploading(false);
     }
   };
