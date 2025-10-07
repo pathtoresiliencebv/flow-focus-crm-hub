@@ -90,90 +90,43 @@ export const useCachedEmails = () => {
     accountId: string, 
     options: { maxMessages?: number; loadMore?: boolean } = {}
   ) => {
-    const { maxMessages = 200, loadMore = false } = options;
-    
+    // Note: maxMessages and loadMore are no longer used by the backend function
+    // but are kept for compatibility with the frontend component call.
     setState(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      console.log('🔄 Fetching emails LIVE from IMAP server...', { maxMessages, loadMore });
+      console.log('🔄 Calling backend to sync emails and store in cache...');
 
-      // Use the new simple email sync function
-      console.log('📧 Calling email-sync-simple with:', { accountId, maxMessages });
-      
-      const { data, error } = await supabase.functions.invoke('email-sync-simple', {
+      // Call the correct 'imap-cache-sync' function
+      const { data, error } = await supabase.functions.invoke('imap-cache-sync', {
         body: {
           accountId,
-          maxMessages,
+          fullSync: false // Use false for standard sync, true for a full history sync
         }
       });
-      
-      console.log('📧 Email sync response:', { data, error });
 
       if (error) {
-        throw new Error(error.message || 'Failed to fetch emails');
+        throw new Error(error.message || 'Failed to invoke sync function.');
       }
 
       if (!data?.success) {
-        throw new Error(data?.error || 'Email sync failed');
+        throw new Error(data?.error || 'The sync function reported a failure.');
       }
 
-      console.log('✅ Live emails fetched:', data);
+      console.log('✅ Backend sync successful:', data.message);
 
-      // Save to database for persistence (delete/star must work!)
-      if (data.messages && data.messages.length > 0) {
-        console.log('💾 Saving', data.messages.length, 'emails to database...');
-        
-        const { data: userData } = await supabase.auth.getUser();
-        
-        const messagesToSave = data.messages.map((m: any) => ({
-          id: m.id || crypto.randomUUID(), // Use existing ID or generate new one
-          user_id: userData.user?.id,
-          direction: 'inbound',
-          from_email: m.from_email || 'unknown',
-          to_email: Array.isArray(m.to_email) ? m.to_email : [m.to_email || ''],
-          subject: m.subject || '(Geen onderwerp)',
-          body_text: m.body_text || '',
-          body_html: m.body_html || null,
-          attachments: m.attachments || [],
-          status: m.status || 'unread',
-          is_starred: m.is_starred || false,
-          folder: 'inbox',
-          received_at: m.received_at || m.date || new Date().toISOString(),
-          external_message_id: m.external_message_id || m.uid,
-        }));
-        
-        const { error: upsertError } = await supabase.from('email_messages').upsert(messagesToSave, {
-          onConflict: 'external_message_id',
-        });
-        
-        if (upsertError) {
-          console.error('❌ Error saving emails to database:', upsertError);
-          throw upsertError;
-        }
-      }
-
-      // Sort by date DESC (newest first)
-      const sortedMessages = (data.messages || []).sort((a: any, b: any) => {
-        const dateA = new Date(a.received_at || a.date).getTime();
-        const dateB = new Date(b.received_at || b.date).getTime();
-        return dateB - dateA;
-      });
-
-      setState(prev => ({
-        messages: loadMore 
-          ? [...prev.messages, ...sortedMessages]
-          : sortedMessages,
-        loading: false,
-        error: null,
-      }));
+      // After a successful sync, re-fetch the emails from the database cache
+      // to update the UI with the latest data.
+      console.log('🔄 Re-fetching emails from local cache to update UI...');
+      await fetchEmails(accountId, 'inbox');
 
       return data;
     } catch (err: any) {
-      console.error('❌ Error fetching live emails:', err);
+      console.error('❌ Error during email synchronization:', err);
       setState(prev => ({ ...prev, error: err.message, loading: false }));
       throw err;
     }
-  }, []);
+  }, [fetchEmails]);
 
   /**
    * Get all folders with message counts
