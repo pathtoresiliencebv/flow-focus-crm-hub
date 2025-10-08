@@ -39,20 +39,17 @@ export function Quotes() {
   // Combined loading state with timeout fallback
   const loading = quotesLoading || crmLoading;
   
-  // Debug logging
-  console.log('Quotes loading states:', { quotesLoading, crmLoading, loading });
-  
-  // Fallback for stuck loading states
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (loading) {
-        console.warn('Loading timeout reached, forcing reload...');
-        fetchQuotes(true);
-      }
-    }, 5000); // Reduced to 5 second timeout
-    
-    return () => clearTimeout(timeout);
-  }, [loading, fetchQuotes]);
+  // Show loading state if data is being fetched
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Offertes laden...</p>
+        </div>
+      </div>
+    );
+  }
 
   const activeQuotes = quotes.filter(quote => !quote.is_archived);
   const archivedQuotes = quotes.filter(quote => quote.is_archived);
