@@ -56,13 +56,36 @@ export const Receipts = () => {
     category: '',
     fileData: null as string | null
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with loading true
+  const [initialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
-    loadReceipts();
-    loadUsers();
-    subscribeToReceipts();
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        await Promise.all([loadReceipts(), loadUsers()]);
+        subscribeToReceipts();
+      } catch (error) {
+        console.error('Error loading receipts data:', error);
+      } finally {
+        setLoading(false);
+        setInitialLoad(false);
+      }
+    };
+    loadData();
   }, []);
+
+  // Show loading state during initial load
+  if (initialLoad && loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Bonnetjes laden...</p>
+        </div>
+      </div>
+    );
+  }
 
   const loadReceipts = async () => {
     try {
