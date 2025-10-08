@@ -167,16 +167,34 @@ export function useInvoices() {
     return data;
   };
 
-  const deleteInvoice = async (id: string) => {
-    const { error } = await supabase
-      .from('invoices')
-      .delete()
-      .eq('id', id);
+  const deleteInvoiceMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('invoices')
+        .delete()
+        .eq('id', id);
 
-    if (error) throw error;
-  };
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      toast({
+        title: "Factuur verwijderd",
+        description: "De factuur is succesvol verwijderd.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error deleting invoice:', error);
+      toast({
+        title: "Fout bij verwijderen",
+        description: "Er is een fout opgetreden bij het verwijderen van de factuur.",
+        variant: "destructive",
+      });
+    }
+  });
 
-  const duplicateInvoice = async (invoiceId: string) => {
+  const duplicateInvoiceMutation = useMutation({
+    mutationFn: async (invoiceId: string) => {
     // Get original invoice with items
     const { data: original, error: fetchError } = await supabase
       .from('invoices')
@@ -229,33 +247,85 @@ export function useInvoices() {
     }
 
     return newInvoice;
-  };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      toast({
+        title: "Factuur gedupliceerd",
+        description: "De factuur is succesvol gedupliceerd.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error duplicating invoice:', error);
+      toast({
+        title: "Fout bij dupliceren",
+        description: "Er is een fout opgetreden bij het dupliceren van de factuur.",
+        variant: "destructive",
+      });
+    }
+  });
 
-  const archiveInvoice = async (invoiceId: string) => {
-    const { error } = await supabase
-      .from('invoices')
-      .update({ 
-        is_archived: true,
-        archived_at: new Date().toISOString(),
-        archived_by: (await supabase.auth.getUser()).data.user?.id
-      })
-      .eq('id', invoiceId);
+  const archiveInvoiceMutation = useMutation({
+    mutationFn: async (invoiceId: string) => {
+      const { error } = await supabase
+        .from('invoices')
+        .update({ 
+          is_archived: true,
+          archived_at: new Date().toISOString(),
+          archived_by: (await supabase.auth.getUser()).data.user?.id
+        })
+        .eq('id', invoiceId);
 
-    if (error) throw error;
-  };
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices', 'archived'] });
+      toast({
+        title: "Factuur gearchiveerd",
+        description: "De factuur is succesvol gearchiveerd.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error archiving invoice:', error);
+      toast({
+        title: "Fout bij archiveren",
+        description: "Er is een fout opgetreden bij het archiveren van de factuur.",
+        variant: "destructive",
+      });
+    }
+  });
 
-  const restoreInvoice = async (invoiceId: string) => {
-    const { error } = await supabase
-      .from('invoices')
-      .update({ 
-        is_archived: false,
-        archived_at: null,
-        archived_by: null
-      })
-      .eq('id', invoiceId);
+  const restoreInvoiceMutation = useMutation({
+    mutationFn: async (invoiceId: string) => {
+      const { error } = await supabase
+        .from('invoices')
+        .update({ 
+          is_archived: false,
+          archived_at: null,
+          archived_by: null
+        })
+        .eq('id', invoiceId);
 
-    if (error) throw error;
-  };
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices', 'archived'] });
+      toast({
+        title: "Factuur hersteld",
+        description: "De factuur is succesvol hersteld.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error restoring invoice:', error);
+      toast({
+        title: "Fout bij herstellen",
+        description: "Er is een fout opgetreden bij het herstellen van de factuur.",
+        variant: "destructive",
+      });
+    }
+  });
 
   const sendPaymentReminder = async (invoice: Invoice) => {
     try {
@@ -293,10 +363,10 @@ export function useInvoices() {
     updateInvoiceStatus,
     addInvoice,
     updateInvoice,
-    deleteInvoice,
-    duplicateInvoice,
-    archiveInvoice,
-    restoreInvoice,
+    deleteInvoice: (id: string) => deleteInvoiceMutation.mutate(id),
+    duplicateInvoice: (id: string) => duplicateInvoiceMutation.mutate(id),
+    archiveInvoice: (id: string) => archiveInvoiceMutation.mutate(id),
+    restoreInvoice: (id: string) => restoreInvoiceMutation.mutate(id),
     sendPaymentReminder,
     refetch
   };

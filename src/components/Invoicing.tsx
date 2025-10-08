@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 export const Invoicing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { invoices, deleteInvoice, duplicateInvoice, archiveInvoice, sendPaymentReminder, refetch } = useInvoices();
+  const { invoices, loading, deleteInvoice, duplicateInvoice, archiveInvoice, sendPaymentReminder, refetch } = useInvoices();
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [showFinalizationDialog, setShowFinalizationDialog] = useState(false);
   const [showNewInvoiceForm, setShowNewInvoiceForm] = useState(window.location.pathname === "/invoices/new");
@@ -174,6 +174,20 @@ export const Invoicing = () => {
         </div>
         <div className="bg-card rounded-lg shadow-sm border p-6">
           <MultiBlockInvoiceForm onClose={handleCloseNewInvoice} />
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state while invoices are being fetched
+  if (loading) {
+    return (
+      <div className="container mx-auto py-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center space-y-3">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p className="text-muted-foreground">Facturen laden...</p>
+          </div>
         </div>
       </div>
     );
