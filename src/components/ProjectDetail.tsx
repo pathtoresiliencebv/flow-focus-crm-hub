@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, FileText, Users, Clipboard, Edit, Save, X, User, Pencil, Package, UserCog, Clock, Receipt, FileSpreadsheet } from "lucide-react";
+import { ArrowLeft, FileText, Users, Clipboard, Edit, Save, X, User, Pencil, Package, UserCog, Clock, Receipt, FileSpreadsheet } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,6 @@ import { useCrmStore, UpdateProject } from "@/hooks/useCrmStore";
 import { useUsers } from "@/hooks/useUsers";
 import { ProjectMaterials } from "./ProjectMaterials";
 import { ProjectPersonnel } from "./ProjectPersonnel";
-import { ProjectPlanning } from "./ProjectPlanning";
 import { ProjectTasks } from "./ProjectTasks";
 import { useProjectDelivery } from "@/hooks/useProjectDelivery";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,7 +31,6 @@ const ProjectDetail = () => {
   const { startProject, isStarting } = useProjectDelivery();
   const [isEditing, setIsEditing] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
-  const [showPlanning, setShowPlanning] = useState(false);
   const [showMaterials, setShowMaterials] = useState(false);
   const [showPersonnel, setShowPersonnel] = useState(false);
   const [invoices, setInvoices] = useState<any[]>([]);
@@ -417,24 +415,7 @@ const ProjectDetail = () => {
       </div>
 
       {/* Action Buttons */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <Sheet open={showPlanning} onOpenChange={setShowPlanning}>
-          <SheetTrigger asChild>
-            <Button variant="outline" className="flex flex-col gap-2 py-6 h-auto w-full">
-              <Calendar className="h-6 w-6" />
-              <span className="font-medium">Planning</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
-            <SheetHeader>
-              <SheetTitle>Planning - {project.title}</SheetTitle>
-            </SheetHeader>
-            <div className="mt-6">
-              <ProjectPlanning projectId={project.id} projectTitle={project.title} />
-            </div>
-          </SheetContent>
-        </Sheet>
-
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <Sheet open={showMaterials} onOpenChange={setShowMaterials}>
           <SheetTrigger asChild>
             <Button variant="outline" className="flex flex-col gap-2 py-6 h-auto w-full">
