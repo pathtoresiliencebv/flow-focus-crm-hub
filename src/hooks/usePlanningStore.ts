@@ -95,6 +95,59 @@ export const usePlanningStore = () => {
       console.log('Adding planning item:', newItem);
       console.log('User ID:', user.id);
 
+      // Check for existing planning for this project + monteur to prevent duplicates
+      if (newItem.project_id && newItem.assigned_user_id) {
+        const { data: existing } = await supabase
+          .from('planning_items')
+          .select('id')
+          .eq('project_id', newItem.project_id)
+          .eq('assigned_user_id', newItem.assigned_user_id)
+          .maybeSingle();
+        
+        if (existing) {
+          console.log('Found existing planning, updating instead of creating new:', existing.id);
+          
+          // UPDATE existing planning instead of creating new
+          const { data, error } = await supabase
+            .from('planning_items')
+            .update({
+              ...newItem,
+              user_id: user.id,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existing.id)
+            .select()
+            .single();
+          
+          if (error) throw error;
+          
+          setPlanningItems(prev => prev.map(item => 
+            item.id === existing.id ? data : item
+          ));
+          
+          toast({
+            title: "Planning bijgewerkt",
+            description: "Bestaande planning is aangepast.",
+          });
+          
+          // Still update project status and send email
+          if (newItem.project_id) {
+            await supabase
+              .from('projects')
+              .update({ status: 'gepland' })
+              .eq('id', newItem.project_id)
+              .eq('status', 'te-plannen');
+          }
+          
+          if (newItem.notify_customer && newItem.customer_id) {
+            await sendPlanningEmail(data);
+          }
+          
+          return data;
+        }
+      }
+
+      // No existing planning - create new
       const planningData = {
         ...newItem,
         user_id: user.id, // Set the creator
@@ -115,6 +168,26 @@ export const usePlanningStore = () => {
 
       console.log('Planning item created successfully:', data);
       setPlanningItems(prev => [...prev, data]);
+      
+      // Update project status to 'gepland' if project is linked
+      if (newItem.project_id) {
+        const { error: projectError } = await supabase
+          .from('projects')
+          .update({ status: 'gepland' })
+          .eq('id', newItem.project_id)
+          .eq('status', 'te-plannen'); // Only update if currently te-plannen
+        
+        if (projectError) {
+          console.error('Error updating project status:', projectError);
+        } else {
+          console.log('✅ Project status updated to "gepland"');
+        }
+      }
+      
+      // Send email notification if notify_customer is true
+      if (newItem.notify_customer && newItem.customer_id) {
+        await sendPlanningEmail(data);
+      }
       
       toast({
         title: "Planning aangemaakt",
@@ -187,6 +260,53 @@ export const usePlanningStore = () => {
     } catch (error) {
       console.error('Error in addPlanningWithParticipants:', error);
       return null;
+    }
+  };
+
+  const sendPlanningEmail = async (planning: PlanningItem) => {
+    try {
+      console.log('📧 Sending planning email for planning:', planning.id);
+      
+      // Fetch planning details
+      const { data: project } = await supabase
+        .from('projects')
+        .select('*, customer:customers(*)')
+        .eq('id', planning.project_id)
+        .single();
+      
+      const { data: monteur } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', planning.assigned_user_id)
+        .single();
+      
+      if (!project?.customer?.email) {
+        console.log('⚠️ No customer email, skipping notification');
+        return;
+      }
+      
+      console.log('Invoking send-project-planned-email Edge Function...');
+      
+      // Call Edge Function
+      const { error } = await supabase.functions.invoke('send-project-planned-email', {
+        body: {
+          customerEmail: project.customer.email,
+          customerName: project.customer.name,
+          projectTitle: project.title,
+          projectLocation: project.location || project.customer.address,
+          planningDate: planning.start_date,
+          planningTime: planning.start_time,
+          monteurName: monteur?.full_name || 'SMANS Monteur'
+        }
+      });
+      
+      if (error) {
+        console.error('Error sending planning email:', error);
+      } else {
+        console.log('✅ Planning email sent successfully');
+      }
+    } catch (error) {
+      console.error('Error in sendPlanningEmail:', error);
     }
   };
 

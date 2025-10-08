@@ -11,12 +11,13 @@ import { UserSettings } from '@/components/settings/UserSettings';
 import { RoleSettings } from '@/components/settings/RoleSettings';
 import { EmailSettings } from '@/components/settings/EmailSettings';
 import { EmailTemplateSettings } from '@/components/settings/EmailTemplateSettings';
+import { EmailNotificationSettings } from '@/components/settings/EmailNotificationSettings';
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { LeadFormSettings } from '@/components/settings/LeadFormSettings';
 import { AIIntegrationSettings } from '@/components/settings/AIIntegrationSettings';
 import { LanguageSettingsPage } from '@/components/settings/LanguageSettingsPage';
 
-type SettingPage = 'overview' | 'company' | 'quotes' | 'invoices' | 'users' | 'roles' | 'email' | 'email-templates' | 'notifications' | 'lead-forms' | 'ai-integration' | 'integrations' | 'language';
+type SettingPage = 'overview' | 'company' | 'quotes' | 'invoices' | 'users' | 'roles' | 'email' | 'email-templates' | 'email-notifications' | 'notifications' | 'lead-forms' | 'ai-integration' | 'integrations' | 'language';
 
 const settingsCategories = [
   {
@@ -92,6 +93,13 @@ const settingsCategories = [
         color: "text-cyan-600"
       },
       {
+        id: 'email-notifications' as SettingPage,
+        title: "E-mail Notificaties",
+        description: "Automatische emails naar klanten bij planning en afronding",
+        icon: Mail,
+        color: "text-blue-600"
+      },
+      {
         id: 'notifications' as SettingPage,
         title: "Notificaties",
         description: "Configureer push notificaties en meldingen",
@@ -156,6 +164,8 @@ export default function Settings() {
         return <EmailSettings />;
       case 'email-templates':
         return <EmailTemplateSettings />;
+      case 'email-notifications':
+        return <EmailNotificationSettings />;
       case 'notifications':
         return <NotificationSettings />;
       case 'lead-forms':
