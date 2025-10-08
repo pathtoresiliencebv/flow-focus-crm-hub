@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
-import { Camera, Clock, CheckCircle, FileText, User, MapPin, Phone, Receipt } from "lucide-react";
+import { Camera, Clock, CheckCircle, FileText, User, MapPin, Phone, Receipt, Navigation } from "lucide-react";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
 import { useCrmStore } from "@/hooks/useCrmStore";
 import { useAuth } from "@/contexts/AuthContext";
@@ -91,9 +91,23 @@ export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId 
         )}
         
         {customer?.address && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4" />
-            <span className="truncate">{customer.address}, {customer.city}</span>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <MapPin className="h-4 w-4" />
+              <span className="truncate">{customer.address}, {customer.city}</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full border-blue-500 text-blue-700 hover:bg-blue-50"
+              onClick={() => {
+                const address = `${customer.address}, ${customer.postal_code || ''} ${customer.city}`.trim();
+                window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}&travelmode=driving`, '_blank');
+              }}
+            >
+              <Navigation className="h-4 w-4 mr-2" />
+              Navigeer naar locatie
+            </Button>
           </div>
         )}
       </div>

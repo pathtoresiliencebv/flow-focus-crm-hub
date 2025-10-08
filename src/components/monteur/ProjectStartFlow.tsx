@@ -10,12 +10,14 @@ import {
   AlertTriangle,
   Clock,
   Play,
-  Loader2
+  Loader2,
+  Map
 } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { openGoogleMapsNavigation, getCustomerAddress } from '@/utils/googleMapsUtils';
 
 interface ProjectStartFlowProps {
   planningId: string;
@@ -316,24 +318,31 @@ export function ProjectStartFlow({ planningId, onProjectStarted }: ProjectStartF
             </div>
           )}
 
-          {planningItem.location && (
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <div className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Locatie</p>
-                  <p className="text-sm text-gray-700">{planningItem.location}</p>
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(planningItem.location)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1"
-                  >
-                    <Navigation className="h-3 w-3" />
-                    Open in Google Maps
-                  </a>
+          {(planningItem.location || customer) && (
+            <div className="space-y-2">
+              <div className="bg-gray-50 p-3 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <MapPin className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Locatie</p>
+                    <p className="text-sm text-gray-700">
+                      {planningItem.location || getCustomerAddress(project, customer) || 'Adres niet beschikbaar'}
+                    </p>
+                  </div>
                 </div>
               </div>
+              
+              <Button 
+                variant="outline"
+                className="w-full border-blue-500 text-blue-700 hover:bg-blue-50"
+                onClick={() => openGoogleMapsNavigation(
+                  planningItem.location || getCustomerAddress(project, customer),
+                  { useDirections: true }
+                )}
+              >
+                <Map className="h-4 w-4 mr-2" />
+                Open Navigatie in Google Maps
+              </Button>
             </div>
           )}
 

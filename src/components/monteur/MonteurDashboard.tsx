@@ -325,7 +325,14 @@ export function MonteurDashboard({ onStartProject, onViewProject }: MonteurDashb
                       )}
                       <Button 
                         variant="outline"
-                        onClick={() => item.location && window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}`, '_blank')}
+                        onClick={() => {
+                          const address = item.location || (customer ? `${customer.address}` : null);
+                          if (address) {
+                            window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}&travelmode=driving`, '_blank');
+                          }
+                        }}
+                        disabled={!item.location && !customer}
+                        title="Open navigatie in Google Maps"
                       >
                         <Navigation className="h-4 w-4" />
                       </Button>
