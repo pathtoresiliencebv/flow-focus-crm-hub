@@ -11,6 +11,7 @@ import { EditUserDialog } from './users/EditUserDialog';
 import { UserTable } from './users/UserTable';
 import { DeleteUserDialog } from './users/DeleteUserDialog';
 import { ResetPasswordDialog } from './users/ResetPasswordDialog';
+import { UserAvailabilityDialog } from './users/UserAvailabilityDialog';
 import { Profile } from '@/types/user';
 
 const UserManagement = () => {
@@ -30,6 +31,7 @@ const UserManagement = () => {
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
   const [deletingUser, setDeletingUser] = useState<Profile | null>(null);
   const [resettingPasswordUser, setResettingPasswordUser] = useState<Profile | null>(null);
+  const [availabilityUser, setAvailabilityUser] = useState<Profile | null>(null);
   const [isCreateUserOpen, setCreateUserOpen] = useState(false);
 
   const deleteUserMutation = useMutation({
@@ -108,6 +110,7 @@ const UserManagement = () => {
           onEdit={setEditingUser}
           onDelete={setDeletingUser}
           onResetPassword={setResettingPasswordUser}
+          onManageAvailability={setAvailabilityUser}
         />
       </Card>
       {editingUser && (
@@ -134,6 +137,13 @@ const UserManagement = () => {
             })
           }
           isLoading={resetPasswordMutation.isPending}
+        />
+      )}
+      {availabilityUser && (
+        <UserAvailabilityDialog
+          user={availabilityUser}
+          open={!!availabilityUser}
+          onClose={() => setAvailabilityUser(null)}
         />
       )}
       {hasPermission('users_edit') && (

@@ -8,7 +8,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Key } from 'lucide-react';
+import { Edit, Trash2, Key, Calendar } from 'lucide-react';
 import { Profile } from '@/types/user';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -17,9 +17,10 @@ interface UserTableProps {
   onEdit: (user: Profile) => void;
   onDelete: (user: Profile) => void;
   onResetPassword: (user: Profile) => void;
+  onManageAvailability: (user: Profile) => void;
 }
 
-export const UserTable = ({ users, onEdit, onDelete, onResetPassword }: UserTableProps) => {
+export const UserTable = ({ users, onEdit, onDelete, onResetPassword, onManageAvailability }: UserTableProps) => {
   const { hasPermission, user: currentUser } = useAuth();
   
   return (
@@ -46,15 +47,27 @@ export const UserTable = ({ users, onEdit, onDelete, onResetPassword }: UserTabl
             </TableCell>
             <TableCell>
               <div className="flex gap-2">
-                <Button variant="ghost" size="icon" onClick={() => onEdit(user)}>
+                <Button variant="ghost" size="icon" onClick={() => onEdit(user)} title="Gebruiker bewerken">
                   <Edit className="h-4 w-4" />
                 </Button>
+                {hasPermission('users_edit') && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => onManageAvailability(user)}
+                    className="text-green-600 hover:text-green-700"
+                    title="Beschikbaarheid beheren"
+                  >
+                    <Calendar className="h-4 w-4" />
+                  </Button>
+                )}
                 {hasPermission('users_edit') && user.id !== currentUser?.id && (
                   <Button 
                     variant="ghost" 
                     size="icon" 
                     onClick={() => onResetPassword(user)}
                     className="text-blue-600 hover:text-blue-700"
+                    title="Wachtwoord resetten"
                   >
                     <Key className="h-4 w-4" />
                   </Button>
@@ -65,6 +78,7 @@ export const UserTable = ({ users, onEdit, onDelete, onResetPassword }: UserTabl
                     size="icon" 
                     onClick={() => onDelete(user)}
                     className="text-destructive hover:text-destructive"
+                    title="Gebruiker verwijderen"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
