@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Download, Play, Pause, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface MediaMessageBubbleProps {
   mediaType: 'photo' | 'file' | 'voice';
@@ -22,7 +23,63 @@ export const MediaMessageBubble: React.FC<MediaMessageBubbleProps> = ({
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [signedUrl, setSignedUrl] = useState<string>('');
+  const [loading, setLoading] = useState(true);
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Generate signed URL for media
+  useEffect(() => {
+    const getSignedUrl = async () => {
+      if (!mediaUrl) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Check if mediaUrl is already a full URL or a storage path
+        if (mediaUrl.startsWith('http')) {
+          // Already a full URL, use it directly
+          setSignedUrl(mediaUrl);
+          setLoading(false);
+          return;
+        }
+
+        // Extract file path from mediaUrl (remove bucket URL prefix if present)
+        let filePath = mediaUrl;
+        
+        // If mediaUrl contains the full public URL, extract just the path
+        if (mediaUrl.includes('/storage/v1/object/public/chat-media/')) {
+          filePath = mediaUrl.split('/storage/v1/object/public/chat-media/')[1];
+        }
+
+        console.log('🔐 Generating signed URL for:', filePath);
+
+        // Generate signed URL (valid for 1 hour)
+        const { data, error } = await supabase.storage
+          .from('chat-media')
+          .createSignedUrl(filePath, 3600);
+
+        if (error) {
+          console.error('❌ Error generating signed URL:', error);
+          // Fallback to original URL
+          setSignedUrl(mediaUrl);
+        } else if (data?.signedUrl) {
+          console.log('✅ Signed URL generated');
+          setSignedUrl(data.signedUrl);
+        } else {
+          console.warn('⚠️ No signed URL returned, using original');
+          setSignedUrl(mediaUrl);
+        }
+      } catch (err) {
+        console.error('❌ Failed to get signed URL:', err);
+        setSignedUrl(mediaUrl);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    getSignedUrl();
+  }, [mediaUrl]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -67,7 +124,7 @@ export const MediaMessageBubble: React.FC<MediaMessageBubbleProps> = ({
 
   const handleDownload = async () => {
     try {
-      const response = await fetch(mediaUrl);
+      const response = await fetch(signedUrl || mediaUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -84,16 +141,31 @@ export const MediaMessageBubble: React.FC<MediaMessageBubbleProps> = ({
 
   // Photo message
   if (mediaType === 'photo') {
+    if (loading) {
+      return (
+        <div className={cn(
+          "max-w-[300px] h-[200px] rounded-lg overflow-hidden flex items-center justify-center bg-muted",
+          isOwn ? "ml-auto" : "mr-auto"
+        )}>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      );
+    }
+
     return (
       <div className={cn(
         "max-w-[300px] rounded-lg overflow-hidden cursor-pointer",
         isOwn ? "ml-auto" : "mr-auto"
       )}>
         <img 
-          src={mediaUrl} 
+          src={signedUrl || mediaUrl} 
           alt="Shared photo" 
           className="w-full h-auto"
-          onClick={() => window.open(mediaUrl, '_blank')}
+          onClick={() => window.open(signedUrl || mediaUrl, '_blank')}
+          onError={(e) => {
+            console.error('❌ Image failed to load:', signedUrl || mediaUrl);
+            e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="200"%3E%3Crect fill="%23ddd" width="300" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999"%3EAfbeelding niet beschikbaar%3C/text%3E%3C/svg%3E';
+          }}
         />
       </div>
     );
@@ -142,7 +214,7 @@ export const MediaMessageBubble: React.FC<MediaMessageBubbleProps> = ({
           </div>
         </div>
 
-        <audio ref={audioRef} src={mediaUrl} preload="metadata" />
+        <audio ref={audioRef} src={signedUrl || mediaUrl} preload="metadata" />
       </div>
     );
   }
