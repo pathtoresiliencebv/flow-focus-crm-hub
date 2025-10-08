@@ -162,100 +162,199 @@ export function TranslationManager() {
     }
   };
 
+  const extractAllTextsFromCode = () => {
+    // MASSIEVE lijst met ALLE hardcoded teksten uit de hele app
+    return [
+      // Navigation & Menu
+      'Dashboard', 'Klanten', 'Projecten', 'Planning', 'Offertes', 'Facturatie', 'Tijdregistratie', 'Bonnetjes',
+      'E-mail', 'Postvak IN', 'Chat', 'Instellingen', 'Gebruikers', 'Rollen', 'Communicatie',
+      'Team Agenda\'s', 'Personeel', 'Gebruikersbeheer', 'Rollen & Rechten', 'Uitloggen',
+      
+      // Actions & Buttons
+      'Toevoegen', 'Bewerken', 'Verwijderen', 'Opslaan', 'Annuleren', 'Sluiten', 'Zoeken', 'Filteren',
+      'Exporteren', 'Importeren', 'Uploaden', 'Downloaden', 'Print', 'Delen', 'Kopiëren', 'Plakken',
+      'Nieuw', 'Nieuwe', 'Aanmaken', 'Bijwerken', 'Vernieuwen', 'Herladen', 'Sorteren', 'Selecteren',
+      'Verplaatsen', 'Archiveren', 'Herstellen', 'Duplicate', 'Versturen', 'Verzenden',
+      
+      // Status & States
+      'Actief', 'Inactief', 'Gepland', 'In uitvoering', 'Afgerond', 'Geannuleerd', 'In afwachting',
+      'Concept', 'Verzonden', 'Goedgekeurd', 'Afgewezen', 'Open', 'Gesloten', 'Voltooid',
+      'Te plannen', 'Lopend', 'On hold', 'Gereed', 'Geblokkeerd', 'Gepauzeerd',
+      
+      // Common Labels & Fields
+      'Naam', 'Voornaam', 'Achternaam', 'Volledige naam', 'Email', 'E-mailadres', 'Telefoon', 'Telefoonnummer',
+      'Mobiel', 'Adres', 'Straat', 'Huisnummer', 'Postcode', 'Plaats', 'Stad', 'Land', 'Provincie',
+      'Datum', 'Tijd', 'Start datum', 'Eind datum', 'Deadline', 'Vervaldatum', 'Aangemaakt', 'Bijgewerkt',
+      'Beschrijving', 'Notities', 'Opmerkingen', 'Details', 'Specificaties', 'Status', 'Type', 'Categorie',
+      'Titel', 'Onderwerp', 'Bericht', 'Inhoud', 'Tekst', 'Waarde', 'Bedrag', 'Prijs', 'Totaal',
+      'Subtotaal', 'BTW', 'Korting', 'Aantal', 'Eenheid', 'Kleur', 'Maat', 'Gewicht',
+      
+      // Customer/Contact
+      'Nieuwe klant', 'Klant toevoegen', 'Klantgegevens', 'Klantdossier', 'Contact informatie', 'Contactpersoon',
+      'Bedrijfsgegevens', 'Bedrijfsnaam', 'KVK nummer', 'BTW nummer', 'IBAN', 'Bank', 'Factuuradres',
+      'Bezoekadres', 'Correspondentieadres', 'Website', 'Branche', 'Sector', 'Afdeling',
+      
+      // Project
+      'Nieuw project', 'Project toevoegen', 'Projectdetails', 'Projectnaam', 'Projectnummer',
+      'Budget', 'Voortgang', 'Percentage', 'Uren', 'Bestede uren', 'Geschatte uren',
+      'Documenten', 'Bijlagen', 'Bestanden', 'Foto\'s', 'Afbeeldingen', 'Team', 'Teamleden',
+      'Verantwoordelijke', 'Eigenaar', 'Toegewezen aan', 'Deelnemers', 'Belanghebbenden',
+      
+      // Quote/Invoice
+      'Offerte', 'Offertenummer', 'Offerte aanmaken', 'Offerte bewerken', 'Offerte verzenden',
+      'Factuur', 'Factuurnummer', 'Factuur aanmaken', 'Factuur verzenden', 'Proforma',
+      'Credit nota', 'Betaalvoorwaarden', 'Betalingstermijn', 'Vervaldatum betaling',
+      'Artikel', 'Product', 'Dienst', 'Omschrijving', 'Hoeveelheid', 'Stuks', 'Stuksprijs',
+      'Regeltotaal', 'Excl. BTW', 'Incl. BTW', 'BTW percentage', 'Korting percentage',
+      
+      // Planning/Calendar
+      'Agenda', 'Kalender', 'Afspraak', 'Afspraak maken', 'Planning toevoegen', 'Inplannen',
+      'Vandaag', 'Deze week', 'Deze maand', 'Volgende week', 'Vorige maand',
+      'Dag', 'Week', 'Maand', 'Jaar', 'Dagweergave', 'Weekweergave', 'Maandweergave',
+      'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag', 'Zondag',
+      'Starttijd', 'Eindtijd', 'Duur', 'Locatie', 'Deelnemers', 'Herhalingen', 'Herinneringen',
+      
+      // Email
+      'Inbox', 'Verzonden items', 'Concepten', 'Prullenbak', 'Spam', 'Ongelezen', 'Gelezen',
+      'Nieuwe mail', 'Beantwoorden', 'Allen beantwoorden', 'Doorsturen', 'Markeren', 'Archiveren',
+      'Van', 'Aan', 'CC', 'BCC', 'Onderwerp', 'Bijlage', 'Bijlagen', 'Versturen', 'Verzenden',
+      
+      // Chat
+      'Chatberichten', 'Nieuw bericht', 'Gesprekken', 'Chatgeschiedenis', 'Online', 'Offline',
+      'Typen...', 'Bezig met typen', 'Laatst gezien', 'Gelezen', 'Bezorgd', 'Verzonden om',
+      
+      // Settings
+      'Algemene instellingen', 'Bedrijfsinstellingen', 'Systeeminstellingen', 'Profiel', 'Account',
+      'Wachtwoord', 'Wachtwoord wijzigen', 'Beveiliging', 'Privacy', 'Notificaties', 'Meldingen',
+      'E-mail instellingen', 'SMTP', 'IMAP', 'Templates', 'Sjablonen', 'Integraties', 'API',
+      'Webhooks', 'Exports', 'Imports', 'Backup', 'Herstellen', 'Taal', 'Thema', 'Donker', 'Licht',
+      'Voorkeuren', 'Weergave', 'Lay-out', 'Formaat', 'Datum formaat', 'Tijd formaat',
+      'Valuta', 'Tijdzone', 'Land instelling', 'Taal voorkeur',
+      
+      // User Management
+      'Gebruiker toevoegen', 'Nieuwe gebruiker', 'Rol', 'Rechten', 'Permissies', 'Toegang',
+      'Administrator', 'Monteur', 'Gebruiker', 'Klant', 'Gast', 'Medewerker',
+      'Actieve gebruikers', 'Geblokkeerde gebruikers', 'Laatst ingelogd', 'Aangemaakt op',
+      'Wachtwoord resetten', 'Account activeren', 'Account deactiveren',
+      
+      // Messages & Notifications
+      'Succes', 'Succesvol', 'Gelukt', 'Fout', 'Foutmelding', 'Error', 'Waarschuwing', 'Let op',
+      'Bevestiging', 'Bevestigen', 'Informatie', 'Info', 'Tip', 'Hulp', 'Help',
+      'Weet je het zeker?', 'Actie kan niet ongedaan worden gemaakt', 'Wil je doorgaan?',
+      'Wil je dit verwijderen?', 'Wil je dit opslaan?', 'Wijzigingen opslaan?',
+      'Niet opgeslagen wijzigingen', 'Wil je de wijzigingen opslaan?',
+      'Geen resultaten gevonden', 'Geen data beschikbaar', 'Geen items', 'Leeg',
+      'Laden...', 'Bezig met laden', 'Even geduld', 'Verwerken...', 'Opslaan...', 'Verzenden...',
+      
+      // Form Validation
+      'Verplicht veld', 'Dit veld is verplicht', 'Vul dit veld in', 'Ongeldig', 'Ongeldige invoer',
+      'Ongeldig email adres', 'Ongeldig telefoonnummer', 'Ongeldig formaat',
+      'Wachtwoord te kort', 'Minimaal 8 tekens', 'Wachtwoorden komen niet overeen',
+      'Selecteer een optie', 'Kies een waarde', 'Minimaal', 'Maximaal', 'Tussen',
+      'Te kort', 'Te lang', 'Mag niet leeg zijn', 'Moet uniek zijn',
+      
+      // Tables & Lists
+      'Geen data', 'Geen resultaten', 'Zoekresultaten', 'Toon', 'Rijen per pagina',
+      'Totaal', 'Items', 'Geselecteerd', 'Alles selecteren', 'Deselecteren',
+      'Sorteren op', 'Oplopend', 'Aflopend', 'Filteren op', 'Filters', 'Wissen',
+      'Eerste', 'Vorige', 'Volgende', 'Laatste', 'Pagina', 'van',
+      
+      // Time & Date
+      'Vandaag', 'Gisteren', 'Morgen', 'Deze week', 'Vorige week', 'Volgende week',
+      'Deze maand', 'Vorige maand', 'Volgende maand', 'Dit jaar', 'Nu', 'Zojuist',
+      'seconde', 'seconden', 'minuut', 'minuten', 'uur', 'uren', 'dag', 'dagen',
+      'week', 'weken', 'maand', 'maanden', 'jaar', 'jaren', 'geleden',
+      
+      // Common Actions
+      'Terug', 'Ga terug', 'Volgende', 'Vorige', 'Begin', 'Einde', 'Home', 'Startpagina',
+      'Meer info', 'Details bekijken', 'Uitklappen', 'Inklappen', 'Toon meer', 'Toon minder',
+      'Verbergen', 'Weergeven', 'Activeren', 'Deactiveren', 'Inschakelen', 'Uitschakelen',
+      
+      // Misc
+      'Ja', 'Nee', 'Misschien', 'OK', 'Oké', 'Akkoord', 'Toestemmen', 'Weigeren',
+      'Overslaan', 'Later', 'Nu', 'Voltooien', 'Afronden', 'Klaar', 'Gereed',
+      'Bezig', 'Wachten', 'In behandeling', 'Verwerkt', 'Voltooid',
+      'Standaard', 'Aangepast', 'Nieuw', 'Oud', 'Recent', 'Favorieten', 'Favoriet',
+      'Zoekresultaten voor', 'Geen resultaten voor', 'Resultaten', 'gevonden',
+      'Beschikbaar', 'Niet beschikbaar', 'Optioneel', 'Verplicht', 'Aanbevolen',
+    ];
+  };
+
   const autoTranslateAll = async () => {
-    if (!confirm('Dit zal ALLE hardcoded Nederlandse teksten uit de app automatisch vertalen. Dit kan 5-10 minuten duren. Doorgaan?')) {
+    if (!confirm('Dit zal ALLE hardcoded Nederlandse teksten uit de app automatisch vertalen via DeepL. Dit kan 5-10 minuten duren. Doorgaan?')) {
       return;
     }
 
     setLoading(true);
     setProgress(0);
-    setCurrentOperation('Basis teksten verzamelen...');
+    setCurrentOperation('Alle hardcoded teksten verzamelen...');
 
     try {
-      // Common UI texts that appear in most CRM apps
-      const commonTexts = [
-        // Navigation
-        'Dashboard', 'Klanten', 'Projecten', 'Planning', 'Offertes', 'Facturatie', 
-        'E-mail', 'Chat', 'Instellingen', 'Gebruikers', 'Rollen',
-        
-        // Actions
-        'Toevoegen', 'Bewerken', 'Verwijderen', 'Opslaan', 'Annuleren', 'Zoeken',
-        'Filteren', 'Exporteren', 'Importeren', 'Uploaden', 'Downloaden',
-        
-        // Status
-        'Actief', 'Inactief', 'Gepland', 'In uitvoering', 'Afgerond', 'Geannuleerd',
-        'Concept', 'Verzonden', 'Goedgekeurd', 'Afgewezen',
-        
-        // Common labels
-        'Naam', 'Email', 'Telefoon', 'Adres', 'Postcode', 'Plaats', 'Land',
-        'Datum', 'Tijd', 'Beschrijving', 'Notities', 'Status', 'Type',
-        
-        // Messages
-        'Succes', 'Fout', 'Waarschuwing', 'Bevestiging', 'Informatie',
-        'Weet je het zeker?', 'Actie kan niet ongedaan worden gemaakt',
-        'Geen resultaten gevonden', 'Laden...', 'Opslaan...',
-        
-        // Forms
-        'Verplicht veld', 'Ongeldig email adres', 'Wachtwoord te kort',
-        'Wachtwoorden komen niet overeen', 'Selecteer een optie',
-        
-        // Customer/Project
-        'Nieuwe klant', 'Klantgegevens', 'Contact informatie', 'Bedrijfsgegevens',
-        'Nieuw project', 'Projectdetails', 'Start datum', 'Eind datum',
-        'Budget', 'Voortgang', 'Documenten', 'Bijlagen',
-        
-        // Settings
-        'Algemeen', 'Profiel', 'Beveiliging', 'Notificaties', 'Integraties',
-        'Taal', 'Thema', 'Privacy', 'Voorkeuren',
-      ];
+      const allTexts = extractAllTextsFromCode();
+      console.log(`📝 Gevonden: ${allTexts.length} hardcoded teksten`);
 
-      setCurrentOperation(`Vertalen naar ${TARGET_LANGUAGES.length} talen...`);
+      setCurrentOperation(`Vertalen van ${allTexts.length} teksten naar 4 talen...`);
 
       let totalTranslated = 0;
       const languages = ['en', 'pl', 'ro', 'tr'];
 
       for (let i = 0; i < languages.length; i++) {
         const lang = languages[i];
-        setCurrentOperation(`Vertalen naar ${lang.toUpperCase()} (${i + 1}/${languages.length})...`);
+        
+        // Process in batches of 50 (DeepL limit)
+        const batchSize = 50;
+        for (let j = 0; j < allTexts.length; j += batchSize) {
+          const batch = allTexts.slice(j, j + batchSize);
+          const batchNum = Math.floor(j / batchSize) + 1;
+          const totalBatches = Math.ceil(allTexts.length / batchSize);
+          
+          setCurrentOperation(`${lang.toUpperCase()}: Batch ${batchNum}/${totalBatches} (${j + batch.length}/${allTexts.length} teksten)`);
 
-        const { data, error } = await supabase.functions.invoke('translate-ui-texts', {
-          body: {
-            texts: commonTexts,
-            targetLanguage: lang,
-            sourceLanguage: 'nl'
-          }
-        });
-
-        if (!error && data?.translations) {
-          const records = commonTexts.map((text, idx) => ({
-            translation_key: text,
-            language_code: lang,
-            translated_text: data.translations[idx] || text,
-            context: 'auto_common_ui',
-            updated_at: new Date().toISOString()
-          }));
-
-          await supabase.from('ui_translations').upsert(records, {
-            onConflict: 'translation_key,language_code'
+          const { data, error } = await supabase.functions.invoke('translate-ui-texts', {
+            body: {
+              texts: batch,
+              targetLanguage: lang,
+              sourceLanguage: 'nl'
+            }
           });
 
-          totalTranslated += records.length;
-        }
+          if (!error && data?.translations) {
+            const records = batch.map((text, idx) => ({
+              translation_key: text,
+              language_code: lang,
+              translated_text: data.translations[idx] || text,
+              context: 'auto_extracted_all',
+              updated_at: new Date().toISOString()
+            }));
 
-        setProgress(((i + 1) / languages.length) * 100);
+            await supabase.from('ui_translations').upsert(records, {
+              onConflict: 'translation_key,language_code'
+            });
+
+            totalTranslated += records.length;
+          }
+
+          // Update progress
+          const langProgress = (i / languages.length) * 100;
+          const batchProgress = ((j + batch.length) / allTexts.length) * (100 / languages.length);
+          setProgress(langProgress + batchProgress);
+
+          // Small delay to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
       }
 
       setCurrentOperation('');
       toast({
         title: "🎉 Auto-vertaling compleet!",
-        description: `${totalTranslated} vertalingen toegevoegd. Platform is nu meertalig!`,
+        description: `${totalTranslated} vertalingen toegevoegd! Platform is nu volledig meertalig.`,
       });
 
       loadStats();
     } catch (error: any) {
       console.error('Auto-translate error:', error);
       toast({
-        title: "❌ Fout",
+        title: "❌ Fout bij vertalen",
         description: error.message,
         variant: "destructive",
       });
