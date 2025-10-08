@@ -17,7 +17,6 @@ import {
   BarChart, 
   Settings, 
   LogOut,
-  Globe
 } from "lucide-react";
 import { Permission } from "@/types/permissions";
 import { Button } from "@/components/ui/button";
@@ -171,6 +170,10 @@ export function Layout() {
             </Button>
 
             {/* User Menu Dropdown */}
+            {/* Language Selector */}
+            <LanguageSelector />
+
+            {/* User Menu Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2 hover:bg-gray-100">
@@ -189,14 +192,6 @@ export function Layout() {
                 <DropdownMenuItem onClick={() => navigate('/settings')}>
                   <Settings className="mr-2 h-4 w-4" />
                   Instellingen
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <div className="px-2 py-1.5">
-                    <Globe className="mr-2 h-4 w-4 inline" />
-                    <div className="inline-block ml-1">
-                      <LanguageSelector />
-                    </div>
-                  </div>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout} className="text-red-600">
