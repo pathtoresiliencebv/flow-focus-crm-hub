@@ -1,6 +1,7 @@
 import React from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { PageHeaderProvider, usePageHeader } from "@/contexts/PageHeaderContext";
 import { 
   LayoutDashboard, 
   Users, 
@@ -29,11 +30,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LanguageSelector } from "@/components/LanguageSelector";
 
-export function Layout() {
+function LayoutContent() {
   const { user, profile, logout, hasPermission } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const { title, actions } = usePageHeader();
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
@@ -143,11 +145,19 @@ export function Layout() {
       <div className={`flex-1 transition-all duration-300 flex flex-col ${isCollapsed ? 'ml-0 md:ml-20' : 'ml-0 md:ml-64'}`}>
         {/* Top Header */}
         <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
-          <div className="flex items-center gap-4">
-            {/* Mobile menu button (we'll add this later) */}
+          {/* Left side: Page Title + Actions */}
+          <div className="flex items-center gap-4 flex-1">
+            {title && (
+              <h1 className="text-xl font-bold text-gray-900">{title}</h1>
+            )}
+            {actions && (
+              <div className="flex items-center gap-2">
+                {actions}
+              </div>
+            )}
           </div>
 
-          {/* Right side: Mail, Chat, User Menu */}
+          {/* Right side: Mail, Chat, Language, User Menu */}
           <div className="flex items-center gap-3">
             {/* Mail Icon */}
             <Button
@@ -209,6 +219,14 @@ export function Layout() {
         </main>
       </div>
     </div>
+  );
+}
+
+export function Layout() {
+  return (
+    <PageHeaderProvider>
+      <LayoutContent />
+    </PageHeaderProvider>
   );
 }
 
