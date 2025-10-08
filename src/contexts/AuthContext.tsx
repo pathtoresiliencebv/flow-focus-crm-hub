@@ -93,7 +93,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       try {
         setIsLoading(true);
         
-        // First check for existing session
+        // Check for existing session
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -105,14 +105,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (mounted && session) {
           setSession(session);
           setUser(session.user);
-          try {
-            await fetchProfile(session.user);
-          } catch (profileError) {
-            console.error('Error fetching profile:', profileError);
-          }
+          await fetchProfile(session.user);
         }
         
-        // Then set up auth state listener
+        // Set up auth state listener
         const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
           if (!mounted) return;
           
@@ -123,11 +119,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setUser(currentUser);
           
           if (currentUser && event === 'SIGNED_IN') {
-            try {
-              await fetchProfile(currentUser);
-            } catch (profileError) {
-              console.error('Error fetching profile on sign in:', profileError);
-            }
+            await fetchProfile(currentUser);
           } else if (!currentUser) {
             setProfile(null);
           }
@@ -136,10 +128,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         });
         
         subscription = data.subscription;
-        
-        if (mounted) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       } catch (error) {
         console.error('Error initializing auth:', error);
         if (mounted) {

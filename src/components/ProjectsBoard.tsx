@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, memo, useMemo, useCallback } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { useCrmStore, ProjectWithCustomerName as Project, UpdateProject } from "
 import { useUsers } from "@/hooks/useUsers";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { InstallateurProjectList } from './InstallateurProjectList';
 import { SlidePanel } from '@/components/ui/slide-panel';
@@ -54,26 +55,29 @@ const statusDisplayMap: Record<ProjectStatus, string> = {
   "afgerond": "Afgerond",
 };
 
-const ProjectCard = ({ project, index }: { project: Project, index: number }) => {
+const ProjectCard = memo(({ project, index }: { project: Project, index: number }) => {
   const navigate = useNavigate();
   const { deleteProject } = useCrmStore();
   const { monteurs } = useUsers();
   const { completionPercentage, tasks } = useProjectTasks(project.id);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   
-  const assignedMonteur = monteurs.find(m => m.id === project.assigned_user_id);
+  const assignedMonteur = useMemo(() => 
+    monteurs.find(m => m.id === project.assigned_user_id), 
+    [monteurs, project.assigned_user_id]
+  );
   
-  const handleViewDetails = (e: React.MouseEvent) => {
+  const handleViewDetails = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     navigate(`/projects/${project.id}`);
-  };
+  }, [navigate, project.id]);
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm(`Weet je zeker dat je project "${project.title}" wilt verwijderen?`)) {
       deleteProject(project.id);
     }
-  };
+  }, [deleteProject, project.id, project.title]);
 
   return (
     <>
@@ -173,9 +177,18 @@ const ProjectCard = ({ project, index }: { project: Project, index: number }) =>
       </Dialog>
     </>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison for memo optimization
+  return (
+    prevProps.project.id === nextProps.project.id &&
+    prevProps.project.status === nextProps.project.status &&
+    prevProps.project.title === nextProps.project.title &&
+    prevProps.project.assigned_user_id === nextProps.project.assigned_user_id &&
+    prevProps.index === nextProps.index
+  );
+});
 
-export const ProjectsBoard: React.FC = () => {
+export const ProjectsBoard: React.FC = memo(() => {
   const { projects, updateProject } = useCrmStore();
   const { hasPermission, profile } = useAuth();
   const [newProjectPanelOpen, setNewProjectPanelOpen] = useState(false);
@@ -191,7 +204,7 @@ export const ProjectsBoard: React.FC = () => {
     return <InstallateurProjectList />;
   }
 
-  const handleDragEnd = async (result: DropResult) => {
+  const handleDragEnd = useCallback(async (result: DropResult) => {
     const { destination, source, draggableId } = result;
 
     if (!destination || 
@@ -210,22 +223,25 @@ export const ProjectsBoard: React.FC = () => {
       console.error('❌ Error moving project:', error);
       // The error toast is already handled in the mutation
     }
-  };
+  }, [updateProject]);
 
-  const handleAddProjectClick = (status: ProjectStatus) => {
+  const handleAddProjectClick = useCallback((status: ProjectStatus) => {
     setSelectedStatus(status);
     setNewProjectPanelOpen(true);
-  };
+  }, []);
 
-  const handleProjectCreated = () => {
+  const handleProjectCreated = useCallback(() => {
     setNewProjectPanelOpen(false);
     // Projects will automatically update through the useCrmStore hook
-  };
+  }, []);
 
-  const projectsByStatus = statusColumns.reduce<Record<string, Project[]>>((acc, column) => {
-    acc[column.id] = projects.filter(project => project.status === column.id);
-    return acc;
-  }, {});
+  const projectsByStatus = useMemo(() => 
+    statusColumns.reduce<Record<string, Project[]>>((acc, column) => {
+      acc[column.id] = projects.filter(project => project.status === column.id);
+      return acc;
+    }, {}), 
+    [projects]
+  );
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
@@ -316,4 +332,4 @@ export const ProjectsBoard: React.FC = () => {
       </DragDropContext>
     </div>
   );
-};
+});

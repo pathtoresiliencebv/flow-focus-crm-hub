@@ -1,5 +1,6 @@
 
 import React from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Sidebar } from "@/components/ui/sidebar";
 import {
   LayoutDashboard,
@@ -21,104 +22,104 @@ import { Permission } from "@/types/permissions";
 import { NotificationCenter } from "./NotificationCenter";
 
 interface AppSidebarProps {
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
   children: React.ReactNode;
 }
 
-export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProps) {
+export function AppSidebar({ children }: AppSidebarProps) {
   const { user, logout, profile, hasPermission } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Main navigation links
-  const mainLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null}[] = [
+  // Main navigation links with React Router paths
+  const mainLinks: {label: string, icon: React.ReactElement, path: string, permission: Permission | null}[] = [
     {
       label: "Dashboard",
       icon: <LayoutDashboard className="h-5 w-5" />,
-      key: "dashboard",
+      path: "/",
       permission: null,
     },
     {
       label: "Klanten",
       icon: <Users className="h-5 w-5" />,
-      key: "customers",
+      path: "/customers",
       permission: "customers_view",
     },
     {
       label: "Projecten",
       icon: <FolderKanban className="h-5 w-5" />,
-      key: "projects",
+      path: "/projects",
       permission: "projects_view",
     },
     {
       label: "Planning",
       icon: <Calendar className="h-5 w-5" />,
-      key: "calendar",
+      path: "/planning",
       permission: "planning_create",
     },
     {
       label: "Offertes",
       icon: <FileText className="h-5 w-5" />,
-      key: "quotes",
+      path: "/quotes",
       permission: "invoices_view",
     },
     {
       label: "Facturatie",
       icon: <CreditCard className="h-5 w-5" />,
-      key: "invoicing",
+      path: "/invoices",
       permission: "invoices_view",
     },
   ];
 
   // Communication links
-  const communicationLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null}[] = [
+  const communicationLinks: {label: string, icon: React.ReactElement, path: string, permission: Permission | null}[] = [
     {
       label: "Postvak IN",
       icon: <Mail className="h-5 w-5" />,
-      key: "email",
+      path: "/email",
       permission: null, // Everyone can access email
     },
     {
       label: "Chat",
       icon: <MessageCircle className="h-5 w-5" />,
-      key: "chat",
+      path: "/chat",
       permission: null,
     },
   ];
 
   // Personnel links (Personeel section)
-  const personnelLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null}[] = [
+  const personnelLinks: {label: string, icon: React.ReactElement, path: string, permission: Permission | null}[] = [
     {
       label: "Tijdregistratie",
       icon: <Clock className="h-5 w-5" />,
-      key: "time",
+      path: "/time",
       permission: "projects_view",
     },
     {
       label: "Bonnetjes",
       icon: <Receipt className="h-5 w-5" />,
-      key: "receipts",
+      path: "/receipts",
       permission: "invoices_view",
     },
     {
       label: "Personeel",
       icon: <UserCheck className="h-5 w-5" />,
-      key: "personnel",
+      path: "/personnel",
       permission: "users_view",
     },
   ];
 
   // Settings submenu links
-  const settingsLinks: {label: string, icon: React.ReactElement, key: string, permission: Permission | null}[] = [
+  const settingsLinks: {label: string, icon: React.ReactElement, path: string, permission: Permission | null}[] = [
     {
       label: "Rapportages",
       icon: <BarChart className="h-5 w-5" />,
-      key: "reports",
+      path: "/reports",
       permission: "reports_view",
     },
     {
       label: "Instellingen",
       icon: <Settings className="h-5 w-5" />,
-      key: "settings",
+      path: "/settings",
       permission: "settings_edit",
     }
   ];
@@ -138,20 +139,32 @@ export function AppSidebar({ activeTab, setActiveTab, children }: AppSidebarProp
 
   const filteredSettingsLinks = settingsLinks.filter(link => {
     // Hide Reports completely for Installateurs
-    if (link.key === "reports" && profile?.role === 'Installateur') {
+    if (link.path === "/reports" && profile?.role === 'Installateur') {
       return false;
     }
     return link.permission === null || hasPermission(link.permission as Permission);
   });
 
-  // Combine all links for the Sidebar component (maintaining backward compatibility)
-  const links = [...filteredMainLinks, ...filteredCommunicationLinks, ...filteredPersonnelLinks, ...filteredSettingsLinks];
+  // Combine all links for the Sidebar component
+  const allLinks = [...filteredMainLinks, ...filteredCommunicationLinks, ...filteredPersonnelLinks, ...filteredSettingsLinks];
 
+  // Convert to the format expected by Sidebar component
+  const links = allLinks.map(link => ({
+    label: link.label,
+    icon: link.icon,
+    key: link.path,
+    permission: link.permission
+  }));
+
+  // Handle navigation
+  const handleNavigation = (path: string) => {
+    navigate(path);
+  };
 
   return (
     <Sidebar 
-      activeTab={activeTab}
-      setActiveTab={setActiveTab}
+      activeTab={location.pathname}
+      setActiveTab={handleNavigation}
     >
       {children}
     </Sidebar>
