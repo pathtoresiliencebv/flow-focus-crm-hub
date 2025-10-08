@@ -18,17 +18,9 @@ export const Dashboard = () => {
 
   return (
     <div className="h-full bg-gradient-to-br from-slate-50 to-blue-50 overflow-hidden">
-      {/* Simple Header - Only for Installateus */}
+      {/* Only show projects for Installateurs */}
       {profile?.role === 'Installateur' ? (
         <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <CalendarDays className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-              Planning
-            </h1>
-            <p className="text-gray-600 mt-1 text-sm sm:text-base">Mijn toegewezen projecten</p>
-          </div>
-
           <Card className="shadow-lg border-0 bg-white/80 backdrop-blur-sm mx-1 sm:mx-0">
             <CardHeader className="pb-3 sm:pb-4 px-3 sm:px-6 pt-4 sm:pt-6">
               <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
@@ -61,20 +53,12 @@ export const Dashboard = () => {
           </Card>
         </div>
       ) : (
-        /* Admin/Administratie: Full Screen Planning */
-        <div className="h-full flex flex-col">
-          {/* Simple Header */}
-          <div className="px-3 sm:px-6 py-3 sm:py-4 border-b bg-white/80 backdrop-blur-sm">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-2">
-              <CalendarDays className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-              Planning
-            </h1>
-            <p className="text-gray-600 mt-1 text-sm sm:text-base">Monteur agenda & projectplanning</p>
-          </div>
-          
-          {/* Full Screen Planning Management */}
-          <div className="flex-1 overflow-hidden">
-            <SimplifiedPlanningManagement />
+        /* Admin/Administratie: Show welcome message */
+        <div className="h-full flex items-center justify-center">
+          <div className="text-center">
+            <CalendarDays className="h-16 w-16 mx-auto mb-4 text-primary" />
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Welkom bij SMANS CRM</h1>
+            <p className="text-gray-600">Gebruik het menu aan de linkerkant om te navigeren</p>
           </div>
         </div>
       )}
