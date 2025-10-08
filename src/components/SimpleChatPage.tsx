@@ -66,15 +66,16 @@ export const SimpleChatPage: React.FC = () => {
     );
   }
 
-  // Desktop: show both panels
+  // Desktop: show both panels with compact sidebar
   return (
     <div className="flex h-full bg-background overflow-hidden">
-        <div className="w-80 border-r border-border bg-card">
+        <div className="w-16 border-r border-border bg-card">
           <ConversationList
             conversations={conversations}
             selectedConversation={selectedConversation}
             onSelectConversation={selectConversation}
             isMobile={false}
+            compact={true}
           />
         </div>
         <div className="flex-1">

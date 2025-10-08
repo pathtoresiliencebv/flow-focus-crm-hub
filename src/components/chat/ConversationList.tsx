@@ -10,13 +10,15 @@ interface ConversationListProps {
   selectedConversation: string | null;
   onSelectConversation: (id: string) => void;
   isMobile: boolean;
+  compact?: boolean;
 }
 
 export const ConversationList: React.FC<ConversationListProps> = ({
   conversations,
   selectedConversation,
   onSelectConversation,
-  isMobile
+  isMobile,
+  compact = false
 }) => {
   const getInitials = (name: string | null) => {
     if (!name) return '??';
@@ -54,6 +56,38 @@ export const ConversationList: React.FC<ConversationListProps> = ({
     );
   }
 
+  // Compact mode (icons only)
+  if (compact && !isMobile) {
+    return (
+      <div className="flex flex-col h-full bg-background">
+        <div className="flex-1 overflow-y-auto py-2">
+          {conversations.map((conversation) => (
+            <div
+              key={conversation.id}
+              onClick={() => onSelectConversation(conversation.id)}
+              title={conversation.participant_name || 'Contact'}
+              className={cn(
+                "flex items-center justify-center p-3 cursor-pointer transition-colors",
+                "hover:bg-muted/50",
+                selectedConversation === conversation.id && "bg-[hsl(0,71%,36%)]/10 border-l-4 border-[hsl(0,71%,36%)]"
+              )}
+            >
+              <Avatar className="h-10 w-10">
+                <AvatarFallback className={cn(
+                  "text-sm font-semibold",
+                  selectedConversation === conversation.id ? "bg-[hsl(0,71%,36%)] text-white" : "bg-primary/10 text-primary"
+                )}>
+                  {getInitials(conversation.participant_name)}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Full mode (mobile or expanded)
   return (
     <div className={cn(
       "flex flex-col bg-background",
@@ -74,7 +108,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
             className={cn(
               "flex items-center p-4 border-b border-border cursor-pointer transition-colors",
               "hover:bg-muted/50 active:bg-muted",
-              selectedConversation === conversation.id && "bg-muted"
+              selectedConversation === conversation.id && "bg-[hsl(0,71%,36%)]/10 border-l-4 border-[hsl(0,71%,36%)]"
             )}
           >
             <Avatar className="h-12 w-12 mr-3">

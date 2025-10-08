@@ -35,21 +35,21 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       <div className={cn(
         "max-w-[70%] rounded-2xl px-4 py-2 break-words",
         isOwn 
-          ? "bg-primary text-primary-foreground rounded-br-md" 
-          : "bg-muted text-foreground rounded-bl-md"
+          ? "bg-[hsl(0,71%,36%)] text-white rounded-br-md" 
+          : "bg-gray-100 text-gray-900 rounded-bl-md"
       )}>
         <p className="text-sm">{displayText}</p>
         <div className="flex items-center gap-2 mt-1">
           <p className={cn(
             "text-xs opacity-70",
-            isOwn ? "text-primary-foreground/70" : "text-muted-foreground"
+            isOwn ? "text-white/70" : "text-gray-500"
           )}>
             {formatTime(message.created_at)}
           </p>
           {isTranslated && (
             <span className={cn(
               "text-xs px-1.5 py-0.5 rounded",
-              isOwn ? "bg-primary-foreground/20" : "bg-muted-foreground/20"
+              isOwn ? "bg-white/20" : "bg-gray-500/20"
             )}>
               🌍
             </span>
