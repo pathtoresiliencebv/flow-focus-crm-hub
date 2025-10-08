@@ -89,18 +89,16 @@ serve(async (req) => {
         confirmationUrl: `${Deno.env.get('APP_URL') || 'https://smanscrm.nl'}/confirm/${planningId}`
       })
 
-      // Use smtp-send function
-      const { data: emailResult, error: emailError } = await supabase.functions.invoke('smtp-send', {
+      // Use SMANS SMTP via send-email-smans function
+      const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-email-smans', {
         body: {
           to: customer.email,
-          from: Deno.env.get('SMTP_FROM') || 'planning@smansbv.nl',
           subject: `Afspraak ${notificationType === 'planning_created' ? 'bevestiging' : 'update'} - ${planning.title}`,
           html: emailHtml,
           attachments: [
             {
               filename: 'afspraak.ics',
               content: icalBase64,
-              encoding: 'base64',
               contentType: 'text/calendar'
             }
           ]

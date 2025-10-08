@@ -118,11 +118,10 @@ serve(async (req) => {
           monteur: planning.assigned_user
         })
 
-        // Send email
-        const { data: emailResult, error: emailError } = await supabase.functions.invoke('smtp-send', {
+        // Send email via SMANS SMTP
+        const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-email-smans', {
           body: {
             to: customer.email,
-            from: Deno.env.get('SMTP_FROM') || 'planning@smansbv.nl',
             subject: `🔔 Herinnering: Afspraak morgen - ${planning.title}`,
             html: emailHtml
           }

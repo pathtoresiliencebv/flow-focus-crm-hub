@@ -41,20 +41,40 @@ serve(async (req) => {
     const emailSubject = `Werkbon - ${emailData.projectTitle} - Project Afgerond ✅`;
     const emailHtml = generateEmailHTML(emailData);
 
-    // Send email via smtp-send function
-    const { data: emailResult, error: emailError } = await supabase.functions.invoke('smtp-send', {
+    // Download PDF and convert to base64 for attachment
+    let pdfAttachment = null;
+    try {
+      console.log('📥 Downloading PDF from:', emailData.pdfUrl);
+      const pdfResponse = await fetch(emailData.pdfUrl);
+      if (!pdfResponse.ok) {
+        throw new Error(`Failed to download PDF: ${pdfResponse.statusText}`);
+      }
+      const pdfBuffer = await pdfResponse.arrayBuffer();
+      const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
+      
+      pdfAttachment = {
+        filename: `werkbon-${emailData.completionId.slice(0, 8)}.pdf`,
+        content: pdfBase64,
+        contentType: 'application/pdf'
+      };
+      console.log('✅ PDF converted to base64 for attachment');
+    } catch (pdfError) {
+      console.error('⚠️ Warning: Could not attach PDF:', pdfError);
+      // Continue without PDF attachment, email still contains link
+    }
+
+    // Send email via SMANS SMTP
+    const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-email-smans', {
       body: {
         to: emailData.customerEmail,
-        from: Deno.env.get("SMTP_FROM") || "noreply@smanscrm.nl",
         subject: emailSubject,
         html: emailHtml,
-        attachmentUrl: emailData.pdfUrl,
-        attachmentFilename: `werkbon-${emailData.completionId.slice(0, 8)}.pdf`
+        attachments: pdfAttachment ? [pdfAttachment] : undefined
       }
     });
 
     if (emailError) {
-      console.error('SMTP send error:', emailError);
+      console.error('❌ SMANS SMTP send error:', emailError);
       throw emailError;
     }
 
