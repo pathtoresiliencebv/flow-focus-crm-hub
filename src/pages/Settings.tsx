@@ -14,7 +14,7 @@ import { EmailTemplateSettings } from '@/components/settings/EmailTemplateSettin
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { LeadFormSettings } from '@/components/settings/LeadFormSettings';
 import { AIIntegrationSettings } from '@/components/settings/AIIntegrationSettings';
-import { LanguageSettings } from '@/components/LanguageSettings';
+import { LanguageSettingsPage } from '@/components/settings/LanguageSettingsPage';
 
 type SettingPage = 'overview' | 'company' | 'quotes' | 'invoices' | 'users' | 'roles' | 'email' | 'email-templates' | 'notifications' | 'lead-forms' | 'ai-integration' | 'integrations' | 'language';
 
@@ -143,7 +143,7 @@ export default function Settings() {
       case 'company':
         return <CompanyDetailsSettings />;
       case 'language':
-        return <LanguageSettings />;
+        return <LanguageSettingsPage />;
       case 'quotes':
         return <QuoteSettings />;
       case 'invoices':
