@@ -15,9 +15,10 @@ import {
   MessageCircle, 
   UserCheck, 
   User, 
-  BarChart, 
   Settings, 
   LogOut,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Permission } from "@/types/permissions";
 import { Button } from "@/components/ui/button";
@@ -101,11 +102,6 @@ function LayoutContent() {
           {/* Settings Section */}
           {filteredSettingsLinks.length > 0 && (
             <div className="mt-6">
-              {!isCollapsed && (
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-4">
-                  Instellingen
-                </h3>
-              )}
               <ul className="space-y-1">
                 {filteredSettingsLinks.map((link) => (
                   <li key={link.path}>
@@ -135,7 +131,7 @@ function LayoutContent() {
             className="w-full p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors flex items-center justify-center"
             title={isCollapsed ? 'Sidebar uitklappen' : 'Sidebar inklappen'}
           >
-            {isCollapsed ? '→' : '←'}
+            {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
           </button>
         </div>
       </aside>
