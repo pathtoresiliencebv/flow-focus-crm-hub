@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Settings as SettingsIcon, Building2, FileText, Users, Mail, Wallet, Bot, ChevronRight, CreditCard, Shield, Bell, FormInput, MessageSquare, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { CompanyDetailsSettings } from '@/components/settings/CompanyDetailsSettings';
 import { ExternalIntegrationsSettings } from '@/components/settings/ExternalIntegrationsSettings';
 import { QuoteSettings } from '@/components/settings/QuoteSettings';
@@ -152,7 +153,12 @@ const settingsCategories = [
 ];
 
 export default function Settings() {
+  const { setTitle } = usePageHeader();
   const [currentPage, setCurrentPage] = useState<SettingPage>('overview');
+
+  React.useEffect(() => {
+    setTitle("Instellingen");
+  }, [setTitle]);
 
   const renderCurrentPage = () => {
     switch (currentPage) {

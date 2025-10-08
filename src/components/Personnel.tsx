@@ -5,9 +5,15 @@ import UserManagement from "./UserManagement";
 import RoleManagement from "./RoleManagement";
 import Salary from "./Salary";
 import { Users, Shield, CircleDollarSign } from 'lucide-react';
+import { usePageHeader } from "@/contexts/PageHeaderContext";
 
 const Personnel = () => {
+  const { setTitle } = usePageHeader();
   const [activeTab, setActiveTab] = useState("users");
+
+  React.useEffect(() => {
+    setTitle("Personeel");
+  }, [setTitle]);
 
   return (
     <div className="p-4 sm:p-6 space-y-6">

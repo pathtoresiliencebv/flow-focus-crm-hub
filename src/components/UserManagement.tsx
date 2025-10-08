@@ -13,10 +13,16 @@ import { DeleteUserDialog } from './users/DeleteUserDialog';
 import { ResetPasswordDialog } from './users/ResetPasswordDialog';
 import { UserAvailabilityDialog } from './users/UserAvailabilityDialog';
 import { Profile } from '@/types/user';
+import { usePageHeader } from "@/contexts/PageHeaderContext";
 
 const UserManagement = () => {
+  const { setTitle } = usePageHeader();
   const queryClient = useQueryClient();
   const { hasPermission, profile } = useAuth();
+
+  React.useEffect(() => {
+    setTitle("Gebruikers");
+  }, [setTitle]);
   
   // Check if user has permission to view users
   const canViewUsers = hasPermission('users_view');
