@@ -339,7 +339,7 @@ export function isOutsideWorkHours(
 /**
  * Check if a new booking overlaps with break time
  */
-export function overlapsWith Break(
+export function overlapsWithBreak(
   startTime: string,
   endTime: string,
   breakStart?: string,

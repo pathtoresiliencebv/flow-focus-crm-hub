@@ -7,7 +7,6 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { i18n, Language } from '@/lib/i18n';
-import { useAuth } from './AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
 interface I18nContextType {
@@ -21,22 +20,25 @@ interface I18nContextType {
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
   const [language, setLanguageState] = useState<Language>('nl');
   const [isLoading, setIsLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
   // Initialize i18n when user logs in
   useEffect(() => {
     const initializeI18n = async () => {
-      if (!user?.id) {
-        setIsLoading(false);
-        return;
-      }
-
       try {
         setIsLoading(true);
-        await i18n.initialize(user.id);
-        setLanguageState(i18n.getLanguage());
+        
+        // Get current session
+        const { data: { session } } = await supabase.auth.getSession();
+        const currentUserId = session?.user?.id || null;
+        setUserId(currentUserId);
+
+        if (currentUserId) {
+          await i18n.initialize(currentUserId);
+          setLanguageState(i18n.getLanguage());
+        }
       } catch (error) {
         console.error('Failed to initialize i18n:', error);
       } finally {
@@ -45,11 +47,26 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     };
 
     initializeI18n();
-  }, [user?.id]);
+
+    // Listen to auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const newUserId = session?.user?.id || null;
+      setUserId(newUserId);
+      
+      if (newUserId && newUserId !== userId) {
+        await i18n.initialize(newUserId);
+        setLanguageState(i18n.getLanguage());
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   // Subscribe to language preference changes
   useEffect(() => {
-    if (!user?.id) return;
+    if (!userId) return;
 
     const channel = supabase
       .channel('user_language_changes')
@@ -59,7 +76,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
           event: 'UPDATE',
           schema: 'public',
           table: 'user_language_preferences',
-          filter: `user_id=eq.${user.id}`
+          filter: `user_id=eq.${userId}`
         },
         async (payload) => {
           if (payload.new.ui_language !== language) {
@@ -73,12 +90,12 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.id, language]);
+  }, [userId, language]);
 
   const handleSetLanguage = async (newLanguage: Language) => {
     try {
       setIsLoading(true);
-      await i18n.setLanguage(newLanguage, user?.id);
+      await i18n.setLanguage(newLanguage, userId || undefined);
       setLanguageState(newLanguage);
     } catch (error) {
       console.error('Failed to change language:', error);
