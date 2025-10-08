@@ -56,7 +56,6 @@ function LayoutContent() {
   const settingsLinks = [
     { path: "/personnel", label: "Personeel", icon: <UserCheck className="h-5 w-5" />, permission: "users_view" as Permission },
     { path: "/users", label: "Gebruikers", icon: <User className="h-5 w-5" />, permission: "users_view" as Permission },
-    { path: "/reports", label: "Rapportages", icon: <BarChart className="h-5 w-5" />, permission: "reports_view" as Permission },
     { path: "/settings", label: "Instellingen", icon: <Settings className="h-5 w-5" />, permission: "settings_edit" as Permission },
   ];
 
@@ -66,7 +65,7 @@ function LayoutContent() {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
-      <aside className={`hidden md:flex flex-col fixed top-0 left-0 h-full bg-white shadow-lg transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-56'}`}>
+      <aside className={`hidden md:flex flex-col fixed top-0 left-0 h-full bg-white shadow-lg transition-all duration-300 ${isCollapsed ? 'w-14' : 'w-48'}`}>
         {/* Logo */}
         <div className={`p-4 ${isCollapsed ? 'px-2' : ''}`}>
           <div className="flex items-center justify-center">
@@ -142,7 +141,7 @@ function LayoutContent() {
       </aside>
 
       {/* Main Content */}
-      <div className={`flex-1 transition-all duration-300 flex flex-col ${isCollapsed ? 'ml-0 md:ml-16' : 'ml-0 md:ml-56'}`}>
+      <div className={`flex-1 transition-all duration-300 flex flex-col ${isCollapsed ? 'ml-0 md:ml-14' : 'ml-0 md:ml-48'}`}>
         {/* Top Header */}
         <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
           {/* Left side: Page Title + Actions */}

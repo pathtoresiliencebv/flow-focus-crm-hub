@@ -224,24 +224,6 @@ export const ProjectsBoard: React.FC = () => {
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Projecten</h1>
-          <p className="text-gray-600 mt-1 text-sm sm:text-base">Beheer je projecten en installaties</p>
-        </div>
-        
-        {/* Maak knop ALTIJD zichtbaar en prominenter */}
-        <Button 
-          onClick={() => handleAddProjectClick("te-plannen")}
-          size="lg"
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 text-base shadow-lg hover:shadow-xl transition-all duration-200"
-        >
-          <Plus className="mr-2 h-5 w-5" />
-          Project Aanmaken
-        </Button>
-      </div>
-
       <SlidePanel
         isOpen={newProjectPanelOpen}
         onClose={() => setNewProjectPanelOpen(false)}
@@ -255,11 +237,11 @@ export const ProjectsBoard: React.FC = () => {
       </SlidePanel>
     
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="flex gap-4 overflow-x-auto pb-4">
           {statusColumns.map(column => (
             <div 
               key={column.id} 
-              className={`rounded-lg p-4 border ${column.bgColor}`}
+              className={`flex-shrink-0 w-80 rounded-lg p-4 border ${column.bgColor}`}
             >
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-medium text-sm">{column.title}</h3>

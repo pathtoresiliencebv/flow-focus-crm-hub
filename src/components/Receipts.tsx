@@ -4,14 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ImageUpload } from '@/components/ImageUpload';
 import { MobileReceiptCard } from '@/components/mobile/MobileReceiptCard';
+import { IconBox } from '@/components/ui/icon-box';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
-import { Upload, Check, X, Eye, Mail } from 'lucide-react';
+import { Clock, Check, X, Eye, Mail } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,6 +42,7 @@ interface Receipt {
 export const Receipts = () => {
   const isMobile = useIsMobile();
   const { profile } = useAuth();
+  const [activeTab, setActiveTab] = useState('pending');
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
@@ -245,26 +246,33 @@ export const Receipts = () => {
 
   return (
     <div className="p-4 space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Bonnetjes</h2>
-        <Button onClick={() => setShowUploadDialog(true)} disabled={loading}>
-          <Upload className="h-4 w-4 mr-2" />
-          Upload
-        </Button>
+      {/* Icon Boxes Navigation */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <IconBox
+          icon={<Clock className="h-6 w-6" />}
+          label="In behandeling"
+          active={activeTab === "pending"}
+          onClick={() => setActiveTab("pending")}
+          count={receipts.filter(r => r.status === 'pending').length}
+        />
+        <IconBox
+          icon={<Check className="h-6 w-6" />}
+          label="Verwerkt"
+          active={activeTab === "processed"}
+          onClick={() => setActiveTab("processed")}
+          count={receipts.filter(r => r.status !== 'pending').length}
+        />
+        <IconBox
+          icon={<Mail className="h-6 w-6" />}
+          label="Email Info"
+          active={activeTab === "email"}
+          onClick={() => setActiveTab("email")}
+        />
       </div>
 
-      <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="pending">
-            In behandeling ({receipts.filter(r => r.status === 'pending').length})
-          </TabsTrigger>
-          <TabsTrigger value="processed">
-            Verwerkt ({receipts.filter(r => r.status !== 'pending').length})
-          </TabsTrigger>
-          <TabsTrigger value="email">Email Info</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="pending" className="space-y-4">
+      {/* Content */}
+      {activeTab === "pending" && (
+        <div className="space-y-4">
           {receipts.filter(r => r.status === 'pending').map((receipt) => (
             <Card key={receipt.id}>
               <CardContent className="p-4">
@@ -300,9 +308,11 @@ export const Receipts = () => {
               </CardContent>
             </Card>
           ))}
-        </TabsContent>
+        </div>
+      )}
 
-        <TabsContent value="processed" className="space-y-4">
+      {activeTab === "processed" && (
+        <div className="space-y-4">
           {receipts.filter(r => r.status !== 'pending').map((receipt) => (
             <Card key={receipt.id}>
               <CardContent className="p-4">
@@ -329,10 +339,11 @@ export const Receipts = () => {
               </CardContent>
             </Card>
           ))}
-        </TabsContent>
+        </div>
+      )}
 
-        <TabsContent value="email">
-          <Card>
+      {activeTab === "email" && (
+        <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Mail className="h-5 w-5" />
@@ -365,8 +376,7 @@ export const Receipts = () => {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+      )}
 
       {/* Upload Dialog */}
       <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>

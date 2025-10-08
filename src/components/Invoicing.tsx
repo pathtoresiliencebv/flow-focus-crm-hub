@@ -1,11 +1,8 @@
 import { useState } from "react";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FileText, Archive } from "lucide-react";
+import { IconBox } from "@/components/ui/icon-box";
 import { InvoicesTable } from "./invoicing/InvoicesTable";
 import { InvoiceFilters } from "./invoicing/InvoiceFilters";
-import { InvoicesSummary } from "./invoicing/InvoicesSummary";
-import { InvoicingHeader } from "./invoicing/InvoicingHeader";
 import { ArchivedInvoicesView } from "./invoicing/ArchivedInvoicesView";
 import { supabase } from "@/integrations/supabase/client";
 import { InvoiceFinalizationDialog } from "./invoicing/InvoiceFinalizationDialog";
@@ -18,6 +15,7 @@ export const Invoicing = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { invoices, loading, deleteInvoice, duplicateInvoice, archiveInvoice, sendPaymentReminder, refetch } = useInvoices();
+  const [activeTab, setActiveTab] = useState("active");
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [showFinalizationDialog, setShowFinalizationDialog] = useState(false);
   const [showNewInvoiceForm, setShowNewInvoiceForm] = useState(window.location.pathname === "/invoices/new");
@@ -193,25 +191,33 @@ export const Invoicing = () => {
     );
   }
 
+  const activeInvoices = invoices.filter(inv => !inv.is_archived);
+  const archivedInvoices = invoices.filter(inv => inv.is_archived);
+
   return (
     <div className="container mx-auto py-6">
       <div className="space-y-6">
-        <InvoicingHeader customers={[]} projects={[]} />
-        
-        <Tabs defaultValue="active" className="w-full">
-          <div className="flex justify-between items-center">
-            <TabsList>
-              <TabsTrigger value="active">Actieve Facturen</TabsTrigger>
-              <TabsTrigger value="archived">Gearchiveerd</TabsTrigger>
-            </TabsList>
-            <Button onClick={() => setShowNewInvoiceForm(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nieuwe Factuur
-            </Button>
-          </div>
+        {/* Icon Boxes Navigation */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <IconBox
+            icon={<FileText className="h-6 w-6" />}
+            label="Actieve Facturen"
+            active={activeTab === "active"}
+            onClick={() => setActiveTab("active")}
+            count={activeInvoices.length}
+          />
+          <IconBox
+            icon={<Archive className="h-6 w-6" />}
+            label="Gearchiveerd"
+            active={activeTab === "archived"}
+            onClick={() => setActiveTab("archived")}
+            count={archivedInvoices.length}
+          />
+        </div>
 
-          <TabsContent value="active" className="space-y-6">
-            <InvoicesSummary invoices={filteredInvoices} />
+        {/* Content */}
+        {activeTab === "active" && (
+          <div className="space-y-6">
             <div className="flex gap-4">
               <input
                 type="text"
@@ -231,12 +237,12 @@ export const Invoicing = () => {
               onFinalizeInvoice={handleFinalizeInvoice}
               onSendReminder={handleSendReminder}
             />
-          </TabsContent>
+          </div>
+        )}
 
-          <TabsContent value="archived">
-            <ArchivedInvoicesView />
-          </TabsContent>
-        </Tabs>
+        {activeTab === "archived" && (
+          <ArchivedInvoicesView />
+        )}
       </div>
 
       <InvoiceFinalizationDialog

@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Plus } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Clock, Calendar } from "lucide-react";
+import { IconBox } from "@/components/ui/icon-box";
 import { TimeEntriesOverview } from './time-registration/TimeEntriesOverview';
 import { TimeCalendarView } from './time-registration/TimeCalendarView';
-import { TimeRegistrationForm } from './time-registration/TimeRegistrationForm';
-import { TimeReportsView } from './time-registration/TimeReportsView';
 import { QuickTimeRegistrationDialog } from './time-registration/QuickTimeRegistrationDialog';
 import { SlidePanel } from '@/components/ui/slide-panel';
 
@@ -49,57 +47,38 @@ export const TimeRegistration = () => {
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Tijdsregistratie</h1>
-          <p className="text-gray-600 mt-1 text-sm sm:text-base">Registreer en beheer je werktijden</p>
-        </div>
-        <Button 
-          onClick={() => setTimePanelOpen(true)}
-          className="bg-smans-primary hover:bg-smans-primary/90 text-white"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Nieuwe Tijdsregistratie
-        </Button>
+      {/* Icon Boxes Navigation */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <IconBox
+          icon={<Clock className="h-6 w-6" />}
+          label="Overzicht"
+          active={activeTab === "overview"}
+          onClick={() => setActiveTab("overview")}
+        />
+        <IconBox
+          icon={<Calendar className="h-6 w-6" />}
+          label="Maandkalender"
+          active={activeTab === "calendar"}
+          onClick={() => setActiveTab("calendar")}
+        />
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="mb-4 w-full sm:w-auto">
-          <TabsTrigger value="overview" className="text-xs sm:text-sm">Overzicht</TabsTrigger>
-          <TabsTrigger value="calendar" className="text-xs sm:text-sm">Weekkalender</TabsTrigger>
-          <TabsTrigger value="register" className="text-xs sm:text-sm">Registreren</TabsTrigger>
-          <TabsTrigger value="reports" className="text-xs sm:text-sm">Rapporten</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-4">
+      {/* Content */}
+      {activeTab === "overview" && (
+        <div className="space-y-4">
           <TimeEntriesOverview />
-        </TabsContent>
+        </div>
+      )}
 
-        <TabsContent value="calendar" className="space-y-4">
+      {activeTab === "calendar" && (
+        <div className="space-y-4">
           <TimeCalendarView 
             onEventClick={handleEventClick}
             onTimeSlotClick={handleTimeSlotClick}
             onEventCreate={handleEventCreate}
           />
-        </TabsContent>
-
-        <TabsContent value="register" className="space-y-4">
-          <TimeRegistrationForm
-            selectedDate={selectedDate}
-            setSelectedDate={setSelectedDate}
-            selectedStartHour={selectedStartHour}
-            setSelectedStartHour={setSelectedStartHour}
-            selectedEndHour={selectedEndHour}
-            setSelectedEndHour={setSelectedEndHour}
-            onSubmit={handleSubmitTime}
-          />
-        </TabsContent>
-
-        <TabsContent value="reports" className="space-y-4">
-          <TimeReportsView />
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
       
       <SlidePanel
         isOpen={timePanelOpen}

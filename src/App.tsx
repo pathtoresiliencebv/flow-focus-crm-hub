@@ -19,7 +19,6 @@ import QuotesPage from "@/pages/QuotesPage";
 import InvoicesPage from "@/pages/InvoicesPage";
 import PersonnelPage from "@/pages/PersonnelPage";
 import UsersPage from "@/pages/UsersPage";
-import ReportsPage from "@/pages/ReportsPage";
 import EmailPage from "@/pages/EmailPage";
 import ChatPage from "@/pages/ChatPage";
 import SettingsPage from "@/pages/SettingsPage";
@@ -101,7 +100,6 @@ function App() {
                       <Route path="/invoices" element={<InvoicesPage />} />
                       <Route path="/personnel" element={<PersonnelPage />} />
                       <Route path="/users" element={<UsersPage />} />
-                      <Route path="/reports" element={<ReportsPage />} />
                       <Route path="/email" element={<EmailPage />} />
                       <Route path="/chat" element={<ChatPage />} />
                       <Route path="/settings" element={<SettingsPage />} />

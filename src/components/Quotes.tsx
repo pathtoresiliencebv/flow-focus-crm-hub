@@ -2,12 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCrmStore } from "@/hooks/useCrmStore";
 import { useQuotes } from "@/hooks/useQuotes";
 import { useToast } from '@/hooks/use-toast';
-import { QuotesHeader } from './quotes/QuotesHeader';
-import { QuotesSearch } from './quotes/QuotesSearch';
+import { IconBox } from '@/components/ui/icon-box';
+import { FileText, Archive } from 'lucide-react';
 import { QuotesTable } from './quotes/QuotesTable';
 import { MultiBlockQuoteForm } from './quotes/MultiBlockQuoteForm';
 import { QuotesPreviewDialog } from './quotes/QuotesPreviewDialog';
@@ -182,26 +181,27 @@ export function Quotes() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <QuotesHeader
-        onQuoteCreated={() => fetchQuotes(true)}
-      />
-
-      <QuotesSearch
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-      />
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="active">
-            Actieve Offertes ({activeQuotes.length})
-          </TabsTrigger>
-          <TabsTrigger value="archived">
-            Gearchiveerde Offertes ({archivedQuotes.length})
-          </TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="active" className="mt-0">
+      {/* Icon Boxes Navigation */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <IconBox
+          icon={<FileText className="h-6 w-6" />}
+          label="Actieve Offertes"
+          active={activeTab === "active"}
+          onClick={() => setActiveTab("active")}
+          count={activeQuotes.length}
+        />
+        <IconBox
+          icon={<Archive className="h-6 w-6" />}
+          label="Gearchiveerde Offertes"
+          active={activeTab === "archived"}
+          onClick={() => setActiveTab("archived")}
+          count={archivedQuotes.length}
+        />
+      </div>
+      
+      {/* Content */}
+      {activeTab === "active" && (
+        <div className="mt-0">
           <QuotesTable
             quotes={filteredActiveQuotes}
             onPreview={handlePreview}
@@ -211,9 +211,11 @@ export function Quotes() {
             onSendEmail={handleSendEmail}
             onDuplicate={duplicateQuote}
           />
-        </TabsContent>
-        
-        <TabsContent value="archived" className="mt-0">
+        </div>
+      )}
+      
+      {activeTab === "archived" && (
+        <div className="mt-0">
           <QuotesTable
             quotes={filteredArchivedQuotes}
             onPreview={handlePreview}
@@ -222,8 +224,8 @@ export function Quotes() {
             onRestore={restoreQuote}
             isArchived={true}
           />
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
 
       <QuotesPreviewDialog
         open={previewDialogOpen}

@@ -71,40 +71,6 @@ export const Customers = () => {
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Klanten</h1>
-          <p className="text-gray-600 mt-1 text-sm sm:text-base">Beheer je klanten en hun gegevens</p>
-        </div>
-        {hasPermission('customers_edit') && (
-          <Button 
-            onClick={() => setNewCustomerPanelOpen(true)}
-            className="bg-smans-primary hover:bg-smans-primary/90 text-white"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Nieuwe Klant
-          </Button>
-        )}
-      </div>
-
-      {/* Search and Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Zoek klanten op naam, email of stad..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Customers List/Table */}
       <Card>
         <CardHeader>
