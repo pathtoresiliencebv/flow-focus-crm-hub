@@ -162,6 +162,110 @@ export function TranslationManager() {
     }
   };
 
+  const autoTranslateAll = async () => {
+    if (!confirm('Dit zal ALLE hardcoded Nederlandse teksten uit de app automatisch vertalen. Dit kan 5-10 minuten duren. Doorgaan?')) {
+      return;
+    }
+
+    setLoading(true);
+    setProgress(0);
+    setCurrentOperation('Basis teksten verzamelen...');
+
+    try {
+      // Common UI texts that appear in most CRM apps
+      const commonTexts = [
+        // Navigation
+        'Dashboard', 'Klanten', 'Projecten', 'Planning', 'Offertes', 'Facturatie', 
+        'E-mail', 'Chat', 'Instellingen', 'Gebruikers', 'Rollen',
+        
+        // Actions
+        'Toevoegen', 'Bewerken', 'Verwijderen', 'Opslaan', 'Annuleren', 'Zoeken',
+        'Filteren', 'Exporteren', 'Importeren', 'Uploaden', 'Downloaden',
+        
+        // Status
+        'Actief', 'Inactief', 'Gepland', 'In uitvoering', 'Afgerond', 'Geannuleerd',
+        'Concept', 'Verzonden', 'Goedgekeurd', 'Afgewezen',
+        
+        // Common labels
+        'Naam', 'Email', 'Telefoon', 'Adres', 'Postcode', 'Plaats', 'Land',
+        'Datum', 'Tijd', 'Beschrijving', 'Notities', 'Status', 'Type',
+        
+        // Messages
+        'Succes', 'Fout', 'Waarschuwing', 'Bevestiging', 'Informatie',
+        'Weet je het zeker?', 'Actie kan niet ongedaan worden gemaakt',
+        'Geen resultaten gevonden', 'Laden...', 'Opslaan...',
+        
+        // Forms
+        'Verplicht veld', 'Ongeldig email adres', 'Wachtwoord te kort',
+        'Wachtwoorden komen niet overeen', 'Selecteer een optie',
+        
+        // Customer/Project
+        'Nieuwe klant', 'Klantgegevens', 'Contact informatie', 'Bedrijfsgegevens',
+        'Nieuw project', 'Projectdetails', 'Start datum', 'Eind datum',
+        'Budget', 'Voortgang', 'Documenten', 'Bijlagen',
+        
+        // Settings
+        'Algemeen', 'Profiel', 'Beveiliging', 'Notificaties', 'Integraties',
+        'Taal', 'Thema', 'Privacy', 'Voorkeuren',
+      ];
+
+      setCurrentOperation(`Vertalen naar ${TARGET_LANGUAGES.length} talen...`);
+
+      let totalTranslated = 0;
+      const languages = ['en', 'pl', 'ro', 'tr'];
+
+      for (let i = 0; i < languages.length; i++) {
+        const lang = languages[i];
+        setCurrentOperation(`Vertalen naar ${lang.toUpperCase()} (${i + 1}/${languages.length})...`);
+
+        const { data, error } = await supabase.functions.invoke('translate-ui-texts', {
+          body: {
+            texts: commonTexts,
+            targetLanguage: lang,
+            sourceLanguage: 'nl'
+          }
+        });
+
+        if (!error && data?.translations) {
+          const records = commonTexts.map((text, idx) => ({
+            translation_key: text,
+            language_code: lang,
+            translated_text: data.translations[idx] || text,
+            context: 'auto_common_ui',
+            updated_at: new Date().toISOString()
+          }));
+
+          await supabase.from('ui_translations').upsert(records, {
+            onConflict: 'translation_key,language_code'
+          });
+
+          totalTranslated += records.length;
+        }
+
+        setProgress(((i + 1) / languages.length) * 100);
+      }
+
+      setCurrentOperation('');
+      toast({
+        title: "🎉 Auto-vertaling compleet!",
+        description: `${totalTranslated} vertalingen toegevoegd. Platform is nu meertalig!`,
+      });
+
+      loadStats();
+    } catch (error: any) {
+      console.error('Auto-translate error:', error);
+      toast({
+        title: "❌ Fout",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+      setProgress(0);
+      setCurrentOperation('');
+    }
+  };
+
   const exportTranslations = async () => {
     try {
       const { data, error } = await supabase
@@ -216,10 +320,30 @@ export function TranslationManager() {
             Beheer platform vertalingen voor alle ondersteunde talen
           </p>
         </div>
-        <Button onClick={exportTranslations} variant="outline">
-          <Download className="h-4 w-4 mr-2" />
-          Exporteer CSV
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={autoTranslateAll} 
+            disabled={loading}
+            size="lg"
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Bezig...
+              </>
+            ) : (
+              <>
+                <Globe className="h-4 w-4 mr-2" />
+                🤖 Auto-Vertaal ALLES
+              </>
+            )}
+          </Button>
+          <Button onClick={exportTranslations} variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
