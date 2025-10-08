@@ -41,18 +41,33 @@ export const MobileDashboard: React.FC = () => {
   // Get project IDs from planning items
   const plannedProjectIds = new Set(planningItems.map(p => p.project_id).filter(Boolean));
 
-  // Filter projects: only show SCHEDULED projects, sorted by planning date
+  // Filter projects: show ALL assigned projects (not just those with planning)
+  // Projects that are already assigned to the monteur should be visible
   const myProjects = projects
     .filter(project => 
-      plannedProjectIds.has(project.id) && 
+      // Show if: assigned to me AND not completed
+      project.assigned_user_id === user?.id && 
       project.status !== 'afgerond'
     )
     .sort((a, b) => {
-      // Sort by planning date
+      // Sort by planning date if available, otherwise by project date
       const planningA = planningItems.find(pi => pi.project_id === a.id);
       const planningB = planningItems.find(pi => pi.project_id === b.id);
-      if (!planningA || !planningB) return 0;
-      return new Date(planningA.start_date).getTime() - new Date(planningB.start_date).getTime();
+      
+      // Both have planning - sort by planning date
+      if (planningA && planningB) {
+        return new Date(planningA.start_date).getTime() - new Date(planningB.start_date).getTime();
+      }
+      
+      // Only A has planning - it comes first
+      if (planningA) return -1;
+      // Only B has planning - it comes first
+      if (planningB) return 1;
+      
+      // Neither has planning - sort by project date
+      const dateA = a.date ? new Date(a.date).getTime() : 0;
+      const dateB = b.date ? new Date(b.date).getTime() : 0;
+      return dateB - dateA; // Newest first
     });
 
   if (selectedProject) {
