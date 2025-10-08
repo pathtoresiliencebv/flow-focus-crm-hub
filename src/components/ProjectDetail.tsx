@@ -69,33 +69,26 @@ const ProjectDetail = () => {
   const customer = customers.find(c => c.id === project.customer_id);
   const assignedMonteur = monteurs.find(m => m.id === project.assigned_user_id);
 
-  // Fetch invoices, quotes, and work time logs
-  useEffect(() => {
-    if (project?.customer_id) {
-      fetchInvoicesAndQuotes();
-    }
-    if (projectId) {
-      fetchWorkTimeLogs();
-    }
-  }, [project?.customer_id, projectId]);
-
+  // Define fetch functions before useEffect
   const fetchInvoicesAndQuotes = async () => {
+    if (!project?.customer_id && !projectId) return;
+    
     setLoadingData(true);
     try {
-      // Fetch invoices for customer
+      // Fetch invoices for customer AND/OR project
       const { data: invoiceData } = await supabase
         .from('invoices')
         .select('*')
-        .eq('customer_id', project.customer_id)
+        .or(`customer_id.eq.${project.customer_id},project_id.eq.${projectId}`)
         .order('created_at', { ascending: false });
       
       setInvoices(invoiceData || []);
       
-      // Fetch quotes for customer
+      // Fetch quotes for customer AND/OR project
       const { data: quoteData } = await supabase
         .from('quotes')
         .select('*')
-        .eq('customer_id', project.customer_id)
+        .or(`customer_id.eq.${project.customer_id},project_id.eq.${projectId}`)
         .order('created_at', { ascending: false });
       
       setQuotes(quoteData || []);
@@ -107,6 +100,9 @@ const ProjectDetail = () => {
   };
 
   const fetchWorkTimeLogs = async () => {
+    if (!projectId) return;
+    
+    setLoadingData(true);
     try {
       const { data } = await supabase
         .from('work_time_logs')
@@ -120,8 +116,22 @@ const ProjectDetail = () => {
       setWorkTimeLogs(data || []);
     } catch (error) {
       console.error('Error fetching work time logs:', error);
+    } finally {
+      setLoadingData(false);
     }
   };
+
+  // Fetch invoices, quotes, and work time logs
+  useEffect(() => {
+    const fetchData = async () => {
+      await Promise.all([
+        fetchInvoicesAndQuotes(),
+        fetchWorkTimeLogs()
+      ]);
+    };
+    
+    fetchData();
+  }, [project?.customer_id, projectId]);
 
   const handleEditStart = () => {
     setEditData({
