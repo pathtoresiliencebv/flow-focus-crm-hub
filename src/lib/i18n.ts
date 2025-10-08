@@ -7,6 +7,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
+// Supported languages: Dutch, English, Polish, Romanian, Turkish
 export type Language = 'nl' | 'en' | 'pl' | 'ro' | 'tr';
 
 export interface TranslationCache {

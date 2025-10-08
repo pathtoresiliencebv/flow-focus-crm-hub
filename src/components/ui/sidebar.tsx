@@ -111,6 +111,7 @@ const XIcon = () => (
 );
 
 import { useAuth } from "@/contexts/AuthContext";
+import { LanguageSelector } from '@/components/LanguageSelector';
 
 interface SidebarProps {
   children: React.ReactNode;
@@ -336,6 +337,13 @@ export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
           <LogOut className="h-5 w-5" />
           {!mini && 'Uitloggen'}
         </button>
+        
+        {/* Language Selector */}
+        {!mini && (
+          <div className="px-2 mb-2">
+            <LanguageSelector />
+          </div>
+        )}
         
         {/* Toggle button */}
         <button
