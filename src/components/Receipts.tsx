@@ -87,6 +87,19 @@ export const Receipts = () => {
     );
   }
 
+  // Show error state if no receipts and not loading
+  if (!loading && receipts.length === 0) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">📄</div>
+          <h3 className="text-lg font-semibold mb-2">Geen bonnetjes</h3>
+          <p className="text-gray-600">Er zijn nog geen bonnetjes geüpload.</p>
+        </div>
+      </div>
+    );
+  }
+
   const loadReceipts = async () => {
     try {
       // First get all receipts

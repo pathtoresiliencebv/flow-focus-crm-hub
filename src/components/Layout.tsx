@@ -47,7 +47,8 @@ function LayoutContent() {
   const handleNavigation = (path: string) => {
     try {
       console.log('🧭 Navigating to:', path);
-      navigate(path);
+      // Use replace: false to maintain browser history
+      navigate(path, { replace: false });
     } catch (error) {
       console.error('❌ Navigation error:', error);
       // Fallback to window.location if navigate fails

@@ -124,7 +124,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setProfile(null);
           }
           
-          // Always set loading to false after auth state changes
+          // Set loading to false after auth state changes
           setIsLoading(false);
         });
         
