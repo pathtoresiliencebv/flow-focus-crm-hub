@@ -26,6 +26,7 @@ const ProjectDetail = () => {
   const { profile, user } = useAuth();
   const { startProject, isStarting } = useProjectDelivery();
   const [isEditing, setIsEditing] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false);
   const [showPlanning, setShowPlanning] = useState(false);
   const [showMaterials, setShowMaterials] = useState(false);
   const [showPersonnel, setShowPersonnel] = useState(false);

@@ -7,7 +7,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
-export type Language = 'nl' | 'en' | 'pl' | 'de' | 'fr' | 'es';
+export type Language = 'nl' | 'en' | 'pl' | 'ro' | 'tr';
 
 export interface TranslationCache {
   [key: string]: {

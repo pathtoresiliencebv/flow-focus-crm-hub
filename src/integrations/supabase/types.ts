@@ -526,6 +526,50 @@ export type Database = {
         }
         Relationships: []
       }
+      completion_photos: {
+        Row: {
+          category: string | null
+          completion_id: string
+          created_at: string | null
+          description: string | null
+          file_name: string | null
+          file_size: number | null
+          id: string
+          photo_url: string
+          uploaded_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          completion_id: string
+          created_at?: string | null
+          description?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          id?: string
+          photo_url: string
+          uploaded_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          completion_id?: string
+          created_at?: string | null
+          description?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          id?: string
+          photo_url?: string
+          uploaded_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "completion_photos_completion_id_fkey"
+            columns: ["completion_id"]
+            isOneToOne: false
+            referencedRelation: "project_completions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       compliance_events: {
         Row: {
           compliance_standard: string | null
@@ -730,63 +774,246 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_notifications: {
+        Row: {
+          bounced_at: string | null
+          channel: string
+          clicked_at: string | null
+          completion_id: string | null
+          cost: number | null
+          created_at: string | null
+          customer_id: string
+          delivered_at: string | null
+          error_message: string | null
+          id: string
+          max_retries: number | null
+          message: string | null
+          message_id: string | null
+          metadata: Json | null
+          next_retry_at: string | null
+          notification_type: string
+          opened_at: string | null
+          planning_id: string | null
+          project_id: string | null
+          provider: string | null
+          recipient_email: string | null
+          recipient_name: string | null
+          recipient_phone: string | null
+          retry_count: number | null
+          sent_at: string | null
+          status: string | null
+          subject: string | null
+          template_name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bounced_at?: string | null
+          channel: string
+          clicked_at?: string | null
+          completion_id?: string | null
+          cost?: number | null
+          created_at?: string | null
+          customer_id: string
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          max_retries?: number | null
+          message?: string | null
+          message_id?: string | null
+          metadata?: Json | null
+          next_retry_at?: string | null
+          notification_type: string
+          opened_at?: string | null
+          planning_id?: string | null
+          project_id?: string | null
+          provider?: string | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          retry_count?: number | null
+          sent_at?: string | null
+          status?: string | null
+          subject?: string | null
+          template_name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bounced_at?: string | null
+          channel?: string
+          clicked_at?: string | null
+          completion_id?: string | null
+          cost?: number | null
+          created_at?: string | null
+          customer_id?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          max_retries?: number | null
+          message?: string | null
+          message_id?: string | null
+          metadata?: Json | null
+          next_retry_at?: string | null
+          notification_type?: string
+          opened_at?: string | null
+          planning_id?: string | null
+          project_id?: string | null
+          provider?: string | null
+          recipient_email?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
+          retry_count?: number | null
+          sent_at?: string | null
+          status?: string | null
+          subject?: string | null
+          template_name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_notifications_completion_id_fkey"
+            columns: ["completion_id"]
+            isOneToOne: false
+            referencedRelation: "project_completions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_notifications_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_notifications_planning_id_fkey"
+            columns: ["planning_id"]
+            isOneToOne: false
+            referencedRelation: "planning_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_notifications_planning_id_fkey"
+            columns: ["planning_id"]
+            isOneToOne: false
+            referencedRelation: "planning_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_notifications_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address: string | null
+          average_satisfaction: number | null
+          billing_email: string | null
           btw_number: string | null
           city: string | null
           company_name: string | null
+          contact_person: string | null
+          coordinates_lat: number | null
+          coordinates_lng: number | null
+          country: string | null
           created_at: string
+          customer_since: string | null
+          customer_type: string | null
           email: string | null
           email_addresses: Json | null
           id: string
           invoice_address: Json | null
           kvk_number: string | null
+          language: string | null
+          last_contact_at: string | null
+          lifetime_value: number | null
           name: string
           notes: string | null
+          notification_preferences: Json | null
           phone: string | null
+          postal_code: string | null
+          preferred_contact_method: string | null
           shipping_address: Json | null
           status: Database["public"]["Enums"]["customer_status"] | null
+          timezone: string | null
+          total_projects_completed: number | null
           updated_at: string
           user_id: string | null
+          vat_number: string | null
         }
         Insert: {
           address?: string | null
+          average_satisfaction?: number | null
+          billing_email?: string | null
           btw_number?: string | null
           city?: string | null
           company_name?: string | null
+          contact_person?: string | null
+          coordinates_lat?: number | null
+          coordinates_lng?: number | null
+          country?: string | null
           created_at?: string
+          customer_since?: string | null
+          customer_type?: string | null
           email?: string | null
           email_addresses?: Json | null
           id?: string
           invoice_address?: Json | null
           kvk_number?: string | null
+          language?: string | null
+          last_contact_at?: string | null
+          lifetime_value?: number | null
           name: string
           notes?: string | null
+          notification_preferences?: Json | null
           phone?: string | null
+          postal_code?: string | null
+          preferred_contact_method?: string | null
           shipping_address?: Json | null
           status?: Database["public"]["Enums"]["customer_status"] | null
+          timezone?: string | null
+          total_projects_completed?: number | null
           updated_at?: string
           user_id?: string | null
+          vat_number?: string | null
         }
         Update: {
           address?: string | null
+          average_satisfaction?: number | null
+          billing_email?: string | null
           btw_number?: string | null
           city?: string | null
           company_name?: string | null
+          contact_person?: string | null
+          coordinates_lat?: number | null
+          coordinates_lng?: number | null
+          country?: string | null
           created_at?: string
+          customer_since?: string | null
+          customer_type?: string | null
           email?: string | null
           email_addresses?: Json | null
           id?: string
           invoice_address?: Json | null
           kvk_number?: string | null
+          language?: string | null
+          last_contact_at?: string | null
+          lifetime_value?: number | null
           name?: string
           notes?: string | null
+          notification_preferences?: Json | null
           phone?: string | null
+          postal_code?: string | null
+          preferred_contact_method?: string | null
           shipping_address?: Json | null
           status?: Database["public"]["Enums"]["customer_status"] | null
+          timezone?: string | null
+          total_projects_completed?: number | null
           updated_at?: string
           user_id?: string | null
+          vat_number?: string | null
         }
         Relationships: []
       }
@@ -834,72 +1061,404 @@ export type Database = {
       }
       direct_messages: {
         Row: {
-          audio_duration: number | null
-          content: string
-          context_type: string | null
+          content: string | null
           created_at: string
-          detected_language: string | null
-          file_name: string | null
-          file_size: number | null
-          file_type: string | null
-          file_url: string | null
           from_user_id: string
           id: string
           is_read: boolean | null
-          message_type: string | null
+          media_filename: string | null
+          media_mime_type: string | null
+          media_size: number | null
+          media_type: string | null
+          media_url: string | null
           original_language: string
-          thumbnail_url: string | null
           to_user_id: string
-          transcription_text: string | null
           translated_content: Json | null
-          translation_confidence: number | null
           updated_at: string
+          voice_duration: number | null
         }
         Insert: {
-          audio_duration?: number | null
-          content: string
-          context_type?: string | null
+          content?: string | null
           created_at?: string
-          detected_language?: string | null
-          file_name?: string | null
-          file_size?: number | null
-          file_type?: string | null
-          file_url?: string | null
           from_user_id: string
           id?: string
           is_read?: boolean | null
-          message_type?: string | null
+          media_filename?: string | null
+          media_mime_type?: string | null
+          media_size?: number | null
+          media_type?: string | null
+          media_url?: string | null
           original_language?: string
-          thumbnail_url?: string | null
           to_user_id: string
-          transcription_text?: string | null
           translated_content?: Json | null
-          translation_confidence?: number | null
           updated_at?: string
+          voice_duration?: number | null
         }
         Update: {
-          audio_duration?: number | null
-          content?: string
-          context_type?: string | null
+          content?: string | null
           created_at?: string
-          detected_language?: string | null
-          file_name?: string | null
-          file_size?: number | null
-          file_type?: string | null
-          file_url?: string | null
           from_user_id?: string
           id?: string
           is_read?: boolean | null
-          message_type?: string | null
+          media_filename?: string | null
+          media_mime_type?: string | null
+          media_size?: number | null
+          media_type?: string | null
+          media_url?: string | null
           original_language?: string
-          thumbnail_url?: string | null
           to_user_id?: string
-          transcription_text?: string | null
           translated_content?: Json | null
-          translation_confidence?: number | null
           updated_at?: string
+          voice_duration?: number | null
         }
         Relationships: []
+      }
+      email_accounts: {
+        Row: {
+          auto_sync: boolean | null
+          connection_status: string | null
+          connection_test_result: Json | null
+          created_at: string | null
+          display_name: string | null
+          email_address: string
+          history_id: string | null
+          id: string
+          imap_encryption: string | null
+          imap_host: string | null
+          imap_password: string | null
+          imap_port: number | null
+          imap_settings: Json | null
+          imap_username: string | null
+          is_active: boolean | null
+          is_primary: boolean | null
+          last_connection_test: string | null
+          last_error: string | null
+          last_error_at: string | null
+          last_sync_at: string | null
+          smtp_encryption: string | null
+          smtp_host: string | null
+          smtp_password: string | null
+          smtp_port: number | null
+          smtp_secure: boolean | null
+          smtp_settings: Json | null
+          smtp_username: string | null
+          sync_enabled: boolean | null
+          sync_interval: number | null
+          sync_token: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          auto_sync?: boolean | null
+          connection_status?: string | null
+          connection_test_result?: Json | null
+          created_at?: string | null
+          display_name?: string | null
+          email_address: string
+          history_id?: string | null
+          id?: string
+          imap_encryption?: string | null
+          imap_host?: string | null
+          imap_password?: string | null
+          imap_port?: number | null
+          imap_settings?: Json | null
+          imap_username?: string | null
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          last_connection_test?: string | null
+          last_error?: string | null
+          last_error_at?: string | null
+          last_sync_at?: string | null
+          smtp_encryption?: string | null
+          smtp_host?: string | null
+          smtp_password?: string | null
+          smtp_port?: number | null
+          smtp_secure?: boolean | null
+          smtp_settings?: Json | null
+          smtp_username?: string | null
+          sync_enabled?: boolean | null
+          sync_interval?: number | null
+          sync_token?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          auto_sync?: boolean | null
+          connection_status?: string | null
+          connection_test_result?: Json | null
+          created_at?: string | null
+          display_name?: string | null
+          email_address?: string
+          history_id?: string | null
+          id?: string
+          imap_encryption?: string | null
+          imap_host?: string | null
+          imap_password?: string | null
+          imap_port?: number | null
+          imap_settings?: Json | null
+          imap_username?: string | null
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          last_connection_test?: string | null
+          last_error?: string | null
+          last_error_at?: string | null
+          last_sync_at?: string | null
+          smtp_encryption?: string | null
+          smtp_host?: string | null
+          smtp_password?: string | null
+          smtp_port?: number | null
+          smtp_secure?: boolean | null
+          smtp_settings?: Json | null
+          smtp_username?: string | null
+          sync_enabled?: boolean | null
+          sync_interval?: number | null
+          sync_token?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_attachments: {
+        Row: {
+          attachment_id: string | null
+          content_id: string | null
+          created_at: string | null
+          filename: string
+          id: string
+          is_inline: boolean | null
+          message_id: string
+          mime_type: string | null
+          size: number | null
+          storage_url: string | null
+        }
+        Insert: {
+          attachment_id?: string | null
+          content_id?: string | null
+          created_at?: string | null
+          filename: string
+          id?: string
+          is_inline?: boolean | null
+          message_id: string
+          mime_type?: string | null
+          size?: number | null
+          storage_url?: string | null
+        }
+        Update: {
+          attachment_id?: string | null
+          content_id?: string | null
+          created_at?: string | null
+          filename?: string
+          id?: string
+          is_inline?: boolean | null
+          message_id?: string
+          mime_type?: string | null
+          size?: number | null
+          storage_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "email_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_drafts: {
+        Row: {
+          account_id: string
+          bcc_emails: Json | null
+          body_html: string | null
+          body_text: string | null
+          cc_emails: Json | null
+          created_at: string | null
+          id: string
+          in_reply_to_message_id: string | null
+          is_forward: boolean | null
+          is_reply: boolean | null
+          subject: string | null
+          to_emails: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_id: string
+          bcc_emails?: Json | null
+          body_html?: string | null
+          body_text?: string | null
+          cc_emails?: Json | null
+          created_at?: string | null
+          id?: string
+          in_reply_to_message_id?: string | null
+          is_forward?: boolean | null
+          is_reply?: boolean | null
+          subject?: string | null
+          to_emails?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_id?: string
+          bcc_emails?: Json | null
+          body_html?: string | null
+          body_text?: string | null
+          cc_emails?: Json | null
+          created_at?: string | null
+          id?: string
+          in_reply_to_message_id?: string | null
+          is_forward?: boolean | null
+          is_reply?: boolean | null
+          subject?: string | null
+          to_emails?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_drafts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "email_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_drafts_in_reply_to_message_id_fkey"
+            columns: ["in_reply_to_message_id"]
+            isOneToOne: false
+            referencedRelation: "email_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_labels: {
+        Row: {
+          account_id: string
+          color: string | null
+          created_at: string | null
+          icon: string | null
+          id: string
+          label_type: string | null
+          message_count: number | null
+          name: string
+        }
+        Insert: {
+          account_id: string
+          color?: string | null
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          label_type?: string | null
+          message_count?: number | null
+          name: string
+        }
+        Update: {
+          account_id?: string
+          color?: string | null
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          label_type?: string | null
+          message_count?: number | null
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_labels_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "email_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_messages: {
+        Row: {
+          attachments: Json | null
+          bcc_email: string[] | null
+          body_html: string | null
+          body_text: string | null
+          cc_email: string[] | null
+          created_at: string | null
+          direction: string
+          external_message_id: string | null
+          folder: string | null
+          from_email: string
+          id: string
+          in_reply_to: string | null
+          is_starred: boolean | null
+          read_at: string | null
+          received_at: string | null
+          sent_at: string | null
+          status: string | null
+          subject: string
+          thread_id: string | null
+          to_email: string[]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          attachments?: Json | null
+          bcc_email?: string[] | null
+          body_html?: string | null
+          body_text?: string | null
+          cc_email?: string[] | null
+          created_at?: string | null
+          direction: string
+          external_message_id?: string | null
+          folder?: string | null
+          from_email: string
+          id?: string
+          in_reply_to?: string | null
+          is_starred?: boolean | null
+          read_at?: string | null
+          received_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subject: string
+          thread_id?: string | null
+          to_email: string[]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          attachments?: Json | null
+          bcc_email?: string[] | null
+          body_html?: string | null
+          body_text?: string | null
+          cc_email?: string[] | null
+          created_at?: string | null
+          direction?: string
+          external_message_id?: string | null
+          folder?: string | null
+          from_email?: string
+          id?: string
+          in_reply_to?: string | null
+          is_starred?: boolean | null
+          read_at?: string | null
+          received_at?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subject?: string
+          thread_id?: string | null
+          to_email?: string[]
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_messages_in_reply_to_fkey"
+            columns: ["in_reply_to"]
+            isOneToOne: false
+            referencedRelation: "email_messages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_queue: {
         Row: {
@@ -1069,6 +1628,74 @@ export type Database = {
           variables?: Json | null
         }
         Relationships: []
+      }
+      email_threads: {
+        Row: {
+          account_id: string
+          created_at: string | null
+          first_message_at: string | null
+          folder: string | null
+          id: string
+          is_archived: boolean | null
+          is_important: boolean | null
+          is_read: boolean | null
+          is_starred: boolean | null
+          labels: string[] | null
+          last_message_at: string | null
+          message_count: number | null
+          participants: Json | null
+          snippet: string | null
+          subject: string | null
+          thread_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          account_id: string
+          created_at?: string | null
+          first_message_at?: string | null
+          folder?: string | null
+          id?: string
+          is_archived?: boolean | null
+          is_important?: boolean | null
+          is_read?: boolean | null
+          is_starred?: boolean | null
+          labels?: string[] | null
+          last_message_at?: string | null
+          message_count?: number | null
+          participants?: Json | null
+          snippet?: string | null
+          subject?: string | null
+          thread_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          account_id?: string
+          created_at?: string | null
+          first_message_at?: string | null
+          folder?: string | null
+          id?: string
+          is_archived?: boolean | null
+          is_important?: boolean | null
+          is_read?: boolean | null
+          is_starred?: boolean | null
+          labels?: string[] | null
+          last_message_at?: string | null
+          message_count?: number | null
+          participants?: Json | null
+          snippet?: string | null
+          subject?: string | null
+          thread_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_threads_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "email_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       emails: {
         Row: {
@@ -1450,6 +2077,188 @@ export type Database = {
           },
         ]
       }
+      material_catalog: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          datasheet_url: string | null
+          default_unit_price: number | null
+          description: string | null
+          dimensions: string | null
+          discontinued_at: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          material_code: string
+          material_name: string
+          minimum_stock: number | null
+          notes: string | null
+          reorder_quantity: number | null
+          replacement_material_id: string | null
+          specifications: Json | null
+          stock_quantity: number | null
+          subcategory: string | null
+          supplier: string | null
+          supplier_product_code: string | null
+          unit: string | null
+          updated_at: string | null
+          warranty_months: number | null
+          weight_kg: number | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          datasheet_url?: string | null
+          default_unit_price?: number | null
+          description?: string | null
+          dimensions?: string | null
+          discontinued_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          material_code: string
+          material_name: string
+          minimum_stock?: number | null
+          notes?: string | null
+          reorder_quantity?: number | null
+          replacement_material_id?: string | null
+          specifications?: Json | null
+          stock_quantity?: number | null
+          subcategory?: string | null
+          supplier?: string | null
+          supplier_product_code?: string | null
+          unit?: string | null
+          updated_at?: string | null
+          warranty_months?: number | null
+          weight_kg?: number | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          datasheet_url?: string | null
+          default_unit_price?: number | null
+          description?: string | null
+          dimensions?: string | null
+          discontinued_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          material_code?: string
+          material_name?: string
+          minimum_stock?: number | null
+          notes?: string | null
+          reorder_quantity?: number | null
+          replacement_material_id?: string | null
+          specifications?: Json | null
+          stock_quantity?: number | null
+          subcategory?: string | null
+          supplier?: string | null
+          supplier_product_code?: string | null
+          unit?: string | null
+          updated_at?: string | null
+          warranty_months?: number | null
+          weight_kg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_catalog_replacement_material_id_fkey"
+            columns: ["replacement_material_id"]
+            isOneToOne: false
+            referencedRelation: "material_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      material_usage: {
+        Row: {
+          category: string | null
+          completion_id: string | null
+          created_at: string | null
+          id: string
+          installation_location: string | null
+          installer_id: string
+          material_code: string | null
+          material_description: string | null
+          material_name: string
+          notes: string | null
+          photo_url: string | null
+          project_id: string
+          quantity: number
+          scanned_from_qr: boolean | null
+          serial_numbers: string[] | null
+          supplier: string | null
+          total_price: number | null
+          unit: string | null
+          unit_price: number | null
+          updated_at: string | null
+          used_at: string | null
+          warranty_months: number | null
+        }
+        Insert: {
+          category?: string | null
+          completion_id?: string | null
+          created_at?: string | null
+          id?: string
+          installation_location?: string | null
+          installer_id: string
+          material_code?: string | null
+          material_description?: string | null
+          material_name: string
+          notes?: string | null
+          photo_url?: string | null
+          project_id: string
+          quantity: number
+          scanned_from_qr?: boolean | null
+          serial_numbers?: string[] | null
+          supplier?: string | null
+          total_price?: number | null
+          unit?: string | null
+          unit_price?: number | null
+          updated_at?: string | null
+          used_at?: string | null
+          warranty_months?: number | null
+        }
+        Update: {
+          category?: string | null
+          completion_id?: string | null
+          created_at?: string | null
+          id?: string
+          installation_location?: string | null
+          installer_id?: string
+          material_code?: string | null
+          material_description?: string | null
+          material_name?: string
+          notes?: string | null
+          photo_url?: string | null
+          project_id?: string
+          quantity?: number
+          scanned_from_qr?: boolean | null
+          serial_numbers?: string[] | null
+          supplier?: string | null
+          total_price?: number | null
+          unit?: string | null
+          unit_price?: number | null
+          updated_at?: string | null
+          used_at?: string | null
+          warranty_months?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_usage_completion_id_fkey"
+            columns: ["completion_id"]
+            isOneToOne: false
+            referencedRelation: "project_completions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_usage_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_bookmarks: {
         Row: {
           category: string | null
@@ -1484,15 +2293,7 @@ export type Database = {
           title?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "message_bookmarks_message_id_fkey"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "direct_messages"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       message_classifications: {
         Row: {
@@ -1528,15 +2329,7 @@ export type Database = {
           topics?: string[] | null
           urgency?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "message_classifications_message_id_fkey"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "direct_messages"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       message_templates: {
         Row: {
@@ -1617,15 +2410,7 @@ export type Database = {
           resolved_by?: string | null
           title?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "message_threads_parent_message_id_fkey"
-            columns: ["parent_message_id"]
-            isOneToOne: false
-            referencedRelation: "direct_messages"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       notification_delivery_logs: {
         Row: {
@@ -1915,56 +2700,193 @@ export type Database = {
       planning_items: {
         Row: {
           assigned_user_id: string
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          color_code: string | null
+          confirmed_at: string | null
+          confirmed_by_customer: boolean | null
           created_at: string
+          customer_id: string | null
           description: string | null
           end_time: string
+          expected_duration_minutes: number | null
           google_calendar_event_id: string | null
           id: string
           last_synced_at: string | null
           location: string | null
+          notify_customer: boolean | null
+          notify_sms: boolean | null
+          planning_type: string | null
           project_id: string | null
+          rescheduled_from: string | null
+          special_instructions: string | null
           start_date: string
           start_time: string
           status: string | null
+          team_size: number | null
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
           assigned_user_id: string
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          color_code?: string | null
+          confirmed_at?: string | null
+          confirmed_by_customer?: boolean | null
           created_at?: string
+          customer_id?: string | null
           description?: string | null
           end_time: string
+          expected_duration_minutes?: number | null
           google_calendar_event_id?: string | null
           id?: string
           last_synced_at?: string | null
           location?: string | null
+          notify_customer?: boolean | null
+          notify_sms?: boolean | null
+          planning_type?: string | null
           project_id?: string | null
+          rescheduled_from?: string | null
+          special_instructions?: string | null
           start_date: string
           start_time: string
           status?: string | null
+          team_size?: number | null
           title: string
           updated_at?: string
           user_id: string
         }
         Update: {
           assigned_user_id?: string
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          color_code?: string | null
+          confirmed_at?: string | null
+          confirmed_by_customer?: boolean | null
           created_at?: string
+          customer_id?: string | null
           description?: string | null
           end_time?: string
+          expected_duration_minutes?: number | null
           google_calendar_event_id?: string | null
           id?: string
           last_synced_at?: string | null
           location?: string | null
+          notify_customer?: boolean | null
+          notify_sms?: boolean | null
+          planning_type?: string | null
           project_id?: string | null
+          rescheduled_from?: string | null
+          special_instructions?: string | null
           start_date?: string
           start_time?: string
           status?: string | null
+          team_size?: number | null
           title?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "planning_items_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_items_rescheduled_from_fkey"
+            columns: ["rescheduled_from"]
+            isOneToOne: false
+            referencedRelation: "planning_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_items_rescheduled_from_fkey"
+            columns: ["rescheduled_from"]
+            isOneToOne: false
+            referencedRelation: "planning_overview"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planning_participants: {
+        Row: {
+          confirmation_method: string | null
+          confirmed: boolean | null
+          confirmed_at: string | null
+          created_at: string | null
+          customer_id: string | null
+          id: string
+          notes: string | null
+          notification_method: string | null
+          notified: boolean | null
+          notified_at: string | null
+          participant_type: string
+          planning_id: string
+          role: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          confirmation_method?: string | null
+          confirmed?: boolean | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          notes?: string | null
+          notification_method?: string | null
+          notified?: boolean | null
+          notified_at?: string | null
+          participant_type: string
+          planning_id: string
+          role?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          confirmation_method?: string | null
+          confirmed?: boolean | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          customer_id?: string | null
+          id?: string
+          notes?: string | null
+          notification_method?: string | null
+          notified?: boolean | null
+          notified_at?: string | null
+          participant_type?: string
+          planning_id?: string
+          role?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_participants_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_participants_planning_id_fkey"
+            columns: ["planning_id"]
+            isOneToOne: false
+            referencedRelation: "planning_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_participants_planning_id_fkey"
+            columns: ["planning_id"]
+            isOneToOne: false
+            referencedRelation: "planning_overview"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       privacy_settings: {
         Row: {
@@ -2010,6 +2932,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          chat_language: string | null
           full_name: string | null
           id: string
           is_online: boolean | null
@@ -2022,6 +2945,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          chat_language?: string | null
           full_name?: string | null
           id: string
           is_online?: boolean | null
@@ -2034,6 +2958,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          chat_language?: string | null
           full_name?: string | null
           id?: string
           is_online?: boolean | null
@@ -2046,6 +2971,137 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      project_completions: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          break_duration_minutes: number | null
+          completion_date: string
+          created_at: string | null
+          customer_feedback: string | null
+          customer_satisfaction: number | null
+          customer_signature: string
+          email_sent_at: string | null
+          follow_up_notes: string | null
+          follow_up_required: boolean | null
+          id: string
+          installer_id: string
+          installer_language: string | null
+          installer_signature: string
+          internal_notes: string | null
+          issues_encountered: string | null
+          labor_cost: number | null
+          materials_cost: number | null
+          materials_used: string | null
+          net_work_hours: number | null
+          notes: string | null
+          original_materials_used: string | null
+          original_notes: string | null
+          original_recommendations: string | null
+          original_work_performed: string | null
+          other_costs: number | null
+          pdf_url: string | null
+          project_id: string
+          quality_rating: number | null
+          recommendations: string | null
+          status: string | null
+          total_cost: number | null
+          total_work_hours: number | null
+          updated_at: string | null
+          weather_conditions: string | null
+          work_performed: string
+          work_summary_json: Json | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          break_duration_minutes?: number | null
+          completion_date: string
+          created_at?: string | null
+          customer_feedback?: string | null
+          customer_satisfaction?: number | null
+          customer_signature: string
+          email_sent_at?: string | null
+          follow_up_notes?: string | null
+          follow_up_required?: boolean | null
+          id?: string
+          installer_id: string
+          installer_language?: string | null
+          installer_signature: string
+          internal_notes?: string | null
+          issues_encountered?: string | null
+          labor_cost?: number | null
+          materials_cost?: number | null
+          materials_used?: string | null
+          net_work_hours?: number | null
+          notes?: string | null
+          original_materials_used?: string | null
+          original_notes?: string | null
+          original_recommendations?: string | null
+          original_work_performed?: string | null
+          other_costs?: number | null
+          pdf_url?: string | null
+          project_id: string
+          quality_rating?: number | null
+          recommendations?: string | null
+          status?: string | null
+          total_cost?: number | null
+          total_work_hours?: number | null
+          updated_at?: string | null
+          weather_conditions?: string | null
+          work_performed: string
+          work_summary_json?: Json | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          break_duration_minutes?: number | null
+          completion_date?: string
+          created_at?: string | null
+          customer_feedback?: string | null
+          customer_satisfaction?: number | null
+          customer_signature?: string
+          email_sent_at?: string | null
+          follow_up_notes?: string | null
+          follow_up_required?: boolean | null
+          id?: string
+          installer_id?: string
+          installer_language?: string | null
+          installer_signature?: string
+          internal_notes?: string | null
+          issues_encountered?: string | null
+          labor_cost?: number | null
+          materials_cost?: number | null
+          materials_used?: string | null
+          net_work_hours?: number | null
+          notes?: string | null
+          original_materials_used?: string | null
+          original_notes?: string | null
+          original_recommendations?: string | null
+          original_work_performed?: string | null
+          other_costs?: number | null
+          pdf_url?: string | null
+          project_id?: string
+          quality_rating?: number | null
+          recommendations?: string | null
+          status?: string | null
+          total_cost?: number | null
+          total_work_hours?: number | null
+          updated_at?: string | null
+          weather_conditions?: string | null
+          work_performed?: string
+          work_summary_json?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_completions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_deliveries: {
         Row: {
@@ -2424,51 +3480,100 @@ export type Database = {
       }
       projects: {
         Row: {
+          actual_hours: number | null
+          actual_labor_cost: number | null
+          actual_materials_cost: number | null
           assigned_user_id: string | null
+          completion_date: string | null
+          completion_id: string | null
           created_at: string
           customer_id: string
           date: string | null
           description: string | null
+          estimated_hours: number | null
           id: string
+          labor_budget: number | null
+          materials_budget: number | null
+          metadata: Json | null
+          priority: number | null
+          profit_margin: number | null
           project_status: string | null
           quote_id: string | null
+          started_at: string | null
+          started_by: string | null
           status: Database["public"]["Enums"]["project_status"] | null
+          tags: string[] | null
           title: string
           updated_at: string
           user_id: string | null
           value: number | null
         }
         Insert: {
+          actual_hours?: number | null
+          actual_labor_cost?: number | null
+          actual_materials_cost?: number | null
           assigned_user_id?: string | null
+          completion_date?: string | null
+          completion_id?: string | null
           created_at?: string
           customer_id: string
           date?: string | null
           description?: string | null
+          estimated_hours?: number | null
           id?: string
+          labor_budget?: number | null
+          materials_budget?: number | null
+          metadata?: Json | null
+          priority?: number | null
+          profit_margin?: number | null
           project_status?: string | null
           quote_id?: string | null
+          started_at?: string | null
+          started_by?: string | null
           status?: Database["public"]["Enums"]["project_status"] | null
+          tags?: string[] | null
           title: string
           updated_at?: string
           user_id?: string | null
           value?: number | null
         }
         Update: {
+          actual_hours?: number | null
+          actual_labor_cost?: number | null
+          actual_materials_cost?: number | null
           assigned_user_id?: string | null
+          completion_date?: string | null
+          completion_id?: string | null
           created_at?: string
           customer_id?: string
           date?: string | null
           description?: string | null
+          estimated_hours?: number | null
           id?: string
+          labor_budget?: number | null
+          materials_budget?: number | null
+          metadata?: Json | null
+          priority?: number | null
+          profit_margin?: number | null
           project_status?: string | null
           quote_id?: string | null
+          started_at?: string | null
+          started_by?: string | null
           status?: Database["public"]["Enums"]["project_status"] | null
+          tags?: string[] | null
           title?: string
           updated_at?: string
           user_id?: string | null
           value?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "projects_completion_id_fkey"
+            columns: ["completion_id"]
+            isOneToOne: false
+            referencedRelation: "project_completions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "projects_customer_id_fkey"
             columns: ["customer_id"]
@@ -2828,15 +3933,43 @@ export type Database = {
           was_helpful?: boolean | null
           was_used?: boolean
         }
-        Relationships: [
-          {
-            foreignKeyName: "smart_reply_feedback_message_id_fkey"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "direct_messages"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      supported_languages: {
+        Row: {
+          created_at: string | null
+          deepl_code: string
+          flag_emoji: string
+          id: string
+          is_active: boolean | null
+          language_code: string
+          language_name: string
+          native_name: string
+          ui_supported: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          deepl_code: string
+          flag_emoji: string
+          id?: string
+          is_active?: boolean | null
+          language_code: string
+          language_name: string
+          native_name: string
+          ui_supported?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          deepl_code?: string
+          flag_emoji?: string
+          id?: string
+          is_active?: boolean | null
+          language_code?: string
+          language_name?: string
+          native_name?: string
+          ui_supported?: boolean | null
+        }
+        Relationships: []
       }
       translation_cache: {
         Row: {
@@ -2874,6 +4007,78 @@ export type Database = {
           target_language?: string
           translated_text?: string
           usage_count?: number | null
+        }
+        Relationships: []
+      }
+      ui_translations: {
+        Row: {
+          context: string | null
+          created_at: string | null
+          id: string
+          language_code: string
+          translated_text: string
+          translation_key: string
+          updated_at: string | null
+        }
+        Insert: {
+          context?: string | null
+          created_at?: string | null
+          id?: string
+          language_code: string
+          translated_text: string
+          translation_key: string
+          updated_at?: string | null
+        }
+        Update: {
+          context?: string | null
+          created_at?: string | null
+          id?: string
+          language_code?: string
+          translated_text?: string
+          translation_key?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_availability: {
+        Row: {
+          break_end_time: string | null
+          break_start_time: string | null
+          created_at: string | null
+          day_of_week: number
+          end_time: string
+          id: string
+          is_available: boolean | null
+          notes: string | null
+          start_time: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          break_end_time?: string | null
+          break_start_time?: string | null
+          created_at?: string | null
+          day_of_week: number
+          end_time: string
+          id?: string
+          is_available?: boolean | null
+          notes?: string | null
+          start_time: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          break_end_time?: string | null
+          break_start_time?: string | null
+          created_at?: string | null
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_available?: boolean | null
+          notes?: string | null
+          start_time?: string
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -3006,6 +4211,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_language_preferences: {
+        Row: {
+          auto_detect_language: boolean | null
+          chat_translation_enabled: boolean | null
+          created_at: string | null
+          id: string
+          preferred_language: string
+          ui_language: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          auto_detect_language?: boolean | null
+          chat_translation_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          preferred_language?: string
+          ui_language?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          auto_detect_language?: boolean | null
+          chat_translation_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          preferred_language?: string
+          ui_language?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_notifications: {
         Row: {
           created_at: string
@@ -3066,6 +4304,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_time_off: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          end_date: string
+          id: string
+          reason: string | null
+          start_date: string
+          status: string | null
+          type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          end_date: string
+          id?: string
+          reason?: string | null
+          start_date: string
+          status?: string | null
+          type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          end_date?: string
+          id?: string
+          reason?: string | null
+          start_date?: string
+          status?: string | null
+          type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       webhook_endpoints: {
         Row: {
           created_at: string
@@ -3105,9 +4385,179 @@ export type Database = {
         }
         Relationships: []
       }
+      work_time_logs: {
+        Row: {
+          break_duration_minutes: number | null
+          break_notes: string | null
+          created_at: string | null
+          distance_from_project_km: number | null
+          end_location_address: string | null
+          end_location_lat: number | null
+          end_location_lng: number | null
+          ended_at: string | null
+          id: string
+          installer_id: string
+          metadata: Json | null
+          notes: string | null
+          paused_at: string | null
+          planning_id: string | null
+          project_id: string
+          resumed_at: string | null
+          start_location_address: string | null
+          start_location_lat: number | null
+          start_location_lng: number | null
+          started_at: string
+          status: string | null
+          total_duration_minutes: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          break_duration_minutes?: number | null
+          break_notes?: string | null
+          created_at?: string | null
+          distance_from_project_km?: number | null
+          end_location_address?: string | null
+          end_location_lat?: number | null
+          end_location_lng?: number | null
+          ended_at?: string | null
+          id?: string
+          installer_id: string
+          metadata?: Json | null
+          notes?: string | null
+          paused_at?: string | null
+          planning_id?: string | null
+          project_id: string
+          resumed_at?: string | null
+          start_location_address?: string | null
+          start_location_lat?: number | null
+          start_location_lng?: number | null
+          started_at: string
+          status?: string | null
+          total_duration_minutes?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          break_duration_minutes?: number | null
+          break_notes?: string | null
+          created_at?: string | null
+          distance_from_project_km?: number | null
+          end_location_address?: string | null
+          end_location_lat?: number | null
+          end_location_lng?: number | null
+          ended_at?: string | null
+          id?: string
+          installer_id?: string
+          metadata?: Json | null
+          notes?: string | null
+          paused_at?: string | null
+          planning_id?: string | null
+          project_id?: string
+          resumed_at?: string | null
+          start_location_address?: string | null
+          start_location_lat?: number | null
+          start_location_lng?: number | null
+          started_at?: string
+          status?: string | null
+          total_duration_minutes?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_time_logs_planning_id_fkey"
+            columns: ["planning_id"]
+            isOneToOne: false
+            referencedRelation: "planning_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_time_logs_planning_id_fkey"
+            columns: ["planning_id"]
+            isOneToOne: false
+            referencedRelation: "planning_overview"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_time_logs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
-      [_ in never]: never
+      planning_overview: {
+        Row: {
+          assigned_user_id: string | null
+          assigned_user_name: string | null
+          color_code: string | null
+          confirmed_by_customer: boolean | null
+          created_at: string | null
+          customer_address: string | null
+          customer_id: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          end_time: string | null
+          expected_duration_minutes: number | null
+          id: string | null
+          is_overdue: boolean | null
+          is_today: boolean | null
+          is_upcoming: boolean | null
+          location: string | null
+          participant_count: number | null
+          planning_type: string | null
+          project_id: string | null
+          project_status: Database["public"]["Enums"]["project_status"] | null
+          project_title: string | null
+          start_date: string | null
+          start_time: string | null
+          status: string | null
+          team_size: number | null
+          title: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_items_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_time_summary: {
+        Row: {
+          break_duration_minutes: number | null
+          distance_from_project_km: number | null
+          end_location_lat: number | null
+          end_location_lng: number | null
+          ended_at: string | null
+          id: string | null
+          installer_id: string | null
+          installer_name: string | null
+          is_active: boolean | null
+          net_duration_minutes: number | null
+          net_hours: number | null
+          project_id: string | null
+          project_title: string | null
+          start_location_lat: number | null
+          start_location_lng: number | null
+          started_at: string | null
+          status: string | null
+          total_duration_minutes: number | null
+          work_date: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_time_logs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       admin_reset_user_password: {
@@ -3118,6 +4568,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      complete_project: {
+        Args: { p_completion_id: string; p_project_id: string }
+        Returns: boolean
+      }
       delete_user_safely: {
         Args: { p_user_id: string }
         Returns: undefined
@@ -3125,6 +4579,14 @@ export type Database = {
       demote_other_admins: {
         Args: { p_user_id_to_keep: string }
         Returns: undefined
+      }
+      fix_duplicate_quote_numbers: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          new_quote_number: string
+          old_quote_number: string
+          quote_id: string
+        }[]
       }
       generate_invoice_number: {
         Args: Record<PropertyKey, never>
@@ -3150,6 +4612,53 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_accounts_for_sync: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          email_address: string
+          id: string
+          imap_encryption: string
+          imap_host: string
+          imap_password: string
+          imap_port: number
+          imap_username: string
+          last_sync_at: string
+          smtp_encryption: string
+          smtp_host: string
+          smtp_password: string
+          smtp_port: number
+          smtp_username: string
+          user_id: string
+        }[]
+      }
+      get_active_work_session: {
+        Args: { p_user_id?: string }
+        Returns: {
+          break_duration_minutes: number
+          break_notes: string
+          created_at: string
+          distance_from_project_km: number
+          end_location_address: string
+          end_location_lat: number
+          end_location_lng: number
+          ended_at: string
+          id: string
+          installer_id: string
+          metadata: Json
+          notes: string
+          paused_at: string
+          planning_id: string
+          project_id: string
+          resumed_at: string
+          start_location_address: string
+          start_location_lat: number
+          start_location_lng: number
+          started_at: string
+          status: string
+          total_duration_minutes: number
+          updated_at: string
+        }[]
+      }
       get_all_user_details: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -3163,15 +4672,33 @@ export type Database = {
       get_available_chat_users: {
         Args: { current_user_id: string }
         Returns: {
+          email: string
           full_name: string
           id: string
           is_online: boolean
-          role: Database["public"]["Enums"]["user_role"]
+          role: string
+        }[]
+      }
+      get_completion_stats: {
+        Args: { days_back?: number }
+        Returns: {
+          avg_satisfaction: number
+          completions_by_installer: Json
+          completions_by_month: Json
+          total_completions: number
         }[]
       }
       get_or_create_direct_channel: {
         Args: { user1_id: string; user2_id: string }
         Returns: string
+      }
+      get_project_material_costs: {
+        Args: { p_project_id: string }
+        Returns: number
+      }
+      get_project_work_hours: {
+        Args: { p_project_id: string }
+        Returns: number
       }
       get_user_channels: {
         Args: Record<PropertyKey, never>
@@ -3182,6 +4709,10 @@ export type Database = {
       get_user_role: {
         Args: { p_user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      has_active_work_session: {
+        Args: { p_user_id?: string }
+        Returns: boolean
       }
       start_project: {
         Args: { p_project_id: string; p_user_id: string }
@@ -3201,6 +4732,10 @@ export type Database = {
       user_can_access_channel: {
         Args: { channel_uuid: string }
         Returns: boolean
+      }
+      validate_email_account_config: {
+        Args: { account_id: string }
+        Returns: Json
       }
     }
     Enums: {
