@@ -60,7 +60,7 @@ export function SimplifiedPlanningManagement() {
 
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
-    setShowCustomerDialog(true);
+    setShowProjectSidebar(true);
   };
 
   const handleEventClick = (event: any) => {
@@ -268,44 +268,86 @@ export function SimplifiedPlanningManagement() {
 
       {/* Project Sidebar - shown when clicking empty date */}
       <Sheet open={showProjectSidebar} onOpenChange={setShowProjectSidebar}>
-        <SheetContent side="right" className="w-full sm:max-w-md">
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Projecten Plannen - {selectedDate ? format(selectedDate, 'dd MMMM yyyy', { locale: nl }) : ''}</SheetTitle>
+            <SheetTitle>Planning Toevoegen - {selectedDate ? format(selectedDate, 'dd MMMM yyyy', { locale: nl }) : ''}</SheetTitle>
           </SheetHeader>
-          <div className="mt-6 space-y-4">
-            <Input
-              placeholder="Zoek projecten..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full"
-            />
-            
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {filteredProjects.map((project) => (
-                <div
-                  key={project.id}
-                  className="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
-                  onClick={() => {
-                    setSelectedProject(project);
-                    setSelectedDate(new Date(project.date || new Date()));
-                    setLocationKey(prev => prev + 1); // Force LocationSearch to re-render with new initial value
-                    setShowPlanningDialog(true);
-                  }}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-medium text-sm">{project.title}</h4>
-                      <p className="text-xs text-gray-600">{project.customer_name}</p>
-                      <p className="text-xs text-gray-500">
-                        {project.date ? format(new Date(project.date), 'dd MMM yyyy', { locale: nl }) : 'Geen datum'}
-                      </p>
+          <div className="mt-6 space-y-6">
+            {/* Quick Actions */}
+            <div className="space-y-3">
+              <h3 className="font-semibold text-sm text-gray-700">📅 Snel Toevoegen</h3>
+              
+              <Button
+                onClick={() => {
+                  setShowProjectSidebar(false);
+                  setShowCustomerDialog(true);
+                }}
+                className="w-full justify-start bg-blue-600 hover:bg-blue-700"
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Nieuwe Klant Afspraak
+              </Button>
+              
+              <Button
+                onClick={() => {
+                  setShowProjectSidebar(false);
+                  setShowPlanningDialog(true);
+                }}
+                className="w-full justify-start"
+                variant="outline"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Snelle Planning (Monteur)
+              </Button>
+            </div>
+
+            <Separator />
+
+            {/* Te Plannen Projecten */}
+            <div>
+              <h3 className="font-semibold text-sm text-gray-700 mb-3">📋 Te Plannen Projecten</h3>
+              
+              <Input
+                placeholder="🔍 Zoek project..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="mb-3"
+              />
+
+              {filteredProjects.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-8">
+                  Geen projecten gevonden om te plannen
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {filteredProjects.map((project) => (
+                    <div
+                      key={project.id}
+                      className="p-3 border rounded-lg hover:bg-blue-50 cursor-pointer transition-colors"
+                      onClick={() => {
+                        setSelectedProject(project);
+                        setSelectedDate(new Date(project.date || new Date()));
+                        setLocationKey(prev => prev + 1);
+                        setShowProjectSidebar(false);
+                        setShowPlanningDialog(true);
+                      }}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-sm">{project.title}</h4>
+                          <p className="text-xs text-gray-600">{project.customer_name}</p>
+                          <p className="text-xs text-gray-500">
+                            {project.date ? format(new Date(project.date), 'dd MMM yyyy', { locale: nl }) : 'Geen datum'}
+                          </p>
+                        </div>
+                        <Badge className={getStatusColor(project.status)}>
+                          {project.status}
+                        </Badge>
+                      </div>
                     </div>
-                    <Badge className={getStatusColor(project.status)}>
-                      {project.status}
-                    </Badge>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </SheetContent>

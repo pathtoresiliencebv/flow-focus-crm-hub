@@ -23,36 +23,58 @@ export const FileAttachmentsManager = ({ value, onChange }: FileAttachmentsManag
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
 
-  const handleFileUpload = useCallback(async (files: any[]) => {
+  const handleFileUpload = useCallback(async (fileResults: any[]) => {
+    if (!fileResults || fileResults.length === 0) {
+      console.log('⚠️ Geen bestanden geselecteerd');
+      return;
+    }
+
+    console.log('📤 Start upload van', fileResults.length, 'bestanden');
     setUploading(true);
+    
     try {
       const { supabase } = await import("@/integrations/supabase/client");
       const newAttachments: QuoteAttachment[] = [];
 
-      for (const file of files) {
+      for (const fileResult of fileResults) {
+        console.log('📄 Verwerk bestand:', fileResult.name);
+        
+        // Convert base64 back to blob
+        const byteString = atob(fileResult.content);
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        const blob = new Blob([ab], { type: fileResult.contentType });
+
         // Generate unique filename
-        const fileExt = file.name.split('.').pop();
+        const fileExt = fileResult.name.split('.').pop();
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
         const filePath = `quotes/${fileName}`;
 
         // Determine correct MIME type for PDFs
-        const contentType = file.name.toLowerCase().endsWith('.pdf') 
+        const contentType = fileResult.name.toLowerCase().endsWith('.pdf') 
           ? 'application/pdf' 
-          : file.type;
+          : fileResult.contentType;
+
+        console.log('⬆️ Upload naar Storage:', { filePath, contentType });
 
         // Upload to Supabase Storage
         const { data, error } = await supabase.storage
           .from('quote-attachments')
-          .upload(filePath, file, {
+          .upload(filePath, blob, {
             cacheControl: '3600',
             upsert: false,
-            contentType: contentType  // Explicitly set MIME type
+            contentType: contentType
           });
 
         if (error) {
-          console.error('Storage upload error:', error);
-          throw new Error(`Fout bij uploaden van ${file.name}: ${error.message}`);
+          console.error('❌ Storage upload error:', error);
+          throw new Error(`Fout bij uploaden van ${fileResult.name}: ${error.message}`);
         }
+
+        console.log('✅ Upload succesvol:', data);
 
         // Get public URL
         const { data: urlData } = supabase.storage
@@ -61,10 +83,10 @@ export const FileAttachmentsManager = ({ value, onChange }: FileAttachmentsManag
 
         const attachment: QuoteAttachment = {
           id: crypto.randomUUID(),
-          name: file.name,
+          name: fileResult.name,
           url: urlData.publicUrl,
-          size: file.size,
-          type: file.type,
+          size: fileResult.size,
+          type: fileResult.contentType,
           uploadedAt: new Date().toISOString()
         };
         newAttachments.push(attachment);
@@ -73,11 +95,11 @@ export const FileAttachmentsManager = ({ value, onChange }: FileAttachmentsManag
       onChange([...value, ...newAttachments]);
       
       toast({
-        title: "Bestanden toegevoegd",
+        title: "✅ Bestanden toegevoegd",
         description: `${newAttachments.length} bestand(en) succesvol geüpload naar de offerte.`,
       });
     } catch (error) {
-      console.error('Error uploading files:', error);
+      console.error('❌ Error uploading files:', error);
       toast({
         title: "Upload mislukt",
         description: error instanceof Error ? error.message : "Er is een fout opgetreden bij het uploaden van de bestanden.",
