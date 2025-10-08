@@ -113,14 +113,14 @@ export const ConversationList: React.FC<ConversationListProps> = ({
           >
             <Avatar className="h-12 w-12 mr-3">
               <AvatarFallback className="bg-primary text-primary-foreground">
-                {getInitials(conversation.other_user.full_name)}
+                {getInitials(conversation.participant_name)}
               </AvatarFallback>
             </Avatar>
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
                 <h3 className="font-semibold text-sm truncate">
-                  {conversation.other_user.full_name || 'Naamloze Gebruiker'}
+                  {conversation.participant_name || 'Naamloze Gebruiker'}
                 </h3>
                 {conversation.last_message && (
                   <span className="text-xs text-muted-foreground">
