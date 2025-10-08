@@ -3,18 +3,25 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Clock, Calendar } from "lucide-react";
 import { IconBox } from "@/components/ui/icon-box";
+import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { TimeEntriesOverview } from './time-registration/TimeEntriesOverview';
 import { TimeCalendarView } from './time-registration/TimeCalendarView';
 import { QuickTimeRegistrationDialog } from './time-registration/QuickTimeRegistrationDialog';
+import { TimeRegistrationForm } from './time-registration/TimeRegistrationForm';
 import { SlidePanel } from '@/components/ui/slide-panel';
 
 export const TimeRegistration = () => {
+  const { setTitle } = usePageHeader();
   const [activeTab, setActiveTab] = useState("overview");
   const [timePanelOpen, setTimePanelOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [selectedStartHour, setSelectedStartHour] = useState<number>(9);
   const [selectedEndHour, setSelectedEndHour] = useState<number>(10);
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    setTitle("Tijdregistratie");
+  }, [setTitle]);
   
   const handleSubmitTime = (e: React.FormEvent) => {
     e.preventDefault();

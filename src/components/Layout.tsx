@@ -107,9 +107,9 @@ function LayoutContent() {
                   <li key={link.path}>
                     <button
                       onClick={() => navigate(link.path)}
-                      className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'} gap-3 px-4 py-2.5 text-sm rounded-xl transition-colors ${
+                      className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'} gap-3 px-3 py-2 text-xs rounded-lg transition-colors font-['ui-sans-serif',monospace] font-semibold uppercase tracking-wide ${
                         isActive(link.path)
-                          ? "bg-red-600 text-white"
+                          ? "bg-[hsl(0,71%,36%)] text-white"
                           : "text-gray-700 hover:bg-gray-100"
                       }`}
                       title={isCollapsed ? link.label : undefined}

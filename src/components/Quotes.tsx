@@ -49,7 +49,7 @@ export function Quotes() {
         console.warn('Loading timeout reached, forcing reload...');
         fetchQuotes(true);
       }
-    }, 10000); // 10 second timeout
+    }, 5000); // Reduced to 5 second timeout
     
     return () => clearTimeout(timeout);
   }, [loading, fetchQuotes]);
