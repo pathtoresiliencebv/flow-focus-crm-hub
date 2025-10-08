@@ -25,16 +25,16 @@
 
   <body>
     <div id="root"></div>
-    <!-- Enhanced Service Worker Registration -->
+    <!-- Service Worker DISABLED - Causing loading issues -->
     <script>
+      // Unregister any existing service workers
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js')
-          .then(registration => {
-            console.log('Enhanced Service Worker registered:', registration);
-          })
-          .catch(error => {
-            console.error('Enhanced Service Worker registration failed:', error);
-          });
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for(let registration of registrations) {
+            registration.unregister();
+            console.log('Service Worker unregistered:', registration);
+          }
+        });
       }
     </script>
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
