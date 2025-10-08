@@ -604,14 +604,130 @@ function generateWorkOrderHTML(data: any): string {
 }
 
 async function generatePDFFromHTML(html: string): Promise<Uint8Array> {
-  // For Deno Deploy, we'll use a PDF generation service API
-  // Using jsPDF as a fallback for now
+  /**
+   * PDF Generation Options:
+   * 
+   * 1. HTMLPdfService (Primary) - Free tier available
+   * 2. Fallback to base HTML if service unavailable
+   * 
+   * To use HTMLPdfService:
+   * - Set HTMLPDF_API_KEY in Supabase secrets
+   * - Service: https://api.html2pdf.app or similar
+   */
   
-  // Simple approach: Return HTML as text for now
-  // In production, integrate with Puppeteer or similar service
+  const apiKey = Deno.env.get('HTMLPDF_API_KEY')
+  
+  if (apiKey) {
+    try {
+      console.log('🔄 Generating PDF via HTML2PDF service...')
+      
+      // Use HTML to PDF conversion service
+      const response = await fetch('https://api.html2pdf.app/v1/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          html: html,
+          options: {
+            format: 'A4',
+            margin: {
+              top: '20mm',
+              right: '15mm',
+              bottom: '20mm',
+              left: '15mm'
+            },
+            printBackground: true,
+            displayHeaderFooter: false
+          }
+        })
+      })
+      
+      if (response.ok) {
+        const pdfBuffer = await response.arrayBuffer()
+        console.log('✅ PDF generated successfully via service')
+        return new Uint8Array(pdfBuffer)
+      } else {
+        console.warn('⚠️ PDF service error:', response.status, await response.text())
+        throw new Error('PDF service unavailable')
+      }
+    } catch (error) {
+      console.warn('⚠️ PDF service failed, using fallback:', error.message)
+      // Fall through to fallback
+    }
+  }
+  
+  // FALLBACK: Use PDFShift (alternative service) if available
+  const pdfshiftKey = Deno.env.get('PDFSHIFT_API_KEY')
+  
+  if (pdfshiftKey) {
+    try {
+      console.log('🔄 Generating PDF via PDFShift fallback...')
+      
+      const response = await fetch('https://api.pdfshift.io/v3/convert/pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${btoa(`api:${pdfshiftKey}`)}`
+        },
+        body: JSON.stringify({
+          source: html,
+          sandbox: false,
+          format: 'A4',
+          margin: '20mm',
+          print_background: true
+        })
+      })
+      
+      if (response.ok) {
+        const pdfBuffer = await response.arrayBuffer()
+        console.log('✅ PDF generated via PDFShift')
+        return new Uint8Array(pdfBuffer)
+      } else {
+        console.warn('⚠️ PDFShift error:', response.status)
+        throw new Error('PDFShift service unavailable')
+      }
+    } catch (error) {
+      console.warn('⚠️ PDFShift failed:', error.message)
+      // Fall through to final fallback
+    }
+  }
+  
+  // FINAL FALLBACK: Use in-browser PDF generation via data URL
+  // This returns the HTML wrapped for browser-side PDF printing
+  console.log('⚠️ No PDF service configured, using HTML fallback')
+  console.log('💡 To enable PDF generation:')
+  console.log('   Set HTMLPDF_API_KEY or PDFSHIFT_API_KEY in Supabase secrets')
+  console.log('   Or use browser print: window.print() on HTML document')
+  
+  // Wrap HTML in a complete document with print styling
+  const printableHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Werkbon</title>
+  <style>
+    @media print {
+      body { margin: 0; padding: 20mm; }
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+  ${html}
+  <script>
+    // Auto-print when opened
+    if (typeof window !== 'undefined') {
+      window.onload = function() { window.print(); }
+    }
+  </script>
+</body>
+</html>`
   
   const encoder = new TextEncoder()
-  return encoder.encode(html)
+  return encoder.encode(printableHtml)
 }
 
 function generateEmailHTML(customer: any, pdfUrl: string, completion: any): string {
