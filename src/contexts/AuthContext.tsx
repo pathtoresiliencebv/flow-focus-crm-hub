@@ -124,10 +124,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setProfile(null);
           }
           
-          // Only set loading to false on auth state changes, not on initial load
-          if (event !== 'INITIAL_SESSION') {
-            setIsLoading(false);
-          }
+          // Always set loading to false after auth state changes
+          setIsLoading(false);
         });
         
         subscription = data.subscription;

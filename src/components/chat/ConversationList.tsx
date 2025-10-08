@@ -65,7 +65,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
             <div
               key={conversation.id}
               onClick={() => onSelectConversation(conversation.id)}
-              title={conversation.participant_name || 'Contact'}
+              title={conversation.other_user?.full_name || 'Contact'}
               className={cn(
                 "flex items-center justify-center p-3 cursor-pointer transition-colors",
                 "hover:bg-muted/50",
@@ -77,7 +77,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                   "text-sm font-semibold",
                   selectedConversation === conversation.id ? "bg-[hsl(0,71%,36%)] text-white" : "bg-primary/10 text-primary"
                 )}>
-                  {getInitials(conversation.participant_name)}
+                  {getInitials(conversation.other_user?.full_name)}
                 </AvatarFallback>
               </Avatar>
             </div>
@@ -113,14 +113,14 @@ export const ConversationList: React.FC<ConversationListProps> = ({
           >
             <Avatar className="h-12 w-12 mr-3">
               <AvatarFallback className="bg-primary text-primary-foreground">
-                {getInitials(conversation.participant_name)}
+                {getInitials(conversation.other_user?.full_name)}
               </AvatarFallback>
             </Avatar>
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
                 <h3 className="font-semibold text-sm truncate">
-                  {conversation.participant_name || 'Naamloze Gebruiker'}
+                  {conversation.other_user?.full_name || 'Naamloze Gebruiker'}
                 </h3>
                 {conversation.last_message && (
                   <span className="text-xs text-muted-foreground">
