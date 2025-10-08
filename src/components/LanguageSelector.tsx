@@ -88,19 +88,21 @@ export function LanguageSelector() {
 
       if (error) throw error;
 
-      // Update i18n service
+      // Update i18n service and load translations
       await i18n.setLanguage(lang, user.id);
       setCurrentLanguage(lang);
 
+      const languageName = languages.find(l => l.language_code === lang)?.native_name || lang.toUpperCase();
+
       toast({
         title: "✅ Taal gewijzigd",
-        description: `Interface taal is ingesteld op ${languages.find(l => l.language_code === lang)?.native_name || lang.toUpperCase()}`,
+        description: `Interface taal is ingesteld op ${languageName}. Teksten worden automatisch vertaald.`,
       });
 
-      // Reload page to apply translations
+      // Reload page to apply translations immediately
       setTimeout(() => {
         window.location.reload();
-      }, 1000);
+      }, 800);
     } catch (error) {
       console.error('Failed to change language:', error);
       toast({

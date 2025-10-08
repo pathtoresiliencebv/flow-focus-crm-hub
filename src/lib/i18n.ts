@@ -47,19 +47,61 @@ class I18nService {
 
   /**
    * Get translation for a key
+   * If not in cache, translate on-the-fly via Google Translate
    */
   t(key: string, fallback?: string, variables?: Record<string, string>): string {
-    const translation = this.cache[key]?.[this.currentLanguage] 
-      || this.cache[key]?.[this.fallbackLanguage]
-      || fallback 
-      || key;
-
-    // Replace variables in translation
-    if (variables) {
-      return this.interpolate(translation, variables);
+    // Check cache first
+    if (this.cache[key]?.[this.currentLanguage]) {
+      const translation = this.cache[key][this.currentLanguage];
+      return variables ? this.interpolate(translation, variables) : translation;
     }
 
-    return translation;
+    // If not in cache and not in fallback language, queue for translation
+    if (this.currentLanguage !== this.fallbackLanguage && key && key.length > 2) {
+      // Translate async in background (don't block UI)
+      this.translateOnTheFly(key);
+    }
+
+    // Return fallback while translation is happening
+    const fallbackText = fallback || key;
+    return variables ? this.interpolate(fallbackText, variables) : fallbackText;
+  }
+
+  /**
+   * Translate a single text on-the-fly using Google Translate
+   */
+  private async translateOnTheFly(text: string): Promise<void> {
+    // Check if already being translated
+    if (this.cache[text]?.[this.currentLanguage]) return;
+
+    try {
+      // Use Google Translate API (free via googletrans API)
+      const response = await fetch(
+        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=nl&tl=${this.currentLanguage}&dt=t&q=${encodeURIComponent(text)}`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        const translatedText = data[0]?.[0]?.[0] || text;
+
+        // Cache in memory
+        if (!this.cache[text]) this.cache[text] = {};
+        this.cache[text][this.currentLanguage] = translatedText;
+
+        // Save to database in background
+        await supabase.from('ui_translations').upsert({
+          translation_key: text,
+          language_code: this.currentLanguage,
+          translated_text: translatedText,
+          context: 'auto_google_translate',
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'translation_key,language_code'
+        });
+      }
+    } catch (error) {
+      console.error('On-the-fly translation error:', error);
+    }
   }
 
   /**
