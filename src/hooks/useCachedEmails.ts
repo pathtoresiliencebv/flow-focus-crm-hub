@@ -97,13 +97,13 @@ export const useCachedEmails = () => {
     try {
       console.log('🔄 Fetching emails LIVE from IMAP server...', { maxMessages, loadMore });
 
-      // Use the new simple email sync function
-      console.log('📧 Calling email-sync-simple with:', { accountId, maxMessages });
+      // Use imap-cache-sync for reliable email synchronization
+      console.log('📧 Calling imap-cache-sync with:', { accountId, fullSync: false });
       
-      const { data, error } = await supabase.functions.invoke('email-sync-simple', {
+      const { data, error } = await supabase.functions.invoke('imap-cache-sync', {
         body: {
           accountId,
-          maxMessages,
+          fullSync: false, // Incremental sync for performance
         }
       });
       
@@ -119,38 +119,26 @@ export const useCachedEmails = () => {
 
       console.log('✅ Live emails fetched:', data);
 
-      // Save to database for persistence (delete/star must work!)
-      if (data.messages && data.messages.length > 0) {
-        console.log('💾 Saving', data.messages.length, 'emails to database...');
-        
-        const { data: userData } = await supabase.auth.getUser();
-        
-        const messagesToSave = data.messages.map((m: any) => ({
-          id: m.id || crypto.randomUUID(), // Use existing ID or generate new one
-          user_id: userData.user?.id,
-          direction: 'inbound',
-          from_email: m.from_email || 'unknown',
-          to_email: Array.isArray(m.to_email) ? m.to_email : [m.to_email || ''],
-          subject: m.subject || '(Geen onderwerp)',
-          body_text: m.body_text || '',
-          body_html: m.body_html || null,
-          attachments: m.attachments || [],
-          status: m.status || 'unread',
-          is_starred: m.is_starred || false,
-          folder: 'inbox',
-          received_at: m.received_at || m.date || new Date().toISOString(),
-          external_message_id: m.external_message_id || m.uid,
-        }));
-        
-        const { error: upsertError } = await supabase.from('email_messages').upsert(messagesToSave, {
-          onConflict: 'external_message_id',
-        });
-        
-        if (upsertError) {
-          console.error('❌ Error saving emails to database:', upsertError);
-          throw upsertError;
-        }
+      // imap-cache-sync already saves to database, so we just need to fetch them
+      // Re-fetch from database to get the latest synced emails
+      console.log('📬 Fetching synced emails from database...');
+      
+      const { data: emailData, error: fetchError } = await supabase
+        .from('email_messages')
+        .select('*')
+        .eq('folder', 'inbox')
+        .order('received_at', { ascending: false })
+        .limit(maxMessages);
+      
+      if (fetchError) {
+        console.error('❌ Error fetching from database:', fetchError);
+        throw fetchError;
       }
+      
+      console.log('✅ Loaded', emailData?.length || 0, 'emails from database');
+      
+      // Use database emails instead of response messages
+      data.messages = emailData || [];
 
       // Sort by date DESC (newest first)
       const sortedMessages = (data.messages || []).sort((a: any, b: any) => {
