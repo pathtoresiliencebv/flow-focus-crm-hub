@@ -4,11 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Camera, Upload, Check } from 'lucide-react';
+import { Camera, Upload, Check, Loader2 } from 'lucide-react';
 import { useNativeCapabilities } from '@/hooks/useNativeCapabilities';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { compressImage } from '@/utils/imageCompression';
 
 interface Receipt {
   id: string;
@@ -29,10 +30,12 @@ export const MobileReceiptScanner = () => {
   const { profile } = useAuth();
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [receiptData, setReceiptData] = useState({
     amount: '',
     description: '',
-    category: ''
+    category: '',
+    projectId: '' // Optional: link to project
   });
 
   const handleTakePhoto = async () => {
@@ -79,15 +82,7 @@ export const MobileReceiptScanner = () => {
     }
 
     try {
-      // Convert base64 to blob
-      const base64Data = capturedImage.split(',')[1];
-      const byteCharacters = atob(base64Data);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'image/jpeg' });
+      setIsUploading(true);
 
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
@@ -95,25 +90,47 @@ export const MobileReceiptScanner = () => {
         throw new Error('Gebruiker niet gevonden');
       }
 
+      console.log('🗜️ Compressing receipt image...');
+      
+      // Compress image before upload (target: 60% quality, max 1920px width)
+      const compressedBlob = await compressImage(capturedImage, {
+        maxWidth: 1920,
+        maxHeight: 1920,
+        quality: 0.6
+      });
+
+      console.log('✅ Image compressed successfully');
+
       // Upload to storage
       const fileName = `${user.id}/${Date.now()}_receipt.jpg`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('receipts')
-        .upload(fileName, blob);
+        .upload(fileName, compressedBlob, {
+          contentType: 'image/jpeg',
+          upsert: false
+        });
 
       if (uploadError) {
         throw uploadError;
       }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('receipts')
+        .getPublicUrl(fileName);
+
+      console.log('📤 Uploaded to:', publicUrl);
 
       // Create receipt record
       const { error: insertError } = await supabase
         .from('receipts')
         .insert({
           user_id: user.id,
+          project_id: receiptData.projectId || null,
           amount: receiptData.amount ? parseFloat(receiptData.amount) : null,
           description: receiptData.description || 'Mobile bonnetje',
-          category: receiptData.category,
-          receipt_file_url: fileName,
+          category: receiptData.category || 'Overig',
+          receipt_file_url: publicUrl,
           receipt_file_name: `receipt_${Date.now()}.jpg`,
           receipt_file_type: 'image/jpeg',
           status: 'pending'
@@ -124,22 +141,24 @@ export const MobileReceiptScanner = () => {
       }
 
       toast({
-        title: "Bonnetje opgeslagen",
+        title: "✅ Bonnetje opgeslagen",
         description: "Het bonnetje is verzonden voor goedkeuring",
       });
 
       // Reset form
       setCapturedImage(null);
-      setReceiptData({ amount: '', description: '', category: '' });
+      setReceiptData({ amount: '', description: '', category: '', projectId: '' });
       setShowUploadDialog(false);
 
     } catch (error: any) {
-      console.error('Error saving receipt:', error);
+      console.error('❌ Error saving receipt:', error);
       toast({
         title: "Fout",
         description: "Kon bonnetje niet opslaan: " + error.message,
         variant: "destructive"
       });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -249,16 +268,27 @@ export const MobileReceiptScanner = () => {
             <Button 
               variant="outline" 
               onClick={() => setShowUploadDialog(false)}
+              disabled={isUploading}
               className="h-12"
             >
               Annuleren
             </Button>
             <Button 
               onClick={saveReceipt}
+              disabled={isUploading}
               className="h-12 bg-green-600 hover:bg-green-700 text-white"
             >
-              <Check className="mr-2 h-4 w-4" />
-              Opslaan
+              {isUploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Uploaden...
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Opslaan
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
