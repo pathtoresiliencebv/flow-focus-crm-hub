@@ -124,11 +124,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             setProfile(null);
           }
           
-          setIsLoading(false);
+          // Only set loading to false on auth state changes, not on initial load
+          if (event !== 'INITIAL_SESSION') {
+            setIsLoading(false);
+          }
         });
         
         subscription = data.subscription;
-        setIsLoading(false);
+        
+        // Set loading to false after initial setup
+        if (mounted) {
+          setIsLoading(false);
+        }
       } catch (error) {
         console.error('Error initializing auth:', error);
         if (mounted) {
