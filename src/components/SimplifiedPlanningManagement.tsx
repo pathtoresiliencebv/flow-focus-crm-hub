@@ -61,12 +61,20 @@ export function SimplifiedPlanningManagement() {
   const { installers } = useRealUserStore();
   const { projects, customers } = useCrmStore();
 
-  // Filter projects that need planning
-  const projectsToSchedule = projects.filter(p => p.status === 'te-plannen');
-  const filteredProjects = projectsToSchedule.filter(p =>
-    p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.customer_name?.toLowerCase().includes(searchTerm.toLowerCase())
+  // Optimize: Memoize filtered projects to reduce re-renders
+  const projectsToSchedule = React.useMemo(() => 
+    projects.filter(p => p.status === 'te-plannen'),
+    [projects]
   );
+  
+  const filteredProjects = React.useMemo(() => 
+    projectsToSchedule.filter(p =>
+      p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.customer_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+    [projectsToSchedule, searchTerm]
+  );
+
 
   // Get monteur IDs for calendar
   const monteurIds = installers.map(m => m.id);
