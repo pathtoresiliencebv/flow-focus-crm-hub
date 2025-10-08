@@ -50,10 +50,15 @@
     --smans-primary: 0 71% 36%;
     --smans-primary-foreground: 0 0% 98%;
     
-    /* Enhanced theme variables */
-    --base-font-size: 1rem;
+    /* Enhanced theme variables - COMPACT MODE */
+    --base-font-size: 0.875rem;
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Compact spacing defaults */
+    --spacing-compact: 0.75rem;
+    --spacing-normal: 1rem;
+    --spacing-relaxed: 1.5rem;
     
     /* Accessibility variables */
     --focus-ring: 2px solid hsl(var(--ring));
@@ -165,7 +170,16 @@
   body {
     @apply bg-background text-foreground;
     font-size: var(--base-font-size);
+    line-height: 1.4;
   }
+  
+  /* Compact mode global overrides */
+  h1 { font-size: 1.5rem; line-height: 2rem; font-weight: 700; }
+  h2 { font-size: 1.25rem; line-height: 1.75rem; font-weight: 600; }
+  h3 { font-size: 1.125rem; line-height: 1.625rem; font-weight: 600; }
+  h4 { font-size: 1rem; line-height: 1.5rem; font-weight: 600; }
+  h5 { font-size: 0.875rem; line-height: 1.375rem; font-weight: 600; }
+  h6 { font-size: 0.75rem; line-height: 1.25rem; font-weight: 600; }
   
   /* High contrast mode */
   .high-contrast {
