@@ -272,7 +272,6 @@ export function SimplifiedPlanningManagement() {
           monteurIds={monteurIds}
           monteurs={installers}
           onDayClick={handleDayClick}
-          loading={loading}
         />
       </div>
 
