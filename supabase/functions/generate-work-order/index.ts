@@ -41,8 +41,7 @@ serve(async (req) => {
       .from('project_completions')
       .select(`
         *,
-        project:projects(*),
-        work_time_log:work_time_logs(*)
+        project:projects(*)
       `)
       .eq('id', completionId)
       .single()
@@ -50,38 +49,27 @@ serve(async (req) => {
     if (completionError) throw completionError
     if (!completion) throw new Error('Completion not found')
 
-    // Fetch customer data
+    // Fetch customer data from project
     let customer = null
-    if (completion.work_time_log?.planning_id) {
-      const { data: planning } = await supabaseClient
-        .from('planning_items')
-        .select('customer_id')
-        .eq('id', completion.work_time_log.planning_id)
+    if (completion.project) {
+      const { data: customerData } = await supabaseClient
+        .from('customers')
+        .select('*')
+        .eq('id', completion.project.customer_id)
         .single()
-
-      if (planning?.customer_id) {
-        const { data: customerData } = await supabaseClient
-          .from('customers')
-          .select('*')
-          .eq('id', planning.customer_id)
-          .single()
-        customer = customerData
-      }
+      customer = customerData
     }
 
     // Fetch photos
     const { data: photos } = await supabaseClient
-      .from('work_photos')
+      .from('completion_photos')
       .select('*')
-      .eq('work_time_log_id', completion.work_time_log_id)
+      .eq('completion_id', completionId)
       .order('uploaded_at')
 
-    // Fetch materials
-    const { data: materials } = await supabaseClient
-      .from('material_usage')
-      .select('*')
-      .eq('work_time_log_id', completion.work_time_log_id)
-      .order('created_at')
+    // Fetch materials - parse from materials_used text field
+    // In the future, this could be from a separate materials table
+    const materials = []
 
     // Fetch tasks
     const { data: tasks } = await supabaseClient
@@ -92,9 +80,9 @@ serve(async (req) => {
 
     // Fetch monteur data
     const { data: monteur } = await supabaseClient
-      .from('users')
+      .from('profiles')
       .select('full_name, email')
-      .eq('id', completion.completed_by)
+      .eq('id', completion.installer_id)
       .single()
 
     console.log('Data fetched successfully:', {
@@ -121,9 +109,9 @@ serve(async (req) => {
     const pdfBuffer = await generatePDFFromHTML(html)
 
     // Upload PDF to Supabase Storage
-    const fileName = `work-order-${completionId}-${Date.now()}.pdf`
+    const fileName = `werkbon-${completionId}-${Date.now()}.pdf`
     const { data: uploadData, error: uploadError } = await supabaseClient.storage
-      .from('work-orders')
+      .from('completion-reports')
       .upload(fileName, pdfBuffer, {
         contentType: 'application/pdf',
         upsert: false
@@ -133,13 +121,16 @@ serve(async (req) => {
 
     // Get public URL
     const { data: { publicUrl } } = supabaseClient.storage
-      .from('work-orders')
+      .from('completion-reports')
       .getPublicUrl(fileName)
 
     // Update completion record with PDF URL
     await supabaseClient
       .from('project_completions')
-      .update({ work_order_pdf_url: publicUrl })
+      .update({ 
+        pdf_url: publicUrl,
+        status: 'completed'
+      })
       .eq('id', completionId)
 
     // Send email to customer
@@ -188,8 +179,11 @@ serve(async (req) => {
 function generateWorkOrderHTML(data: any): string {
   const { completion, customer, project, monteur, photos, materials, tasks } = data
 
-  const beforePhotos = photos.filter((p: any) => p.type === 'before')
-  const afterPhotos = photos.filter((p: any) => p.type === 'after')
+  const beforePhotos = photos.filter((p: any) => p.category === 'before')
+  const duringPhotos = photos.filter((p: any) => p.category === 'during')
+  const afterPhotos = photos.filter((p: any) => p.category === 'after')
+  const detailPhotos = photos.filter((p: any) => p.category === 'detail')
+  const overviewPhotos = photos.filter((p: any) => p.category === 'overview')
   const materialCost = materials.reduce((sum: number, m: any) => 
     sum + ((m.quantity_used || 0) * (m.unit_price || 0)), 0
   )
@@ -478,29 +472,53 @@ function generateWorkOrderHTML(data: any): string {
   ` : ''}
 
   <!-- Photos -->
-  ${beforePhotos.length > 0 || afterPhotos.length > 0 ? `
+  ${photos.length > 0 ? `
   <div class="section">
     <div class="section-title">📸 Foto Documentatie</div>
     
     ${beforePhotos.length > 0 ? `
-    <h4 style="margin: 15px 0 10px 0; color: #4b5563;">Voor Foto's</h4>
+    <h4 style="margin: 15px 0 10px 0; color: #4b5563;">📷 Voor Foto's (${beforePhotos.length})</h4>
     <div class="photo-grid">
-      ${beforePhotos.slice(0, 3).map((photo: any) => `
+      ${beforePhotos.slice(0, 6).map((photo: any) => `
         <div class="photo-item">
-          <img src="${photo.url}" alt="Voor foto">
-          <p>Voor</p>
+          <img src="${photo.photo_url}" alt="${photo.description || 'Voor foto'}">
+          <p>${photo.description || 'Voor'}</p>
+        </div>
+      `).join('')}
+    </div>
+    ` : ''}
+
+    ${duringPhotos.length > 0 ? `
+    <h4 style="margin: 15px 0 10px 0; color: #4b5563;">⚙️ Tijdens Werk Foto's (${duringPhotos.length})</h4>
+    <div class="photo-grid">
+      ${duringPhotos.slice(0, 6).map((photo: any) => `
+        <div class="photo-item">
+          <img src="${photo.photo_url}" alt="${photo.description || 'Tijdens foto'}">
+          <p>${photo.description || 'Tijdens'}</p>
         </div>
       `).join('')}
     </div>
     ` : ''}
 
     ${afterPhotos.length > 0 ? `
-    <h4 style="margin: 15px 0 10px 0; color: #4b5563;">Na Foto's</h4>
+    <h4 style="margin: 15px 0 10px 0; color: #4b5563;">✅ Na Foto's (${afterPhotos.length})</h4>
     <div class="photo-grid">
-      ${afterPhotos.slice(0, 3).map((photo: any) => `
+      ${afterPhotos.slice(0, 6).map((photo: any) => `
         <div class="photo-item">
-          <img src="${photo.url}" alt="Na foto">
-          <p>Na</p>
+          <img src="${photo.photo_url}" alt="${photo.description || 'Na foto'}">
+          <p>${photo.description || 'Na'}</p>
+        </div>
+      `).join('')}
+    </div>
+    ` : ''}
+
+    ${detailPhotos.length > 0 || overviewPhotos.length > 0 ? `
+    <h4 style="margin: 15px 0 10px 0; color: #4b5563;">🔍 Detail & Overzicht Foto's</h4>
+    <div class="photo-grid">
+      ${[...detailPhotos, ...overviewPhotos].slice(0, 6).map((photo: any) => `
+        <div class="photo-item">
+          <img src="${photo.photo_url}" alt="${photo.description || photo.category}">
+          <p>${photo.description || photo.category}</p>
         </div>
       `).join('')}
     </div>
@@ -509,16 +527,16 @@ function generateWorkOrderHTML(data: any): string {
   ` : ''}
 
   <!-- Customer Satisfaction -->
-  ${completion.customer_satisfaction_rating ? `
+  ${completion.customer_satisfaction ? `
   <div class="section">
     <div class="section-title">⭐ Klant Tevredenheid</div>
     <div class="satisfaction">
       <div class="stars">
-        ${'★'.repeat(completion.customer_satisfaction_rating)}${'☆'.repeat(5 - completion.customer_satisfaction_rating)}
+        ${'★'.repeat(completion.customer_satisfaction)}${'☆'.repeat(5 - completion.customer_satisfaction)}
       </div>
       <div>
-        <strong>${completion.customer_satisfaction_rating}/5 sterren</strong>
-        ${completion.customer_satisfaction_notes ? `<p style="margin-top: 5px; color: #6b7280;">"${completion.customer_satisfaction_notes}"</p>` : ''}
+        <strong>${completion.customer_satisfaction}/5 sterren</strong>
+        ${completion.notes ? `<p style="margin-top: 5px; color: #6b7280;">"${completion.notes}"</p>` : ''}
       </div>
     </div>
   </div>
@@ -540,13 +558,13 @@ function generateWorkOrderHTML(data: any): string {
     <div class="signatures">
       <div class="signature-box">
         <h4>Klant</h4>
-        <div class="signature-text">${completion.customer_signature_data || ''}</div>
-        <p><strong>${completion.customer_name}</strong></p>
+        ${completion.customer_signature ? `<img src="${completion.customer_signature}" alt="Klant handtekening" style="max-width: 200px; max-height: 60px; margin: 10px auto;">` : '<p>Geen handtekening</p>'}
+        <p><strong>${customer?.name || 'Klant'}</strong></p>
         <p style="font-size: 8pt; color: #9ca3af;">Datum: ${new Date(completion.completion_date).toLocaleDateString('nl-NL')}</p>
       </div>
       <div class="signature-box">
         <h4>Monteur</h4>
-        <div class="signature-text">${completion.monteur_signature_data || ''}</div>
+        ${completion.installer_signature ? `<img src="${completion.installer_signature}" alt="Monteur handtekening" style="max-width: 200px; max-height: 60px; margin: 10px auto;">` : '<p>Geen handtekening</p>'}
         <p><strong>${monteur?.full_name || 'Monteur'}</strong></p>
         <p style="font-size: 8pt; color: #9ca3af;">Datum: ${new Date(completion.completion_date).toLocaleDateString('nl-NL')}</p>
       </div>
@@ -570,7 +588,7 @@ function generateWorkOrderHTML(data: any): string {
     </div>
     <div class="summary-item">
       <span>Klant Tevredenheid:</span>
-      <span>${completion.customer_satisfaction_rating ? `${completion.customer_satisfaction_rating}/5 ⭐` : 'N/A'}</span>
+      <span>${completion.customer_satisfaction ? `${completion.customer_satisfaction}/5 ⭐` : 'N/A'}</span>
     </div>
   </div>
 
@@ -653,7 +671,7 @@ function generateEmailHTML(customer: any, pdfUrl: string, completion: any): stri
     <div class="info-box">
       <strong>📋 Project:</strong> ${completion.project?.title || 'N/A'}<br>
       <strong>📅 Datum:</strong> ${new Date(completion.completion_date).toLocaleDateString('nl-NL')}<br>
-      <strong>⭐ Tevredenheid:</strong> ${completion.customer_satisfaction_rating ? `${completion.customer_satisfaction_rating}/5 sterren` : 'N/A'}
+        <strong>⭐ Tevredenheid:</strong> ${completion.customer_satisfaction ? `${completion.customer_satisfaction}/5 sterren` : 'N/A'}
     </div>
     
     <p>In de bijlage vindt u de werkbon met alle details van de uitgevoerde werkzaamheden.</p>
