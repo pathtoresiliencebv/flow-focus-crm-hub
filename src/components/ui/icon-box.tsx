@@ -22,7 +22,7 @@ export function IconBox({ icon, label, active, onClick, count }: IconBoxProps) {
       <div className={`${active ? 'text-[hsl(0,71%,36%)]' : 'text-gray-600'}`}>
         {icon}
       </div>
-      <span className="text-sm font-medium">{label}</span>
+      <span className="text-xs font-semibold font-['ui-sans-serif',monospace] uppercase tracking-wide">{label}</span>
       {count !== undefined && (
         <Badge variant="secondary">{count}</Badge>
       )}

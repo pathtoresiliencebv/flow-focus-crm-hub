@@ -83,19 +83,19 @@ const ProjectCard = ({ project, index }: { project: Project, index: number }) =>
             ref={provided.innerRef}
             {...provided.draggableProps}
             {...provided.dragHandleProps}
-            className="mb-3"
+            className="mb-2"
           >
             <Card className="hover:shadow-md transition-shadow cursor-pointer">
-              <CardContent className="p-4">
-                <div className="space-y-3">
-                  <div className="flex justify-between items-start">
-                    <h4 className="font-semibold text-sm">{project.title}</h4>
+              <CardContent className="p-2.5">
+                <div className="space-y-1.5 font-['Poppins']">
+                  <div className="flex justify-between items-start gap-1">
+                    <h4 className="font-semibold text-xs leading-tight">{project.title}</h4>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button 
                           size="sm" 
                           variant="ghost" 
-                          className="h-8 w-8 p-0"
+                          className="h-6 w-6 p-0 shrink-0"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <span className="sr-only">Acties</span>
@@ -104,51 +104,51 @@ const ProjectCard = ({ project, index }: { project: Project, index: number }) =>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={handleViewDetails}>
-                          <Eye className="mr-2 h-4 w-4" />
+                          <Eye className="mr-2 h-3 w-3" />
                           Details
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>
-                          <Edit className="mr-2 h-4 w-4" />
+                          <Edit className="mr-2 h-3 w-3" />
                           Bewerken
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={handleDelete} className="text-red-600">
-                          <Trash2 className="mr-2 h-4 w-4" />
+                          <Trash2 className="mr-2 h-3 w-3" />
                           Verwijderen
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
                   
-                  <p className="text-xs text-muted-foreground">Klant: {project.customer}</p>
+                  <p className="text-[10px] text-muted-foreground leading-tight">{project.customer}</p>
                   
-                  <div className="flex justify-between text-xs">
-                    <span>€{project.value}</span>
-                    <span>{project.date}</span>
+                  <div className="flex justify-between text-[10px] items-center">
+                    <span className="text-muted-foreground">{project.date}</span>
+                    {project.value && <span className="font-medium">{project.value}</span>}
                   </div>
 
                   {assignedMonteur && (
                     <div className="flex items-center gap-1">
-                      <User className="h-3 w-3 text-blue-500" />
-                      <span className="text-xs text-blue-600 truncate">
+                      <User className="h-2.5 w-2.5 text-blue-500 shrink-0" />
+                      <span className="text-[10px] text-blue-600 truncate leading-tight">
                         {assignedMonteur.full_name || assignedMonteur.email}
                       </span>
                     </div>
                   )}
 
                   {tasks.length > 0 && (
-                    <div className="space-y-1">
+                    <div className="space-y-0.5">
                       <div className="flex justify-between items-center">
-                        <span className="text-xs text-muted-foreground">Voortgang</span>
-                        <Badge variant="outline" className="text-xs">
+                        <span className="text-[10px] text-muted-foreground">Voortgang</span>
+                        <Badge variant="outline" className="text-[9px] px-1 py-0 h-4">
                           {completionPercentage}%
                         </Badge>
                       </div>
-                      <Progress value={completionPercentage} className="h-1" />
+                      <Progress value={completionPercentage} className="h-0.5" />
                     </div>
                   )}
 
                   {project.description && (
-                    <p className="text-xs text-gray-600 truncate">{project.description}</p>
+                    <p className="text-[10px] text-gray-600 truncate leading-tight">{project.description}</p>
                   )}
                 </div>
               </CardContent>
@@ -180,6 +180,11 @@ export const ProjectsBoard: React.FC = () => {
   const { hasPermission, profile } = useAuth();
   const [newProjectPanelOpen, setNewProjectPanelOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<ProjectStatus>("te-plannen");
+  const { setTitle } = usePageHeader();
+
+  React.useEffect(() => {
+    setTitle("Projecten");
+  }, [setTitle]);
 
   // If user is Installateur, show simplified view
   if (profile?.role === 'Installateur') {
@@ -237,14 +242,14 @@ export const ProjectsBoard: React.FC = () => {
       </SlidePanel>
     
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="flex gap-3 overflow-x-auto pb-4">
           {statusColumns.map(column => (
             <div 
               key={column.id} 
-              className={`flex-shrink-0 w-80 rounded-lg p-4 border ${column.bgColor}`}
+              className={`flex-shrink-0 w-64 rounded-lg p-3 border ${column.bgColor}`}
             >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-medium text-sm">{column.title}</h3>
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="font-medium text-xs">{column.title}</h3>
                 <span className={`bg-white text-gray-700 text-xs font-medium px-2 py-1 rounded-full border ${
                   column.id === "te-plannen" ? "border-red-200" :
                   column.id === "gepland" ? "border-orange-200" :
