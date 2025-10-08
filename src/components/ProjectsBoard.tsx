@@ -189,7 +189,7 @@ const ProjectCard = memo(({ project, index }: { project: Project, index: number 
 });
 
 export const ProjectsBoard: React.FC = memo(() => {
-  const { projects, updateProject } = useCrmStore();
+  const { projects, updateProject, isLoading, debug } = useCrmStore();
   const { hasPermission, profile } = useAuth();
   const [newProjectPanelOpen, setNewProjectPanelOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<ProjectStatus>("te-plannen");
@@ -198,6 +198,30 @@ export const ProjectsBoard: React.FC = memo(() => {
   React.useEffect(() => {
     setTitle("Projecten");
   }, [setTitle]);
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('🔍 ProjectsBoard Debug:', {
+      isLoading,
+      projectsCount: projects.length,
+      debug
+    });
+  }, [isLoading, projects.length, debug]);
+
+  // Show loading state while data is being fetched
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Projecten laden...</p>
+          <p className="text-xs text-gray-400 mt-2">
+            Debug: {debug?.isLoadingCustomers ? 'Customers loading' : ''} {debug?.isLoadingProjects ? 'Projects loading' : ''}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // If user is Installateur, show simplified view
   if (profile?.role === 'Installateur') {

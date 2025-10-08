@@ -59,7 +59,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
 
   if (isLoading) {
-    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Authenticatie controleren...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!isAuthenticated) {
@@ -89,21 +96,21 @@ function App() {
                     
                     {/* Protected routes with Layout */}
                     <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-                      <Route path="/" element={<Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><DashboardPage /></Suspense>} />
-                      <Route path="/customers" element={<Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><CustomersPage /></Suspense>} />
-                      <Route path="/customers/:customerId" element={<Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><CustomerDetailPage /></Suspense>} />
-                      <Route path="/projects" element={<Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><ProjectsPage /></Suspense>} />
-                      <Route path="/projects/:projectId" element={<Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><ProjectDetailPage /></Suspense>} />
-                      <Route path="/planning" element={<Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><PlanningPage /></Suspense>} />
-                      <Route path="/time" element={<Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><TimePage /></Suspense>} />
-                      <Route path="/receipts" element={<Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><ReceiptsPage /></Suspense>} />
-                      <Route path="/quotes" element={<Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><QuotesPage /></Suspense>} />
-                      <Route path="/invoices" element={<Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><InvoicesPage /></Suspense>} />
-                      <Route path="/personnel" element={<Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><PersonnelPage /></Suspense>} />
-                      <Route path="/users" element={<Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><UsersPage /></Suspense>} />
-                      <Route path="/email" element={<Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><EmailPage /></Suspense>} />
-                      <Route path="/chat" element={<Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><ChatPage /></Suspense>} />
-                      <Route path="/settings" element={<Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><SettingsPage /></Suspense>} />
+                      <Route path="/" element={<DashboardPage />} />
+                      <Route path="/customers" element={<CustomersPage />} />
+                      <Route path="/customers/:customerId" element={<CustomerDetailPage />} />
+                      <Route path="/projects" element={<ProjectsPage />} />
+                      <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
+                      <Route path="/planning" element={<PlanningPage />} />
+                      <Route path="/time" element={<TimePage />} />
+                      <Route path="/receipts" element={<ReceiptsPage />} />
+                      <Route path="/quotes" element={<QuotesPage />} />
+                      <Route path="/invoices" element={<InvoicesPage />} />
+                      <Route path="/personnel" element={<PersonnelPage />} />
+                      <Route path="/users" element={<UsersPage />} />
+                      <Route path="/email" element={<EmailPage />} />
+                      <Route path="/chat" element={<ChatPage />} />
+                      <Route path="/settings" element={<SettingsPage />} />
                     </Route>
 
                     {/* Other protected routes without Layout */}

@@ -279,5 +279,15 @@ export const useCrmStore = () => {
     addProject: addProjectMutation.mutateAsync,
     updateProject: (id: string, data: UpdateProject) => updateProjectMutation.mutateAsync({ id, ...data }),
     deleteProject: deleteProjectMutation.mutateAsync,
+    
+    // Debug info
+    debug: {
+      isLoadingCustomers,
+      isLoadingProjects,
+      allProjectsCount: allProjects.length,
+      filteredProjectsCount: projects.length,
+      userRole: profile?.role,
+      userId: user?.id
+    }
   };
 };

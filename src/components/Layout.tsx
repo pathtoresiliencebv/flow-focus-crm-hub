@@ -43,6 +43,18 @@ function LayoutContent() {
     return location.pathname.startsWith(path);
   };
 
+  // Handle navigation with error catching
+  const handleNavigation = (path: string) => {
+    try {
+      console.log('🧭 Navigating to:', path);
+      navigate(path);
+    } catch (error) {
+      console.error('❌ Navigation error:', error);
+      // Fallback to window.location if navigate fails
+      window.location.href = path;
+    }
+  };
+
   const mainLinks = [
     { path: "/", label: "Dashboard", icon: <LayoutDashboard className="h-5 w-5" />, permission: null },
     { path: "/customers", label: "Klanten", icon: <Users className="h-5 w-5" />, permission: "customers_view" as Permission },
@@ -84,7 +96,7 @@ function LayoutContent() {
             {filteredMainLinks.map((link) => (
               <li key={link.path}>
                 <button
-                  onClick={() => navigate(link.path)}
+                  onClick={() => handleNavigation(link.path)}
                   className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'} gap-3 px-3 py-2 text-xs rounded-lg transition-colors font-['ui-sans-serif',monospace] font-semibold uppercase tracking-wide ${
                     isActive(link.path)
                       ? "bg-[hsl(0,71%,36%)] text-white"
@@ -106,7 +118,7 @@ function LayoutContent() {
                 {filteredSettingsLinks.map((link) => (
                   <li key={link.path}>
                     <button
-                      onClick={() => navigate(link.path)}
+                      onClick={() => handleNavigation(link.path)}
                       className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'} gap-3 px-3 py-2 text-xs rounded-lg transition-colors font-['ui-sans-serif',monospace] font-semibold uppercase tracking-wide ${
                         isActive(link.path)
                           ? "bg-[hsl(0,71%,36%)] text-white"
@@ -158,7 +170,7 @@ function LayoutContent() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate('/email')}
+              onClick={() => handleNavigation('/email')}
               className={isActive('/email') ? 'bg-red-50 text-red-600' : ''}
             >
               <Mail className="h-5 w-5" />
@@ -168,7 +180,7 @@ function LayoutContent() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => navigate('/chat')}
+              onClick={() => handleNavigation('/chat')}
               className={isActive('/chat') ? 'bg-red-50 text-red-600' : ''}
             >
               <MessageCircle className="h-5 w-5" />
@@ -194,7 +206,7 @@ function LayoutContent() {
                   <p className="text-xs text-muted-foreground">{profile?.role || 'Gebruiker'}</p>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate('/settings')}>
+                <DropdownMenuItem onClick={() => handleNavigation('/settings')}>
                   <Settings className="mr-2 h-4 w-4" />
                   Instellingen
                 </DropdownMenuItem>
@@ -210,7 +222,16 @@ function LayoutContent() {
 
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto">
-          <Outlet />
+          <React.Suspense fallback={
+            <div className="flex h-screen items-center justify-center">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-gray-600">Pagina laden...</p>
+              </div>
+            </div>
+          }>
+            <Outlet />
+          </React.Suspense>
         </main>
       </div>
     </div>
