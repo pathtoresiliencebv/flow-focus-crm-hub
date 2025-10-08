@@ -186,7 +186,7 @@ export const ProjectsBoard: React.FC = () => {
     return <InstallateurProjectList />;
   }
 
-  const handleDragEnd = (result: DropResult) => {
+  const handleDragEnd = async (result: DropResult) => {
     const { destination, source, draggableId } = result;
 
     if (!destination || 
@@ -196,7 +196,15 @@ export const ProjectsBoard: React.FC = () => {
     }
 
     const newStatus = destination.droppableId as ProjectStatus;
-    updateProject(draggableId, { status: newStatus });
+    
+    try {
+      console.log(`🔄 Moving project ${draggableId} to status: ${newStatus}`);
+      await updateProject(draggableId, { status: newStatus });
+      console.log(`✅ Project moved successfully to ${newStatus}`);
+    } catch (error) {
+      console.error('❌ Error moving project:', error);
+      // The error toast is already handled in the mutation
+    }
   };
 
   const handleAddProjectClick = (status: ProjectStatus) => {
