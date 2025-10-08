@@ -23,7 +23,7 @@ export default function InvoicesPage() {
         </Button>
         <Button 
           size="sm" 
-          className="bg-red-600 hover:bg-red-700"
+          className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)] text-white"
           onClick={() => navigate('/invoices/new?type=werkbon')}
         >
           <Wrench className="h-4 w-4 mr-2" />

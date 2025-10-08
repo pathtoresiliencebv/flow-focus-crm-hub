@@ -15,7 +15,7 @@ export default function CustomersPage() {
           <Search className="h-4 w-4 mr-2" />
           Zoeken
         </Button>
-        <Button size="sm" className="bg-red-600 hover:bg-red-700">
+        <Button size="sm" className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)] text-white">
           <Plus className="h-4 w-4 mr-2" />
           Nieuwe Klant
         </Button>

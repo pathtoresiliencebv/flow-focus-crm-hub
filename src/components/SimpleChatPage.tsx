@@ -68,17 +68,7 @@ export const SimpleChatPage: React.FC = () => {
 
   // Desktop: show both panels
   return (
-    <div className="flex flex-col h-full">
-      {/* Language Selector Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border bg-card">
-        <h2 className="text-lg font-semibold">Chat</h2>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Mijn taal:</span>
-          <LanguageSelector className="w-[160px]" />
-        </div>
-      </div>
-      
-      <div className="flex flex-1 bg-background overflow-hidden">
+    <div className="flex h-full bg-background overflow-hidden">
         <div className="w-80 border-r border-border bg-card">
           <ConversationList
             conversations={conversations}
@@ -109,7 +99,6 @@ export const SimpleChatPage: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 };

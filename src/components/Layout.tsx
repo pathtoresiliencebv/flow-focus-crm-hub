@@ -66,7 +66,7 @@ function LayoutContent() {
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
-      <aside className={`hidden md:flex flex-col fixed top-0 left-0 h-full bg-white shadow-lg transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
+      <aside className={`hidden md:flex flex-col fixed top-0 left-0 h-full bg-white shadow-lg transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-56'}`}>
         {/* Logo */}
         <div className={`p-4 ${isCollapsed ? 'px-2' : ''}`}>
           <div className="flex items-center justify-center">
@@ -85,9 +85,9 @@ function LayoutContent() {
               <li key={link.path}>
                 <button
                   onClick={() => navigate(link.path)}
-                  className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'} gap-3 px-4 py-2.5 text-sm rounded-xl transition-colors ${
+                  className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'} gap-3 px-3 py-2 text-xs rounded-lg transition-colors font-['ui-sans-serif',monospace] font-semibold uppercase tracking-wide ${
                     isActive(link.path)
-                      ? "bg-red-600 text-white"
+                      ? "bg-[hsl(0,71%,36%)] text-white"
                       : "text-gray-700 hover:bg-gray-100"
                   }`}
                   title={isCollapsed ? link.label : undefined}
@@ -142,7 +142,7 @@ function LayoutContent() {
       </aside>
 
       {/* Main Content */}
-      <div className={`flex-1 transition-all duration-300 flex flex-col ${isCollapsed ? 'ml-0 md:ml-20' : 'ml-0 md:ml-64'}`}>
+      <div className={`flex-1 transition-all duration-300 flex flex-col ${isCollapsed ? 'ml-0 md:ml-16' : 'ml-0 md:ml-56'}`}>
         {/* Top Header */}
         <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
           {/* Left side: Page Title + Actions */}

@@ -22,7 +22,7 @@ import UsersPage from "@/pages/UsersPage";
 import ReportsPage from "@/pages/ReportsPage";
 import EmailPage from "@/pages/EmailPage";
 import ChatPage from "@/pages/ChatPage";
-import Settings from "@/pages/Settings";
+import SettingsPage from "@/pages/SettingsPage";
 import PublicQuote from "@/pages/PublicQuote";
 import NotFound from "@/pages/NotFound";
 import { NewQuote } from "@/pages/NewQuote";
@@ -104,7 +104,7 @@ function App() {
                       <Route path="/reports" element={<ReportsPage />} />
                       <Route path="/email" element={<EmailPage />} />
                       <Route path="/chat" element={<ChatPage />} />
-                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/settings" element={<SettingsPage />} />
                     </Route>
 
                     {/* Other protected routes without Layout */}

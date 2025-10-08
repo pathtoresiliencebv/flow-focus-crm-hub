@@ -14,7 +14,7 @@ export default function QuotesPage() {
     setActions(
       <Button 
         size="sm" 
-        className="bg-red-600 hover:bg-red-700"
+        className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)] text-white"
         onClick={() => navigate('/quotes/new')}
       >
         <Plus className="h-4 w-4 mr-2" />
