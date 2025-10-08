@@ -21,6 +21,21 @@ export interface PlanningItem {
   updated_at: string;
   google_calendar_event_id?: string;
   last_synced_at?: string;
+  
+  // New fields for enhanced workflow
+  planning_type?: 'monteur' | 'klant_afspraak' | 'intern' | 'team';
+  customer_id?: string;
+  expected_duration_minutes?: number;
+  team_size?: number;
+  special_instructions?: string;
+  notify_customer?: boolean;
+  notify_sms?: boolean;
+  confirmed_by_customer?: boolean;
+  confirmed_at?: string;
+  cancellation_reason?: string;
+  cancelled_at?: string;
+  rescheduled_from?: string;
+  color_code?: string;
 }
 
 export const usePlanningStore = () => {
@@ -118,6 +133,109 @@ export const usePlanningStore = () => {
     }
   };
 
+  const addPlanningWithParticipants = async (
+    planningData: Omit<PlanningItem, 'id' | 'created_at' | 'updated_at'>,
+    participantUserIds: string[]
+  ) => {
+    if (!user) {
+      console.error('No user found for adding planning with participants');
+      return null;
+    }
+
+    try {
+      // First, create the planning item
+      const planning = await addPlanningItem(planningData);
+      
+      if (!planning) {
+        throw new Error('Failed to create planning item');
+      }
+
+      // Then, add participants
+      if (participantUserIds.length > 0) {
+        const participants = participantUserIds.map(userId => ({
+          planning_id: planning.id,
+          user_id: userId,
+          participant_type: 'monteur',
+          role: userId === planningData.assigned_user_id ? 'hoofdmonteur' : 'assistent',
+          notified: false,
+        }));
+
+        const { error: participantsError } = await supabase
+          .from('planning_participants')
+          .insert(participants);
+
+        if (participantsError) {
+          console.error('Error adding participants:', participantsError);
+          // Don't fail the whole operation, just log the error
+          toast({
+            title: "Waarschuwing",
+            description: "Planning aangemaakt, maar fout bij toevoegen van deelnemers.",
+            variant: "destructive"
+          });
+        }
+      }
+
+      // If customer notification is requested, create notification record
+      if (planningData.notify_customer && planningData.customer_id) {
+        await createCustomerNotification(planning.id, planningData.customer_id, {
+          email: planningData.notify_customer,
+          sms: planningData.notify_sms || false,
+        });
+      }
+
+      return planning;
+    } catch (error) {
+      console.error('Error in addPlanningWithParticipants:', error);
+      return null;
+    }
+  };
+
+  const createCustomerNotification = async (
+    planningId: string,
+    customerId: string,
+    methods: { email: boolean; sms: boolean }
+  ) => {
+    try {
+      const notifications = [];
+
+      if (methods.email) {
+        notifications.push({
+          planning_id: planningId,
+          customer_id: customerId,
+          notification_type: 'planning_confirmation',
+          channel: 'email',
+          status: 'pending',
+          scheduled_for: new Date().toISOString(),
+        });
+      }
+
+      if (methods.sms) {
+        notifications.push({
+          planning_id: planningId,
+          customer_id: customerId,
+          notification_type: 'planning_confirmation',
+          channel: 'sms',
+          status: 'pending',
+          scheduled_for: new Date().toISOString(),
+        });
+      }
+
+      if (notifications.length > 0) {
+        const { error } = await supabase
+          .from('customer_notifications')
+          .insert(notifications);
+
+        if (error) {
+          console.error('Error creating customer notifications:', error);
+        } else {
+          console.log('Customer notifications created successfully');
+        }
+      }
+    } catch (error) {
+      console.error('Error in createCustomerNotification:', error);
+    }
+  };
+
   const updatePlanningItem = async (id: string, updates: Partial<PlanningItem>) => {
     if (!user) return;
 
@@ -211,8 +329,10 @@ export const usePlanningStore = () => {
     loading,
     fetchPlanningItems,
     addPlanningItem,
+    addPlanningWithParticipants,
     updatePlanningItem,
     deletePlanningItem,
-    getCalendarEvents
+    getCalendarEvents,
+    createCustomerNotification
   };
 };

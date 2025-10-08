@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, X } from "lucide-react";
 import { LocationSearch } from './LocationSearch';
+import { CustomerPlanningDialog, type PlanningFormData } from './CustomerPlanningDialog';
 import { usePlanningStore } from '@/hooks/usePlanningStore';
 import { useRealUserStore } from '@/hooks/useRealUserStore';
 import { useCrmStore } from '@/hooks/useCrmStore';
@@ -23,6 +24,7 @@ export function SimplifiedPlanningManagement() {
   const { user } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [showCustomerDialog, setShowCustomerDialog] = useState(false);
   const [showPlanningDialog, setShowPlanningDialog] = useState(false);
   const [showProjectSidebar, setShowProjectSidebar] = useState(false);
   const [showEventDetails, setShowEventDetails] = useState(false);
@@ -38,6 +40,7 @@ export function SimplifiedPlanningManagement() {
     planningItems, 
     loading, 
     addPlanningItem,
+    addPlanningWithParticipants,
   } = usePlanningStore();
 
   const { installers } = useRealUserStore();
@@ -57,12 +60,57 @@ export function SimplifiedPlanningManagement() {
 
   const handleDateClick = (date: Date) => {
     setSelectedDate(date);
-    setShowProjectSidebar(true);
+    setShowCustomerDialog(true);
   };
 
   const handleEventClick = (event: any) => {
     setSelectedEvent(event);
     setShowEventDetails(true);
+  };
+
+  const handleCustomerPlanningSubmit = async (formData: PlanningFormData) => {
+    try {
+      const planningData = {
+        title: formData.title,
+        description: formData.description,
+        start_date: format(formData.start_date, 'yyyy-MM-dd'),
+        start_time: formData.start_time + ':00',
+        end_time: formData.end_time + ':00',
+        location: formData.location,
+        user_id: user?.id || '',
+        assigned_user_id: formData.assigned_user_ids[0] || user?.id || '',
+        status: 'Gepland',
+        planning_type: formData.planning_type,
+        customer_id: formData.customer_id,
+        project_id: formData.project_id,
+        expected_duration_minutes: formData.expected_duration_minutes,
+        team_size: formData.team_size,
+        special_instructions: formData.special_instructions,
+        notify_customer: formData.notify_customer,
+        notify_sms: formData.notify_sms,
+      };
+
+      // Use the new function if multiple participants
+      if (formData.assigned_user_ids.length > 1) {
+        await addPlanningWithParticipants(planningData, formData.assigned_user_ids);
+      } else {
+        await addPlanningItem(planningData);
+      }
+
+      toast({
+        title: "✅ Planning toegevoegd!",
+        description: `Planning voor ${formData.title} is succesvol aangemaakt.`,
+      });
+
+      setShowCustomerDialog(false);
+    } catch (error) {
+      console.error('Error adding customer planning:', error);
+      toast({
+        title: "❌ Fout bij toevoegen planning",
+        description: "Er ging iets mis bij het aanmaken van de planning.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handlePlanningSubmit = async (planningData: any) => {
@@ -413,6 +461,14 @@ export function SimplifiedPlanningManagement() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Customer Planning Dialog - NEW */}
+      <CustomerPlanningDialog
+        open={showCustomerDialog}
+        onOpenChange={setShowCustomerDialog}
+        onSubmit={handleCustomerPlanningSubmit}
+        initialDate={selectedDate}
+      />
     </div>
   );
 }
