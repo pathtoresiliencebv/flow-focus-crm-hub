@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "translate": "tsx scripts/extract-and-translate-ui.ts",
     "build:dev": "vite build --mode development",
     "build:staging": "vite build --mode staging",
     "build:production": "vite build --mode production",
