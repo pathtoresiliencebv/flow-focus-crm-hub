@@ -1,7 +1,7 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Calendar, FileText, Users, Clipboard, Edit, Save, X, User, Pencil, Package, UserCog } from "lucide-react";
+import { ArrowLeft, Calendar, FileText, Users, Clipboard, Edit, Save, X, User, Pencil, Package, UserCog, Clock, Receipt, FileSpreadsheet } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { useCrmStore, UpdateProject } from "@/hooks/useCrmStore";
 import { useUsers } from "@/hooks/useUsers";
 import { ProjectMaterials } from "./ProjectMaterials";
@@ -17,6 +19,9 @@ import { ProjectPlanning } from "./ProjectPlanning";
 import { ProjectTasks } from "./ProjectTasks";
 import { useProjectDelivery } from "@/hooks/useProjectDelivery";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { nl } from "date-fns/locale";
 
 const ProjectDetail = () => {
   const { projectId } = useParams();
@@ -30,6 +35,10 @@ const ProjectDetail = () => {
   const [showPlanning, setShowPlanning] = useState(false);
   const [showMaterials, setShowMaterials] = useState(false);
   const [showPersonnel, setShowPersonnel] = useState(false);
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [quotes, setQuotes] = useState<any[]>([]);
+  const [workTimeLogs, setWorkTimeLogs] = useState<any[]>([]);
+  const [loadingData, setLoadingData] = useState(false);
   const [editData, setEditData] = useState({
     title: "",
     customerId: "",
@@ -61,6 +70,60 @@ const ProjectDetail = () => {
   // Find customer details
   const customer = customers.find(c => c.id === project.customer_id);
   const assignedMonteur = monteurs.find(m => m.id === project.assigned_user_id);
+
+  // Fetch invoices, quotes, and work time logs
+  useEffect(() => {
+    if (project?.customer_id) {
+      fetchInvoicesAndQuotes();
+    }
+    if (projectId) {
+      fetchWorkTimeLogs();
+    }
+  }, [project?.customer_id, projectId]);
+
+  const fetchInvoicesAndQuotes = async () => {
+    setLoadingData(true);
+    try {
+      // Fetch invoices for customer
+      const { data: invoiceData } = await supabase
+        .from('invoices')
+        .select('*')
+        .eq('customer_id', project.customer_id)
+        .order('created_at', { ascending: false });
+      
+      setInvoices(invoiceData || []);
+      
+      // Fetch quotes for customer
+      const { data: quoteData } = await supabase
+        .from('quotes')
+        .select('*')
+        .eq('customer_id', project.customer_id)
+        .order('created_at', { ascending: false });
+      
+      setQuotes(quoteData || []);
+    } catch (error) {
+      console.error('Error fetching invoices and quotes:', error);
+    } finally {
+      setLoadingData(false);
+    }
+  };
+
+  const fetchWorkTimeLogs = async () => {
+    try {
+      const { data } = await supabase
+        .from('work_time_logs')
+        .select(`
+          *,
+          installer:profiles!work_time_logs_installer_id_fkey(full_name, email)
+        `)
+        .eq('project_id', projectId)
+        .order('started_at', { ascending: false });
+      
+      setWorkTimeLogs(data || []);
+    } catch (error) {
+      console.error('Error fetching work time logs:', error);
+    }
+  };
 
   const handleEditStart = () => {
     setEditData({
@@ -407,54 +470,239 @@ const ProjectDetail = () => {
         </Sheet>
       </div>
 
-      {/* Project Details */}
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Projectdetails</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <h3 className="font-semibold mb-2">Beschrijving</h3>
-              {isEditing ? (
-                <Textarea
-                  value={editData.description}
-                  onChange={(e) => handleInputChange("description", e.target.value)}
-                  placeholder="Beschrijf het project..."
-                  rows={4}
-                />
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  {project.description || "Nog geen beschrijving toegevoegd voor dit project."}
-                </p>
-              )}
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">Project specificaties</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium">Type project</p>
-                  <p className="text-sm text-muted-foreground">{project.title.includes("kozijn") ? "Kozijnwerk" : "Glaswerk"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Locatie</p>
-                  <p className="text-sm text-muted-foreground">Nog niet gespecificeerd</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Omvang werk</p>
-                  <p className="text-sm text-muted-foreground">Standaard installatie</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Verwachte doorlooptijd</p>
-                  <p className="text-sm text-muted-foreground">3-5 werkdagen</p>
+      {/* Project Tabs */}
+      <Tabs defaultValue="details" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="details">
+            <FileText className="h-4 w-4 mr-2" />
+            Details
+          </TabsTrigger>
+          <TabsTrigger value="activity">
+            <Clock className="h-4 w-4 mr-2" />
+            Activiteit ({workTimeLogs.length})
+          </TabsTrigger>
+          <TabsTrigger value="invoices">
+            <Receipt className="h-4 w-4 mr-2" />
+            Facturen ({invoices.length})
+          </TabsTrigger>
+          <TabsTrigger value="quotes">
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            Offertes ({quotes.length})
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Details Tab */}
+        <TabsContent value="details" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Projectdetails</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <h3 className="font-semibold mb-2">Beschrijving</h3>
+                {isEditing ? (
+                  <Textarea
+                    value={editData.description}
+                    onChange={(e) => handleInputChange("description", e.target.value)}
+                    placeholder="Beschrijf het project..."
+                    rows={4}
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    {project.description || "Nog geen beschrijving toegevoegd voor dit project."}
+                  </p>
+                )}
+              </div>
+              <div>
+                <h3 className="font-semibold mb-2">Project specificaties</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium">Type project</p>
+                    <p className="text-sm text-muted-foreground">{project.title.includes("kozijn") ? "Kozijnwerk" : "Glaswerk"}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Locatie</p>
+                    <p className="text-sm text-muted-foreground">Nog niet gespecificeerd</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Omvang werk</p>
+                    <p className="text-sm text-muted-foreground">Standaard installatie</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Verwachte doorlooptijd</p>
+                    <p className="text-sm text-muted-foreground">3-5 werkdagen</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <ProjectTasks projectId={project.id} />
-      </div>
+          <ProjectTasks projectId={project.id} />
+        </TabsContent>
+
+        {/* Activity Tab */}
+        <TabsContent value="activity" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Monteur Activiteit</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loadingData ? (
+                <p className="text-center text-muted-foreground py-8">Laden...</p>
+              ) : workTimeLogs.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">Nog geen activiteit geregistreerd</p>
+              ) : (
+                <div className="space-y-4">
+                  {workTimeLogs.map((log) => (
+                    <div key={log.id} className="border-l-4 border-blue-500 pl-4 pb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="font-medium">{log.installer?.full_name || log.installer?.email || 'Monteur'}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {log.started_at && format(new Date(log.started_at), 'dd MMM yyyy HH:mm', { locale: nl })}
+                          </p>
+                        </div>
+                        <Badge className={
+                          log.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                          log.status === 'active' ? 'bg-blue-100 text-blue-800' : 
+                          'bg-gray-100 text-gray-800'
+                        }>
+                          {log.status === 'completed' ? 'Afgerond' : 
+                           log.status === 'active' ? 'Actief' : 
+                           log.status}
+                        </Badge>
+                      </div>
+                      {log.total_minutes && (
+                        <p className="text-sm text-muted-foreground">
+                          ⏱️ {Math.floor(log.total_minutes / 60)}u {log.total_minutes % 60}m
+                        </p>
+                      )}
+                      {log.ended_at && (
+                        <p className="text-sm text-muted-foreground">
+                          Beëindigd: {format(new Date(log.ended_at), 'HH:mm', { locale: nl })}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Invoices Tab */}
+        <TabsContent value="invoices" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Facturen van {customer?.name || 'deze klant'}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loadingData ? (
+                <p className="text-center text-muted-foreground py-8">Laden...</p>
+              ) : invoices.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">Nog geen facturen voor deze klant</p>
+              ) : (
+                <div className="space-y-3">
+                  {invoices.map((invoice) => (
+                    <div 
+                      key={invoice.id} 
+                      className="p-4 border rounded-lg hover:bg-accent/50 cursor-pointer transition-colors"
+                      onClick={() => navigate(`/invoices/${invoice.id}`)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3">
+                            <h4 className="font-medium">Factuur #{invoice.invoice_number || invoice.id.slice(0, 8)}</h4>
+                            <Badge className={
+                              invoice.status === 'betaald' ? 'bg-green-100 text-green-800' :
+                              invoice.status === 'verzonden' ? 'bg-blue-100 text-blue-800' :
+                              invoice.status === 'concept' ? 'bg-gray-100 text-gray-800' :
+                              'bg-yellow-100 text-yellow-800'
+                            }>
+                              {invoice.status}
+                            </Badge>
+                          </div>
+                          {invoice.project_title && (
+                            <p className="text-sm text-muted-foreground mt-1">{invoice.project_title}</p>
+                          )}
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                            {invoice.invoice_date && (
+                              <span>📅 {format(new Date(invoice.invoice_date), 'dd MMM yyyy', { locale: nl })}</span>
+                            )}
+                            {invoice.due_date && (
+                              <span>⏰ Vervalt: {format(new Date(invoice.due_date), 'dd MMM yyyy', { locale: nl })}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold">€{invoice.total_amount?.toFixed(2) || '0.00'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Quotes Tab */}
+        <TabsContent value="quotes" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Offertes van {customer?.name || 'deze klant'}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loadingData ? (
+                <p className="text-center text-muted-foreground py-8">Laden...</p>
+              ) : quotes.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">Nog geen offertes voor deze klant</p>
+              ) : (
+                <div className="space-y-3">
+                  {quotes.map((quote) => (
+                    <div 
+                      key={quote.id} 
+                      className="p-4 border rounded-lg hover:bg-accent/50 cursor-pointer transition-colors"
+                      onClick={() => navigate(`/quotes/${quote.id}/preview`)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3">
+                            <h4 className="font-medium">Offerte #{quote.quote_number || quote.id.slice(0, 8)}</h4>
+                            <Badge className={
+                              quote.status === 'goedgekeurd' ? 'bg-green-100 text-green-800' :
+                              quote.status === 'verzonden' ? 'bg-blue-100 text-blue-800' :
+                              quote.status === 'concept' ? 'bg-gray-100 text-gray-800' :
+                              quote.status === 'afgewezen' ? 'bg-red-100 text-red-800' :
+                              'bg-yellow-100 text-yellow-800'
+                            }>
+                              {quote.status}
+                            </Badge>
+                          </div>
+                          {quote.project_title && (
+                            <p className="text-sm text-muted-foreground mt-1">{quote.project_title}</p>
+                          )}
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                            {quote.quote_date && (
+                              <span>📅 {format(new Date(quote.quote_date), 'dd MMM yyyy', { locale: nl })}</span>
+                            )}
+                            {quote.valid_until && (
+                              <span>⏰ Geldig tot: {format(new Date(quote.valid_until), 'dd MMM yyyy', { locale: nl })}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold">€{(quote.total_amount + quote.total_vat_amount)?.toFixed(2) || '0.00'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Project Delivery Dialog */}
     </div>

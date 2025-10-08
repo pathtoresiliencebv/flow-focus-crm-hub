@@ -117,6 +117,33 @@ export function ProjectWorkTracking({ workTimeLogId, onComplete }: ProjectWorkTr
     return () => clearInterval(interval);
   }, [workTimeLog, isPaused]);
 
+  // Auto-save elapsed time to database every 30 seconds
+  useEffect(() => {
+    if (!workTimeLog || isPaused || elapsedSeconds === 0) return;
+
+    const saveInterval = setInterval(async () => {
+      try {
+        console.log('⏱️ Auto-saving work time:', Math.floor(elapsedSeconds / 60), 'minutes');
+        const { error } = await supabase
+          .from('work_time_logs')
+          .update({
+            total_minutes: Math.floor(elapsedSeconds / 60)
+          })
+          .eq('id', workTimeLogId);
+        
+        if (error) {
+          console.error('Error auto-saving work time:', error);
+        } else {
+          console.log('✅ Work time auto-saved successfully');
+        }
+      } catch (error) {
+        console.error('Error in auto-save interval:', error);
+      }
+    }, 30000); // Every 30 seconds
+
+    return () => clearInterval(saveInterval);
+  }, [workTimeLog, elapsedSeconds, isPaused, workTimeLogId]);
+
   const fetchWorkData = async () => {
     try {
       setLoading(true);

@@ -8,9 +8,12 @@ const corsHeaders = {
 
 interface GenerateInvoicePDFRequest {
   invoiceId: string;
+  includePayment?: boolean;
+  paymentUrl?: string;
+  qrCodeDataUrl?: string;
 }
 
-const generateInvoiceHTML = (invoice: any, settings: any) => {
+const generateInvoiceHTML = (invoice: any, settings: any, paymentData?: { paymentUrl: string; qrCodeDataUrl: string }) => {
   const blocks = invoice.items || [];
   let blocksHTML = '';
   
@@ -277,7 +280,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { invoiceId }: GenerateInvoicePDFRequest = await req.json();
+    const { invoiceId, includePayment, paymentUrl, qrCodeDataUrl }: GenerateInvoicePDFRequest = await req.json();
 
     if (!invoiceId) {
       return new Response(
@@ -317,7 +320,10 @@ const handler = async (req: Request): Promise<Response> => {
       .limit(1)
       .single();
 
-    const htmlContent = generateInvoiceHTML(invoice, settings);
+    // Include payment data if requested
+    const paymentData = includePayment && paymentUrl ? { paymentUrl, qrCodeDataUrl: qrCodeDataUrl || '' } : undefined;
+    
+    const htmlContent = generateInvoiceHTML(invoice, settings, paymentData);
     const dataUrl = `data:text/html;base64,${btoa(htmlContent)}`;
 
     return new Response(

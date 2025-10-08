@@ -95,33 +95,29 @@ export const MultiBlockInvoicePreview: React.FC<MultiBlockInvoicePreviewProps> =
       if (error) throw error;
 
       if (data?.success && data?.htmlContent) {
-        // Create a temporary container for html2pdf
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = data.htmlContent;
-        tempDiv.style.position = 'absolute';
-        tempDiv.style.left = '-9999px';
-        document.body.appendChild(tempDiv);
-
-        // PDF options
-        const opt = {
-          margin: [10, 10, 10, 10] as [number, number, number, number],
-          filename: filename,
-          image: { type: 'jpeg' as const, quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
-        };
-
-        // Generate PDF and open in new tab
-        // Temporarily disabled PDF generation
-        console.log('PDF generation temporarily disabled');
-        
-        // Clean up temp div
-        document.body.removeChild(tempDiv);
-        
-        toast({
-          title: "PDF Tijdelijk Uitgeschakeld",
-          description: "PDF generatie is tijdelijk uitgeschakeld voor build fixes.",
-        });
+        // Open HTML in new window for printing
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+          printWindow.document.write(data.htmlContent);
+          printWindow.document.close();
+          printWindow.focus();
+          
+          // Wait for content to load, then trigger print
+          setTimeout(() => {
+            printWindow.print();
+          }, 500);
+          
+          toast({
+            title: "PDF Geopend",
+            description: "Het PDF bestand is geopend voor afdrukken.",
+          });
+        } else {
+          toast({
+            title: "Pop-up Geblokkeerd",
+            description: "Sta pop-ups toe voor deze website om PDF te openen.",
+            variant: "destructive",
+          });
+        }
       }
     } catch (error) {
       console.error('Error opening PDF:', error);
