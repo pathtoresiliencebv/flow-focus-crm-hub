@@ -1,152 +1,106 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-
-interface TestConnectionRequest {
-  smtpHost: string;
-  smtpPort: number;
-  smtpUsername: string;
-  smtpPassword: string;
-  smtpSecure: 'TLS' | 'SSL';
-  imapHost: string;
-  imapPort: number;
-  imapUsername: string;
-  imapPassword: string;
-}
+import { serve } from 'https://deno.land/std@0.178.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.42.0'
+import { corsHeaders } from '../_shared/cors.ts'
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const {
-      smtpHost,
-      smtpPort,
-      smtpUsername,
-      smtpPassword,
-      smtpSecure,
-      imapHost,
-      imapPort,
-      imapUsername,
-      imapPassword,
-    }: TestConnectionRequest = await req.json();
+    const { testEmail } = await req.json()
 
-    console.log('Testing SMTP connection to:', smtpHost);
-    console.log('Testing IMAP connection to:', imapHost);
-
-    // Test SMTP connection
-    let smtpSuccess = false;
-    let smtpError = null;
-
-    try {
-      // Using Deno's native TCP connection to test SMTP
-      const smtpConn = await Deno.connect({
-        hostname: smtpHost,
-        port: smtpPort,
-      });
-
-      // Read initial greeting
-      const buffer = new Uint8Array(1024);
-      await smtpConn.read(buffer);
-      const greeting = new TextDecoder().decode(buffer);
-      console.log('SMTP greeting:', greeting);
-
-      // Send EHLO command
-      const ehloCmd = new TextEncoder().encode(`EHLO test.local\r\n`);
-      await smtpConn.write(ehloCmd);
-      
-      await smtpConn.read(buffer);
-      const ehloResponse = new TextDecoder().decode(buffer);
-      console.log('SMTP EHLO response:', ehloResponse);
-
-      // Send QUIT command
-      const quitCmd = new TextEncoder().encode(`QUIT\r\n`);
-      await smtpConn.write(quitCmd);
-      
-      smtpConn.close();
-      smtpSuccess = true;
-      console.log('SMTP connection successful');
-    } catch (error: any) {
-      console.error('SMTP connection failed:', error.message);
-      smtpError = error.message;
+    if (!testEmail) {
+      throw new Error('Test email is required')
     }
 
-    // Test IMAP connection
-    let imapSuccess = false;
-    let imapError = null;
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    try {
-      // Using Deno's native TCP connection to test IMAP
-      const imapConn = await Deno.connect({
-        hostname: imapHost,
-        port: imapPort,
-      });
+    // Fetch SMTP settings
+    const { data: settings } = await supabase
+      .from('system_notification_settings')
+      .select('*')
+      .single()
 
-      // Read initial greeting
-      const buffer = new Uint8Array(1024);
-      await imapConn.read(buffer);
-      const greeting = new TextDecoder().decode(buffer);
-      console.log('IMAP greeting:', greeting);
-
-      // Send LOGOUT command
-      const logoutCmd = new TextEncoder().encode(`A001 LOGOUT\r\n`);
-      await imapConn.write(logoutCmd);
-      
-      imapConn.close();
-      imapSuccess = true;
-      console.log('IMAP connection successful');
-    } catch (error: any) {
-      console.error('IMAP connection failed:', error.message);
-      imapError = error.message;
+    if (!settings || !settings.smtp_enabled) {
+      throw new Error('SMTP is not enabled')
     }
 
-    // Return results
-    if (smtpSuccess && imapSuccess) {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: 'Both SMTP and IMAP connections successful',
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200 
-        }
-      );
-    } else {
-      const errors = [];
-      if (!smtpSuccess) errors.push(`SMTP: ${smtpError}`);
-      if (!imapSuccess) errors.push(`IMAP: ${imapError}`);
-      
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: errors.join('; '),
-        }),
-        { 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400 
-        }
-      );
-    }
+    console.log('📧 Testing SMTP connection to:', settings.smtp_host)
+    console.log('📧 Sending test email to:', testEmail)
 
-  } catch (error: any) {
-    console.error('Error in test-smtp-connection:', error);
-    return new Response(
-      JSON.stringify({ 
-        success: false,
-        error: error.message || 'Unknown error occurred' 
-      }),
-      { 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500 
+    // Send test email via send-email-smans function
+    const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-email-smans', {
+      body: {
+        to: testEmail,
+        subject: '✅ SMTP Test - SMANS CRM',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 20px; }
+              .container { max-width: 600px; margin: 0 auto; border: 2px solid #10b981; border-radius: 8px; padding: 30px; }
+              .header { text-align: center; margin-bottom: 20px; }
+              .checkmark { font-size: 48px; color: #10b981; }
+              .details { background: #f3f4f6; padding: 15px; border-radius: 6px; margin: 20px 0; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <div class="checkmark">✅</div>
+                <h1>SMTP Test Geslaagd!</h1>
+              </div>
+              <p>Deze email is succesvol verzonden via uw SMTP configuratie.</p>
+              <div class="details">
+                <strong>SMTP Details:</strong><br>
+                Server: ${settings.smtp_host}:${settings.smtp_port}<br>
+                Van: ${settings.smtp_from_email}<br>
+                Timestamp: ${new Date().toLocaleString('nl-NL')}
+              </div>
+              <p>Uw SMTP configuratie werkt correct en is klaar voor gebruik!</p>
+              <p style="color: #6b7280; font-size: 12px; margin-top: 30px;">
+                Dit is een automatische test email van SMANS CRM Systeem.
+              </p>
+            </div>
+          </body>
+          </html>
+        `
       }
-    );
-  }
-});
+    })
 
+    if (emailError) {
+      console.error('❌ SMTP test failed:', emailError)
+      throw new Error(emailError.message || 'Failed to send test email')
+    }
+
+    console.log('✅ SMTP test email sent successfully')
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: `Test email sent to ${testEmail}`,
+        timestamp: new Date().toISOString()
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200
+      }
+    )
+  } catch (error: any) {
+    console.error('❌ SMTP test error:', error)
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: error.message || 'SMTP test failed'
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500
+      }
+    )
+  }
+})

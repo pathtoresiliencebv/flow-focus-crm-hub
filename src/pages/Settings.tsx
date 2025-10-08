@@ -12,12 +12,13 @@ import { RoleSettings } from '@/components/settings/RoleSettings';
 import { EmailSettings } from '@/components/settings/EmailSettings';
 import { EmailTemplateSettings } from '@/components/settings/EmailTemplateSettings';
 import { EmailNotificationSettings } from '@/components/settings/EmailNotificationSettings';
+import { SystemNotificationSettings } from '@/components/settings/SystemNotificationSettings';
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { LeadFormSettings } from '@/components/settings/LeadFormSettings';
 import { AIIntegrationSettings } from '@/components/settings/AIIntegrationSettings';
 import { LanguageSettingsPage } from '@/components/settings/LanguageSettingsPage';
 
-type SettingPage = 'overview' | 'company' | 'quotes' | 'invoices' | 'users' | 'roles' | 'email' | 'email-templates' | 'email-notifications' | 'notifications' | 'lead-forms' | 'ai-integration' | 'integrations' | 'language';
+type SettingPage = 'overview' | 'company' | 'quotes' | 'invoices' | 'users' | 'roles' | 'email' | 'email-templates' | 'email-notifications' | 'system-notifications' | 'notifications' | 'lead-forms' | 'ai-integration' | 'integrations' | 'language';
 
 const settingsCategories = [
   {
@@ -100,8 +101,15 @@ const settingsCategories = [
         color: "text-blue-600"
       },
       {
+        id: 'system-notifications' as SettingPage,
+        title: "Systeem Notificaties",
+        description: "SMTP, SMS en notificatie instellingen configureren",
+        icon: SettingsIcon,
+        color: "text-indigo-600"
+      },
+      {
         id: 'notifications' as SettingPage,
-        title: "Notificaties",
+        title: "Push Notificaties",
         description: "Configureer push notificaties en meldingen",
         icon: Bell,
         color: "text-yellow-600"
@@ -166,6 +174,8 @@ export default function Settings() {
         return <EmailTemplateSettings />;
       case 'email-notifications':
         return <EmailNotificationSettings />;
+      case 'system-notifications':
+        return <SystemNotificationSettings />;
       case 'notifications':
         return <NotificationSettings />;
       case 'lead-forms':
