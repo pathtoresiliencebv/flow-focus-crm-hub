@@ -24,48 +24,109 @@ Dit systeem maakt het mogelijk om bonnetjes (kwitanties, facturen, etc.) automat
 
 Er zijn 3 opties voor het ontvangen van emails:
 
-### Optie 1: Mailgun (Aanbevolen) ⭐
+### Optie 1: Brevo (Aanbevolen) ⭐
 
-**Waarom Mailgun?**
-- Gratis tier: 1000 emails/maand
-- Gemakkelijke webhook configuratie
+**Waarom Brevo?**
+- Gratis tier: 300 emails/dag
+- Nederlandse interface
+- Inbound Email Parsing
 - Betrouwbaar en snel
-- Goede documentatie
+- Goede support
 
 **Setup Stappen:**
 
 1. **Account Aanmaken**
-   - Ga naar [mailgun.com](https://mailgun.com)
+   - Ga naar [brevo.com](https://www.brevo.com) (voorheen SendinBlue)
    - Maak gratis account aan
+   - Verifieer email adres
 
-2. **Domein Verificatie**
-   - Voeg `smansonderhoud.nl` toe als domein
-   - Hostnet DNS records toevoegen:
-     ```
-     TXT record:    _mailgun.smansonderhoud.nl → [mailgun verification]
-     MX record:     smansonderhoud.nl → mxa.mailgun.org (priority 10)
-     MX record:     smansonderhoud.nl → mxb.mailgun.org (priority 10)
-     CNAME record:  email.smansonderhoud.nl → mailgun.org
-     ```
+2. **Domein Toevoegen**
+   - Ga naar **Settings** → **Senders & IP**
+   - Klik **Add a domain**
+   - Voer `smansonderhoud.nl` in
+   - Kopieer de DNS records
 
-3. **Route Configureren**
-   - Ga naar "Receiving" → "Routes"
-   - Create route:
-     ```
-     Priority: 0
-     Filter Expression: match_recipient("bonnetjes@smansonderhoud.nl")
-     Actions: forward("https://pvesgvkyiaqmsudmmtkc.supabase.co/functions/v1/receipt-email-processor")
-     Description: Bonnetjes Auto-Upload
-     ```
+3. **DNS Records in Hostnet**
+   Voeg deze records toe via Hostnet control panel:
+   ```
+   TXT record: smansonderhoud.nl → "brevo-code=XXXXX" (authenticatie)
+   TXT record: _dmarc.smansonderhoud.nl → "v=DMARC1; p=none"
+   TXT record: brevo._domainkey.smansonderhoud.nl → "DKIM key van Brevo"
+   MX record:  bonnetjes.smansonderhoud.nl → mx.smansonderhoud.nl (priority 10)
+   ```
 
-4. **Test**
-   - Stuur test email naar `bonnetjes@smansonderhoud.nl`
+4. **Inbound Email Configureren**
+   - Ga naar **Settings** → **Inbound parsing**
+   - Klik **Add inbound route**
+   - Configureer:
+     ```
+     Email: bonnetjes@smansonderhoud.nl
+     Webhook URL: https://pvesgvkyiaqmsudmmtkc.supabase.co/functions/v1/receipt-email-processor
+     HTTP Method: POST
+     Format: JSON
+     ```
+   - Activeer **Include attachments**
+   - Opslaan
+
+5. **Webhook Headers (Optioneel)**
+   Voor extra security:
+   ```json
+   {
+     "X-Brevo-Webhook": "receipt-processor",
+     "Content-Type": "application/json"
+   }
+   ```
+
+6. **Test**
+   - Stuur test email naar `bonnetjes@smansonderhoud.nl` met foto
    - Check Supabase logs: `supabase functions logs receipt-email-processor`
    - Controleer `receipts` tabel in database
 
+**Brevo Email Format:**
+```json
+{
+  "items": [{
+    "From": "user@example.com",
+    "To": "bonnetjes@smansonderhoud.nl",
+    "Subject": "Bonnetje",
+    "Attachments": [
+      {
+        "Name": "receipt.jpg",
+        "ContentType": "image/jpeg",
+        "ContentLength": 45678,
+        "Content": "base64-encoded-content-here"
+      }
+    ]
+  }]
+}
+```
+
+**Belangrijk:**
+- DNS propagatie kan 24-48 uur duren
+- Test eerst met persoonlijk email adres
+- Controleer spam folder als email niet aankomt
+
 ---
 
-### Optie 2: SendGrid
+### Optie 2: Mailgun
+
+**Setup:**
+
+1. Account aanmaken op [mailgun.com](https://mailgun.com)
+
+2. Domain toevoegen en DNS records configureren:
+   ```
+   MX record: smansonderhoud.nl → mxa.mailgun.org (priority 10)
+   MX record: smansonderhoud.nl → mxb.mailgun.org (priority 10)
+   ```
+
+3. Route configureren:
+   - Filter: `match_recipient("bonnetjes@smansonderhoud.nl")`
+   - Webhook: `https://pvesgvkyiaqmsudmmtkc.supabase.co/functions/v1/receipt-email-processor`
+
+---
+
+### Optie 3: SendGrid
 
 **Setup:**
 
@@ -171,10 +232,12 @@ supabase functions logs receipt-email-processor --tail
 **Check:**
 1. DNS records correct ingesteld? (use `dig` or `nslookup`)
    ```bash
-   nslookup -type=MX smansonderhoud.nl
+   nslookup -type=MX bonnetjes.smansonderhoud.nl
+   nslookup -type=TXT smansonderhoud.nl
    ```
-2. Mailgun route actief?
-3. Domain geverifieerd in Mailgun?
+2. Brevo inbound route actief?
+3. Domain geverifieerd in Brevo?
+4. Check Brevo Dashboard → Inbound parsing → Status
 
 ### Webhook fails
 
@@ -246,9 +309,24 @@ LIMIT 20;
 
 ## 🔐 Security
 
-### Email Verificatie
+### Brevo Webhook Verificatie
 
-Optioneel: Voeg verificatie toe om alleen emails van bekende senders te accepteren:
+Optioneel: Verifieer dat requests van Brevo komen:
+
+```typescript
+// In receipt-email-processor/index.ts
+const brevoSecret = Deno.env.get('BREVO_WEBHOOK_SECRET')
+const receivedSignature = req.headers.get('X-Brevo-Signature')
+
+if (brevoSecret && receivedSignature !== brevoSecret) {
+  console.warn('⚠️ Invalid Brevo signature')
+  return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403 })
+}
+```
+
+### Email Sender Whitelist
+
+Optioneel: Accepteer alleen emails van bekende senders:
 
 ```typescript
 // In receipt-email-processor/index.ts
@@ -310,9 +388,16 @@ WITH CHECK (bucket_id = 'receipts');
 
 Bij problemen:
 1. Check Supabase function logs
-2. Check Mailgun logs (Sending → Logs)
-3. Test met curl command
-4. Contact: info@smansonderhoud.nl
+2. Check Brevo logs (Statistics → Inbound)
+3. Check Brevo webhook logs
+4. Test met curl command
+5. Verify DNS propagation (24-48 uur)
+6. Contact: info@smansonderhoud.nl
+
+**Brevo Support:**
+- Help Center: https://help.brevo.com
+- Email: support@brevo.com
+- Chat: In dashboard (rechtsonder)
 
 ---
 

@@ -129,14 +129,18 @@ if (newStatus === 'goedgekeurd') {
 - Admin notificatie emails
 
 **Email Services Supported:**
-1. **Mailgun** ⭐ (Aanbevolen)
-   - 1000 emails/maand gratis
-   - Gemakkelijke setup
+1. **Brevo** ⭐ (Aanbevolen)
+   - 300 emails/dag gratis
+   - Nederlandse interface
+   - Inbound Email Parsing
    
-2. **SendGrid**
+2. **Mailgun**
+   - 1000 emails/maand gratis
+   
+3. **SendGrid**
    - Inbound Parse
    
-3. **CloudMailin**
+4. **CloudMailin**
    - JSON webhooks
 
 **Setup Guide:** `BONNETJES_EMAIL_SETUP_GUIDE.md`
@@ -358,7 +362,7 @@ Bij problemen:
 
 - [ ] Edge Functions deployed
 - [ ] Stripe key configured (PRODUCTION key!)
-- [ ] Email service setup (Mailgun/SendGrid)
+- [ ] Email service setup (Brevo/Mailgun/SendGrid)
 - [ ] DNS records configured
 - [ ] Test email sent to bonnetjes@
 - [ ] Test Stripe payment
