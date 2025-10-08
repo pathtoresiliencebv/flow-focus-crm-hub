@@ -67,9 +67,12 @@ serve(async (req) => {
       .eq('completion_id', completionId)
       .order('uploaded_at')
 
-    // Fetch materials - parse from materials_used text field
-    // In the future, this could be from a separate materials table
-    const materials = []
+    // Fetch materials from project_materials table
+    const { data: materials } = await supabaseClient
+      .from('project_materials')
+      .select('*')
+      .eq('project_id', completion.project_id)
+      .order('created_at')
 
     // Fetch tasks
     const { data: tasks } = await supabaseClient
