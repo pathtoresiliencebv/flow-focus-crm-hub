@@ -34,16 +34,9 @@ export const usePushSubscription = () => {
 
   // Register service worker
   const registerServiceWorker = useCallback(async () => {
-    if (!isSupported) return null;
-
-    try {
-      const registration = await navigator.serviceWorker.register('/sw.js');
-      await navigator.serviceWorker.ready;
-      return registration;
-    } catch (error) {
-      console.error('Service worker registration failed:', error);
-      return null;
-    }
+    // Service Worker registration DISABLED to prevent loading issues
+    console.log('Service Worker registration is disabled');
+    return null;
   }, [isSupported]);
 
   // Get existing push subscription
