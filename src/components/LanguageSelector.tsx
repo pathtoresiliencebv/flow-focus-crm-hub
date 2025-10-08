@@ -96,13 +96,8 @@ export function LanguageSelector() {
 
       toast({
         title: "✅ Taal gewijzigd",
-        description: `Interface taal is ingesteld op ${languageName}. Teksten worden automatisch vertaald.`,
+        description: `Interface taal is ingesteld op ${languageName}.`,
       });
-
-      // Reload page to apply translations immediately
-      setTimeout(() => {
-        window.location.reload();
-      }, 800);
     } catch (error) {
       console.error('Failed to change language:', error);
       toast({
