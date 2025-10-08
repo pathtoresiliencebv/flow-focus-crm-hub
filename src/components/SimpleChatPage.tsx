@@ -17,23 +17,10 @@ export const SimpleChatPage: React.FC = () => {
     messages,
     loading,
     sending,
-    userLanguage,
-    setUserLanguage,
     selectConversation,
     sendMessage,
     sendMediaMessage
   } = useFixedChat();
-
-  const handleLanguageChange = async (lang: string) => {
-    setUserLanguage(lang);
-    // Update in database
-    if (user) {
-      await supabase
-        .from('profiles')
-        .update({ chat_language: lang })
-        .eq('id', user.id);
-    }
-  };
 
   if (loading) {
     return (
@@ -87,10 +74,7 @@ export const SimpleChatPage: React.FC = () => {
         <h2 className="text-lg font-semibold">Chat</h2>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Mijn taal:</span>
-          <LanguageSelector 
-            value={userLanguage} 
-            onChange={handleLanguageChange}
-          />
+          <LanguageSelector className="w-[160px]" />
         </div>
       </div>
       
@@ -112,7 +96,6 @@ export const SimpleChatPage: React.FC = () => {
               onSendMedia={(file, type, duration) => sendMediaMessage(file, type, selectedConversation, duration)}
               isMobile={false}
               sending={sending}
-              userLanguage={userLanguage}
             />
           ) : (
             <div className="flex items-center justify-center h-full text-center">
