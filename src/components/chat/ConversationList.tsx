@@ -140,9 +140,13 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                 )}
               </div>
 
-              <p className="text-xs text-muted-foreground mt-1">
-                {conversation.other_user.role}
-              </p>
+              {conversation.last_message && (
+                <p className="text-sm text-muted-foreground truncate">
+                  {typeof conversation.last_message === 'string' 
+                    ? conversation.last_message 
+                    : conversation.last_message.content || ''}
+                </p>
+              )}
             </div>
           </div>
         ))}
