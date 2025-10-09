@@ -37,16 +37,29 @@ export const useTimeRegistrations = () => {
   const { data: timeRegistrations = [], isLoading, error } = useQuery({
     queryKey: ['time-registrations'],
     queryFn: async () => {
+      // ✅ FIXED: Simplified query to avoid 400 error
       const { data, error } = await supabase
         .from('project_registrations')
-        .select(`
-          *,
-          projects(title),
-          profiles(full_name)
-        `)
+        .select('*')
         .order('start_time', { ascending: false });
 
       if (error) throw error;
+
+      // Fetch related data separately for better reliability
+      const projectIds = [...new Set(data?.map(r => r.project_id) || [])];
+      const userIds = [...new Set(data?.map(r => r.user_id) || [])];
+
+      const [projectsData, profilesData] = await Promise.all([
+        projectIds.length > 0
+          ? supabase.from('projects').select('id, title').in('id', projectIds)
+          : Promise.resolve({ data: [] }),
+        userIds.length > 0
+          ? supabase.from('profiles').select('id, full_name').in('id', userIds)
+          : Promise.resolve({ data: [] }),
+      ]);
+
+      const projectsMap = new Map((projectsData.data || []).map((p: any) => [p.id, p.title]));
+      const profilesMap = new Map((profilesData.data || []).map((p: any) => [p.id, p.full_name]));
 
       return data.map((reg: any) => ({
         id: reg.id,
@@ -60,8 +73,8 @@ export const useTimeRegistrations = () => {
         approved_by: reg.approved_by,
         approved_at: reg.approved_at,
         created_at: reg.created_at,
-        project_title: reg.projects?.title,
-        user_name: reg.profiles?.full_name,
+        project_title: projectsMap.get(reg.project_id) || 'Onbekend project',
+        user_name: profilesMap.get(reg.user_id) || 'Onbekende gebruiker',
       }));
     },
   });

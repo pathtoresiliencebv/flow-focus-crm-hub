@@ -64,47 +64,7 @@ export const Receipts = () => {
   const [loading, setLoading] = useState(true); // Start with loading true
   const [initialLoad, setInitialLoad] = useState(true);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        await Promise.all([loadReceipts(), loadUsers()]);
-        subscribeToReceipts();
-      } catch (error) {
-        console.error('Error loading receipts data:', error);
-      } finally {
-        setLoading(false);
-        setInitialLoad(false);
-      }
-    };
-    loadData();
-  }, []);
-
-  // Show loading state during initial load
-  if (initialLoad && loading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Bonnetjes laden...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show error state if no receipts and not loading
-  if (!loading && receipts.length === 0) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="text-4xl mb-4">📄</div>
-          <h3 className="text-lg font-semibold mb-2">Geen bonnetjes</h3>
-          <p className="text-gray-600">Er zijn nog geen bonnetjes geüpload.</p>
-        </div>
-      </div>
-    );
-  }
-
+  // ✅ FUNCTION DECLARATIONS FIRST (to avoid hoisting issues)
   const loadReceipts = async () => {
     try {
       // First get all receipts
@@ -365,6 +325,49 @@ export const Receipts = () => {
 
   const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('nl-NL');
   const formatAmount = (amount?: number | null) => amount ? `€${amount.toFixed(2)}` : '-';
+
+  // ✅ EFFECTS AFTER FUNCTION DECLARATIONS
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        await Promise.all([loadReceipts(), loadUsers()]);
+        subscribeToReceipts();
+      } catch (error) {
+        console.error('Error loading receipts data:', error);
+      } finally {
+        setLoading(false);
+        setInitialLoad(false);
+      }
+    };
+    loadData();
+  }, []);
+
+  // ✅ EARLY RETURNS AFTER useEffect
+  // Show loading state during initial load
+  if (initialLoad && loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Bonnetjes laden...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if no receipts and not loading
+  if (!loading && receipts.length === 0) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-4">📄</div>
+          <h3 className="text-lg font-semibold mb-2">Geen bonnetjes</h3>
+          <p className="text-gray-600">Er zijn nog geen bonnetjes geüpload.</p>
+        </div>
+      </div>
+    );
+  }
 
   const pendingReceipts = receipts.filter(r => r.status === 'pending');
   const allSelectedPending = selectedReceipts.size > 0 && selectedReceipts.size === pendingReceipts.length;

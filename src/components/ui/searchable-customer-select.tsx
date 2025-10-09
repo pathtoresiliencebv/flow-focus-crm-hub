@@ -33,18 +33,23 @@ export function SearchableCustomerSelect({
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Ensure customers is always an array
+  const safeCustomers = useMemo(() => {
+    return Array.isArray(customers) ? customers : [];
+  }, [customers]);
+
   // Find selected customer
   const selectedCustomer = useMemo(() => {
-    return customers.find(c => c.id === value);
-  }, [customers, value]);
+    return safeCustomers.find(c => c.id === value);
+  }, [safeCustomers, value]);
 
   // Filter customers based on search query
   const filteredCustomers = useMemo(() => {
-    if (!customers || customers.length === 0) return [];
-    if (!searchQuery) return customers;
+    if (!safeCustomers || safeCustomers.length === 0) return [];
+    if (!searchQuery) return safeCustomers;
     
     const query = searchQuery.toLowerCase();
-    return customers.filter(customer => {
+    return safeCustomers.filter(customer => {
       if (!customer) return false;
       return (
         (customer.name && customer.name.toLowerCase().includes(query)) ||
@@ -53,7 +58,7 @@ export function SearchableCustomerSelect({
         (customer.company_name && customer.company_name.toLowerCase().includes(query))
       );
     });
-  }, [customers, searchQuery]);
+  }, [safeCustomers, searchQuery]);
 
   const handleSelect = (customerId: string) => {
     onValueChange(customerId === value ? '' : customerId);
@@ -95,7 +100,7 @@ export function SearchableCustomerSelect({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[400px] p-0" align="start">
+      <PopoverContent className="w-[400px] p-0 z-[60]" align="start">
         <Command>
           <CommandInput 
             placeholder="Zoek op naam, email of telefoon..." 
