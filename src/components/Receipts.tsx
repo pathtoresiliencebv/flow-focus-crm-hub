@@ -46,7 +46,7 @@ interface Receipt {
 export const Receipts = () => {
   const isMobile = useIsMobile();
   const { profile } = useAuth();
-  const [activeTab, setActiveTab] = useState('pending');
+  const [activeTab, setActiveTab] = useState('all');
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
@@ -372,32 +372,33 @@ export const Receipts = () => {
   return (
     <div className="p-4 space-y-6">
       {/* Icon Boxes Navigation */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-        <IconBox
-          icon={<Clock className="h-6 w-6" />}
-          label="In behandeling"
-          active={activeTab === "pending"}
-          onClick={() => setActiveTab("pending")}
-          count={receipts.filter(r => r.status === 'pending').length}
-        />
+      <div className="grid grid-cols-3 md:grid-cols-5 gap-4 mb-6">
         <IconBox
           icon={<Check className="h-6 w-6" />}
-          label="Verwerkt"
-          active={activeTab === "processed"}
-          onClick={() => setActiveTab("processed")}
-          count={receipts.filter(r => r.status !== 'pending').length}
+          label="Goedgekeurd"
+          active={activeTab === "approved"}
+          onClick={() => setActiveTab("approved")}
+          count={receipts.filter(r => r.status === 'approved').length}
+        />
+        <IconBox
+          icon={<Clock className="h-6 w-6" />}
+          label="Bonnetjes"
+          active={activeTab === "all"}
+          onClick={() => setActiveTab("all")}
+          count={receipts.length}
+        />
+        <IconBox
+          icon={<Mail className="h-6 w-6" />}
+          label="Mail"
+          active={activeTab === "email"}
+          onClick={() => setActiveTab("email")}
+          count={receipts.filter(r => r.email_message_id).length}
         />
         <IconBox
           icon={<CheckSquare className="h-6 w-6" />}
           label="Regels"
           active={activeTab === "rules"}
           onClick={() => setActiveTab("rules")}
-        />
-        <IconBox
-          icon={<Mail className="h-6 w-6" />}
-          label="Email"
-          active={activeTab === "email"}
-          onClick={() => setActiveTab("email")}
         />
         <IconBox
           icon={<Settings className="h-6 w-6" />}
@@ -407,8 +408,8 @@ export const Receipts = () => {
         />
       </div>
 
-      {/* Bulk Actions Bar (only for pending tab) */}
-      {activeTab === "pending" && ['Administrator', 'Administratie'].includes(profile?.role || '') && (
+      {/* Bulk Actions Bar (only for all tab with pending receipts) */}
+      {activeTab === "all" && ['Administrator', 'Administratie'].includes(profile?.role || '') && pendingReceipts.length > 0 && (
         <Card className="bg-gray-50 border-gray-200">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -453,64 +454,20 @@ export const Receipts = () => {
       )}
 
       {/* Content */}
-      {activeTab === "pending" && (
+      {/* Goedgekeurde Bonnetjes */}
+      {activeTab === "approved" && (
         <div className="space-y-4">
-          {receipts.filter(r => r.status === 'pending').map((receipt) => (
-            <Card key={receipt.id}>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-4">
-                  {['Administrator', 'Administratie'].includes(profile?.role || '') && (
-                    <Checkbox
-                      checked={selectedReceipts.has(receipt.id)}
-                      onCheckedChange={() => toggleReceiptSelection(receipt.id)}
-                    />
-                  )}
-                  <div className="flex-1 flex justify-between items-center">
-                    <div>
-                      <h4 className="font-medium">{receipt.description}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {formatDate(receipt.created_at)} • {formatAmount(receipt.amount)}
-                      </p>
-                      {receipt.email_from && (
-                        <p className="text-xs text-muted-foreground">Via: {receipt.email_from}</p>
-                      )}
-                      {receipt.user_name && (
-                        <p className="text-xs text-muted-foreground">Door: {receipt.user_name}</p>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => viewReceipt(receipt)}>
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      {['Administrator', 'Administratie'].includes(profile?.role || '') && (
-                        <>
-                          <Button size="sm" onClick={() => handleApprovalAction(receipt.id, 'approve')} disabled={loading}>
-                            <Check className="h-4 w-4" />
-                          </Button>
-                          <Button variant="destructive" size="sm" onClick={() => handleApprovalAction(receipt.id, 'reject')} disabled={loading}>
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {activeTab === "processed" && (
-        <div className="space-y-4">
-          {receipts.filter(r => r.status !== 'pending').map((receipt) => (
+          {receipts.filter(r => r.status === 'approved').map((receipt) => (
             <Card key={receipt.id}>
               <CardContent className="p-4">
                 <div className="flex justify-between items-center">
                   <div>
                     <div className="flex items-center gap-2">
                       <h4 className="font-medium">{receipt.description}</h4>
-                      {getStatusBadge(receipt.status)}
+                      <Badge className="bg-green-100 text-green-800 border-green-200">
+                        <Check className="h-3 w-3 mr-1" />
+                        Goedgekeurd
+                      </Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">
                       {formatDate(receipt.created_at)} • {formatAmount(receipt.amount)}
@@ -532,41 +489,134 @@ export const Receipts = () => {
         </div>
       )}
 
+      {/* Alle Bonnetjes */}
+      {activeTab === "all" && (
+        <div className="space-y-4">
+          {receipts.map((receipt) => (
+            <Card key={receipt.id}>
+              <CardContent className="p-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium">{receipt.description}</h4>
+                      {getStatusBadge(receipt.status)}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {formatDate(receipt.created_at)} • {formatAmount(receipt.amount)}
+                    </p>
+                    {receipt.email_from && (
+                      <p className="text-xs text-muted-foreground">Via: {receipt.email_from}</p>
+                    )}
+                    {receipt.user_name && (
+                      <p className="text-xs text-muted-foreground">Door: {receipt.user_name}</p>
+                    )}
+                    {receipt.approver_name && receipt.status === 'approved' && (
+                      <p className="text-xs text-muted-foreground">Goedgekeurd door: {receipt.approver_name}</p>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => viewReceipt(receipt)}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    {receipt.status === 'pending' && ['Administrator', 'Administratie'].includes(profile?.role || '') && (
+                      <>
+                        <Button size="sm" onClick={() => handleApprovalAction(receipt.id, 'approve')} disabled={loading}>
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={() => handleApprovalAction(receipt.id, 'reject')} disabled={loading}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
       {/* Approval Rules Tab */}
       {activeTab === "rules" && <ApprovalRulesManager />}
 
-      {/* Email Tab - Basic Info */}
+      {/* Mail Bonnetjes Tab */}
       {activeTab === "email" && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="h-5 w-5" />
-              Email Informatie
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label className="text-sm font-medium">Bonnetjes Email</Label>
-              <p className="text-lg font-mono bg-muted p-2 rounded">bonnetjes@smanscrm.nl</p>
-            </div>
-            <div className="space-y-2">
-              <h4 className="font-medium">Hoe werkt het?</h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Verstuur bonnetjes naar: <strong>bonnetjes@smanscrm.nl</strong></li>
-                <li>• Voeg foto's of PDF's toe als bijlage</li>
-                <li>• Systeem verwerkt automatisch elke 5 minuten</li>
-                <li>• Bonnetjes die aan regels voldoen worden automatisch goedgekeurd</li>
-                <li>• U ontvangt een bevestiging via email</li>
-              </ul>
-            </div>
-            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
-              <h5 className="font-medium text-blue-900 dark:text-blue-100">📧 Email Ontvangst</h5>
-              <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                Voor volledige configuratie, ga naar de <strong>"Instellingen"</strong> tab om IMAP instellingen te configureren.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          {receipts.filter(r => r.email_message_id).length === 0 ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Mail className="h-5 w-5" />
+                  Mail Bonnetjes
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label className="text-sm font-medium">Bonnetjes Email</Label>
+                  <p className="text-lg font-mono bg-muted p-2 rounded">bonnetjes@smanscrm.nl</p>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-medium">Hoe werkt het?</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Verstuur bonnetjes naar: <strong>bonnetjes@smanscrm.nl</strong></li>
+                    <li>• Voeg foto's of PDF's toe als bijlage</li>
+                    <li>• Systeem verwerkt automatisch elke 5 minuten</li>
+                    <li>• Bonnetjes die aan regels voldoen worden automatisch goedgekeurd</li>
+                  </ul>
+                </div>
+                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                  <h5 className="font-medium text-blue-900 dark:text-blue-100">📧 Geen mail bonnetjes</h5>
+                  <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                    Er zijn nog geen bonnetjes via email ontvangen. Voor IMAP configuratie, ga naar <strong>"Instellingen"</strong>.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            receipts.filter(r => r.email_message_id).map((receipt) => (
+              <Card key={receipt.id}>
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-blue-600" />
+                        <h4 className="font-medium">{receipt.description}</h4>
+                        {getStatusBadge(receipt.status)}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {formatDate(receipt.created_at)} • {formatAmount(receipt.amount)}
+                      </p>
+                      {receipt.email_from && (
+                        <p className="text-xs text-muted-foreground">Van: {receipt.email_from}</p>
+                      )}
+                      {receipt.subject && (
+                        <p className="text-xs text-muted-foreground">Onderwerp: {receipt.subject}</p>
+                      )}
+                      {receipt.approver_name && receipt.status === 'approved' && (
+                        <p className="text-xs text-muted-foreground">Goedgekeurd door: {receipt.approver_name}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => viewReceipt(receipt)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      {receipt.status === 'pending' && ['Administrator', 'Administratie'].includes(profile?.role || '') && (
+                        <>
+                          <Button size="sm" onClick={() => handleApprovalAction(receipt.id, 'approve')} disabled={loading}>
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button variant="destructive" size="sm" onClick={() => handleApprovalAction(receipt.id, 'reject')} disabled={loading}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
       )}
 
       {/* Settings Tab */}
