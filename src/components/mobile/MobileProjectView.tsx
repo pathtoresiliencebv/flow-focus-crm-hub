@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,7 @@ interface MobileProjectViewProps {
 export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId }) => {
   const { profile } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { projects, customers } = useCrmStore();
   const { tasksByBlock, completionPercentage, updateTask, isLoading } = useProjectTasks(projectId);
   const { hapticFeedback, networkStatus } = useNativeCapabilities();
@@ -47,8 +49,10 @@ export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId 
   };
 
   const handleRefresh = async () => {
-    // Refresh functionality will be implemented with proper data fetching
-    window.location.reload();
+    // ✅ FIX: Use React Query invalidation instead of reload
+    await queryClient.invalidateQueries({ queryKey: ['project-tasks', projectId] });
+    await queryClient.invalidateQueries({ queryKey: ['customers'] });
+    await queryClient.invalidateQueries({ queryKey: ['projects'] });
   };
 
   const handleStartProject = async () => {

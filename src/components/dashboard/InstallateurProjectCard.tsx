@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ interface InstallateurProjectCardProps {
 }
 
 export const InstallateurProjectCard = ({ project, onProjectClick }: InstallateurProjectCardProps) => {
+  const queryClient = useQueryClient();
   const { customers } = useCrmStore();
   const { completionPercentage } = useProjectTasks(project.id);
   const { startProject, isStarting } = useProjectDelivery();
@@ -148,10 +150,11 @@ export const InstallateurProjectCard = ({ project, onProjectClick }: Installateu
           project={project}
           isOpen={showDelivery}
           onClose={() => setShowDelivery(false)}
-          onComplete={() => {
+          onComplete={async () => {
             setShowDelivery(false);
-            // Refresh projects data
-            window.location.reload();
+            // ✅ FIX: Use React Query invalidation instead of reload
+            await queryClient.invalidateQueries({ queryKey: ['projects'] });
+            await queryClient.invalidateQueries({ queryKey: ['project-tasks', project.id] });
           }}
         />
       )}

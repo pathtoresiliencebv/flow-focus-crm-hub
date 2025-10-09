@@ -202,15 +202,9 @@ export const SimpleInvoiceForm: React.FC<SimpleInvoiceFormProps> = ({
           title: 'Factuur aangemaakt',
           description: `Factuur ${invoiceNumber} is succesvol aangemaakt.`
         });
-
-        // Navigate to invoice detail or close
-        if (newInvoice?.id) {
-          setTimeout(() => {
-            navigate(`/invoices/${newInvoice.id}`);
-          }, 500);
-        }
       }
 
+      // ✅ FIX: Only close dialog, no navigation to prevent auth loop
       onClose();
       
     } catch (error: any) {

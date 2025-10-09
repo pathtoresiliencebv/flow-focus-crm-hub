@@ -337,18 +337,13 @@ export const SMTPIMAPSetup: React.FC<SMTPIMAPSetupProps> = ({
 
       toast({
         title: '✅ Account opgeslagen',
-        description: 'Email account is succesvol geconfigureerd. Pagina wordt herladen...',
+        description: 'Email account is succesvol geconfigureerd.',
       });
 
+      // ✅ FIX: Call onSuccess callback instead of reload to prevent auth loop
       if (onSuccess && result.data) {
         onSuccess(result.data.id);
       }
-      
-      // Wait for database transaction to commit before reloading
-      console.log('✅ Account saved, waiting 2s before reload to ensure DB commit...');
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
     } catch (error) {
       console.error('Save failed:', error);
       toast({

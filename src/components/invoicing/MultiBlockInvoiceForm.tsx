@@ -783,7 +783,10 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
                     title: "Concept opgeslagen",
                     description: "Je factuur is opgeslagen als concept.",
                   });
-                  window.location.href = '/?tab=invoices';
+                  // ✅ FIX: Close dialog instead of navigate to prevent auth loop
+                  if (onClose) {
+                    onClose();
+                  }
                 } catch (error) {
                   toast({
                     title: "Fout bij opslaan",

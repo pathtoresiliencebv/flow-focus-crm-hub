@@ -714,15 +714,15 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       console.log('💾 handleSaveDraft: saveAsDraft returned:', success);
       
       if (success) {
-        console.log('✅ handleSaveDraft: Success! Showing toast and navigating');
+        console.log('✅ handleSaveDraft: Success! Showing toast and closing dialog');
         toast({
           title: "Concept opgeslagen",
           description: "Je offerte is opgeslagen als concept.",
         });
-        // Navigate back to quotes overview
-        window.location.href = '/?tab=quotes';
+        // ✅ FIX: Close dialog instead of navigate to prevent auth loop
+        onClose();
       } else {
-        console.log('⚠️ handleSaveDraft: saveAsDraft returned false - NOT navigating');
+        console.log('⚠️ handleSaveDraft: saveAsDraft returned false - NOT closing');
       }
     } catch (error) {
       console.error('❌ handleSaveDraft: Error:', error);
@@ -801,10 +801,8 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
             description: `De offerte is succesvol verzonden naar ${data.recipientEmail}`,
           });
           
-          // Navigate back to quotes overview
-          setTimeout(() => {
-            window.location.href = '/?tab=quotes';
-          }, 2000);
+          // ✅ FIX: Close dialog instead of navigate to prevent auth loop
+          onClose();
         } else {
           toast({
             title: "Fout bij versturen",
