@@ -1,0 +1,20 @@
+# Lovable Build Check
+# This file helps verify Lovable has the correct commits
+
+REQUIRED_FILES_WEB_SAFE=1
+LAST_WORKING_COMMIT=6f60645
+BUILD_FIX_COMMIT=7c575ca
+NO_EXPO_DEPENDENCIES=1
+
+# If you see build errors, make sure:
+# 1. app/receipts/index.tsx does NOT import from 'expo-camera'
+# 2. app/receipts/index.tsx does NOT import from 'expo-image-picker'  
+# 3. app/receipts/index.tsx does NOT import from 'expo-file-system'
+# 4. app/receipts/index.tsx ONLY imports from 'react'
+
+# Correct version (web-safe):
+# import React from 'react';
+# export default function ReceiptsScreen() {
+#   return <div>...</div>;
+# }
+
