@@ -157,11 +157,6 @@ export const Invoicing: React.FC<InvoicingProps> = ({
     }
   };
 
-  const handleCloseNewInvoice = () => {
-    setShowNewInvoiceForm(false);
-    navigate('/');
-  };
-
   // Filter invoices based on current filters - only active invoices
   const filteredInvoices = invoices
     .filter(invoice => !invoice.is_archived)
