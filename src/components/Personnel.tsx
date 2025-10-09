@@ -18,13 +18,7 @@ const Personnel = () => {
   return (
     <div className="p-4 sm:p-6 space-y-6">
       {/* Icon Boxes Navigation */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <IconBox
-          icon={<Users className="h-6 w-6" />}
-          label="Gebruikers"
-          active={activeTab === "users"}
-          onClick={() => setActiveTab("users")}
-        />
+      <div className="grid grid-cols-2 gap-4 mb-6">
         <IconBox
           icon={<Shield className="h-6 w-6" />}
           label="Rollen & Rechten"
@@ -40,7 +34,6 @@ const Personnel = () => {
       </div>
 
       {/* Content */}
-      {activeTab === "users" && <UserManagement />}
       {activeTab === "roles" && <RoleManagement />}
       {activeTab === "salary" && <Salary />}
     </div>

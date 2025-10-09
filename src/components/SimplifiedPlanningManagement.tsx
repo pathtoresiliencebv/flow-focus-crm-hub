@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
 import {
   checkTimeConflict,
   addMinutesToTime,
@@ -43,6 +44,7 @@ export function SimplifiedPlanningManagement({
 }: SimplifiedPlanningManagementProps = {}) {
   const { toast } = useToast();
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [showPlanningDialog, setShowPlanningDialog] = useState(false);
   const [showProjectSidebar, setShowProjectSidebar] = useState(false);
@@ -283,8 +285,16 @@ export function SimplifiedPlanningManagement({
             }}
             onPlanningClick={(planning) => {
               setSelectedPlanning(planning);
-              // TODO: Open planning details dialog
-              console.log('Planning clicked:', planning);
+              // Navigate to project if project_id exists
+              if (planning.project_id) {
+                navigate(`/project/${planning.project_id}`);
+              } else {
+                toast({
+                  title: "Geen project gekoppeld",
+                  description: "Deze planning heeft geen project gekoppeld.",
+                  variant: "destructive",
+                });
+              }
             }}
             loading={loading}
           />

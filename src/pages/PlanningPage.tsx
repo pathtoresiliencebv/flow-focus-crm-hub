@@ -15,19 +15,19 @@ export default function PlanningPage() {
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
           <Button
-            variant={viewMode === 'month' ? 'default' : 'ghost'}
+            variant="ghost"
             size="sm"
             onClick={() => setViewMode('month')}
-            className={viewMode === 'month' ? 'bg-white shadow-sm' : ''}
+            className={viewMode === 'month' ? 'bg-[#fee2e2] text-[hsl(0,71%,36%)] hover:bg-[#fecaca] shadow-sm font-semibold' : 'hover:bg-gray-200'}
           >
             <CalendarDays className="h-4 w-4 mr-2" />
             Maand
           </Button>
           <Button
-            variant={viewMode === 'availability' ? 'default' : 'ghost'}
+            variant="ghost"
             size="sm"
             onClick={() => setViewMode('availability')}
-            className={viewMode === 'availability' ? 'bg-white shadow-sm' : ''}
+            className={viewMode === 'availability' ? 'bg-[#fee2e2] text-[hsl(0,71%,36%)] hover:bg-[#fecaca] shadow-sm font-semibold' : 'hover:bg-gray-200'}
           >
             <CalendarRange className="h-4 w-4 mr-2" />
             Beschikbaarheid
