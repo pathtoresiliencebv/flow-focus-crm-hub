@@ -10,14 +10,27 @@ import { QuickTimeRegistrationDialog } from './time-registration/QuickTimeRegist
 import { TimeRegistrationForm } from './time-registration/TimeRegistrationForm';
 import { SlidePanel } from '@/components/ui/slide-panel';
 
-export const TimeRegistration = () => {
+interface TimeRegistrationProps {
+  showTimeDialog?: boolean;
+  onCloseTimeDialog?: () => void;
+}
+
+export const TimeRegistration: React.FC<TimeRegistrationProps> = ({ 
+  showTimeDialog = false, 
+  onCloseTimeDialog 
+}) => {
   const { setTitle } = usePageHeader();
   const [activeTab, setActiveTab] = useState("overview");
-  const [timePanelOpen, setTimePanelOpen] = useState(false);
+  const [timePanelOpen, setTimePanelOpen] = useState(showTimeDialog);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [selectedStartHour, setSelectedStartHour] = useState<number>(9);
   const [selectedEndHour, setSelectedEndHour] = useState<number>(10);
   const { toast } = useToast();
+
+  // Sync with parent showTimeDialog prop
+  React.useEffect(() => {
+    setTimePanelOpen(showTimeDialog);
+  }, [showTimeDialog]);
 
   React.useEffect(() => {
     setTitle("Tijdregistratie");
@@ -26,6 +39,12 @@ export const TimeRegistration = () => {
   const handleSubmitTime = (e: React.FormEvent) => {
     e.preventDefault();
     setTimePanelOpen(false);
+    onCloseTimeDialog?.();
+  };
+
+  const handlePanelClose = () => {
+    setTimePanelOpen(false);
+    onCloseTimeDialog?.();
   };
 
   const handleEventClick = (event: any) => {
@@ -89,7 +108,7 @@ export const TimeRegistration = () => {
       
       <SlidePanel
         isOpen={timePanelOpen}
-        onClose={() => setTimePanelOpen(false)}
+        onClose={handlePanelClose}
         title="Nieuwe tijdsregistratie"
         size="lg"
       >

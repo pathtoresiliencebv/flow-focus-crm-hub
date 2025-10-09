@@ -1,19 +1,40 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { TimeRegistration } from "@/components/TimeRegistration";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 export default function TimePage() {
   const { setTitle, setActions } = usePageHeader();
+  const [showTimeDialog, setShowTimeDialog] = useState(false);
+
+  const handleNewTimeEntry = () => {
+    setShowTimeDialog(true);
+  };
 
   useEffect(() => {
     setTitle("Tijdregistratie");
-    setActions(null);
+    setActions(
+      <Button 
+        onClick={handleNewTimeEntry}
+        size="sm"
+        className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)] text-white"
+      >
+        <Plus className="h-4 w-4 mr-2" />
+        Nieuwe Tijd Registratie
+      </Button>
+    );
     return () => {
       setTitle("");
       setActions(null);
     };
-  }, []);
+  }, [setTitle, setActions]);
 
-  return <TimeRegistration />;
+  return (
+    <TimeRegistration 
+      showTimeDialog={showTimeDialog}
+      onCloseTimeDialog={() => setShowTimeDialog(false)}
+    />
+  );
 }
 
