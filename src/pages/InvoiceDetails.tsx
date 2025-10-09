@@ -20,31 +20,44 @@ export default function InvoiceDetailsPage() {
   const currentInvoiceId = invoiceId || id;
 
   useEffect(() => {
-    if (currentInvoiceId) {
+    const loadInvoice = async () => {
+      if (!currentInvoiceId) {
+        console.log('❌ No invoice ID provided');
+        setLoading(false);
+        return;
+      }
+
+      console.log('📄 Loading invoice:', currentInvoiceId);
       setLoading(true);
       setError(null);
       
-      Promise.all([
-        fetchInvoiceById(currentInvoiceId),
-        fetchInvoiceItems(currentInvoiceId)
-      ])
-      .then(([invoiceData, itemsData]) => {
+      try {
+        console.log('🔄 Fetching invoice data...');
+        const invoiceData = await fetchInvoiceById(currentInvoiceId);
+        console.log('📦 Invoice data:', invoiceData);
+        
+        console.log('🔄 Fetching invoice items...');
+        const itemsData = await fetchInvoiceItems(currentInvoiceId);
+        console.log('📦 Invoice items:', itemsData);
+        
         if (invoiceData) {
           setInvoice(invoiceData);
           setInvoiceItems(itemsData);
+          console.log('✅ Invoice loaded successfully');
         } else {
+          console.log('❌ Invoice not found');
           setError('Factuur niet gevonden');
         }
-      })
-      .catch((err) => {
-        console.error('Error fetching invoice:', err);
+      } catch (err) {
+        console.error('❌ Error fetching invoice:', err);
         setError('Er is een fout opgetreden bij het laden van de factuur');
-      })
-      .finally(() => {
+      } finally {
         setLoading(false);
-      });
-    }
-  }, [currentInvoiceId, fetchInvoiceById, fetchInvoiceItems]);
+      }
+    };
+
+    loadInvoice();
+  }, [currentInvoiceId]);
 
   const handleBack = () => {
     navigate(-1);

@@ -33,6 +33,7 @@ export const EditInvoice = () => {
   }, [id]);
 
   const fetchInvoice = async () => {
+    console.log('📄 EditInvoice: Fetching invoice with ID:', id);
     try {
       const { data, error } = await supabase
         .from('invoices')
@@ -40,9 +41,23 @@ export const EditInvoice = () => {
         .eq('id', id)
         .single();
 
-      if (error) throw error;
+      console.log('📦 EditInvoice: Fetched data:', data);
+      console.log('❌ EditInvoice: Error:', error);
+
+      if (error) {
+        console.error('❌ EditInvoice: Database error:', error);
+        throw error;
+      }
+
+      if (!data) {
+        console.error('❌ EditInvoice: No data returned');
+        throw new Error('Factuur niet gevonden');
+      }
+
+      console.log('✅ EditInvoice: Invoice status:', data.status);
 
       if (data.status !== 'concept') {
+        console.warn('⚠️ EditInvoice: Cannot edit non-concept invoice');
         toast({
           title: "Niet bewerkbaar",
           description: "Alleen concept facturen kunnen bewerkt worden.",
@@ -62,15 +77,17 @@ export const EditInvoice = () => {
         vat_amount: data.vat_amount || 0,
         total_amount: data.total_amount || 0
       });
-    } catch (error) {
-      console.error('Error fetching invoice:', error);
+      console.log('✅ EditInvoice: Form data set successfully');
+    } catch (error: any) {
+      console.error('❌ EditInvoice: Error fetching invoice:', error);
       toast({
         title: "Fout",
-        description: "Kon factuur niet laden.",
+        description: error.message || "Kon factuur niet laden.",
         variant: "destructive"
       });
       navigate('/invoicing');
     } finally {
+      console.log('🏁 EditInvoice: Fetch complete, setting loading to false');
       setLoading(false);
     }
   };
