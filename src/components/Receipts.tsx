@@ -71,7 +71,16 @@ export const Receipts = () => {
   const [initialLoad, setInitialLoad] = useState(true);
 
   // ✅ FUNCTION DECLARATIONS FIRST (to avoid hoisting issues)
-  const loadReceipts = async () => {
+  const loadReceipts = async (forceRefresh = false) => {
+    // Check cache - als data fresh is, gebruik cached data
+    const now = Date.now();
+    if (!forceRefresh && receiptsCache && (now - receiptsCacheTimestamp) < RECEIPTS_CACHE_DURATION) {
+      console.log('✅ Using cached receipts data (fresh)');
+      setReceipts(receiptsCache);
+      setLoading(false);
+      return;
+    }
+
     try {
       // First get all receipts
       const { data: receiptsData, error: receiptsError } = await supabase
@@ -107,6 +116,10 @@ export const Receipts = () => {
         user_name: receipt.user_id ? profilesMap.get(receipt.user_id)?.full_name || null : null
       }));
       
+      // Update cache
+      receiptsCache = transformedData;
+      receiptsCacheTimestamp = Date.now();
+      
       setReceipts(transformedData);
     } catch (error) {
       console.error('Error loading receipts:', error);
@@ -131,7 +144,10 @@ export const Receipts = () => {
     const channel = supabase
       .channel('receipts-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'receipts' }, () => {
-        loadReceipts();
+        // Invalideer cache bij realtime updates
+        receiptsCache = null;
+        receiptsCacheTimestamp = 0;
+        loadReceipts(true); // Force refresh bij realtime updates
       })
       .subscribe();
 
@@ -178,6 +194,10 @@ export const Receipts = () => {
       });
 
       if (insertError) throw insertError;
+
+      // Invalideer cache bij nieuwe upload
+      receiptsCache = null;
+      receiptsCacheTimestamp = 0;
 
       toast({ title: "Bonnetje opgeslagen", description: "Het bonnetje is verzonden voor goedkeuring" });
       setNewReceipt({ amount: '', description: '', category: '', fileData: null });
@@ -286,8 +306,12 @@ export const Receipts = () => {
         description: `${count} bonnetje(s) zijn goedgekeurd`,
       });
       
+      // Invalideer cache bij wijzigingen
+      receiptsCache = null;
+      receiptsCacheTimestamp = 0;
+      
       setSelectedReceipts(new Set());
-      loadReceipts();
+      loadReceipts(true); // Force refresh
     } catch (error: any) {
       console.error('Error bulk approving:', error);
       toast({
@@ -315,8 +339,12 @@ export const Receipts = () => {
         description: `${count} bonnetje(s) zijn afgewezen`,
       });
       
+      // Invalideer cache bij wijzigingen
+      receiptsCache = null;
+      receiptsCacheTimestamp = 0;
+      
       setSelectedReceipts(new Set());
-      loadReceipts();
+      loadReceipts(true); // Force refresh
     } catch (error: any) {
       console.error('Error bulk rejecting:', error);
       toast({
