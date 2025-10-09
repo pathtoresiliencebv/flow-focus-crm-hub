@@ -46,11 +46,17 @@ export function SearchableCustomerSelect({
   // Filter customers based on search query
   const filteredCustomers = useMemo(() => {
     if (!safeCustomers || safeCustomers.length === 0) return [];
-    if (!searchQuery) return safeCustomers;
+    
+    // ✅ CRITICAL FIX: Filter out any customers without a valid ID first
+    // Radix UI Command component crashes if CommandItem has empty/undefined value
+    const validCustomers = safeCustomers.filter(customer => 
+      customer && customer.id && customer.id.trim() !== ''
+    );
+    
+    if (!searchQuery) return validCustomers;
     
     const query = searchQuery.toLowerCase();
-    return safeCustomers.filter(customer => {
-      if (!customer) return false;
+    return validCustomers.filter(customer => {
       return (
         (customer.name && customer.name.toLowerCase().includes(query)) ||
         (customer.email && customer.email.toLowerCase().includes(query)) ||
@@ -118,37 +124,42 @@ export function SearchableCustomerSelect({
           </CommandEmpty>
           <CommandGroup className="max-h-[300px] overflow-auto">
             {Array.isArray(filteredCustomers) && filteredCustomers.length > 0 ? (
-              filteredCustomers.map((customer) => (
-                <CommandItem
-                  key={customer?.id || Math.random()}
-                  value={customer?.id || ''}
-                  onSelect={() => customer?.id && handleSelect(customer.id)}
-                  className="flex items-center gap-2 py-2"
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === customer?.id ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{customer?.name || 'Onbekend'}</div>
-                    <div className="text-xs text-muted-foreground flex items-center gap-2">
-                      {customer?.email && (
-                        <span className="truncate">{customer.email}</span>
+              filteredCustomers.map((customer) => {
+                // ✅ DOUBLE CHECK: Skip if customer or id is invalid (should never happen due to filter above)
+                if (!customer?.id) return null;
+                
+                return (
+                  <CommandItem
+                    key={customer.id}
+                    value={customer.id}
+                    onSelect={() => handleSelect(customer.id)}
+                    className="flex items-center gap-2 py-2"
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === customer.id ? "opacity-100" : "opacity-0"
                       )}
-                      {customer?.phone && (
-                        <span className="shrink-0">• {customer.phone}</span>
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{customer.name || 'Onbekend'}</div>
+                      <div className="text-xs text-muted-foreground flex items-center gap-2">
+                        {customer.email && (
+                          <span className="truncate">{customer.email}</span>
+                        )}
+                        {customer.phone && (
+                          <span className="shrink-0">• {customer.phone}</span>
+                        )}
+                      </div>
+                      {customer.company_name && (
+                        <div className="text-xs text-muted-foreground truncate">
+                          {customer.company_name}
+                        </div>
                       )}
                     </div>
-                    {customer?.company_name && (
-                      <div className="text-xs text-muted-foreground truncate">
-                        {customer.company_name}
-                      </div>
-                    )}
-                  </div>
-                </CommandItem>
-              ))
+                  </CommandItem>
+                );
+              })
             ) : (
               <div className="py-6 text-center text-sm text-muted-foreground">
                 Geen klanten beschikbaar
