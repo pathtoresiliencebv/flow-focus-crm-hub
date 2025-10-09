@@ -468,51 +468,74 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
         </div>
       </div>
 
-      {/* Signatures Section */}
-      {(quote.client_signature_data || quote.admin_signature_data) && (
+      {/* Signatures Section - Always show if quote is approved or if signatures exist */}
+      {(quote.status === 'goedgekeurd' || quote.status === 'approved' || quote.client_signature_data || quote.admin_signature_data) && (
         <div className="mt-12 pt-8 border-t-2 border-gray-200">
           <h3 className="text-xl font-bold text-gray-900 mb-6">HANDTEKENINGEN</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             
             {/* Client Signature */}
-            {quote.client_signature_data && (
-              <div>
-                <h4 className="font-medium text-gray-900 mb-4">Klant Handtekening</h4>
-                <div className="border rounded-lg p-4 bg-gray-50">
-                  <img 
-                    src={quote.client_signature_data} 
-                    alt="Klant handtekening" 
-                    className="max-w-full h-24 object-contain mb-3"
-                  />
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <p><strong>Naam:</strong> {quote.client_name || 'Niet opgegeven'}</p>
-                    {quote.client_signed_at && (
-                      <p><strong>Ondertekend op:</strong> {new Date(quote.client_signed_at).toLocaleDateString('nl-NL')} om {new Date(quote.client_signed_at).toLocaleTimeString('nl-NL')}</p>
+            <div>
+              <h4 className="font-medium text-gray-900 mb-4">Klant Handtekening</h4>
+              <div className="border rounded-lg p-4 bg-gray-50">
+                {quote.client_signature_data ? (
+                  <>
+                    <img 
+                      src={quote.client_signature_data} 
+                      alt="Klant handtekening" 
+                      className="max-w-full h-24 object-contain mb-3 bg-white p-2 rounded"
+                    />
+                    <div className="text-sm text-gray-600 space-y-1">
+                      <p><strong>Naam:</strong> {quote.client_name || 'Niet opgegeven'}</p>
+                      {quote.client_signed_at && (
+                        <p><strong>Ondertekend op:</strong> {new Date(quote.client_signed_at).toLocaleDateString('nl-NL', { 
+                          day: '2-digit', 
+                          month: 'long', 
+                          year: 'numeric' 
+                        })} om {new Date(quote.client_signed_at).toLocaleTimeString('nl-NL', {
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}</p>
+                      )}
+                    </div>
+                    {(quote.status === 'approved' || quote.status === 'goedgekeurd') && (
+                      <div className="mt-3 p-2 bg-green-100 text-green-800 text-xs rounded font-medium flex items-center gap-2">
+                        <span>✅</span>
+                        <span>Goedgekeurd door klant</span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-8 text-gray-400">
+                    <p className="text-sm">Nog niet ondertekend</p>
+                    {(quote.status === 'goedgekeurd' || quote.status === 'approved') && (
+                      <p className="text-xs mt-2 text-green-600">✅ Wel goedgekeurd</p>
                     )}
                   </div>
-                   {(quote.status === 'approved' || quote.status === 'goedgekeurd') && (
-                     <div className="mt-3 p-2 bg-red-100 text-red-800 text-xs rounded font-medium">
-                       ✅ Goedgekeurd door klant
-                     </div>
-                   )}
-                </div>
+                )}
               </div>
-            )}
+            </div>
 
             {/* Admin Signature */}
-            {quote.admin_signature_data && (
-              <div>
-                <h4 className="font-medium text-gray-900 mb-4">{settings.company_name || 'SMANS BV'}</h4>
-                <div className="border rounded-lg p-4 bg-gray-50">
-                  <img 
-                    src={quote.admin_signature_data} 
-                    alt="Bedrijf handtekening" 
-                    className="max-w-full h-24 object-contain mb-3"
-                  />
-                  <p className="text-sm text-gray-600">Namens {settings.company_name || 'SMANS BV'}</p>
-                </div>
+            <div>
+              <h4 className="font-medium text-gray-900 mb-4">{settings.company_name || 'SMANS BV'}</h4>
+              <div className="border rounded-lg p-4 bg-gray-50">
+                {quote.admin_signature_data ? (
+                  <>
+                    <img 
+                      src={quote.admin_signature_data} 
+                      alt="Bedrijf handtekening" 
+                      className="max-w-full h-24 object-contain mb-3 bg-white p-2 rounded"
+                    />
+                    <p className="text-sm text-gray-600">Namens {settings.company_name || 'SMANS BV'}</p>
+                  </>
+                ) : (
+                  <div className="text-center py-8 text-gray-400">
+                    <p className="text-sm">Nog niet ondertekend</p>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
       )}
