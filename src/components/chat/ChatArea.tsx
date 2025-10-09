@@ -9,6 +9,7 @@ import { MediaMessageBubble } from './MediaMessageBubble';
 import { FileUploadButton } from './FileUploadButton';
 import { VoiceRecorder } from './VoiceRecorder';
 import { useAuth } from '@/contexts/AuthContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -20,7 +21,7 @@ interface ChatAreaProps {
   onBack?: () => void;
   isMobile: boolean;
   sending?: boolean;
-  userLanguage?: string;
+  userLanguage?: string; // Kept for backward compatibility, but will use i18n context if not provided
 }
 
 export const ChatArea: React.FC<ChatAreaProps> = ({ 
@@ -31,9 +32,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
   onBack,
   isMobile,
   sending = false,
-  userLanguage = 'nl'
+  userLanguage: userLanguageProp
 }) => {
   const { user } = useAuth();
+  const { language } = useI18n(); // Get language from i18n context
+  const userLanguage = userLanguageProp || language; // Use prop if provided, otherwise context
   const { toast } = useToast();
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);

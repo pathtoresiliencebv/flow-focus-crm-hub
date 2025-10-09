@@ -179,22 +179,28 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Update user's language preference after successful login
       if (data.user && preferredLanguage) {
         try {
-          // ✅ FIXED: Use simple UPDATE instead of UPSERT to avoid RLS policy issues
-          // We know the profile exists because login was successful
+          console.log(`🌍 Saving language preference: ${preferredLanguage} for user ${data.user.id}`);
+          
+          // Save to user_language_preferences (unified system)
           const { error: updateError } = await supabase
-            .from('profiles')
-            .update({ 
-              chat_language: preferredLanguage,
+            .from('user_language_preferences')
+            .upsert({ 
+              user_id: data.user.id,
+              ui_language: preferredLanguage,
+              preferred_language: preferredLanguage, // Sync both fields
               updated_at: new Date().toISOString()
-            })
-            .eq('id', data.user.id);
+            }, {
+              onConflict: 'user_id'
+            });
 
           if (updateError) {
-            console.error('Error updating language preference:', updateError);
+            console.error('❌ Error updating language preference:', updateError);
             // Don't fail login if language update fails - it's not critical
+          } else {
+            console.log(`✅ Language preference saved: ${preferredLanguage}`);
           }
         } catch (error) {
-          console.error('Error saving language preference:', error);
+          console.error('❌ Error saving language preference:', error);
           // Silent fail - don't block login for language preference
         }
       }

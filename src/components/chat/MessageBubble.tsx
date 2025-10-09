@@ -3,18 +3,22 @@ import { DirectMessage } from '@/hooks/useFixedChat';
 import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface MessageBubbleProps {
   message: DirectMessage;
   isOwn: boolean;
-  userLanguage?: string;
+  userLanguage?: string; // Kept for backward compatibility, but will use i18n context if not provided
 }
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
   message,
   isOwn,
-  userLanguage = 'nl'
+  userLanguage: userLanguageProp
 }) => {
+  const { language } = useI18n(); // Get language from i18n context
+  const userLanguage = userLanguageProp || language; // Use prop if provided, otherwise context
+
   const formatTime = (dateString: string) => {
     try {
       return format(new Date(dateString), 'HH:mm', { locale: nl });

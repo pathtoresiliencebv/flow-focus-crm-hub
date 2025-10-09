@@ -68,36 +68,50 @@ class I18nService {
   }
 
   /**
-   * Translate a single text on-the-fly using Google Translate
+   * Translate a single text on-the-fly using DeepL via Edge Function
    */
   private async translateOnTheFly(text: string): Promise<void> {
-    // Check if already being translated
+    // Check if already being translated or in cache
     if (this.cache[text]?.[this.currentLanguage]) return;
 
     try {
-      // Use Google Translate API (free via googletrans API)
-      const response = await fetch(
-        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=nl&tl=${this.currentLanguage}&dt=t&q=${encodeURIComponent(text)}`
-      );
+      console.log(`🔄 Translating on-the-fly: "${text}" to ${this.currentLanguage}`);
+      
+      // Use DeepL via Edge Function for single text
+      const { data, error } = await supabase.functions.invoke('translate-ui-texts', {
+        body: {
+          texts: [text],
+          targetLanguage: this.currentLanguage,
+          sourceLanguage: this.fallbackLanguage
+        }
+      });
 
-      if (response.ok) {
-        const data = await response.json();
-        const translatedText = data[0]?.[0]?.[0] || text;
+      if (error) {
+        console.error('DeepL translation error:', error);
+        return;
+      }
+
+      if (data?.translations && data.translations[0]) {
+        const translatedText = data.translations[0];
 
         // Cache in memory
         if (!this.cache[text]) this.cache[text] = {};
         this.cache[text][this.currentLanguage] = translatedText;
 
-        // Save to database in background
-        await supabase.from('ui_translations').upsert({
+        // Save to database in background (don't await)
+        supabase.from('ui_translations').upsert({
           translation_key: text,
           language_code: this.currentLanguage,
           translated_text: translatedText,
-          context: 'auto_google_translate',
+          context: 'auto_deepl',
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'translation_key,language_code'
+        }).then(({ error: dbError }) => {
+          if (dbError) console.warn('Failed to cache translation:', dbError);
         });
+        
+        console.log(`✅ Translated: "${text}" → "${translatedText}"`);
       }
     } catch (error) {
       console.error('On-the-fly translation error:', error);
@@ -152,14 +166,17 @@ class I18nService {
 
     this.currentLanguage = language;
 
-    // Update user preference in database
+    // Update user preference in database (both UI and chat language)
     if (userId) {
       await supabase
         .from('user_language_preferences')
         .upsert({
           user_id: userId,
           ui_language: language,
+          preferred_language: language, // Sync chat language with UI language
           updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
         });
     }
 
