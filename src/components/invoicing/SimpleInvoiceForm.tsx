@@ -78,11 +78,6 @@ export const SimpleInvoiceForm: React.FC<SimpleInvoiceFormProps> = ({
   const subtotal = totalAmount / (1 + vatRate / 100);
   const vatAmount = totalAmount - subtotal;
 
-  useEffect(() => {
-    fetchCustomers();
-    fetchProjects();
-  }, []);
-
   // Load existing invoice if editing
   useEffect(() => {
     if (invoiceId) {
