@@ -9,7 +9,7 @@ import { SignatureCanvas } from "@/components/SignatureCanvas";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { Check, FileText, Calendar, User } from "lucide-react";
+import { Check, FileText, Calendar, User, Download, Paperclip } from "lucide-react";
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import { Quote, QuoteBlock, QuoteItem } from '@/types/quote';
@@ -25,6 +25,12 @@ interface QuoteSettings {
   company_kvk_number?: string;
 }
 
+interface QuoteAttachment {
+  name: string;
+  url: string;
+  size?: number;
+}
+
 export default function PublicQuote() {
   const { token } = useParams<{ token: string }>();
   const { toast } = useToast();
@@ -36,6 +42,7 @@ export default function PublicQuote() {
   const [clientSignature, setClientSignature] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isApproved, setIsApproved] = useState(false);
+  const [attachments, setAttachments] = useState<QuoteAttachment[]>([]);
 
   useEffect(() => {
     if (token) {
@@ -132,6 +139,20 @@ export default function PublicQuote() {
 
       console.log('Final typed quote:', typedQuote);
       setQuote(typedQuote);
+      
+      // Parse attachments if available
+      if (data.attachments) {
+        try {
+          const parsedAttachments = typeof data.attachments === 'string' 
+            ? JSON.parse(data.attachments) 
+            : data.attachments;
+          console.log('📎 Loaded attachments:', parsedAttachments);
+          setAttachments(Array.isArray(parsedAttachments) ? parsedAttachments : []);
+        } catch (err) {
+          console.error('Error parsing attachments:', err);
+          setAttachments([]);
+        }
+      }
     } catch (error) {
       console.error('Unexpected error:', error);
       toast({
@@ -538,6 +559,40 @@ export default function PublicQuote() {
             </div>
           </div>
         </div>
+
+        {/* Attachments/Bijlagen */}
+        {attachments && attachments.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm p-8 mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Paperclip className="h-5 w-5 text-gray-700" />
+              <h3 className="text-lg font-semibold">Bijlagen</h3>
+            </div>
+            <div className="space-y-2">
+              {attachments.map((attachment, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-5 w-5 text-gray-500" />
+                    <div>
+                      <p className="font-medium text-gray-900">{attachment.name}</p>
+                      {attachment.size && (
+                        <p className="text-xs text-gray-500">{(attachment.size / 1024).toFixed(1)} KB</p>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(attachment.url, '_blank')}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Download
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Terms and Conditions */}
         {settings.terms_and_conditions && (
