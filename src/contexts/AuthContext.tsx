@@ -41,7 +41,23 @@ interface AuthProviderProps {
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(() => {
+    // Probeer cached profile te laden bij initialisatie
+    try {
+      const cached = localStorage.getItem('user_profile_cache');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        // Check if cache is less than 5 minutes old
+        if (parsed.timestamp && Date.now() - parsed.timestamp < 5 * 60 * 1000) {
+          console.log('✅ Using cached profile data');
+          return parsed.profile;
+        }
+      }
+    } catch (e) {
+      console.error('Error loading cached profile:', e);
+    }
+    return null;
+  });
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -93,10 +109,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       const permissions = permissionsData?.map(p => p.permission as Permission) || [];
       console.log('✅ AuthContext: Permissions loaded:', permissions);
-      setProfile({ ...profileData, permissions });
+      
+      const fullProfile = { ...profileData, permissions };
+      setProfile(fullProfile);
+      
+      // Cache profile data in localStorage
+      try {
+        localStorage.setItem('user_profile_cache', JSON.stringify({
+          profile: fullProfile,
+          timestamp: Date.now()
+        }));
+      } catch (e) {
+        console.error('Error caching profile:', e);
+      }
     } else {
       console.log('⚠️ AuthContext: No profile data found');
       setProfile(null);
+      localStorage.removeItem('user_profile_cache');
     }
   }, []);
 
@@ -267,6 +296,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setUser(null);
     setSession(null);
     setProfile(null);
+    
+    // Clear cached profile data
+    try {
+      localStorage.removeItem('user_profile_cache');
+    } catch (e) {
+      console.error('Error clearing cached profile:', e);
+    }
+    
     toast({
       title: "Uitgelogd",
       description: "U bent succesvol uitgelogd.",

@@ -8,4 +8,13 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: {
+    persistSession: true, // Persist session in localStorage
+    autoRefreshToken: true, // Automatically refresh token
+    detectSessionInUrl: true, // Detect session from URL for OAuth/magic links
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined, // Use localStorage
+    storageKey: 'supabase.auth.token', // Custom storage key
+    flowType: 'pkce', // Use PKCE flow for better security
+  },
+});
