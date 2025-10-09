@@ -22,6 +22,11 @@ import { ApprovalRulesManager } from './receipts/ApprovalRulesManager';
 import { EmailSettingsTab } from './receipts/EmailSettingsTab';
 import { bulkApproveReceipts, bulkRejectReceipts } from '@/utils/receiptApprovalService';
 
+// Cache voor receipts - voorkomt constant herladen
+let receiptsCache: Receipt[] | null = null;
+let receiptsCacheTimestamp: number = 0;
+const RECEIPTS_CACHE_DURATION = 5 * 60 * 1000; // 5 minuten
+
 interface Receipt {
   id: string;
   user_id?: string;
