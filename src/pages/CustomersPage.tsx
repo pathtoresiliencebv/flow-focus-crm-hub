@@ -3,9 +3,11 @@ import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { Customers } from "@/components/Customers";
 import { Button } from "@/components/ui/button";
 import { Search, Plus } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 
 export default function CustomersPage() {
   const { setTitle, setActions } = usePageHeader();
+  const { t } = useI18n();
   const [showNewCustomerDialog, setShowNewCustomerDialog] = useState(false);
   const [showSearchBar, setShowSearchBar] = useState(false);
 

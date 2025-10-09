@@ -3,9 +3,11 @@ import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { ProjectsBoard } from "@/components/ProjectsBoard";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 
 export default function ProjectsPage() {
   const { setTitle, setActions } = usePageHeader();
+  const { t } = useI18n();
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
 
   // ✅ Use useCallback to create stable function reference
@@ -15,7 +17,7 @@ export default function ProjectsPage() {
   }, []);
 
   useEffect(() => {
-    setTitle("Projecten");
+    setTitle(t('nav_projects', 'Projecten'));
     setActions(
       <Button 
         size="sm" 
@@ -23,14 +25,14 @@ export default function ProjectsPage() {
         onClick={handleNewProject}
       >
         <Plus className="h-4 w-4 mr-2" />
-        Nieuw Project
+        {t('button_new_project', 'Nieuw Project')}
       </Button>
     );
     return () => {
       setTitle("");
       setActions(null);
     };
-  }, [setTitle, setActions, handleNewProject]);
+  }, [setTitle, setActions, handleNewProject, t]);
 
   return (
     <ProjectsBoard 
