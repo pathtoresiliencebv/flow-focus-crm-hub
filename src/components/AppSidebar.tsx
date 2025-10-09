@@ -79,6 +79,12 @@ export function AppSidebar({ children }: AppSidebarProps) {
       permission: null, // Everyone can access email
     },
     {
+      label: "Webmail",
+      icon: <Mail className="h-5 w-5" />,
+      path: "/webmail",
+      permission: null, // Everyone can access webmail
+    },
+    {
       label: "Chat",
       icon: <MessageCircle className="h-5 w-5" />,
       path: "/chat",

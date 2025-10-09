@@ -21,6 +21,7 @@ const InvoicesPage = lazy(() => import("@/pages/InvoicesPage"));
 const PersonnelPage = lazy(() => import("@/pages/PersonnelPage"));
 const UsersPage = lazy(() => import("@/pages/UsersPage"));
 const EmailPage = lazy(() => import("@/pages/EmailPage"));
+const WebmailPage = lazy(() => import("@/pages/WebmailPage"));
 const ChatPage = lazy(() => import("@/pages/ChatPage"));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const PublicQuote = lazy(() => import("@/pages/PublicQuote"));
@@ -109,6 +110,7 @@ function App() {
                       <Route path="/personnel" element={<PersonnelPage />} />
                       <Route path="/users" element={<UsersPage />} />
                       <Route path="/email" element={<EmailPage />} />
+                      <Route path="/webmail" element={<WebmailPage />} />
                       <Route path="/chat" element={<ChatPage />} />
                       <Route path="/settings" element={<SettingsPage />} />
                     </Route>

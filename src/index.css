@@ -6,6 +6,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Iframe wrapper for proper scrolling (Roundcube best practice) */
+.iframe-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.iframe-wrapper iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
