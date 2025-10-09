@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { Invoicing } from "@/components/Invoicing";
@@ -11,15 +11,18 @@ export default function InvoicesPage() {
   const [showNewInvoice, setShowNewInvoice] = useState(false);
   const [invoiceType, setInvoiceType] = useState<'simple' | 'detailed'>('simple');
 
-  const handleNewInvoice = () => {
+  // ✅ Use useCallback to create stable function references
+  const handleNewInvoice = useCallback(() => {
+    console.log('🟦 Normale Factuur button clicked!');
     setInvoiceType('simple');
     setShowNewInvoice(true);
-  };
+  }, []);
 
-  const handleNewWerkbon = () => {
+  const handleNewWerkbon = useCallback(() => {
+    console.log('🟧 Werkbon Factuur button clicked!');
     setInvoiceType('detailed');
     setShowNewInvoice(true);
-  };
+  }, []);
 
   useEffect(() => {
     setTitle("Facturatie");
@@ -47,7 +50,7 @@ export default function InvoicesPage() {
       setTitle("");
       setActions(null);
     };
-  }, [navigate, setTitle, setActions]);
+  }, [navigate, setTitle, setActions, handleNewInvoice, handleNewWerkbon]);
 
   return (
     <Invoicing 
