@@ -1,8 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
-import { Check, ChevronsUpDown, Search, User } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { User, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Customer {
@@ -101,8 +100,7 @@ export function SearchableCustomerSelect({
   }, [safeCustomers, searchQuery]);
 
   const handleSelect = (customerId: string) => {
-    onValueChange(customerId === value ? '' : customerId);
-    setOpen(false);
+    onValueChange(customerId);
     setSearchQuery('');
   };
 
@@ -116,123 +114,90 @@ export function SearchableCustomerSelect({
     );
   }
 
+  // ✅ NIEUWE OPLOSSING: Gebruik gewone Select in plaats van Command
+  // Command component heeft interne problemen met children rendering
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          disabled={disabled}
-          className={cn(
-            "w-full justify-between",
-            !value && "text-muted-foreground",
-            className
-          )}
-        >
+    <div className="w-full space-y-2">
+      {/* Search input */}
+      {safeCustomers.length > 5 && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Zoek op naam, email of telefoon..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+      )}
+      
+      {/* Select dropdown */}
+      <Select value={value} onValueChange={handleSelect} disabled={disabled}>
+        <SelectTrigger className={cn("w-full", className)}>
           <div className="flex items-center gap-2 truncate">
             <User className="h-4 w-4 shrink-0 opacity-50" />
-            <span className="truncate">
+            <SelectValue placeholder={placeholder}>
               {selectedCustomer ? (
-                <span>
+                <span className="truncate">
                   <span className="font-medium">{selectedCustomer.name}</span>
                   {selectedCustomer.email && (
                     <span className="text-xs text-muted-foreground ml-2">
-                      {selectedCustomer.email}
+                      ({selectedCustomer.email})
                     </span>
                   )}
                 </span>
               ) : (
                 placeholder
               )}
-            </span>
+            </SelectValue>
           </div>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[400px] p-0" align="start">
-        <Command>
-          <CommandInput 
-            placeholder="Zoek op naam, email of telefoon..." 
-            value={searchQuery}
-            onValueChange={setSearchQuery}
-          />
-          <CommandEmpty>
-            <div className="py-6 text-center text-sm">
-              <Search className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
-              <p className="text-muted-foreground">Geen klanten gevonden</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Probeer een andere zoekterm
-              </p>
+        </SelectTrigger>
+        <SelectContent className="max-h-[300px]">
+          {filteredCustomers.length === 0 ? (
+            <div className="py-6 text-center text-sm text-muted-foreground">
+              {safeCustomers.length === 0 ? (
+                <>
+                  <p>Geen klanten beschikbaar</p>
+                  <p className="text-xs mt-2">Voeg eerst een klant toe via de + knop</p>
+                </>
+              ) : (
+                <p>Geen klanten gevonden voor "{searchQuery}"</p>
+              )}
             </div>
-          </CommandEmpty>
-          <CommandGroup className="max-h-[300px] overflow-auto">
-            {Array.isArray(filteredCustomers) && filteredCustomers.length > 0 ? (
-              <>
-                {filteredCustomers
-                  .filter((customer) => {
-                    // ✅ CRITICAL FIX: Filter out invalid customers BEFORE mapping
-                    // Radix UI Command crashes if we return null in map
-                    const isValid = customer && 
-                                   customer.id && 
-                                   typeof customer.id === 'string' && 
-                                   customer.id.trim() !== '';
-                    
-                    if (!isValid) {
-                      console.error('❌ SearchableCustomerSelect: Invalid customer filtered out:', customer);
-                    }
-                    
-                    return isValid;
-                  })
-                  .map((customer) => (
-                    <CommandItem
-                      key={customer.id}
-                      value={customer.id}
-                      onSelect={() => handleSelect(customer.id)}
-                      className="flex items-center gap-2 py-2"
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          value === customer.id ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">{customer.name || 'Onbekend'}</div>
-                        <div className="text-xs text-muted-foreground flex items-center gap-2">
-                          {customer.email && (
-                            <span className="truncate">{customer.email}</span>
-                          )}
-                          {customer.phone && (
-                            <span className="shrink-0">• {customer.phone}</span>
-                          )}
-                        </div>
-                        {customer.company_name && (
-                          <div className="text-xs text-muted-foreground truncate">
-                            {customer.company_name}
-                          </div>
-                        )}
+          ) : (
+            filteredCustomers.map((customer) => {
+              // Skip invalid customers
+              if (!customer || !customer.id || typeof customer.id !== 'string') {
+                console.error('❌ Invalid customer skipped:', customer);
+                return null;
+              }
+              
+              return (
+                <SelectItem key={customer.id} value={customer.id}>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium truncate">{customer.name || 'Onbekend'}</div>
+                    <div className="text-xs text-muted-foreground flex items-center gap-2">
+                      {customer.email && (
+                        <span className="truncate">{customer.email}</span>
+                      )}
+                      {customer.phone && (
+                        <span className="shrink-0">• {customer.phone}</span>
+                      )}
+                    </div>
+                    {customer.company_name && (
+                      <div className="text-xs text-muted-foreground truncate">
+                        {customer.company_name}
                       </div>
-                    </CommandItem>
-                  ))
-                }
-              </>
-            ) : (
-              <div className="py-6 text-center text-sm text-muted-foreground">
-                {safeCustomers.length === 0 ? (
-                  <>
-                    <p>Geen klanten beschikbaar</p>
-                    <p className="text-xs mt-2">Voeg eerst een klant toe via de + knop</p>
-                  </>
-                ) : (
-                  <p>Geen klanten gevonden voor "{searchQuery}"</p>
-                )}
-              </div>
-            )}
-          </CommandGroup>
-        </Command>
-      </PopoverContent>
-    </Popover>
+                    )}
+                  </div>
+                </SelectItem>
+              );
+            })
+          )}
+        </SelectContent>
+      </Select>
+    </div>
   );
 }
 
