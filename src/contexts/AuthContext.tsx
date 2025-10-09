@@ -64,13 +64,26 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
 
     if (profileData) {
+      console.log('🔐 AuthContext: Profile loaded:', {
+        id: profileData.id,
+        role: profileData.role,
+        full_name: profileData.full_name
+      });
+      
       const { data: permissionsData, error: permissionsError } = await supabase
         .from('role_permissions')
         .select('permission')
         .eq('role', profileData.role);
       
+      console.log('🔐 AuthContext: Permissions query result:', {
+        role: profileData.role,
+        permissionsData,
+        permissionsError,
+        count: permissionsData?.length || 0
+      });
+      
       if (permissionsError) {
-        console.error('Error fetching permissions:', permissionsError);
+        console.error('❌ Error fetching permissions:', permissionsError);
         toast({
           title: "Fout bij rechten ophalen",
           description: permissionsError.message,
@@ -79,8 +92,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
 
       const permissions = permissionsData?.map(p => p.permission as Permission) || [];
+      console.log('✅ AuthContext: Permissions loaded:', permissions);
       setProfile({ ...profileData, permissions });
     } else {
+      console.log('⚠️ AuthContext: No profile data found');
       setProfile(null);
     }
   }, []);
