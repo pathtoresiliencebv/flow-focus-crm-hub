@@ -134,6 +134,48 @@ export const FileAttachmentsManager = ({ value, onChange }: FileAttachmentsManag
     return '📁';
   };
 
+  const handleDownloadAttachment = async (attachment: QuoteAttachment) => {
+    try {
+      console.log('📥 Downloading attachment:', attachment.name);
+      
+      // Fetch the file from the URL
+      const response = await fetch(attachment.url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // Convert response to blob
+      const blob = await response.blob();
+      
+      // Create a temporary download link
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = attachment.name;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+      
+      console.log('✅ Download started for:', attachment.name);
+      toast({
+        title: "Download gestart",
+        description: `${attachment.name} wordt gedownload...`,
+      });
+    } catch (error) {
+      console.error('❌ Error downloading attachment:', error);
+      toast({
+        title: "Download mislukt",
+        description: "Er is een fout opgetreden bij het downloaden van het bestand.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -176,8 +218,8 @@ export const FileAttachmentsManager = ({ value, onChange }: FileAttachmentsManag
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => window.open(attachment.url, '_blank')}
-                      title="Bestand bekijken"
+                      onClick={() => handleDownloadAttachment(attachment)}
+                      title="Bestand downloaden"
                     >
                       <Download className="h-4 w-4" />
                     </Button>
