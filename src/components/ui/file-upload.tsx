@@ -12,7 +12,7 @@ export interface FileUploadResult {
 }
 
 interface FileUploadProps {
-  onFilesSelected: (files: FileUploadResult[]) => void;
+  onFilesSelected: (files: FileUploadResult[]) => void | Promise<void>;
   accept?: string;
   multiple?: boolean;
   maxSize?: number; // in bytes
@@ -56,13 +56,11 @@ export function FileUpload({
       }
 
       if (results.length > 0) {
-        onFilesSelected(results);
-        toast({
-          title: "Bestanden toegevoegd",
-          description: `${results.length} bestand(en) succesvol toegevoegd`
-        });
+        await onFilesSelected(results);
+        // Don't show toast here - let the parent component handle it
       }
     } catch (error) {
+      console.error('❌ FileUpload error:', error);
       toast({
         title: "Upload fout",
         description: "Er ging iets mis bij het uploaden van de bestanden",

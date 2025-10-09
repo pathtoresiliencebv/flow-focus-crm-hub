@@ -26,6 +26,7 @@ export const FileAttachmentsManager = ({ value, onChange }: FileAttachmentsManag
   const handleFileUpload = useCallback(async (fileResults: any[]) => {
     if (!fileResults || fileResults.length === 0) {
       console.log('⚠️ Geen bestanden geselecteerd');
+      setUploading(false); // Ensure loading state is reset
       return;
     }
 

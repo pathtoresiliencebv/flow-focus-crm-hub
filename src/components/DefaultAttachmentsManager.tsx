@@ -26,6 +26,7 @@ export const DefaultAttachmentsManager = ({ value, onChange }: DefaultAttachment
   const handleFileUpload = async (files: any[]) => {
     if (!files || files.length === 0) {
       console.log('⚠️ No files selected');
+      setUploading(false); // Ensure loading state is reset
       return;
     }
 
