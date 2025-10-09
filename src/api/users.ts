@@ -6,9 +6,15 @@ import { Profile } from '@/types/user';
 // We use a postgres function to securely fetch all user details.
 // This function can only be called by an 'Administrator'.
 export async function fetchUsers() {
+  console.log('🔍 fetchUsers: Starting...');
+  
   const { data, error } = await supabase.rpc('get_all_user_details');
   
+  console.log('📦 fetchUsers: Response -', { data, error });
+  
   if (error) {
+    console.error('❌ fetchUsers: RPC error:', error);
+    
     // Provide a more user-friendly error message for permission issues
     if (error.message.includes('U heeft geen rechten om gebruikersgegevens op te halen.')) {
       toast({ 
@@ -16,16 +22,24 @@ export async function fetchUsers() {
         description: 'U heeft niet de benodigde Administrator rechten om gebruikers te beheren.', 
         variant: 'destructive' 
       });
+    } else if (error.message.includes('function') && error.message.includes('does not exist')) {
+      console.error('❌ Database function get_all_user_details does not exist!');
+      toast({ 
+        title: 'Database Fout', 
+        description: 'De database functie bestaat niet. Neem contact op met de systeembeheerder.', 
+        variant: 'destructive' 
+      });
     } else {
       toast({ 
         title: 'Fout', 
-        description: 'Er is een fout opgetreden bij het laden van gebruikers.', 
+        description: `Er is een fout opgetreden bij het laden van gebruikers: ${error.message}`, 
         variant: 'destructive' 
       });
     }
     throw new Error(error.message);
   }
 
+  console.log(`✅ fetchUsers: Loaded ${data?.length || 0} users`);
   // The RPC function returns all necessary fields, including email.
   return data as (Profile & { email: string })[];
 }
