@@ -636,13 +636,15 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
 
       console.log('✅ Quote prepared for sending:', result.data.id);
       
-      // Navigate to send page instead of opening dialog
+      // ✅ FIX: Don't navigate immediately - close dialog and refresh quotes list
+      // Navigating before quotes are refreshed causes "Authenticatie controleren" loop
       toast({
         title: "Offerte opgeslagen",
-        description: "Offerte is klaar om te versturen.",
+        description: "Offerte is succesvol opgeslagen en klaar om te versturen.",
       });
       
-      navigate(`/quotes/${result.data.id}/send`);
+      // Close the dialog - quotes list will auto-refresh via React Query
+      onClose();
 
     } catch (error: any) {
       console.error('Error preparing quote for send:', error);
@@ -655,7 +657,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     } finally {
       setSaving(false);
     }
-  }, [customers, projects, adminSignature, toast, blocks, paymentTerms, attachments, navigate]);
+  }, [customers, projects, adminSignature, toast, blocks, paymentTerms, attachments, onClose]);
 
   const handleSaveAsTemplate = async (templateData: {
     name: string;
