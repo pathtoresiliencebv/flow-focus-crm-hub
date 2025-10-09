@@ -6,16 +6,20 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ImageUpload } from '@/components/ImageUpload';
 import { MobileReceiptCard } from '@/components/mobile/MobileReceiptCard';
 import { IconBox } from '@/components/ui/icon-box';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
-import { Clock, Check, X, Eye, Mail } from 'lucide-react';
+import { Clock, Check, X, Eye, Mail, Settings, CheckSquare } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ApprovalRulesManager } from './receipts/ApprovalRulesManager';
+import { EmailSettingsTab } from './receipts/EmailSettingsTab';
+import { bulkApproveReceipts, bulkRejectReceipts } from '@/utils/receiptApprovalService';
 
 interface Receipt {
   id: string;
@@ -50,6 +54,7 @@ export const Receipts = () => {
   const [pendingAction, setPendingAction] = useState<{ id: string; action: 'approve' | 'reject' } | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
+  const [selectedReceipts, setSelectedReceipts] = useState<Set<string>>(new Set());
   const [newReceipt, setNewReceipt] = useState({
     amount: '',
     description: '',
@@ -277,13 +282,97 @@ export const Receipts = () => {
     }
   };
 
+  // Bulk selection handlers
+  const toggleReceiptSelection = (receiptId: string) => {
+    const newSelection = new Set(selectedReceipts);
+    if (newSelection.has(receiptId)) {
+      newSelection.delete(receiptId);
+    } else {
+      newSelection.add(receiptId);
+    }
+    setSelectedReceipts(newSelection);
+  };
+
+  const toggleSelectAll = () => {
+    const pendingReceipts = receipts.filter(r => r.status === 'pending');
+    if (selectedReceipts.size === pendingReceipts.length) {
+      // Deselect all
+      setSelectedReceipts(new Set());
+    } else {
+      // Select all
+      setSelectedReceipts(new Set(pendingReceipts.map(r => r.id)));
+    }
+  };
+
+  const handleBulkApprove = async () => {
+    if (selectedReceipts.size === 0) return;
+    
+    if (!window.confirm(`Weet je zeker dat je ${selectedReceipts.size} bonnetje(s) wilt goedkeuren?`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const count = await bulkApproveReceipts(Array.from(selectedReceipts), profile!.id);
+      
+      toast({
+        title: 'Bonnetjes goedgekeurd',
+        description: `${count} bonnetje(s) zijn goedgekeurd`,
+      });
+      
+      setSelectedReceipts(new Set());
+      loadReceipts();
+    } catch (error: any) {
+      console.error('Error bulk approving:', error);
+      toast({
+        title: 'Fout',
+        description: 'Kon bonnetjes niet goedkeuren',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkReject = async () => {
+    if (selectedReceipts.size === 0) return;
+    
+    const reason = window.prompt(`Geef een reden voor afwijzing van ${selectedReceipts.size} bonnetje(s):`);
+    if (!reason) return;
+
+    try {
+      setLoading(true);
+      const count = await bulkRejectReceipts(Array.from(selectedReceipts), reason, profile!.id);
+      
+      toast({
+        title: 'Bonnetjes afgewezen',
+        description: `${count} bonnetje(s) zijn afgewezen`,
+      });
+      
+      setSelectedReceipts(new Set());
+      loadReceipts();
+    } catch (error: any) {
+      console.error('Error bulk rejecting:', error);
+      toast({
+        title: 'Fout',
+        description: 'Kon bonnetjes niet afwijzen',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('nl-NL');
   const formatAmount = (amount?: number | null) => amount ? `€${amount.toFixed(2)}` : '-';
+
+  const pendingReceipts = receipts.filter(r => r.status === 'pending');
+  const allSelectedPending = selectedReceipts.size > 0 && selectedReceipts.size === pendingReceipts.length;
 
   return (
     <div className="p-4 space-y-6">
       {/* Icon Boxes Navigation */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <IconBox
           icon={<Clock className="h-6 w-6" />}
           label="In behandeling"
@@ -299,12 +388,69 @@ export const Receipts = () => {
           count={receipts.filter(r => r.status !== 'pending').length}
         />
         <IconBox
+          icon={<CheckSquare className="h-6 w-6" />}
+          label="Regels"
+          active={activeTab === "rules"}
+          onClick={() => setActiveTab("rules")}
+        />
+        <IconBox
           icon={<Mail className="h-6 w-6" />}
-          label="Email Info"
+          label="Email"
           active={activeTab === "email"}
           onClick={() => setActiveTab("email")}
         />
+        <IconBox
+          icon={<Settings className="h-6 w-6" />}
+          label="Instellingen"
+          active={activeTab === "settings"}
+          onClick={() => setActiveTab("settings")}
+        />
       </div>
+
+      {/* Bulk Actions Bar (only for pending tab) */}
+      {activeTab === "pending" && ['Administrator', 'Administratie'].includes(profile?.role || '') && (
+        <Card className="bg-gray-50 border-gray-200">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    checked={allSelectedPending}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                  <span className="text-sm font-medium">
+                    {selectedReceipts.size > 0
+                      ? `${selectedReceipts.size} geselecteerd`
+                      : 'Selecteer alles'}
+                  </span>
+                </div>
+              </div>
+              {selectedReceipts.size > 0 && (
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={handleBulkApprove}
+                    disabled={loading}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Check className="h-4 w-4 mr-2" />
+                    Goedkeuren ({selectedReceipts.size})
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={handleBulkReject}
+                    disabled={loading}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Afwijzen ({selectedReceipts.size})
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Content */}
       {activeTab === "pending" && (
@@ -312,33 +458,41 @@ export const Receipts = () => {
           {receipts.filter(r => r.status === 'pending').map((receipt) => (
             <Card key={receipt.id}>
               <CardContent className="p-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h4 className="font-medium">{receipt.description}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {formatDate(receipt.created_at)} • {formatAmount(receipt.amount)}
-                    </p>
-                    {receipt.email_from && (
-                      <p className="text-xs text-muted-foreground">Via: {receipt.email_from}</p>
-                    )}
-                    {receipt.user_name && (
-                      <p className="text-xs text-muted-foreground">Door: {receipt.user_name}</p>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => viewReceipt(receipt)}>
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    {['Administrator', 'Administratie'].includes(profile?.role || '') && (
-                      <>
-                        <Button size="sm" onClick={() => handleApprovalAction(receipt.id, 'approve')} disabled={loading}>
-                          <Check className="h-4 w-4" />
-                        </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleApprovalAction(receipt.id, 'reject')} disabled={loading}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </>
-                    )}
+                <div className="flex items-center gap-4">
+                  {['Administrator', 'Administratie'].includes(profile?.role || '') && (
+                    <Checkbox
+                      checked={selectedReceipts.has(receipt.id)}
+                      onCheckedChange={() => toggleReceiptSelection(receipt.id)}
+                    />
+                  )}
+                  <div className="flex-1 flex justify-between items-center">
+                    <div>
+                      <h4 className="font-medium">{receipt.description}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {formatDate(receipt.created_at)} • {formatAmount(receipt.amount)}
+                      </p>
+                      {receipt.email_from && (
+                        <p className="text-xs text-muted-foreground">Via: {receipt.email_from}</p>
+                      )}
+                      {receipt.user_name && (
+                        <p className="text-xs text-muted-foreground">Door: {receipt.user_name}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => viewReceipt(receipt)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      {['Administrator', 'Administratie'].includes(profile?.role || '') && (
+                        <>
+                          <Button size="sm" onClick={() => handleApprovalAction(receipt.id, 'approve')} disabled={loading}>
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button variant="destructive" size="sm" onClick={() => handleApprovalAction(receipt.id, 'reject')} disabled={loading}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -378,41 +532,45 @@ export const Receipts = () => {
         </div>
       )}
 
+      {/* Approval Rules Tab */}
+      {activeTab === "rules" && <ApprovalRulesManager />}
+
+      {/* Email Tab - Basic Info */}
       {activeTab === "email" && (
         <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5" />
-                Email Informatie
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label className="text-sm font-medium">Bonnetjes Email</Label>
-                <p className="text-lg font-mono bg-muted p-2 rounded">info@smanscrm.nl</p>
-              </div>
-              <div className="space-y-2">
-                <h4 className="font-medium">Hoe werkt het?</h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Verstuur bonnetjes naar: info@smanscrm.nl</li>
-                  <li>• Voeg afbeeldingen toe als bijlage (alleen afbeeldingen)</li>
-                  <li>• Bonnetjes worden automatisch verwerkt</li>
-                  <li>• Administrators ontvangen notificaties</li>
-                  <li>• U ontvangt een bevestiging via email na goedkeuring/afwijzing</li>
-                </ul>
-              </div>
-              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                <h5 className="font-medium text-blue-900 dark:text-blue-100">Email Service Status</h5>
-                <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                  Voor automatische verwerking moet een email service worden ingesteld die webhooks verstuurt naar onze processor.
-                </p>
-                <div className="mt-2 text-xs text-blue-600 dark:text-blue-400">
-                  <strong>Webhook URL:</strong> https://pvesgvkyiaqmsudmmtkc.supabase.co/functions/v1/receipt-processor
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Email Informatie
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium">Bonnetjes Email</Label>
+              <p className="text-lg font-mono bg-muted p-2 rounded">bonnetjes@smanscrm.nl</p>
+            </div>
+            <div className="space-y-2">
+              <h4 className="font-medium">Hoe werkt het?</h4>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• Verstuur bonnetjes naar: <strong>bonnetjes@smanscrm.nl</strong></li>
+                <li>• Voeg foto's of PDF's toe als bijlage</li>
+                <li>• Systeem verwerkt automatisch elke 5 minuten</li>
+                <li>• Bonnetjes die aan regels voldoen worden automatisch goedgekeurd</li>
+                <li>• U ontvangt een bevestiging via email</li>
+              </ul>
+            </div>
+            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
+              <h5 className="font-medium text-blue-900 dark:text-blue-100">📧 Email Ontvangst</h5>
+              <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                Voor volledige configuratie, ga naar de <strong>"Instellingen"</strong> tab om IMAP instellingen te configureren.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       )}
+
+      {/* Settings Tab */}
+      {activeTab === "settings" && <EmailSettingsTab />}
 
       {/* Upload Dialog */}
       <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
