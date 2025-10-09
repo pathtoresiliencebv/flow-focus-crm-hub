@@ -7,11 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, X, Users, CheckCircle2, Calendar as CalendarIcon } from "lucide-react";
+import { Plus, X, Users, CheckCircle2, Calendar as CalendarIcon, CalendarDays, CalendarRange } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { LocationSearch } from './LocationSearch';
 import { CustomerPlanningDialog, type PlanningFormData } from './CustomerPlanningDialog';
 import { MonteurAgendaCalendar } from './planning/MonteurAgendaCalendar';
+import { EnhancedMonthPlanningView } from './planning/EnhancedMonthPlanningView';
 import { DurationSelector } from './planning/DurationSelector';
 import { ConflictOverrideDialog } from './planning/ConflictOverrideDialog';
 import { usePlanningStore } from '@/hooks/usePlanningStore';
@@ -32,6 +33,7 @@ import {
 export function SimplifiedPlanningManagement() {
   const { toast } = useToast();
   const { user, profile } = useAuth();
+  const [viewMode, setViewMode] = useState<'month' | 'availability'>('month');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
   const [showPlanningDialog, setShowPlanningDialog] = useState(false);
@@ -50,6 +52,7 @@ export function SimplifiedPlanningManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [locationKey, setLocationKey] = useState(0);
   const [dayAvailability, setDayAvailability] = useState<DayAvailability | null>(null);
+  const [selectedPlanning, setSelectedPlanning] = useState<any>(null);
 
   const { 
     planningItems, 
@@ -267,6 +270,26 @@ export function SimplifiedPlanningManagement() {
             <CalendarIcon className="h-7 w-7" />
             Planning
           </h1>
+          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+            <Button
+              variant={viewMode === 'month' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('month')}
+              className={viewMode === 'month' ? 'bg-white shadow-sm' : ''}
+            >
+              <CalendarDays className="h-4 w-4 mr-2" />
+              Maand
+            </Button>
+            <Button
+              variant={viewMode === 'availability' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('availability')}
+              className={viewMode === 'availability' ? 'bg-white shadow-sm' : ''}
+            >
+              <CalendarRange className="h-4 w-4 mr-2" />
+              Beschikbaarheid
+            </Button>
+          </div>
           <Button onClick={() => setShowCustomerDialog(true)} className="bg-blue-600 hover:bg-blue-700">
             <Plus className="h-5 w-5 mr-2" />
             Nieuwe Klant Afspraak
@@ -274,13 +297,32 @@ export function SimplifiedPlanningManagement() {
         </div>
       </div>
 
-      {/* Main Content: Monteur Agenda Calendar */}
+      {/* Main Content */}
       <div className="flex-1 overflow-auto p-6">
-        <MonteurAgendaCalendar
-          monteurIds={monteurIds}
-          monteurs={installers}
-          onDayClick={handleDayClick}
-        />
+        {viewMode === 'month' ? (
+          <EnhancedMonthPlanningView
+            planningItems={planningItems}
+            users={installers}
+            onDateClick={(date) => {
+              setSelectedDate(date);
+              setShowProjectSidebar(true);
+            }}
+            onPlanningClick={(planning) => {
+              setSelectedPlanning(planning);
+              // TODO: Open planning details dialog
+              console.log('Planning clicked:', planning);
+            }}
+            onNewPlanning={() => setShowCustomerDialog(true)}
+            loading={loading}
+          />
+        ) : (
+          <MonteurAgendaCalendar
+            monteurIds={monteurIds}
+            monteurs={installers}
+            onDayClick={handleDayClick}
+            loading={loading}
+          />
+        )}
       </div>
 
       {/* Project Sidebar - shown when clicking on a day */}

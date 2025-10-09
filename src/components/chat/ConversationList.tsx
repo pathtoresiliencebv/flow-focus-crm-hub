@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Conversation } from '@/hooks/useFixedChat';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { useRealUserStore } from '@/hooks/useRealUserStore';
 
 interface ConversationListProps {
   conversations: Conversation[];
@@ -20,15 +21,16 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   isMobile,
   compact = false
 }) => {
-  const getInitials = (name: string | null) => {
-    if (!name) return '??';
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
+  const { users } = useRealUserStore();
+  
+  // Convert conversations to User format for avatar component
+  const allUsers = useMemo(() => {
+    return conversations.map(conv => ({
+      id: conv.other_user?.id || '',
+      full_name: conv.other_user?.full_name || null,
+      email: conv.other_user?.email
+    })).filter(u => u.id);
+  }, [conversations]);
 
   const formatTime = (dateString: string) => {
     try {
@@ -72,14 +74,16 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                 selectedConversation === conversation.id && "bg-[hsl(0,71%,36%)]/10 border-l-4 border-[hsl(0,71%,36%)]"
               )}
             >
-              <Avatar className="h-10 w-10">
-                <AvatarFallback className={cn(
-                  "text-sm font-semibold",
-                  selectedConversation === conversation.id ? "bg-[hsl(0,71%,36%)] text-white" : "bg-primary/10 text-primary"
-                )}>
-                  {getInitials(conversation.other_user?.full_name)}
-                </AvatarFallback>
-              </Avatar>
+              <UserAvatar
+                user={{
+                  id: conversation.other_user?.id || '',
+                  full_name: conversation.other_user?.full_name || null,
+                  email: conversation.other_user?.email
+                }}
+                allUsers={allUsers}
+                size="md"
+                showTooltip={true}
+              />
             </div>
           ))}
         </div>
@@ -111,11 +115,18 @@ export const ConversationList: React.FC<ConversationListProps> = ({
               selectedConversation === conversation.id && "bg-[hsl(0,71%,36%)]/10 border-l-4 border-[hsl(0,71%,36%)]"
             )}
           >
-            <Avatar className="h-12 w-12 mr-3">
-              <AvatarFallback className="bg-primary text-primary-foreground">
-                {getInitials(conversation.other_user?.full_name)}
-              </AvatarFallback>
-            </Avatar>
+            <div className="mr-3">
+              <UserAvatar
+                user={{
+                  id: conversation.other_user?.id || '',
+                  full_name: conversation.other_user?.full_name || null,
+                  email: conversation.other_user?.email
+                }}
+                allUsers={allUsers}
+                size="lg"
+                showTooltip={false}
+              />
+            </div>
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
