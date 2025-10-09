@@ -171,13 +171,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       // Update user's language preference after successful login
       if (data.user && preferredLanguage) {
         try {
+          // Use RLS - auth.uid() automatically matches the current user
           const { error: updateError } = await supabase
             .from('profiles')
-            .update({ 
+            .upsert({ 
+              id: data.user.id,
               chat_language: preferredLanguage,
               updated_at: new Date().toISOString()
-            })
-            .eq('id', data.user.id);
+            }, {
+              onConflict: 'id'
+            });
 
           if (updateError) {
             console.error('Error updating language preference:', updateError);

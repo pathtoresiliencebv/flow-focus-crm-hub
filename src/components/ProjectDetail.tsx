@@ -44,10 +44,7 @@ const ProjectDetail = () => {
           // Fetch tasks
           supabase
             .from('project_tasks')
-            .select(`
-              *,
-              assignee:profiles!project_tasks_assigned_to_fkey(full_name, email)
-            `)
+            .select('*')
             .eq('project_id', projectId)
             .order('created_at', { ascending: false }),
           
@@ -55,14 +52,14 @@ const ProjectDetail = () => {
           supabase
             .from('invoices')
             .select('*')
-            .or(`customer_id.eq.${project.customer_id},project_id.eq.${projectId}`)
+            .eq('project_id', projectId)
             .order('created_at', { ascending: false }),
           
           // Fetch quotes
           supabase
             .from('quotes')
             .select('*')
-            .or(`customer_id.eq.${project.customer_id},project_id.eq.${projectId}`)
+            .eq('project_id', projectId)
             .order('created_at', { ascending: false }),
           
           // Fetch recent activities
@@ -70,10 +67,9 @@ const ProjectDetail = () => {
             .from('project_tasks')
             .select(`
               id,
-              title,
-              status,
-              updated_at,
-              assignee:profiles!project_tasks_assigned_to_fkey(full_name)
+              block_title,
+              is_completed,
+              updated_at
             `)
             .eq('project_id', projectId)
             .order('updated_at', { ascending: false })
@@ -95,14 +91,12 @@ const ProjectDetail = () => {
   }, [projectId, project?.customer_id]);
 
   // Handle task completion toggle
-  const handleTaskToggle = async (taskId: string, currentStatus: string) => {
+  const handleTaskToggle = async (taskId: string, currentCompleted: boolean) => {
     try {
-      const newStatus = currentStatus === 'voltooid' ? 'in_progress' : 'voltooid';
-      
       const { error } = await supabase
         .from('project_tasks')
         .update({ 
-          status: newStatus,
+          is_completed: !currentCompleted,
           updated_at: new Date().toISOString()
         })
         .eq('id', taskId);
@@ -112,10 +106,7 @@ const ProjectDetail = () => {
       // Refresh tasks
       const { data: taskData } = await supabase
         .from('project_tasks')
-        .select(`
-          *,
-          assignee:profiles!project_tasks_assigned_to_fkey(full_name, email)
-        `)
+        .select('*')
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
       
