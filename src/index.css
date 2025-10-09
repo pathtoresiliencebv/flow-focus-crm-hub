@@ -21,6 +21,22 @@
   border: none;
 }
 
+/* ✅ CRITICAL FIX: Ensure ALL dropdowns appear ABOVE SlidePanels and Dialogs */
+/* SlidePanel uses z-[100] (backdrop) and z-[101] (panel) */
+/* Dialog uses z-50 */
+/* So we need z-[110] or higher for dropdown content */
+[data-radix-select-content],
+[data-radix-popper-content-wrapper],
+[role="listbox"],
+[data-radix-portal] {
+  z-index: 110 !important;
+}
+
+/* Ensure Combobox/Command dropdowns also work */
+[cmdk-root] {
+  z-index: 110 !important;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
