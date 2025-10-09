@@ -3,11 +3,9 @@ import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { Customers } from "@/components/Customers";
 import { Button } from "@/components/ui/button";
 import { Search, Plus } from "lucide-react";
-import { useI18n } from "@/contexts/I18nContext";
 
 export default function CustomersPage() {
   const { setTitle, setActions } = usePageHeader();
-  const { t } = useI18n();
   const [showNewCustomerDialog, setShowNewCustomerDialog] = useState(false);
   const [showSearchBar, setShowSearchBar] = useState(false);
 
@@ -24,12 +22,12 @@ export default function CustomersPage() {
 
   useEffect(() => {
     console.log('📝 CustomersPage: Setting up header');
-    setTitle(t('nav_customers', 'Klanten'));
+    setTitle("Klanten");
     setActions(
       <>
         <Button variant="outline" size="sm" onClick={handleSearch}>
           <Search className="h-4 w-4 mr-2" />
-          {t('button_search', 'Zoeken')}
+          Zoeken
         </Button>
         <Button 
           size="sm" 
@@ -37,7 +35,7 @@ export default function CustomersPage() {
           onClick={handleNewCustomer}
         >
           <Plus className="h-4 w-4 mr-2" />
-          {t('button_new_customer', 'Nieuwe Klant')}
+          Nieuwe Klant
         </Button>
       </>
     );
@@ -46,7 +44,7 @@ export default function CustomersPage() {
       setTitle("");
       setActions(null);
     };
-  }, [setTitle, setActions, handleNewCustomer, handleSearch, t]);
+  }, [setTitle, setActions, handleNewCustomer, handleSearch]);
 
   return (
     <Customers 

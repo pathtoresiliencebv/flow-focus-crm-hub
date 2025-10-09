@@ -1,14 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePageHeader } from "@/contexts/PageHeaderContext";
-import { useI18n } from "@/contexts/I18nContext";
 import { Invoicing } from "@/components/Invoicing";
 import { Button } from "@/components/ui/button";
 import { FileText, Wrench } from "lucide-react";
 
 export default function InvoicesPage() {
   const { setTitle, setActions } = usePageHeader();
-  const { t } = useI18n();
   const [showNewInvoice, setShowNewInvoice] = useState(false);
   const [invoiceType, setInvoiceType] = useState<'simple' | 'detailed'>('simple');
 
@@ -31,7 +29,7 @@ export default function InvoicesPage() {
 
   useEffect(() => {
     console.log('📝 InvoicesPage: Setting up header with handlers');
-    setTitle(t('nav_invoices', 'Facturatie'));
+    setTitle("Facturatie");
     setActions(
       <>
         <Button 
@@ -40,7 +38,7 @@ export default function InvoicesPage() {
           onClick={handleNewInvoice}
         >
           <FileText className="h-4 w-4 mr-2" />
-          {t('button_simple_invoice', 'Normale Factuur')}
+          Normale Factuur
         </Button>
         <Button 
           size="sm" 
@@ -48,7 +46,7 @@ export default function InvoicesPage() {
           onClick={handleNewWerkbon}
         >
           <Wrench className="h-4 w-4 mr-2" />
-          {t('button_workorder_invoice', 'Werkbon Factuur')}
+          Werkbon Factuur
         </Button>
       </>
     );
@@ -57,7 +55,7 @@ export default function InvoicesPage() {
       setTitle("");
       setActions(null);
     };
-  }, [setTitle, setActions, handleNewInvoice, handleNewWerkbon, t]);
+  }, [setTitle, setActions, handleNewInvoice, handleNewWerkbon]);
 
   return (
     <Invoicing 

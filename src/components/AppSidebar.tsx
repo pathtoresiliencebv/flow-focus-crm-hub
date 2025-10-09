@@ -20,7 +20,6 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { Permission } from "@/types/permissions";
 import { NotificationCenter } from "./NotificationCenter";
-import { useI18n } from "@/contexts/I18nContext";
 
 interface AppSidebarProps {
   children: React.ReactNode;
@@ -30,42 +29,41 @@ export function AppSidebar({ children }: AppSidebarProps) {
   const { user, logout, profile, hasPermission } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useI18n();
 
   // Main navigation links with React Router paths
   const mainLinks: {label: string, icon: React.ReactElement, path: string, permission: Permission | null}[] = [
     {
-      label: t('nav_dashboard', 'Dashboard'),
+      label: "Dashboard",
       icon: <LayoutDashboard className="h-5 w-5" />,
       path: "/",
       permission: null,
     },
     {
-      label: t('nav_customers', 'Klanten'),
+      label: "Klanten",
       icon: <Users className="h-5 w-5" />,
       path: "/customers",
       permission: "customers_view",
     },
     {
-      label: t('nav_projects', 'Projecten'),
+      label: "Projecten",
       icon: <FolderKanban className="h-5 w-5" />,
       path: "/projects",
       permission: "projects_view",
     },
     {
-      label: t('nav_planning', 'Planning'),
+      label: "Planning",
       icon: <Calendar className="h-5 w-5" />,
       path: "/planning",
       permission: "planning_create",
     },
     {
-      label: t('nav_quotes', 'Offertes'),
+      label: "Offertes",
       icon: <FileText className="h-5 w-5" />,
       path: "/quotes",
       permission: "invoices_view",
     },
     {
-      label: t('nav_invoices', 'Facturatie'),
+      label: "Facturatie",
       icon: <CreditCard className="h-5 w-5" />,
       path: "/invoices",
       permission: "invoices_view",
@@ -75,19 +73,19 @@ export function AppSidebar({ children }: AppSidebarProps) {
   // Communication links
   const communicationLinks: {label: string, icon: React.ReactElement, path: string, permission: Permission | null}[] = [
     {
-      label: t('nav_inbox', 'Postvak IN'),
+      label: "Postvak IN",
       icon: <Mail className="h-5 w-5" />,
       path: "/email",
       permission: null, // Everyone can access email
     },
     {
-      label: t('nav_webmail', 'Webmail'),
+      label: "Webmail",
       icon: <Mail className="h-5 w-5" />,
       path: "/webmail",
       permission: null, // Everyone can access webmail
     },
     {
-      label: t('nav_chat', 'Chat'),
+      label: "Chat",
       icon: <MessageCircle className="h-5 w-5" />,
       path: "/chat",
       permission: null,
@@ -97,19 +95,19 @@ export function AppSidebar({ children }: AppSidebarProps) {
   // Personnel links (Personeel section)
   const personnelLinks: {label: string, icon: React.ReactElement, path: string, permission: Permission | null}[] = [
     {
-      label: t('nav_time_registration', 'Tijdregistratie'),
+      label: "Tijdregistratie",
       icon: <Clock className="h-5 w-5" />,
       path: "/time",
       permission: "projects_view",
     },
     {
-      label: t('nav_receipts', 'Bonnetjes'),
+      label: "Bonnetjes",
       icon: <Receipt className="h-5 w-5" />,
       path: "/receipts",
       permission: "invoices_view",
     },
     {
-      label: t('nav_personnel', 'Personeel'),
+      label: "Personeel",
       icon: <UserCheck className="h-5 w-5" />,
       path: "/personnel",
       permission: "users_view",
@@ -119,13 +117,13 @@ export function AppSidebar({ children }: AppSidebarProps) {
   // Settings submenu links
   const settingsLinks: {label: string, icon: React.ReactElement, path: string, permission: Permission | null}[] = [
     {
-      label: t('nav_reports', 'Rapportages'),
+      label: "Rapportages",
       icon: <BarChart className="h-5 w-5" />,
       path: "/reports",
       permission: "reports_view",
     },
     {
-      label: t('nav_settings', 'Instellingen'),
+      label: "Instellingen",
       icon: <Settings className="h-5 w-5" />,
       path: "/settings",
       permission: "settings_edit",

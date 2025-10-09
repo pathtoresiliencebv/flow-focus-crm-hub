@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { X, Plus } from "lucide-react";
 import { useCrmStore, Customer } from "@/hooks/useCrmStore";
 import { LocationSearch } from "./LocationSearch";
-import { useI18n } from "@/contexts/I18nContext";
 
 interface CustomerFormProps {
   onClose: () => void;
@@ -20,7 +19,6 @@ interface CustomerFormProps {
 
 export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) => {
   const { addCustomer, updateCustomer } = useCrmStore();
-  const { t } = useI18n();
   const [formData, setFormData] = useState({
     name: existingCustomer?.name || "",
     email: existingCustomer?.email || "",
@@ -98,29 +96,29 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
     <form onSubmit={handleSubmit}>
       <Tabs defaultValue="contact" className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-4">
-          <TabsTrigger value="contact" className="text-xs">{t('form_tab_contact', 'Contact')}</TabsTrigger>
-          <TabsTrigger value="business" className="text-xs">{t('form_tab_business', 'Bedrijf')}</TabsTrigger>
-          <TabsTrigger value="extra" className="text-xs">{t('form_tab_extra', 'Extra')}</TabsTrigger>
+          <TabsTrigger value="contact" className="text-xs">Contact</TabsTrigger>
+          <TabsTrigger value="business" className="text-xs">Bedrijf</TabsTrigger>
+          <TabsTrigger value="extra" className="text-xs">Extra</TabsTrigger>
         </TabsList>
 
         {/* CONTACT TAB */}
         <TabsContent value="contact" className="space-y-3">
           <div className="space-y-2">
-            <Label htmlFor="customer_type">{t('label_customer_type', 'Klant Type')} *</Label>
+            <Label htmlFor="customer_type">Klant Type *</Label>
             <Select value={formData.customer_type} onValueChange={handleCustomerTypeChange}>
               <SelectTrigger className="h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="particulier">👤 {t('customer_type_private', 'Particulier')}</SelectItem>
-                <SelectItem value="zakelijk">🏢 {t('customer_type_business', 'Zakelijk')}</SelectItem>
+                <SelectItem value="particulier">👤 Particulier</SelectItem>
+                <SelectItem value="zakelijk">🏢 Zakelijk</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="name">{t('label_name', 'Naam')} *</Label>
+              <Label htmlFor="name">Naam *</Label>
               <Input
                 id="name"
                 name="name"
@@ -131,7 +129,7 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">{t('label_email', 'Email')} *</Label>
+              <Label htmlFor="email">Email *</Label>
               <Input
                 id="email"
                 name="email"
@@ -146,7 +144,7 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
           
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="phone">{t('label_phone', 'Telefoonnummer')} *</Label>
+              <Label htmlFor="phone">Telefoonnummer *</Label>
               <Input
                 id="phone"
                 name="phone"
@@ -157,7 +155,7 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="postal_code">{t('label_postal_code', 'Postcode')}</Label>
+              <Label htmlFor="postal_code">Postcode</Label>
               <Input
                 id="postal_code"
                 name="postal_code"
@@ -180,14 +178,14 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
                   postal_code: location.address?.postcode || prev.postal_code
                 }));
               }}
-              placeholder={t('placeholder_search_address', 'Zoek adres...')}
-              label={t('label_address', 'Adres')}
+              placeholder="Zoek adres..."
+              label="Adres"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="city">{t('label_city', 'Plaats')}</Label>
+              <Label htmlFor="city">Plaats</Label>
               <Input
                 id="city"
                 name="city"
@@ -197,7 +195,7 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="country">{t('label_country', 'Land')}</Label>
+              <Label htmlFor="country">Land</Label>
               <Input
                 id="country"
                 name="country"
@@ -209,15 +207,15 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="status">{t('label_status', 'Status')}</Label>
+            <Label htmlFor="status">Status</Label>
             <Select value={formData.status} onValueChange={handleStatusChange}>
               <SelectTrigger className="h-9">
-                <SelectValue placeholder={t('placeholder_select_status', 'Selecteer status')} />
+                <SelectValue placeholder="Selecteer status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Actief">✅ {t('status_active', 'Actief')}</SelectItem>
-                <SelectItem value="In behandeling">⏳ {t('status_in_progress', 'In behandeling')}</SelectItem>
-                <SelectItem value="Inactief">❌ {t('status_inactive', 'Inactief')}</SelectItem>
+                <SelectItem value="Actief">✅ Actief</SelectItem>
+                <SelectItem value="In behandeling">⏳ In behandeling</SelectItem>
+                <SelectItem value="Inactief">❌ Inactief</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -226,20 +224,20 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
         {/* BUSINESS TAB */}
         <TabsContent value="business" className="space-y-3">
           <div className="space-y-2">
-            <Label htmlFor="company_name">{t('label_company_name', 'Bedrijfsnaam')}</Label>
+            <Label htmlFor="company_name">Bedrijfsnaam</Label>
             <Input
               id="company_name"
               name="company_name"
               value={formData.company_name}
               onChange={handleChange}
-              placeholder={t('placeholder_company_type', 'B.V. / Eenmanszaak')}
+              placeholder="B.V. / Eenmanszaak"
               className="h-9"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="kvk_number">{t('label_kvk_number', 'KVK Nummer')}</Label>
+              <Label htmlFor="kvk_number">KVK Nummer</Label>
               <Input
                 id="kvk_number"
                 name="kvk_number"
@@ -250,7 +248,7 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="btw_number">{t('label_vat_number', 'BTW Nummer')}</Label>
+              <Label htmlFor="btw_number">BTW Nummer</Label>
               <Input
                 id="btw_number"
                 name="btw_number"
@@ -263,19 +261,19 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="contact_person">{t('label_contact_person', 'Contactpersoon')}</Label>
+            <Label htmlFor="contact_person">Contactpersoon</Label>
             <Input
               id="contact_person"
               name="contact_person"
               value={formData.contact_person}
               onChange={handleChange}
-              placeholder={t('placeholder_contact_person', 'Naam contactpersoon')}
+              placeholder="Naam contactpersoon"
               className="h-9"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="website">{t('label_website', 'Website')}</Label>
+            <Label htmlFor="website">Website</Label>
             <Input
               id="website"
               name="website"
@@ -288,7 +286,7 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="iban">{t('label_iban', 'IBAN Rekeningnummer')}</Label>
+            <Label htmlFor="iban">IBAN Rekeningnummer</Label>
             <Input
               id="iban"
               name="iban"
@@ -303,14 +301,14 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
         {/* EXTRA TAB */}
         <TabsContent value="extra" className="space-y-3">
           <div className="space-y-2">
-            <Label>{t('label_extra_emails', 'Extra Email Adressen')}</Label>
+            <Label>Extra Email Adressen</Label>
             <div className="space-y-2">
               <div className="flex gap-2">
                 <Input
                   type="email"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder={t('placeholder_extra_email', 'extra@email.com')}
+                  placeholder="extra@email.com"
                   className="h-9"
                   onKeyPress={(e) => {
                     if (e.key === 'Enter') {
@@ -326,7 +324,7 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
                   className="h-9"
                 >
                   <Plus className="h-3 w-3 mr-1" />
-                  {t('button_add', 'Toevoegen')}
+                  Toevoegen
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -347,21 +345,21 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
               </div>
               {formData.additional_emails.length === 0 && (
                 <p className="text-xs text-muted-foreground">
-                  {t('message_no_extra_emails', 'Geen extra email adressen toegevoegd')}
+                  Geen extra email adressen toegevoegd
                 </p>
               )}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">{t('label_notes', 'Notities')}</Label>
+            <Label htmlFor="notes">Notities</Label>
             <Textarea
               id="notes"
               name="notes"
               value={formData.notes}
               onChange={handleChange}
               rows={6}
-              placeholder={t('placeholder_notes', 'Voeg hier extra informatie toe...')}
+              placeholder="Voeg hier extra informatie toe..."
               className="text-sm"
             />
           </div>
@@ -370,10 +368,10 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
       
       <DialogFooter className="mt-4">
         <Button variant="outline" type="button" onClick={onClose} className="h-9">
-          {t('button_cancel', 'Annuleren')}
+          Annuleren
         </Button>
         <Button type="submit" className="h-9">
-          {existingCustomer ? t('button_update', 'Bijwerken') : t('button_add', 'Toevoegen')}
+          {existingCustomer ? "Bijwerken" : "Toevoegen"}
         </Button>
       </DialogFooter>
     </form>

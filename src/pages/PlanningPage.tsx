@@ -3,11 +3,9 @@ import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { SimplifiedPlanningManagement } from "@/components/SimplifiedPlanningManagement";
 import { Button } from "@/components/ui/button";
 import { Plus, CalendarDays, CalendarRange } from "lucide-react";
-import { useI18n } from "@/contexts/I18nContext";
 
 export default function PlanningPage() {
   const { setTitle, setActions } = usePageHeader();
-  const { t } = useI18n();
   const [viewMode, setViewMode] = useState<'month' | 'availability'>('month');
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
 
@@ -29,7 +27,7 @@ export default function PlanningPage() {
 
   useEffect(() => {
     console.log('📝 PlanningPage: Setting up header with viewMode:', viewMode);
-    setTitle(t('nav_planning', 'Planning'));
+    setTitle("Planning");
     setActions(
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
@@ -40,7 +38,7 @@ export default function PlanningPage() {
             className={viewMode === 'month' ? 'bg-[#fee2e2] text-[hsl(0,71%,36%)] hover:bg-[#fecaca] shadow-sm font-semibold' : 'hover:bg-gray-200'}
           >
             <CalendarDays className="h-4 w-4 mr-2" />
-            {t('view_month', 'Maand')}
+            Maand
           </Button>
           <Button
             variant="ghost"
@@ -49,7 +47,7 @@ export default function PlanningPage() {
             className={viewMode === 'availability' ? 'bg-[#fee2e2] text-[hsl(0,71%,36%)] hover:bg-[#fecaca] shadow-sm font-semibold' : 'hover:bg-gray-200'}
           >
             <CalendarRange className="h-4 w-4 mr-2" />
-            {t('view_availability', 'Beschikbaarheid')}
+            Beschikbaarheid
           </Button>
         </div>
         <Button 
@@ -57,7 +55,7 @@ export default function PlanningPage() {
           className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)]"
         >
           <Plus className="h-5 w-5 mr-2" />
-          {t('button_new_customer_appointment', 'Nieuwe Klant Afspraak')}
+          Nieuwe Klant Afspraak
         </Button>
       </div>
     );
@@ -66,7 +64,7 @@ export default function PlanningPage() {
       setTitle("");
       setActions(null);
     };
-  }, [viewMode, setTitle, setActions, handleMonthViewClick, handleAvailabilityViewClick, handleNewCustomerClick, t]);
+  }, [viewMode, setTitle, setActions, handleMonthViewClick, handleAvailabilityViewClick, handleNewCustomerClick]);
 
   return (
     <div className="h-full">
