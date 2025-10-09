@@ -26,9 +26,11 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { invoiceId, recipientEmail, recipientName, subject, message, includePaymentLink = true }: SendInvoiceEmailRequest = await req.json();
+    const requestBody = await req.json();
+    const { invoiceId, recipientEmail, recipientName, subject, message, includePaymentLink = true } = requestBody;
     
-    console.log('Sending invoice email for ID:', invoiceId, 'to:', recipientEmail);
+    console.log('📧 Sending invoice email for ID:', invoiceId);
+    console.log('📦 Request body:', { invoiceId, recipientEmail, recipientName, includePaymentLink });
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -43,7 +45,7 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (invoiceError || !invoice) {
-      console.error('Error fetching invoice:', invoiceError);
+      console.error('❌ Error fetching invoice:', invoiceError);
       return new Response(
         JSON.stringify({ error: 'Invoice not found' }),
         {
@@ -52,6 +54,23 @@ const handler = async (req: Request): Promise<Response> => {
         }
       );
     }
+
+    // Use customer details from invoice if not provided in request
+    const finalRecipientEmail = recipientEmail || invoice.customer_email;
+    const finalRecipientName = recipientName || invoice.customer_name;
+
+    if (!finalRecipientEmail) {
+      console.error('❌ No recipient email available');
+      return new Response(
+        JSON.stringify({ error: 'No recipient email available for this invoice' }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    console.log('✅ Using recipient:', finalRecipientName, '<' + finalRecipientEmail + '>');
 
     // Always generate payment link if not already exists
     let paymentLinkUrl = invoice.payment_link_url;
@@ -282,7 +301,7 @@ const handler = async (req: Request): Promise<Response> => {
             </div>
 
             <div class="content">
-              <p><strong>Beste ${recipientName},</strong></p>
+              <p><strong>Beste ${finalRecipientName},</strong></p>
 
               <div class="message-content">
                 ${message || 'Hierbij ontvangt u onze factuur. Bedankt voor uw vertrouwen in SMANS BV.'}
@@ -340,7 +359,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Send email via Resend
     const emailResponse = await resend.emails.send({
       from: "SMANS BV <factuur@smanscrm.nl>",
-      to: [recipientEmail],
+      to: [finalRecipientEmail],
       subject: subject || `Factuur ${invoice.invoice_number} - SMANS BV`,
       html: emailHtml,
       attachments: attachments
@@ -371,13 +390,13 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // ✨ AUTO-SAVE CUSTOMER EMAIL: Update customer record with email if customer_id exists
-    if (invoice.customer_id && recipientEmail) {
-      console.log('💾 Saving customer email:', { customer_id: invoice.customer_id, email: recipientEmail });
+    if (invoice.customer_id && finalRecipientEmail) {
+      console.log('💾 Saving customer email:', { customer_id: invoice.customer_id, email: finalRecipientEmail });
       
       const { error: customerUpdateError } = await supabase
         .from('customers')
         .update({ 
-          email: recipientEmail,
+          email: finalRecipientEmail,
           updated_at: new Date().toISOString()
         })
         .eq('id', invoice.customer_id);
@@ -390,14 +409,15 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    console.log("Invoice email sent successfully:", emailResponse);
+    console.log("✅ Invoice email sent successfully:", emailResponse);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         emailId: emailResponse.data?.id,
-        recipientEmail: recipientEmail,
-        invoiceNumber: invoice.invoice_number
+        recipientEmail: finalRecipientEmail,
+        invoiceNumber: invoice.invoice_number,
+        paymentLink: paymentLinkUrl
       }), 
       {
         status: 200,

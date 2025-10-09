@@ -37,6 +37,7 @@ const ProjectDetail = () => {
     const fetchData = async () => {
       if (!projectId || !project) return;
       
+      console.log('📊 ProjectDetail: Fetching data for project:', projectId);
       setLoadingData(true);
       try {
         // Execute all queries in parallel for 3x faster loading
@@ -48,18 +49,18 @@ const ProjectDetail = () => {
             .eq('project_id', projectId)
             .order('created_at', { ascending: false }),
           
-          // Fetch invoices
+          // Fetch invoices - check both project_id and customer_id
           supabase
             .from('invoices')
             .select('*')
-            .eq('project_id', projectId)
+            .or(`project_id.eq.${projectId},customer_id.eq.${project.customer_id}`)
             .order('created_at', { ascending: false }),
           
-          // Fetch quotes
+          // Fetch quotes - check both project_id and customer_id
           supabase
             .from('quotes')
             .select('*')
-            .eq('project_id', projectId)
+            .or(`project_id.eq.${projectId},customer_id.eq.${project.customer_id}`)
             .order('created_at', { ascending: false }),
           
           // Fetch recent activities
@@ -76,12 +77,20 @@ const ProjectDetail = () => {
             .limit(5)
         ]);
         
+        console.log('📊 ProjectDetail: Data fetched:', {
+          tasks: taskResult.data?.length || 0,
+          invoices: invoiceResult.data?.length || 0,
+          quotes: quoteResult.data?.length || 0,
+          invoices_data: invoiceResult.data,
+          quotes_data: quoteResult.data
+        });
+        
         setTasks(taskResult.data || []);
         setInvoices(invoiceResult.data || []);
         setQuotes(quoteResult.data || []);
         setActivities(activityResult.data || []);
       } catch (error) {
-        console.error('Error fetching project data:', error);
+        console.error('❌ Error fetching project data:', error);
       } finally {
         setLoadingData(false);
       }
@@ -258,13 +267,13 @@ const ProjectDetail = () => {
                   <div>
                     <p className="text-sm text-muted-foreground">Gefactureerd</p>
                     <p className="text-2xl font-bold text-green-600">
-                      {formatCurrency(invoices.reduce((sum, inv) => sum + (inv.total || 0), 0))}
+                      {formatCurrency(invoices.reduce((sum, inv) => sum + (inv.total_amount || inv.total || 0), 0))}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Resterend</p>
                     <p className="text-2xl font-bold text-orange-600">
-                      {formatCurrency((project.value || 0) - invoices.reduce((sum, inv) => sum + (inv.total || 0), 0))}
+                      {formatCurrency((project.value || 0) - invoices.reduce((sum, inv) => sum + (inv.total_amount || inv.total || 0), 0))}
                     </p>
                   </div>
                 </div>
@@ -434,25 +443,45 @@ const ProjectDetail = () => {
                 {loadingData ? (
                   <p className="text-center text-muted-foreground py-8">Laden...</p>
                 ) : invoices.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">Geen facturen gevonden</p>
+                  <div className="text-center text-muted-foreground py-8">
+                    <p>Geen facturen gevonden voor dit project</p>
+                    <p className="text-xs mt-2">Facturen worden automatisch gekoppeld aan het project</p>
+                  </div>
                 ) : (
                   <div className="space-y-2">
-                    {invoices.map((invoice) => (
-                      <div key={invoice.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
-                        <div>
-                          <p className="font-medium">Factuur #{invoice.invoice_number}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {format(new Date(invoice.created_at), 'dd MMM yyyy', { locale: nl })}
-                          </p>
+                    {invoices.map((invoice) => {
+                      const total = invoice.total_amount || invoice.total || 0;
+                      return (
+                        <div 
+                          key={invoice.id} 
+                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                          onClick={() => navigate(`/invoices/${invoice.id}`)}
+                        >
+                          <div className="flex-1">
+                            <p className="font-medium">Factuur #{invoice.invoice_number}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {format(new Date(invoice.invoice_date || invoice.created_at), 'dd MMM yyyy', { locale: nl })}
+                            </p>
+                          </div>
+                          <div className="text-right flex items-center gap-3">
+                            <p className="font-bold text-lg">{formatCurrency(total)}</p>
+                            <Badge variant={
+                              invoice.payment_status === 'paid' || invoice.status === 'paid' 
+                                ? 'default' 
+                                : invoice.status === 'sent' 
+                                ? 'secondary' 
+                                : 'outline'
+                            }>
+                              {invoice.payment_status === 'paid' || invoice.status === 'paid' 
+                                ? '✅ Betaald' 
+                                : invoice.status === 'sent' 
+                                ? '📧 Verzonden' 
+                                : '📝 Concept'}
+                            </Badge>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-bold">{formatCurrency(invoice.total)}</p>
-                          <Badge variant={invoice.status === 'paid' ? 'outline' : 'secondary'}>
-                            {invoice.status === 'paid' ? 'Betaald' : invoice.status === 'sent' ? 'Verzonden' : 'Concept'}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </TabsContent>
@@ -462,25 +491,45 @@ const ProjectDetail = () => {
                 {loadingData ? (
                   <p className="text-center text-muted-foreground py-8">Laden...</p>
                 ) : quotes.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">Geen offertes gevonden</p>
+                  <div className="text-center text-muted-foreground py-8">
+                    <p>Geen offertes gevonden voor dit project</p>
+                    <p className="text-xs mt-2">Offertes worden automatisch gekoppeld aan het project</p>
+                  </div>
                 ) : (
                   <div className="space-y-2">
-                    {quotes.map((quote) => (
-                      <div key={quote.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
-                        <div>
-                          <p className="font-medium">Offerte #{quote.quote_number}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {format(new Date(quote.created_at), 'dd MMM yyyy', { locale: nl })}
-                          </p>
+                    {quotes.map((quote) => {
+                      const total = quote.total_amount || quote.total || 0;
+                      return (
+                        <div 
+                          key={quote.id} 
+                          className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                          onClick={() => navigate(`/quotes/${quote.id}`)}
+                        >
+                          <div className="flex-1">
+                            <p className="font-medium">Offerte #{quote.quote_number}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {format(new Date(quote.quote_date || quote.created_at), 'dd MMM yyyy', { locale: nl })}
+                            </p>
+                          </div>
+                          <div className="text-right flex items-center gap-3">
+                            <p className="font-bold text-lg">{formatCurrency(total)}</p>
+                            <Badge variant={
+                              quote.status === 'goedgekeurd' 
+                                ? 'default' 
+                                : quote.status === 'verzonden' 
+                                ? 'secondary' 
+                                : 'outline'
+                            }>
+                              {quote.status === 'goedgekeurd' 
+                                ? '✅ Goedgekeurd' 
+                                : quote.status === 'verzonden' 
+                                ? '📧 Verzonden' 
+                                : '📝 Concept'}
+                            </Badge>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-bold">{formatCurrency(quote.total)}</p>
-                          <Badge variant={quote.status === 'goedgekeurd' ? 'outline' : 'secondary'}>
-                            {quote.status === 'goedgekeurd' ? 'Goedgekeurd' : quote.status === 'verzonden' ? 'Verzonden' : 'Concept'}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </TabsContent>
