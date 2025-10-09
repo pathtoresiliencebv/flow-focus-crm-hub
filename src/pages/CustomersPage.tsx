@@ -24,12 +24,12 @@ export default function CustomersPage() {
 
   useEffect(() => {
     console.log('📝 CustomersPage: Setting up header');
-    setTitle("Klanten");
+    setTitle(t('nav_customers', 'Klanten'));
     setActions(
       <>
         <Button variant="outline" size="sm" onClick={handleSearch}>
           <Search className="h-4 w-4 mr-2" />
-          Zoeken
+          {t('button_search', 'Zoeken')}
         </Button>
         <Button 
           size="sm" 
@@ -37,7 +37,7 @@ export default function CustomersPage() {
           onClick={handleNewCustomer}
         >
           <Plus className="h-4 w-4 mr-2" />
-          Nieuwe Klant
+          {t('button_new_customer', 'Nieuwe Klant')}
         </Button>
       </>
     );
@@ -46,7 +46,7 @@ export default function CustomersPage() {
       setTitle("");
       setActions(null);
     };
-  }, [setTitle, setActions, handleNewCustomer, handleSearch]);
+  }, [setTitle, setActions, handleNewCustomer, handleSearch, t]);
 
   return (
     <Customers 
