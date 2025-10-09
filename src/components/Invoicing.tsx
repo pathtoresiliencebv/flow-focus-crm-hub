@@ -7,6 +7,7 @@ import { ArchivedInvoicesView } from "./invoicing/ArchivedInvoicesView";
 import { supabase } from "@/integrations/supabase/client";
 import { InvoiceFinalizationDialog } from "./invoicing/InvoiceFinalizationDialog";
 import { InvoicePreviewDialog } from "./invoicing/InvoicePreviewDialog";
+import { SendInvoiceDialog } from "./invoicing/SendInvoiceDialog";
 import { MultiBlockInvoiceForm } from "./invoicing/MultiBlockInvoiceForm";
 import { SimpleInvoiceForm } from "./invoicing/SimpleInvoiceForm";
 import { useInvoices } from "@/hooks/useInvoices";
@@ -31,7 +32,9 @@ export const Invoicing: React.FC<InvoicingProps> = ({
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [showFinalizationDialog, setShowFinalizationDialog] = useState(false);
   const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [showSendDialog, setShowSendDialog] = useState(false);
   const [previewInvoice, setPreviewInvoice] = useState<any>(null);
+  const [invoiceToSend, setInvoiceToSend] = useState<any>(null);
   const [showNewInvoiceForm, setShowNewInvoiceForm] = useState(showNewInvoice || window.location.pathname === "/invoices/new");
   const [currentInvoiceType, setCurrentInvoiceType] = useState<'simple' | 'detailed'>(invoiceType);
   const [filters, setFilters] = useState({
@@ -51,7 +54,7 @@ export const Invoicing: React.FC<InvoicingProps> = ({
     }
   }, [showNewInvoice, invoiceType]);
 
-  const handleSendInvoice = async (invoice: any) => {
+  const handleSendInvoice = (invoice: any) => {
     if (!invoice?.id) {
       toast({
         title: "Fout",
@@ -60,42 +63,10 @@ export const Invoicing: React.FC<InvoicingProps> = ({
       });
       return;
     }
-
-    try {
-      console.log('📧 Sending invoice:', invoice.id, invoice.invoice_number);
-      
-      const { data, error } = await supabase.functions.invoke('send-invoice-email', {
-        body: { 
-          invoiceId: invoice.id
-        }
-      });
-
-      if (error) {
-        console.error('❌ Error sending invoice:', error);
-        toast({
-          title: "Fout bij versturen",
-          description: error.message || "Er is een fout opgetreden bij het versturen van de factuur.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      console.log('✅ Invoice sent successfully:', data);
-      
-      toast({
-        title: "Factuur verzonden!",
-        description: `Factuur ${invoice.invoice_number} is succesvol verzonden naar ${invoice.customer_email}.`,
-      });
-      
-      refetch();
-    } catch (error: any) {
-      console.error('❌ Error sending invoice:', error);
-      toast({
-        title: "Fout bij versturen",
-        description: error.message || "Er is een onverwachte fout opgetreden.",
-        variant: "destructive",
-      });
-    }
+    
+    console.log('📧 Opening send dialog for invoice:', invoice.id, invoice.invoice_number);
+    setInvoiceToSend(invoice);
+    setShowSendDialog(true);
   };
 
   const handleDeleteInvoice = async (invoice: any) => {
@@ -301,6 +272,18 @@ export const Invoicing: React.FC<InvoicingProps> = ({
         open={showPreviewDialog}
         onOpenChange={setShowPreviewDialog}
         invoice={previewInvoice}
+      />
+
+      <SendInvoiceDialog
+        isOpen={showSendDialog}
+        onClose={() => {
+          setShowSendDialog(false);
+          setInvoiceToSend(null);
+        }}
+        invoice={invoiceToSend}
+        onSent={() => {
+          refetch();
+        }}
       />
     </div>
   );
