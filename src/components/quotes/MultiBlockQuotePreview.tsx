@@ -33,14 +33,9 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
     fetchSettings();
   }, []);
 
+  // Track quote changes
   useEffect(() => {
-    console.log('MultiBlockQuotePreview: Quote prop updated:', quote);
-    console.log('MultiBlockQuotePreview: Number of blocks:', quote.blocks?.length || 0);
-    if (quote.blocks) {
-      quote.blocks.forEach((block, index) => {
-        console.log(`Block ${index + 1}: "${block.title}" with ${block.items?.length || 0} items`);
-      });
-    }
+    // Quote updated
   }, [quote]);
 
   const fetchSettings = async () => {
@@ -87,8 +82,7 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
         };
 
         // Generate PDF and open in new tab
-        // Temporarily disabled PDF generation
-        console.log('PDF generation temporarily disabled');
+        // PDF generation to be implemented with Context7 MCP
         
         // Clean up temp div
         document.body.removeChild(tempDiv);
@@ -120,8 +114,6 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
     }
     return {};
   };
-
-  console.log('MultiBlockQuotePreview: Rendering with quote:', quote);
 
   return (
     <div className="bg-white border rounded-lg shadow-sm">
@@ -216,8 +208,6 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
               let productBlockIndex = 0;
               
               return quote.blocks.map((block, blockIndex) => {
-                console.log('MultiBlockQuotePreview: Rendering block:', block);
-                
                 if (block.type === 'textblock') {
                   // Simple text block - no borders, no padding, just text
                   return (
