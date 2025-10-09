@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FileText, Archive } from "lucide-react";
 import { IconBox } from "@/components/ui/icon-box";
 import { InvoicesTable } from "./invoicing/InvoicesTable";
@@ -36,6 +36,17 @@ export const Invoicing: React.FC<InvoicingProps> = ({
     status: "all",
     dateRange: "all"
   });
+
+  // ✅ Update local state when props change (voor knoppen in header)
+  useEffect(() => {
+    console.log('🔄 Invoicing: Props changed -', { showNewInvoice, invoiceType });
+    if (showNewInvoice !== undefined) {
+      setShowNewInvoiceForm(showNewInvoice);
+    }
+    if (invoiceType !== undefined) {
+      setCurrentInvoiceType(invoiceType);
+    }
+  }, [showNewInvoice, invoiceType]);
 
   const handleSendInvoice = async (invoice: any) => {
     if (!invoice?.id) {
