@@ -91,6 +91,18 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     },
   });
 
+  // ✅ Show loader while CRM data is loading
+  if (crmLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Klantgegevens laden...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Initialize form with existing quote data or generate new quote number
   useEffect(() => {
     // Only proceed if CRM data is loaded

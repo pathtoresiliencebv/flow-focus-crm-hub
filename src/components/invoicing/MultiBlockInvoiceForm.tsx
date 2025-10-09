@@ -48,7 +48,19 @@ interface MultiBlockInvoiceFormProps {
 export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceFormProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { customers, projects } = useCrmStore();
+  const { customers, projects, isLoading: crmLoading } = useCrmStore();
+
+  // ✅ Show loader while CRM data is loading
+  if (crmLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Klantgegevens laden...</p>
+        </div>
+      </div>
+    );
+  }
   
   // Form state
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
