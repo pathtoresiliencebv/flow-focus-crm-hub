@@ -6,6 +6,7 @@ import { InvoiceFilters } from "./invoicing/InvoiceFilters";
 import { ArchivedInvoicesView } from "./invoicing/ArchivedInvoicesView";
 import { supabase } from "@/integrations/supabase/client";
 import { InvoiceFinalizationDialog } from "./invoicing/InvoiceFinalizationDialog";
+import { InvoicePreviewDialog } from "./invoicing/InvoicePreviewDialog";
 import { MultiBlockInvoiceForm } from "./invoicing/MultiBlockInvoiceForm";
 import { SimpleInvoiceForm } from "./invoicing/SimpleInvoiceForm";
 import { useInvoices } from "@/hooks/useInvoices";

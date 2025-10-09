@@ -26,6 +26,7 @@ interface InvoicesTableProps {
   onArchiveInvoice?: (invoice: any) => void;
   onFinalizeInvoice?: (invoice: any) => void;
   onSendReminder?: (invoice: any) => void;
+  onViewInvoice?: (invoice: any) => void;
 }
 
 export const InvoicesTable = ({ 
@@ -36,7 +37,8 @@ export const InvoicesTable = ({
   onDuplicateInvoice,
   onArchiveInvoice,
   onFinalizeInvoice,
-  onSendReminder
+  onSendReminder,
+  onViewInvoice
 }: InvoicesTableProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -166,7 +168,7 @@ export const InvoicesTable = ({
                       </Button>
                     </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => navigate(`/invoices/${invoice.id}`)}>
+                    <DropdownMenuItem onClick={() => onViewInvoice?.(invoice)}>
                       <Eye className="mr-2 h-4 w-4" />
                       Bekijken
                     </DropdownMenuItem>
