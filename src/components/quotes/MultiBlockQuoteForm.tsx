@@ -689,33 +689,51 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   // Old auto-save removed - now using blur-based saving
 
   const handleSaveDraft = useCallback(async (e?: React.FormEvent) => {
+    console.log('💾 handleSaveDraft: START');
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
     setSaving(true);
+    console.log('💾 handleSaveDraft: Saving set to true');
+    
     try {
+      console.log('💾 handleSaveDraft: Getting form values...');
       const values = form.getValues();
+      console.log('💾 handleSaveDraft: Form values:', {
+        customer: values.customer,
+        project: values.project,
+        quoteNumber: values.quoteNumber,
+        blocksCount: blocks.length
+      });
+      
+      console.log('💾 handleSaveDraft: Calling saveAsDraft...');
       const success = await saveAsDraft(values, false);
+      console.log('💾 handleSaveDraft: saveAsDraft returned:', success);
+      
       if (success) {
+        console.log('✅ handleSaveDraft: Success! Showing toast and navigating');
         toast({
           title: "Concept opgeslagen",
           description: "Je offerte is opgeslagen als concept.",
         });
         // Navigate back to quotes overview
         window.location.href = '/?tab=quotes';
+      } else {
+        console.log('⚠️ handleSaveDraft: saveAsDraft returned false - NOT navigating');
       }
     } catch (error) {
-      console.error('Error saving draft:', error);
+      console.error('❌ handleSaveDraft: Error:', error);
       toast({
         title: "Fout bij opslaan",
         description: "Er is een fout opgetreden bij het opslaan van het concept.",
         variant: "destructive",
       });
     } finally {
+      console.log('💾 handleSaveDraft: FINALLY - Setting saving to false');
       setSaving(false);
     }
-  }, [form, saveAsDraft, toast]);
+  }, [form, saveAsDraft, toast, blocks]);
 
   const handleSaveAndSend = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
