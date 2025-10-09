@@ -12,8 +12,8 @@ const corsHeaders = {
 
 interface SendInvoiceEmailRequest {
   invoiceId: string;
-  recipientEmail: string;
-  recipientName: string;
+  recipientEmail?: string;
+  recipientName?: string;
   subject?: string;
   message?: string;
   includePaymentLink?: boolean;
@@ -26,11 +26,9 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const requestBody = await req.json();
-    const { invoiceId, recipientEmail, recipientName, subject, message, includePaymentLink = true } = requestBody;
+    const { invoiceId, recipientEmail, recipientName, subject, message, includePaymentLink = true }: SendInvoiceEmailRequest = await req.json();
     
-    console.log('📧 Sending invoice email for ID:', invoiceId);
-    console.log('📦 Request body:', { invoiceId, recipientEmail, recipientName, includePaymentLink });
+    console.log('Sending invoice email for ID:', invoiceId);
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -45,9 +43,13 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (invoiceError || !invoice) {
-      console.error('❌ Error fetching invoice:', invoiceError);
+      console.error('Error fetching invoice:', invoiceError);
       return new Response(
-        JSON.stringify({ error: 'Invoice not found' }),
+        JSON.stringify({ 
+          error: 'Invoice not found',
+          details: invoiceError ? invoiceError.message : 'No invoice found with this ID',
+          invoiceId: invoiceId
+        }),
         {
           status: 404,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -60,7 +62,7 @@ const handler = async (req: Request): Promise<Response> => {
     const finalRecipientName = recipientName || invoice.customer_name;
 
     if (!finalRecipientEmail) {
-      console.error('❌ No recipient email available');
+      console.error('No recipient email available');
       return new Response(
         JSON.stringify({ error: 'No recipient email available for this invoice' }),
         {
@@ -70,145 +72,103 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log('✅ Using recipient:', finalRecipientName, '<' + finalRecipientEmail + '>');
-
-    // Check if RESEND_API_KEY is configured
-    const resendKey = Deno.env.get("RESEND_API_KEY");
-    if (!resendKey) {
-      console.error('❌ RESEND_API_KEY is not configured!');
-      return new Response(
-        JSON.stringify({ error: 'Email service not configured. Contact administrator.' }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
-    }
-    console.log('✅ RESEND_API_KEY is configured');
+    console.log('Using recipient:', finalRecipientName, '<' + finalRecipientEmail + '>');
 
     // Always generate payment link if not already exists
     let paymentLinkUrl = invoice.payment_link_url;
     
-    if (!paymentLinkUrl) {
+    if (!paymentLinkUrl && includePaymentLink) {
       try {
         console.log('Generating payment link for invoice:', invoiceId);
         
         // Initialize Stripe
         const stripe = (await import("https://esm.sh/stripe@18.5.0")).default;
-        const stripeClient = new stripe(Deno.env.get("STRIPE_LIVE_KEY") || "", {
-          apiVersion: "2025-08-27.basil",
-        });
-
-        // Check if customer exists in Stripe
-        let customerId = null;
-        if (invoice.customer_email) {
-          const customers = await stripeClient.customers.list({ 
-            email: invoice.customer_email, 
-            limit: 1 
+        const stripeKey = Deno.env.get("STRIPE_LIVE_KEY");
+        
+        if (stripeKey) {
+          const stripeClient = new stripe(stripeKey, {
+            apiVersion: "2025-08-27.basil",
           });
-          
-          if (customers.data.length > 0) {
-            customerId = customers.data[0].id;
-          } else {
-            // Create new customer
-            const customer = await stripeClient.customers.create({
-              email: invoice.customer_email,
-              name: invoice.customer_name,
-            });
-            customerId = customer.id;
-          }
-        }
 
-        // Create checkout session
-        const session = await stripeClient.checkout.sessions.create({
-          customer: customerId,
-          customer_email: customerId ? undefined : invoice.customer_email,
-          line_items: [
-            {
-              price_data: {
-                currency: 'eur',
-                product_data: {
-                  name: `Factuur ${invoice.invoice_number}`,
-                  description: invoice.project_title || 'Factuur betaling',
+          // Check if customer exists in Stripe
+          let customerId = null;
+          if (invoice.customer_email) {
+            const customers = await stripeClient.customers.list({ 
+              email: invoice.customer_email, 
+              limit: 1 
+            });
+            
+            if (customers.data.length > 0) {
+              customerId = customers.data[0].id;
+            } else {
+              // Create new customer
+              const customer = await stripeClient.customers.create({
+                email: invoice.customer_email,
+                name: invoice.customer_name,
+              });
+              customerId = customer.id;
+            }
+          }
+
+          // Create checkout session
+          const session = await stripeClient.checkout.sessions.create({
+            customer: customerId,
+            customer_email: customerId ? undefined : invoice.customer_email,
+            line_items: [
+              {
+                price_data: {
+                  currency: 'eur',
+                  product_data: {
+                    name: `Factuur ${invoice.invoice_number}`,
+                    description: invoice.project_title || 'Factuur betaling',
+                  },
+                  unit_amount: Math.round(invoice.total_amount * 100),
                 },
-                unit_amount: Math.round(invoice.total_amount * 100),
+                quantity: 1,
               },
-              quantity: 1,
-            },
-          ],
-          mode: "payment",
-          success_url: `${req.headers.get("origin") || "https://smanscrm.nl"}/invoices/${invoiceId}?payment=success`,
-          cancel_url: `${req.headers.get("origin") || "https://smanscrm.nl"}/invoices/${invoiceId}?payment=cancelled`,
-          metadata: {
-            invoice_id: invoice.id,
-            invoice_number: invoice.invoice_number,
-          },
-          payment_intent_data: {
+            ],
+            mode: "payment",
+            success_url: `${req.headers.get("origin") || "https://smanscrm.nl"}/invoices/${invoiceId}?payment=success`,
+            cancel_url: `${req.headers.get("origin") || "https://smanscrm.nl"}/invoices/${invoiceId}?payment=cancelled`,
             metadata: {
               invoice_id: invoice.id,
               invoice_number: invoice.invoice_number,
+            },
+            payment_intent_data: {
+              metadata: {
+                invoice_id: invoice.id,
+                invoice_number: invoice.invoice_number,
+              }
             }
+          });
+
+          paymentLinkUrl = session.url;
+
+          // Store payment link in database
+          const { error: updateError } = await supabase
+            .from('invoices')
+            .update({ 
+              payment_link_url: session.url,
+              stripe_checkout_session_id: session.id,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', invoiceId);
+
+          if (updateError) {
+            console.error('Error storing payment link:', updateError);
+          } else {
+            console.log('Payment link generated and stored successfully');
           }
-        });
-
-        paymentLinkUrl = session.url;
-
-        // Store payment link in database
-        const { error: updateError } = await supabase
-          .from('invoices')
-          .update({ 
-            payment_link_url: session.url,
-            stripe_checkout_session_id: session.id,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', invoiceId);
-
-        if (updateError) {
-          console.error('Error storing payment link:', updateError);
         } else {
-          console.log('Payment link generated and stored successfully');
+          console.warn('No STRIPE_LIVE_KEY configured, skipping payment link generation');
         }
-
       } catch (stripeError) {
         console.error('Error generating payment link:', stripeError);
         // Continue with email without payment link
       }
     }
 
-    // Generate PDF attachment
-    let attachments = [];
-    try {
-      console.log('🔄 Attempting to generate PDF attachment...');
-      const pdfResponse = await supabase.functions.invoke('generate-invoice-pdf', {
-        body: { invoiceId: invoiceId }
-      });
-      
-      console.log('📄 PDF Response:', { 
-        hasData: !!pdfResponse.data, 
-        hasError: !!pdfResponse.error,
-        success: pdfResponse.data?.success 
-      });
-      
-      if (pdfResponse.error) {
-        console.warn('⚠️ PDF generation returned error (continuing without PDF):', pdfResponse.error);
-      } else if (pdfResponse.data && pdfResponse.data.success) {
-        const baseFilename = `factuur-${invoice.invoice_number}`;
-        
-        // Add main invoice PDF
-        attachments.push({
-          filename: pdfResponse.data.filename || `${baseFilename}.pdf`,
-          content: pdfResponse.data.pdfData,
-          type: pdfResponse.data.contentType
-        });
-        
-        console.log('✅ PDF attachment generated successfully:', attachments.length, 'files');
-      }
-    } catch (pdfError: any) {
-      console.warn('⚠️ Failed to generate PDF attachment (continuing without PDF):', pdfError.message);
-      // Continue without attachment - PDF is optional
-    }
-
-    // Create enhanced email HTML content with modern styling
+    // Create email HTML content
     const emailHtml = `
       <!DOCTYPE html>
       <html>
@@ -337,10 +297,8 @@ const handler = async (req: Request): Promise<Response> => {
                 <p><strong>Vervaldatum:</strong> ${new Date(invoice.due_date).toLocaleDateString('nl-NL')}</p>
                 <p><strong>Project:</strong> ${invoice.project_title || 'Niet gespecificeerd'}</p>
                 <p><strong>Totaalbedrag:</strong> <span style="font-size: 18px; color: #059669; font-weight: 700;">€${invoice.total_amount.toFixed(2)}</span></p>
-              </div>`;
-
-    if (paymentLinkUrl) {
-      emailHtml += `
+              </div>
+              ${paymentLinkUrl ? `
               <div class="payment-section">
                 <h3 style="margin-top: 0; font-size: 22px;">💳 Betaal Nu Online</h3>
                 <p style="margin: 15px 0; font-size: 16px; opacity: 0.95;">
@@ -353,10 +311,8 @@ const handler = async (req: Request): Promise<Response> => {
                 <p style="font-size: 13px; margin-top: 20px; opacity: 0.8;">
                   Beveiligd door Stripe • SSL versleuteld • 100% veilig
                 </p>
-              </div>`;
-    }
-
-    emailHtml += `
+              </div>` : ''}
+              
               <p>Voor vragen over deze factuur kunt u altijd contact met ons opnemen.</p>
               
               <p style="margin-top: 25px;">
@@ -378,6 +334,30 @@ const handler = async (req: Request): Promise<Response> => {
         </body>
       </html>
     `;
+
+    // Generate PDF attachment
+    let attachments = [];
+    try {
+      const pdfResponse = await supabase.functions.invoke('generate-invoice-pdf', {
+        body: { invoiceId: invoiceId }
+      });
+      
+      if (pdfResponse.data && pdfResponse.data.success) {
+        const baseFilename = `factuur-${invoice.invoice_number}`;
+        
+        // Add main invoice PDF
+        attachments.push({
+          filename: pdfResponse.data.filename || `${baseFilename}.pdf`,
+          content: pdfResponse.data.pdfData,
+          type: pdfResponse.data.contentType || 'application/pdf'
+        });
+        
+        console.log('PDF attachment generated successfully:', attachments.length, 'files');
+      }
+    } catch (pdfError) {
+      console.error('Failed to generate PDF attachment:', pdfError);
+      // Continue without attachment
+    }
 
     // Send email via Resend
     const emailResponse = await resend.emails.send({
@@ -432,7 +412,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    console.log("✅ Invoice email sent successfully:", emailResponse);
+    console.log("Invoice email sent successfully:", emailResponse);
 
     return new Response(
       JSON.stringify({ 
