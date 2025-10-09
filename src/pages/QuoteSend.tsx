@@ -5,7 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { SendQuoteDialog } from '@/components/quotes/SendQuoteDialog';
 import { useQuotes } from '@/hooks/useQuotes';
 
-export function QuoteSend() {
+export default function QuoteSend() {
   const { quoteId } = useParams<{ quoteId: string }>();
   const navigate = useNavigate();
   const { quotes, fetchQuotes } = useQuotes();

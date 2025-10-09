@@ -6,7 +6,7 @@ import { CheckCircle, ArrowLeft, Receipt, CreditCard } from "lucide-react";
 import { useInvoices } from '@/hooks/useInvoices';
 import { useToast } from '@/hooks/use-toast';
 
-export function InvoicePaymentSuccess() {
+export default function InvoicePaymentSuccess() {
   const { invoiceId } = useParams<{ invoiceId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();

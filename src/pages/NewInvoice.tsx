@@ -5,7 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { InvoiceForm } from '@/components/InvoiceForm';
 import { useCrmStore } from "@/hooks/useCrmStore";
 
-export function NewInvoice() {
+export default function NewInvoice() {
   const navigate = useNavigate();
   const { customers, projects } = useCrmStore();
 

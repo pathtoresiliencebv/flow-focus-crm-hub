@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Quote } from '@/types/quote';
 import { useToast } from '@/hooks/use-toast';
 
-export function EditQuote() {
+export default function EditQuote() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();

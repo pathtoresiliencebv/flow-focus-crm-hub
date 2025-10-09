@@ -21,7 +21,7 @@ const QuoteFormSkeleton = () => (
   </div>
 );
 
-export function NewQuote() {
+export default function NewQuote() {
   const navigate = useNavigate();
 
   const handleClose = () => {

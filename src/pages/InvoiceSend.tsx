@@ -7,7 +7,7 @@ import { useInvoices } from '@/hooks/useInvoices';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-export function InvoiceSend() {
+export default function InvoiceSend() {
   const { invoiceId } = useParams<{ invoiceId: string }>();
   const navigate = useNavigate();
   const { invoices } = useInvoices();

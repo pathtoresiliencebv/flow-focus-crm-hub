@@ -5,7 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { MultiBlockQuotePreview } from '@/components/quotes/MultiBlockQuotePreview';
 import { useQuotes } from '@/hooks/useQuotes';
 
-export function QuotePreview() {
+export default function QuotePreview() {
   const { quoteId } = useParams<{ quoteId: string }>();
   const navigate = useNavigate();
   const { quotes } = useQuotes();

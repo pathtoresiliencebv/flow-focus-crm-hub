@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 
-export function InvoiceDetailsPage() {
+export default function InvoiceDetailsPage() {
   const { invoiceId, id } = useParams<{ invoiceId?: string; id?: string }>();
   const navigate = useNavigate();
   const { fetchInvoiceById, fetchInvoiceItems, updateInvoiceStatus } = useInvoices();
