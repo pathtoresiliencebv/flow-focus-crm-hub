@@ -113,19 +113,17 @@ export function SearchableProjectSelect({
 
   return (
     <div className="w-full space-y-2">
-      {/* Search input */}
-      {safeProjects.length > 5 && (
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Zoek op projectnaam, klant of status..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-      )}
+      {/* Search input - ALTIJD zichtbaar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          type="text"
+          placeholder="Zoek op projectnaam, klant of status..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9"
+        />
+      </div>
       
       {/* Select dropdown */}
       <Select value={value} onValueChange={handleSelect} disabled={disabled}>
