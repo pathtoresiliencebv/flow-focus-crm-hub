@@ -33,6 +33,7 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
   const [printLoading, setPrintLoading] = useState(false);
   const [downloadLoading, setDownloadLoading] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -118,6 +119,10 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
 
     try {
       setDownloadLoading(true);
+      setIsGeneratingPDF(true); // Show all content for PDF generation
+      
+      // Wait for DOM to update with full content visibility
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       await generateAndDownloadPDF(
         previewRef.current,
@@ -125,7 +130,14 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
         {
           margin: [10, 10, 10, 10],
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
+          html2canvas: { 
+            scale: 2, 
+            useCORS: true,
+            scrollY: 0,
+            scrollX: 0,
+            windowHeight: previewRef.current.scrollHeight,
+            logging: false
+          },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compressPDF: true },
           pagebreak: { mode: ['css', 'legacy'], avoid: ['img', 'table', '.avoid-break'] },
         }
@@ -144,6 +156,7 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
       });
     } finally {
       setDownloadLoading(false);
+      setIsGeneratingPDF(false);
     }
   };
 
@@ -227,36 +240,26 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
       <div className="flex justify-end gap-2 p-4 border-b print:hidden">
         <Button 
           onClick={handleDownloadPDF}
-          disabled={downloadLoading || printLoading || uploadLoading}
-          variant="outline"
+          disabled={downloadLoading}
+          variant="default"
           size="sm"
           className="gap-2"
         >
           <Download className="h-4 w-4" />
           {downloadLoading ? 'Downloaden...' : 'Download PDF'}
         </Button>
-        <Button 
-          onClick={handleOpenPDF}
-          disabled={printLoading || downloadLoading || uploadLoading}
-          variant="outline"
-          size="sm"
-          className="gap-2"
-        >
-          <ExternalLink className="h-4 w-4" />
-          {printLoading ? 'Openen...' : 'Open PDF'}
-        </Button>
-        <Button 
-          onClick={handleUploadPDF}
-          disabled={uploadLoading || printLoading || downloadLoading}
-          size="sm"
-          className="gap-2"
-        >
-          <Printer className="h-4 w-4" />
-          {uploadLoading ? 'Opslaan...' : 'Print & Opslaan'}
-        </Button>
       </div>
       
-      <div ref={previewRef} className="p-2 max-h-[70vh] overflow-y-auto print:max-h-none print:overflow-visible text-xs">
+      <div 
+        ref={previewRef} 
+        className={cn(
+          "p-2 text-xs",
+          isGeneratingPDF 
+            ? "max-h-none overflow-visible" 
+            : "max-h-[70vh] overflow-y-auto",
+          "print:max-h-none print:overflow-visible"
+        )}
+      >
       {/* Header with logo and company info */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center">

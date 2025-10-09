@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Plus, Save, BookmarkPlus, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { QuoteBlockForm } from './QuoteBlockForm';
@@ -30,6 +31,7 @@ import { useCompanySettings } from '@/hooks/useCompanySettings';
 import { QuoteBlock, Quote } from '@/types/quote';
 import { supabase } from '@/integrations/supabase/client';
 import { SearchableCustomerSelect } from '@/components/ui/searchable-customer-select';
+import { SearchableProjectSelect } from '@/components/ui/searchable-project-select';
 
 const formSchema = z.object({
   customer: z.string().min(1, { message: "Selecteer een klant" }),
@@ -980,14 +982,6 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
                     )}
                   />
 
-                  {showCustomerAdd && (
-                    <CustomerQuickAdd
-                      onCustomerAdded={handleCustomerAdded}
-                      onCancel={() => setShowCustomerAdd(false)}
-                    />
-                  )}
-
-
                   <FormField
                     control={form.control}
                     name="project"
@@ -995,20 +989,16 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
                       <FormItem>
                         <FormLabel>Project (optioneel)</FormLabel>
                         <div className="flex gap-2">
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecteer project" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {filteredProjects.map((project) => (
-                                <SelectItem key={project.id} value={project.id}>
-                                  {project.title}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <FormControl>
+                            <SearchableProjectSelect
+                              projects={filteredProjects}
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              placeholder="Zoek en selecteer project..."
+                              className="flex-1"
+                              disabled={!form.watch('customer')}
+                            />
+                          </FormControl>
                           <Button
                             type="button"
                             variant="outline"
@@ -1024,15 +1014,6 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
                       </FormItem>
                     )}
                   />
-
-                  {showProjectAdd && form.watch('customer') && (
-                    <ProjectQuickAdd
-                      onProjectAdded={handleProjectAdded}
-                      onCancel={() => setShowProjectAdd(false)}
-                      selectedCustomerId={form.watch('customer')}
-                      selectedCustomerName={customers.find(c => c.id === form.watch('customer'))?.name || ''}
-                    />
-                  )}
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
@@ -1281,6 +1262,46 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Sidebar voor nieuwe klant toevoegen */}
+      <Sheet open={showCustomerAdd} onOpenChange={setShowCustomerAdd}>
+        <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Nieuwe Klant Toevoegen</SheetTitle>
+            <SheetDescription>
+              Voeg een nieuwe klant toe en selecteer deze direct voor de offerte.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6">
+            <CustomerQuickAdd
+              onCustomerAdded={handleCustomerAdded}
+              onCancel={() => setShowCustomerAdd(false)}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Sidebar voor nieuw project toevoegen */}
+      <Sheet open={showProjectAdd} onOpenChange={setShowProjectAdd}>
+        <SheetContent side="right" className="w-full sm:max-w-xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Nieuw Project Toevoegen</SheetTitle>
+            <SheetDescription>
+              Voeg een nieuw project toe en selecteer deze direct voor de offerte.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6">
+            {form.watch('customer') && (
+              <ProjectQuickAdd
+                onProjectAdded={handleProjectAdded}
+                onCancel={() => setShowProjectAdd(false)}
+                selectedCustomerId={form.watch('customer')}
+                selectedCustomerName={customers.find(c => c.id === form.watch('customer'))?.name || ''}
+              />
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
 
     </div>
   );
