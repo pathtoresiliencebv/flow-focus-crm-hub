@@ -500,9 +500,9 @@ export function SimplifiedPlanningManagement({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none" disabled>Selecteer een monteur</SelectItem>
-                  {monteurs.map((monteur) => (
-                    <SelectItem key={monteur.id} value={monteur.id}>
-                      {monteur.full_name || monteur.email}
+                  {installers.map((installer) => (
+                    <SelectItem key={installer.id} value={installer.id}>
+                      {installer.full_name || installer.email}
                     </SelectItem>
                   ))}
                 </SelectContent>
