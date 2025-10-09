@@ -7,18 +7,30 @@ import { ArchivedInvoicesView } from "./invoicing/ArchivedInvoicesView";
 import { supabase } from "@/integrations/supabase/client";
 import { InvoiceFinalizationDialog } from "./invoicing/InvoiceFinalizationDialog";
 import { MultiBlockInvoiceForm } from "./invoicing/MultiBlockInvoiceForm";
+import { SimpleInvoiceForm } from "./invoicing/SimpleInvoiceForm";
 import { useInvoices } from "@/hooks/useInvoices";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
-export const Invoicing = () => {
+interface InvoicingProps {
+  invoiceType?: 'simple' | 'detailed';
+  showNewInvoice?: boolean;
+  onCloseNewInvoice?: () => void;
+}
+
+export const Invoicing: React.FC<InvoicingProps> = ({ 
+  invoiceType = 'detailed',
+  showNewInvoice = false,
+  onCloseNewInvoice
+}) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { invoices, loading, deleteInvoice, duplicateInvoice, archiveInvoice, sendPaymentReminder, refetch } = useInvoices();
   const [activeTab, setActiveTab] = useState("active");
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [showFinalizationDialog, setShowFinalizationDialog] = useState(false);
-  const [showNewInvoiceForm, setShowNewInvoiceForm] = useState(window.location.pathname === "/invoices/new");
+  const [showNewInvoiceForm, setShowNewInvoiceForm] = useState(showNewInvoice || window.location.pathname === "/invoices/new");
+  const [currentInvoiceType, setCurrentInvoiceType] = useState<'simple' | 'detailed'>(invoiceType);
   const [filters, setFilters] = useState({
     search: "",
     status: "all",
@@ -164,14 +176,26 @@ export const Invoicing = () => {
       return matchesSearch && matchesStatus;
     });
 
+  const handleCloseNewInvoice = () => {
+    setShowNewInvoiceForm(false);
+    onCloseNewInvoice?.();
+    refetch();
+  };
+
   if (showNewInvoiceForm) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold">Nieuwe factuur aanmaken</h1>
+          <h1 className="text-2xl font-bold">
+            {currentInvoiceType === 'simple' ? 'Nieuwe eenvoudige factuur' : 'Nieuwe gedetailleerde factuur'}
+          </h1>
         </div>
         <div className="bg-card rounded-lg shadow-sm border p-6">
-          <MultiBlockInvoiceForm onClose={handleCloseNewInvoice} />
+          {currentInvoiceType === 'simple' ? (
+            <SimpleInvoiceForm onClose={handleCloseNewInvoice} />
+          ) : (
+            <MultiBlockInvoiceForm onClose={handleCloseNewInvoice} />
+          )}
         </div>
       </div>
     );

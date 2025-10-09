@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { Invoicing } from "@/components/Invoicing";
@@ -8,13 +8,17 @@ import { FileText, Wrench } from "lucide-react";
 export default function InvoicesPage() {
   const { setTitle, setActions } = usePageHeader();
   const navigate = useNavigate();
+  const [showNewInvoice, setShowNewInvoice] = useState(false);
+  const [invoiceType, setInvoiceType] = useState<'simple' | 'detailed'>('simple');
 
   const handleNewInvoice = () => {
-    navigate('/invoices/new');
+    setInvoiceType('simple');
+    setShowNewInvoice(true);
   };
 
   const handleNewWerkbon = () => {
-    navigate('/invoices/new?type=werkbon');
+    setInvoiceType('detailed');
+    setShowNewInvoice(true);
   };
 
   useEffect(() => {
@@ -45,6 +49,12 @@ export default function InvoicesPage() {
     };
   }, [navigate, setTitle, setActions]);
 
-  return <Invoicing />;
+  return (
+    <Invoicing 
+      invoiceType={invoiceType}
+      showNewInvoice={showNewInvoice}
+      onCloseNewInvoice={() => setShowNewInvoice(false)}
+    />
+  );
 }
 
