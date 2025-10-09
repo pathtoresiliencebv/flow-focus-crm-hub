@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SignatureCanvas } from "@/components/SignatureCanvas";
-import { supabase } from "@/integrations/supabase/client";
+import { publicSupabase } from "@/integrations/supabase/publicClient";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Check, FileText, Calendar, User, Download, Paperclip } from "lucide-react";
@@ -53,7 +53,7 @@ export default function PublicQuote() {
 
   const fetchSettings = async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await publicSupabase
         .from('quote_settings')
         .select('*')
         .single();
@@ -67,9 +67,9 @@ export default function PublicQuote() {
   };
 
   const fetchQuote = async () => {
-    console.log('Fetching quote with token:', token);
+    console.log('🔍 Fetching public quote with token:', token);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await publicSupabase
         .from('quotes')
         .select('*')
         .eq('public_token', token)
@@ -210,7 +210,7 @@ export default function PublicQuote() {
 
       // Trigger the automation workflow
       try {
-        const { error: automationError } = await supabase.functions.invoke('quote-approval-automation', {
+        const { error: automationError } = await publicSupabase.functions.invoke('quote-approval-automation', {
           body: { quote_id: quote?.id }
         });
 
@@ -242,7 +242,7 @@ export default function PublicQuote() {
 
   const handleDownloadPdf = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('generate-quote-pdf', {
+      const { data, error } = await publicSupabase.functions.invoke('generate-quote-pdf', {
         body: { quoteId: quote?.id, includeSigned: true }
       });
 

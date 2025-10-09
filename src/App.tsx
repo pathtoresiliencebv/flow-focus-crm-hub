@@ -87,17 +87,20 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <I18nProvider>
-            <TranslationProvider>
-              <BrowserRouter>
-                <div className="min-h-screen bg-background">
-                  <Routes>
-                    {/* Public routes */}
-                    <Route path="/quote/:token" element={<PublicQuote />} />
-                    
-                    {/* Protected routes with Layout */}
-                    <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+        <BrowserRouter>
+          <div className="min-h-screen bg-background">
+            <Routes>
+              {/* Public routes - NO AUTH REQUIRED */}
+              <Route path="/quote/:token" element={<PublicQuote />} />
+              
+              {/* Protected routes with auth */}
+              <Route path="/*" element={
+                <AuthProvider>
+                  <I18nProvider>
+                    <TranslationProvider>
+                      <Routes>
+                        {/* Protected routes with Layout */}
+                        <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                       <Route path="/" element={<DashboardPage />} />
                       <Route path="/customers" element={<CustomersPage />} />
                       <Route path="/customers/:customerId" element={<CustomerDetailPage />} />
@@ -128,16 +131,18 @@ function App() {
                     <Route path="/invoices/:invoiceId/details" element={<ProtectedRoute><Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><InvoiceDetailsPage /></Suspense></ProtectedRoute>} />
                     <Route path="/invoices/:invoiceId/send" element={<ProtectedRoute><Suspense fallback={<div className="flex h-screen items-center justify-center">Loading...</div>}><InvoiceSend /></Suspense></ProtectedRoute>} />
                     
-                    {/* 404 */}
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                  <Toaster />
-                  <Sonner />
-                </div>
-              </BrowserRouter>
-            </TranslationProvider>
-          </I18nProvider>
-        </AuthProvider>
+                        {/* 404 */}
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </TranslationProvider>
+                  </I18nProvider>
+                </AuthProvider>
+              } />
+            </Routes>
+            <Toaster />
+            <Sonner />
+          </div>
+        </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>
   );
