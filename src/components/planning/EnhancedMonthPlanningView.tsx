@@ -37,7 +37,6 @@ export interface EnhancedMonthPlanningViewProps {
   users: User[];
   onDateClick?: (date: Date) => void;
   onPlanningClick?: (planning: PlanningItem) => void;
-  onNewPlanning?: () => void;
   loading?: boolean;
 }
 
@@ -46,7 +45,6 @@ export function EnhancedMonthPlanningView({
   users,
   onDateClick,
   onPlanningClick,
-  onNewPlanning,
   loading = false,
 }: EnhancedMonthPlanningViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -149,17 +147,6 @@ export function EnhancedMonthPlanningView({
             </Button>
           </div>
         </div>
-        
-        {onNewPlanning && (
-          <Button
-            size="sm"
-            onClick={onNewPlanning}
-            className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)]"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nieuwe Planning
-          </Button>
-        )}
       </div>
 
       {/* Calendar Grid */}

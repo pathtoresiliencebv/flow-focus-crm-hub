@@ -30,12 +30,20 @@ import {
   type TimeConflict,
 } from '@/utils/monteurAvailabilityService';
 
-export function SimplifiedPlanningManagement() {
+export interface SimplifiedPlanningManagementProps {
+  viewMode?: 'month' | 'availability';
+  showCustomerDialog?: boolean;
+  onCloseCustomerDialog?: () => void;
+}
+
+export function SimplifiedPlanningManagement({
+  viewMode = 'month',
+  showCustomerDialog = false,
+  onCloseCustomerDialog,
+}: SimplifiedPlanningManagementProps = {}) {
   const { toast } = useToast();
   const { user, profile } = useAuth();
-  const [viewMode, setViewMode] = useState<'month' | 'availability'>('month');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [showCustomerDialog, setShowCustomerDialog] = useState(false);
   const [showPlanningDialog, setShowPlanningDialog] = useState(false);
   const [showProjectSidebar, setShowProjectSidebar] = useState(false);
   const [showConflictDialog, setShowConflictDialog] = useState(false);
@@ -147,7 +155,7 @@ export function SimplifiedPlanningManagement() {
         description: `Planning voor ${formData.title} is succesvol aangemaakt.`,
       });
 
-      setShowCustomerDialog(false);
+      onCloseCustomerDialog?.();
     } catch (error) {
       console.error('Error adding customer planning:', error);
       toast({
@@ -262,43 +270,9 @@ export function SimplifiedPlanningManagement() {
   };
 
   return (
-    <div className="h-screen flex flex-col">
-      {/* Header */}
-      <div className="bg-white border-b p-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <CalendarIcon className="h-7 w-7" />
-            Planning
-          </h1>
-          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-            <Button
-              variant={viewMode === 'month' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('month')}
-              className={viewMode === 'month' ? 'bg-white shadow-sm' : ''}
-            >
-              <CalendarDays className="h-4 w-4 mr-2" />
-              Maand
-            </Button>
-            <Button
-              variant={viewMode === 'availability' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('availability')}
-              className={viewMode === 'availability' ? 'bg-white shadow-sm' : ''}
-            >
-              <CalendarRange className="h-4 w-4 mr-2" />
-              Beschikbaarheid
-            </Button>
-          </div>
-          <Button onClick={() => setShowCustomerDialog(true)} className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="h-5 w-5 mr-2" />
-            Nieuwe Klant Afspraak
-          </Button>
-        </div>
-      </div>
-
+    <div className="h-full flex flex-col">
       {/* Main Content */}
-      <div className="flex-1 overflow-auto p-6">
+      <div className="flex-1 overflow-auto">
         {viewMode === 'month' ? (
           <EnhancedMonthPlanningView
             planningItems={planningItems}
@@ -312,7 +286,6 @@ export function SimplifiedPlanningManagement() {
               // TODO: Open planning details dialog
               console.log('Planning clicked:', planning);
             }}
-            onNewPlanning={() => setShowCustomerDialog(true)}
             loading={loading}
           />
         ) : (
@@ -520,7 +493,7 @@ export function SimplifiedPlanningManagement() {
       {/* Customer Planning Dialog */}
       <CustomerPlanningDialog
         open={showCustomerDialog}
-        onOpenChange={setShowCustomerDialog}
+        onOpenChange={(open) => !open && onCloseCustomerDialog?.()}
         onSubmit={handleCustomerPlanningSubmit}
         initialDate={selectedDate}
       />

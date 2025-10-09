@@ -51,20 +51,6 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
 }) => {
   const { customers, projects, isLoading: crmLoading, addCustomer } = useCrmStore();
   const { toast } = useToast();
-  
-  // Early return with loading state if CRM data is still loading
-  if (crmLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-center py-8">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Gegevens laden...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [blocks, setBlocks] = useState<QuoteBlock[]>([
@@ -888,6 +874,20 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     console.log('MultiBlockQuoteForm: Created preview quote with updateCounter:', updateCounter, 'previewKey:', previewKey, quote);
     return quote;
   }, [customers, projects, blocks, totalAmount, totalVAT, adminSignature, updateCounter, previewKey]);
+
+  // Show loading state if CRM data is still loading
+  if (crmLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center py-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Gegevens laden...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-none p-4">
