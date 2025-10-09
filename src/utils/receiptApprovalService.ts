@@ -22,6 +22,8 @@ export interface ApprovalRule {
   auto_approve: boolean;
   is_active: boolean;
   priority: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface AutoApprovalResult {
@@ -124,14 +126,19 @@ export async function applyAutoApproval(receiptId: string, receipt: Partial<Rece
 }
 
 /**
- * Get all active approval rules
+ * Get all approval rules (both active and inactive)
  */
-export async function getApprovalRules(): Promise<ApprovalRule[]> {
+export async function getApprovalRules(activeOnly: boolean = false): Promise<ApprovalRule[]> {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('receipt_approval_rules')
-      .select('*')
-      .eq('is_active', true)
+      .select('*');
+
+    if (activeOnly) {
+      query = query.eq('is_active', true);
+    }
+
+    const { data, error } = await query
       .order('priority', { ascending: false })
       .order('created_at', { ascending: false });
 
@@ -154,7 +161,11 @@ export async function createApprovalRule(rule: Omit<ApprovalRule, 'id' | 'create
   try {
     const { data, error } = await supabase
       .from('receipt_approval_rules')
-      .insert(rule)
+      .insert({
+        ...rule,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
       .select()
       .single();
 
@@ -177,7 +188,10 @@ export async function updateApprovalRule(ruleId: string, updates: Partial<Approv
   try {
     const { error } = await supabase
       .from('receipt_approval_rules')
-      .update(updates)
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', ruleId);
 
     if (error) {
