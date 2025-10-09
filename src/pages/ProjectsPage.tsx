@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { ProjectsBoard } from "@/components/ProjectsBoard";
 import { Button } from "@/components/ui/button";
@@ -8,9 +8,11 @@ export default function ProjectsPage() {
   const { setTitle, setActions } = usePageHeader();
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
 
-  const handleNewProject = () => {
+  // ✅ Use useCallback to create stable function reference
+  const handleNewProject = useCallback(() => {
+    console.log('🔵 Nieuw Project button clicked!');
     setShowNewProjectDialog(true);
-  };
+  }, []);
 
   useEffect(() => {
     setTitle("Projecten");
@@ -28,7 +30,7 @@ export default function ProjectsPage() {
       setTitle("");
       setActions(null);
     };
-  }, [setTitle, setActions]);
+  }, [setTitle, setActions, handleNewProject]);
 
   return (
     <ProjectsBoard 

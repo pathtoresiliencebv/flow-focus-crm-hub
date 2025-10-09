@@ -202,6 +202,7 @@ export const ProjectsBoard: React.FC<ProjectsBoardProps> = memo(({ showNewProjec
 
   // Sync with prop changes
   React.useEffect(() => {
+    console.log('🔄 ProjectsBoard: showNewProjectDialog changed to:', showNewProjectDialog);
     setNewProjectPanelOpen(showNewProjectDialog);
   }, [showNewProjectDialog]);
 
@@ -260,6 +261,7 @@ export const ProjectsBoard: React.FC<ProjectsBoardProps> = memo(({ showNewProjec
   }, [updateProject]);
 
   const handleAddProjectClick = useCallback((status: ProjectStatus) => {
+    console.log('🟢 Project toevoegen clicked in kanban column:', status);
     setSelectedStatus(status);
     setNewProjectPanelOpen(true);
   }, []);
@@ -285,6 +287,7 @@ export const ProjectsBoard: React.FC<ProjectsBoardProps> = memo(({ showNewProjec
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
+      {console.log('🎨 ProjectsBoard rendering, newProjectPanelOpen:', newProjectPanelOpen)}
       <SlidePanel
         isOpen={newProjectPanelOpen}
         onClose={handlePanelClose}
