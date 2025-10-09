@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Language, i18n } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface SupportedLanguage {
   language_code: string;
@@ -23,6 +24,7 @@ interface SupportedLanguage {
 export function LanguageSelector() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useI18n();
   const [currentLanguage, setCurrentLanguage] = useState<Language>('nl');
   const [languages, setLanguages] = useState<SupportedLanguage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -94,10 +96,13 @@ export function LanguageSelector() {
 
       const languageName = languages.find(l => l.language_code === lang)?.native_name || lang.toUpperCase();
 
-      toast({
-        title: "✅ Taal gewijzigd",
-        description: `Interface taal is ingesteld op ${languageName}.`,
-      });
+      // Show toast in NEW language after change
+      setTimeout(() => {
+        toast({
+          title: t('toast_language_changed', '✅ Language Changed'),
+          description: t('toast_language_changed_desc', `Interface language set to ${languageName}`),
+        });
+      }, 300);
     } catch (error) {
       console.error('Failed to change language:', error);
       toast({

@@ -991,9 +991,9 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
 
   return (
     <div className="w-full max-w-none p-4">
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Left side - Form (60% width) */}
-        <div className="lg:col-span-3 space-y-4 pr-2">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
+        {/* Left side - Form (40% width) */}
+        <div className="lg:col-span-2 space-y-4 pr-2">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium">Nieuwe offerte - Meerdere blokken</h3>
           <div className={`px-3 py-1 rounded-lg text-sm font-medium ${
@@ -1324,10 +1324,10 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         </Form>
       </div>
 
-        {/* Right side - Live Preview (40% width) */}
-        <div className="lg:col-span-2 bg-gray-50 rounded-lg p-3 h-screen overflow-y-auto sticky top-0">
-          <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
-            <Eye className="h-4 w-4" />
+        {/* Right side - Live Preview (60% width) */}
+        <div className="lg:col-span-3 h-screen overflow-y-auto sticky top-0">
+          <h3 className="text-xs font-medium mb-2 flex items-center gap-2 text-gray-600">
+            <Eye className="h-3 w-3" />
             Preview
           </h3>
           <div className="w-full">

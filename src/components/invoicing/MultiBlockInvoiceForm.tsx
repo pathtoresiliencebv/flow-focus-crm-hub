@@ -527,9 +527,9 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
       {/* Left side - Form */}
-      <div className="lg:col-span-3 space-y-4 pr-2">
+      <div className="lg:col-span-2 space-y-4 pr-2">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium">Nieuwe factuur - Meerdere blokken</h3>
           <div className={`px-3 py-1 rounded-lg text-sm font-medium ${
@@ -806,10 +806,10 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
       </div>
 
       {/* Right side - Preview */}
-      <div className="lg:col-span-2 bg-gray-50 rounded-lg p-3">
-        <div className="flex items-center gap-2 mb-3">
-          <Eye className="h-4 w-4" />
-          <h4 className="text-sm font-medium">Preview</h4>
+      <div className="lg:col-span-3">
+        <div className="flex items-center gap-2 mb-2">
+          <Eye className="h-3 w-3" />
+          <h4 className="text-xs font-medium text-gray-600">Preview</h4>
         </div>
         <MultiBlockInvoicePreview key={previewKey} invoice={invoiceForPreview} />
       </div>

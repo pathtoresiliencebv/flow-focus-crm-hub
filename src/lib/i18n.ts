@@ -21,6 +21,7 @@ class I18nService {
   private currentLanguage: Language = 'nl';
   private fallbackLanguage: Language = 'nl';
   private isLoading: boolean = false;
+  private listeners: Set<() => void> = new Set();
 
   /**
    * Initialize i18n with user's language
@@ -78,11 +79,11 @@ class I18nService {
       console.log(`🔄 Translating on-the-fly: "${text}" to ${this.currentLanguage}`);
       
       // Use DeepL via Edge Function for single text
-      const { data, error } = await supabase.functions.invoke('translate-ui-texts', {
+      const { data, error } = await supabase.functions.invoke('translate-text', {
         body: {
-          texts: [text],
-          targetLanguage: this.currentLanguage,
-          sourceLanguage: this.fallbackLanguage
+          text: text,
+          targetLang: this.currentLanguage,
+          sourceLang: this.fallbackLanguage
         }
       });
 
@@ -91,8 +92,8 @@ class I18nService {
         return;
       }
 
-      if (data?.translations && data.translations[0]) {
-        const translatedText = data.translations[0];
+      if (data?.translatedText) {
+        const translatedText = data.translatedText;
 
         // Cache in memory
         if (!this.cache[text]) this.cache[text] = {};
@@ -164,6 +165,7 @@ class I18nService {
   async setLanguage(language: Language, userId?: string): Promise<void> {
     if (this.currentLanguage === language) return;
 
+    console.log(`🌍 i18n: Changing language from ${this.currentLanguage} to ${language}`);
     this.currentLanguage = language;
 
     // Update user preference in database (both UI and chat language)
@@ -182,6 +184,18 @@ class I18nService {
 
     // Load translations for new language
     await this.loadCachedTranslations(language);
+    
+    // Notify all listeners that language has changed
+    console.log(`🔔 i18n: Notifying ${this.listeners.size} listeners of language change`);
+    this.listeners.forEach(listener => listener());
+  }
+  
+  /**
+   * Subscribe to language changes
+   */
+  subscribe(callback: () => void): () => void {
+    this.listeners.add(callback);
+    return () => this.listeners.delete(callback);
   }
 
   /**

@@ -23,6 +23,18 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>('nl');
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [, forceUpdate] = useState(0);
+
+  // Subscribe to language changes from i18n service
+  useEffect(() => {
+    const unsubscribe = i18n.subscribe(() => {
+      console.log('🔄 I18nContext: Language changed, forcing re-render');
+      setLanguageState(i18n.getLanguage());
+      forceUpdate(prev => prev + 1); // Force re-render all components using useI18n
+    });
+
+    return unsubscribe;
+  }, []);
 
   // Initialize i18n when user logs in
   useEffect(() => {

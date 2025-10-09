@@ -236,9 +236,9 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
   };
 
   return (
-    <div className="bg-white border rounded-lg shadow-sm">
+    <div className="bg-white shadow-sm">
       {/* PDF Actions Header */}
-      <div className="flex justify-end gap-2 p-4 border-b print:hidden">
+      <div className="flex justify-end gap-2 p-2 border-b border-gray-200 print:hidden">
         <Button 
           onClick={handleDownloadPDF}
           disabled={downloadLoading}
@@ -254,54 +254,54 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
       <div 
         ref={previewRef} 
         className={cn(
-          "p-2 text-xs",
+          "p-3 text-xs",
           isGeneratingPDF 
             ? "max-h-none overflow-visible" 
-            : "max-h-[70vh] overflow-y-auto",
+            : "max-h-[80vh] overflow-y-auto",
           "print:max-h-none print:overflow-visible"
         )}
       >
       {/* Header with logo and company info */}
-      <div className="flex justify-between items-start mb-4">
+      <div className="flex justify-between items-start mb-2">
         <div className="flex items-center">
           <img 
             src="/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" 
             alt="SMANS Logo" 
-            className="h-12 w-auto object-contain"
+            className="h-10 w-auto object-contain"
           />
         </div>
         <div className="text-right">
-          <h2 className="text-xl font-bold text-gray-900 mb-1">OFFERTE</h2>
-          <p className="text-base font-medium text-smans-primary">{quote.quote_number}</p>
+          <h2 className="text-lg font-bold text-gray-900 mb-0.5">OFFERTE</h2>
+          <p className="text-sm font-medium text-smans-primary">{quote.quote_number}</p>
         </div>
       </div>
 
       {/* Company and customer info */}
-      <div className="grid grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-2 gap-3 mb-2">
         <div>
-          <h3 className="font-semibold text-gray-900 mb-2">Van:</h3>
-          <div className="text-sm text-gray-600">
+          <h3 className="font-semibold text-gray-900 mb-1 text-xs">Van:</h3>
+          <div className="text-xs text-gray-600 space-y-0.5">
             <p className="font-medium">{settings.company_name || 'SMANS BV'}</p>
             <p>{settings.company_address || 'Bedrijfsstraat 123'}</p>
             <p>{settings.company_postal_code || '1234 AB'} {settings.company_city || 'Amsterdam'}</p>
             <p>{settings.company_country || 'Nederland'}</p>
-            <p className="mt-2">BTW: {settings.company_vat_number || 'NL123456789B01'}</p>
+            <p className="mt-1">BTW: {settings.company_vat_number || 'NL123456789B01'}</p>
             <p>KvK: {settings.company_kvk_number || '12345678'}</p>
           </div>
         </div>
         <div>
-          <h3 className="font-semibold text-gray-900 mb-2">Aan:</h3>
-          <div className="text-sm text-gray-600">
+          <h3 className="font-semibold text-gray-900 mb-1 text-xs">Aan:</h3>
+          <div className="text-xs text-gray-600">
             <p className="font-medium">{quote.customer_name}</p>
             {quote.project_title && (
-              <p className="mt-2 text-smans-primary">Project: {quote.project_title}</p>
+              <p className="mt-1 text-smans-primary">Project: {quote.project_title}</p>
             )}
           </div>
         </div>
       </div>
 
       {/* Quote details */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-3 gap-2 mb-2">
         <div>
           <h4 className="font-medium text-gray-700">Offertedatum</h4>
           <p className="text-sm text-gray-600">{new Date(quote.quote_date).toLocaleDateString('nl-NL')}</p>
