@@ -27,7 +27,7 @@ import { FileAttachmentsManager, QuoteAttachment } from './FileAttachmentsManage
 import { RichTextEditor } from './RichTextEditor';
 import { useCrmStore } from '@/hooks/useCrmStore';
 import { useQuoteTemplates } from '@/hooks/useQuoteTemplates';
-import { useCompanySettings } from '@/hooks/useCompanySettings';
+import { useQuoteSettings } from '@/hooks/useQuoteSettings';
 import { useAuth } from '@/contexts/AuthContext';
 import { QuoteBlock, Quote } from '@/types/quote';
 import { supabase } from '@/integrations/supabase/client';
@@ -90,7 +90,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   const [attachments, setAttachments] = useState<QuoteAttachment[]>([]);
   
   const { templates, loading: templatesLoading, saveTemplate } = useQuoteTemplates();
-  const { settings: companySettings } = useCompanySettings();
+  const { settings: quoteSettings, loading: quoteSettingsLoading } = useQuoteSettings();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -201,13 +201,23 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
 
   // Add default attachments for new quotes
   useEffect(() => {
-    if (!existingQuote && companySettings?.default_attachments && attachments.length === 0) {
-      const defaultAttachments = Array.isArray(companySettings.default_attachments) 
-        ? companySettings.default_attachments 
+    console.log('📎 MultiBlockQuoteForm: Checking default attachments...', {
+      existingQuote: !!existingQuote,
+      quoteSettings: quoteSettings,
+      defaultAttachments: quoteSettings?.default_attachments,
+      currentAttachmentsCount: attachments.length,
+      quoteSettingsLoading
+    });
+
+    if (!existingQuote && quoteSettings?.default_attachments && attachments.length === 0) {
+      const defaultAttachments = Array.isArray(quoteSettings.default_attachments) 
+        ? quoteSettings.default_attachments 
         : [];
+      
+      console.log('✅ MultiBlockQuoteForm: Adding default attachments:', defaultAttachments);
       setAttachments(defaultAttachments);
     }
-  }, [existingQuote, companySettings, attachments.length]);
+  }, [existingQuote, quoteSettings, attachments.length, quoteSettingsLoading]);
 
   // Remove continuous auto-save - now using blur-based saving
 

@@ -106,9 +106,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     
     const initializeAuth = async () => {
       try {
-        setIsLoading(true);
-        
-        // Check for existing session
+        // Get session once
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -117,17 +115,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           return;
         }
         
-        if (mounted && session) {
+        if (mounted) {
           setSession(session);
-          setUser(session.user);
-          await fetchProfile(session.user);
+          const currentUser = session?.user ?? null;
+          setUser(currentUser);
+          
+          if (currentUser) {
+            await fetchProfile(currentUser);
+          }
+          setIsLoading(false); // Only set loading false once
         }
         
-        // Set up auth state listener
+        // Listen to CHANGES only (not initial)
         const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
-          if (!mounted) return;
+          if (!mounted || event === 'INITIAL_SESSION') return; // Skip initial session event
           
-          console.log('Auth state changed:', event, session?.user?.email);
+          console.log('🔐 Auth state changed:', event);
           
           setSession(session);
           const currentUser = session?.user ?? null;
@@ -138,22 +141,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           } else if (!currentUser) {
             setProfile(null);
           }
-          
-          // Set loading to false after auth state changes
-          setIsLoading(false);
         });
         
         subscription = data.subscription;
-        
-        // Set loading to false after initial setup
-        if (mounted) {
-          setIsLoading(false);
-        }
       } catch (error) {
         console.error('Error initializing auth:', error);
-        if (mounted) {
-          setIsLoading(false);
-        }
+        if (mounted) setIsLoading(false);
       }
     };
 
