@@ -1,12 +1,16 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Quote } from '@/types/quote';
 import { QuoteAttachment } from './FileAttachmentsManager';
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Printer } from "lucide-react";
+import { Printer, Download, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-// import html2pdf from 'html2pdf.js'; // Temporarily disabled for build
+import { 
+  generateAndOpenPDF, 
+  generateAndDownloadPDF,
+  generatePDFWithUpload 
+} from '@/utils/pdfGenerationService';
 
 interface QuoteSettings {
   terms_and_conditions?: string;
@@ -27,6 +31,9 @@ interface MultiBlockQuotePreviewProps {
 export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ quote, attachments = [] }) => {
   const [settings, setSettings] = useState<QuoteSettings>({});
   const [printLoading, setPrintLoading] = useState(false);
+  const [downloadLoading, setDownloadLoading] = useState(false);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const previewRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -53,54 +60,153 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
     }
   };
 
-  const handlePrint = async () => {
+  /**
+   * Open PDF in new browser tab
+   * Uses html2pdf.js from Context7 MCP
+   */
+  const handleOpenPDF = async () => {
+    if (!previewRef.current) {
+      toast({
+        title: "Fout",
+        description: "Preview element niet gevonden",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setPrintLoading(true);
-      const filename = `Offerte-${quote.quote_number || 'onbekend'}.pdf`;
       
-      const { data, error } = await supabase.functions.invoke('generate-quote-pdf', {
-        body: { quoteId: quote.id }
+      await generateAndOpenPDF(previewRef.current, {
+        filename: `Offerte-${quote.quote_number || 'onbekend'}.pdf`,
+        margin: [10, 10, 10, 10],
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compressPDF: true },
+        pagebreak: { mode: ['css', 'legacy'], avoid: ['img', 'table', '.avoid-break'] },
       });
 
-      if (error) throw error;
-
-      if (data?.success && data?.htmlContent) {
-        // Create a temporary container for html2pdf
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = data.htmlContent;
-        tempDiv.style.position = 'absolute';
-        tempDiv.style.left = '-9999px';
-        document.body.appendChild(tempDiv);
-
-        // PDF options
-        const opt = {
-          margin: [10, 10, 10, 10] as [number, number, number, number],
-          filename: filename,
-          image: { type: 'jpeg' as const, quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
-        };
-
-        // Generate PDF and open in new tab
-        // PDF generation to be implemented with Context7 MCP
-        
-        // Clean up temp div
-        document.body.removeChild(tempDiv);
-        
-        toast({
-          title: "PDF Tijdelijk Uitgeschakeld",
-          description: "PDF generatie is tijdelijk uitgeschakeld voor build fixes.",
-        });
-      }
-    } catch (error) {
+      toast({
+        title: "PDF Geopend",
+        description: "PDF wordt geopend in nieuw tabblad",
+      });
+    } catch (error: any) {
       console.error('Error opening PDF:', error);
       toast({
         title: "Fout bij PDF openen",
-        description: "Er ging iets mis bij het genereren van de PDF.",
+        description: error.message || "Er ging iets mis bij het genereren van de PDF.",
         variant: "destructive",
       });
     } finally {
       setPrintLoading(false);
+    }
+  };
+
+  /**
+   * Download PDF to local file system
+   * Uses html2pdf.js from Context7 MCP
+   */
+  const handleDownloadPDF = async () => {
+    if (!previewRef.current) {
+      toast({
+        title: "Fout",
+        description: "Preview element niet gevonden",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setDownloadLoading(true);
+      
+      await generateAndDownloadPDF(
+        previewRef.current,
+        `Offerte-${quote.quote_number || 'onbekend'}.pdf`,
+        {
+          margin: [10, 10, 10, 10],
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compressPDF: true },
+          pagebreak: { mode: ['css', 'legacy'], avoid: ['img', 'table', '.avoid-break'] },
+        }
+      );
+
+      toast({
+        title: "PDF Gedownload",
+        description: "PDF is succesvol gedownload",
+      });
+    } catch (error: any) {
+      console.error('Error downloading PDF:', error);
+      toast({
+        title: "Fout bij PDF downloaden",
+        description: error.message || "Er ging iets mis bij het downloaden van de PDF.",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloadLoading(false);
+    }
+  };
+
+  /**
+   * Generate PDF, upload to Supabase Storage, and update quote record
+   * Uses html2pdf.js from Context7 MCP
+   */
+  const handleUploadPDF = async () => {
+    if (!previewRef.current) {
+      toast({
+        title: "Fout",
+        description: "Preview element niet gevonden",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setUploadLoading(true);
+      
+      const filename = `quote-${quote.id}-${Date.now()}.pdf`;
+      const storagePath = `quotes/${filename}`;
+
+      // Generate and upload PDF
+      const { url } = await generatePDFWithUpload(
+        previewRef.current,
+        'documents',
+        storagePath,
+        {
+          margin: [10, 10, 10, 10],
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compressPDF: true },
+          pagebreak: { mode: ['css', 'legacy'], avoid: ['img', 'table', '.avoid-break'] },
+        }
+      );
+
+      // Update quote record with PDF URL
+      const { error: updateError } = await supabase
+        .from('quotes')
+        .update({ pdf_url: url })
+        .eq('id', quote.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      toast({
+        title: "PDF Opgeslagen",
+        description: "PDF is succesvol opgeslagen in Supabase Storage",
+      });
+
+      // Open PDF in new tab
+      window.open(url, '_blank');
+    } catch (error: any) {
+      console.error('Error uploading PDF:', error);
+      toast({
+        title: "Fout bij PDF opslaan",
+        description: error.message || "Er ging iets mis bij het opslaan van de PDF.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadLoading(false);
     }
   };
 
@@ -117,21 +223,40 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
 
   return (
     <div className="bg-white border rounded-lg shadow-sm">
-      {/* Print Button Header */}
-      <div className="flex justify-end p-4 border-b print:hidden">
+      {/* PDF Actions Header */}
+      <div className="flex justify-end gap-2 p-4 border-b print:hidden">
         <Button 
-          onClick={handlePrint}
-          disabled={printLoading}
+          onClick={handleDownloadPDF}
+          disabled={downloadLoading || printLoading || uploadLoading}
           variant="outline"
           size="sm"
           className="gap-2"
         >
+          <Download className="h-4 w-4" />
+          {downloadLoading ? 'Downloaden...' : 'Download PDF'}
+        </Button>
+        <Button 
+          onClick={handleOpenPDF}
+          disabled={printLoading || downloadLoading || uploadLoading}
+          variant="outline"
+          size="sm"
+          className="gap-2"
+        >
+          <ExternalLink className="h-4 w-4" />
+          {printLoading ? 'Openen...' : 'Open PDF'}
+        </Button>
+        <Button 
+          onClick={handleUploadPDF}
+          disabled={uploadLoading || printLoading || downloadLoading}
+          size="sm"
+          className="gap-2"
+        >
           <Printer className="h-4 w-4" />
-          {printLoading ? 'Genereren...' : 'Print PDF'}
+          {uploadLoading ? 'Opslaan...' : 'Print & Opslaan'}
         </Button>
       </div>
       
-      <div className="p-2 max-h-[70vh] overflow-y-auto print:max-h-none print:overflow-visible text-xs">
+      <div ref={previewRef} className="p-2 max-h-[70vh] overflow-y-auto print:max-h-none print:overflow-visible text-xs">
       {/* Header with logo and company info */}
       <div className="flex justify-between items-start mb-4">
         <div className="flex items-center">
