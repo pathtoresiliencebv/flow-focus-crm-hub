@@ -28,6 +28,7 @@ import { RichTextEditor } from './RichTextEditor';
 import { useCrmStore } from '@/hooks/useCrmStore';
 import { useQuoteTemplates } from '@/hooks/useQuoteTemplates';
 import { useCompanySettings } from '@/hooks/useCompanySettings';
+import { useAuth } from '@/contexts/AuthContext';
 import { QuoteBlock, Quote } from '@/types/quote';
 import { supabase } from '@/integrations/supabase/client';
 import { SearchableCustomerSelect } from '@/components/ui/searchable-customer-select';
@@ -52,6 +53,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   existingQuote
 }) => {
   const { customers, projects, isLoading: crmLoading, addCustomer } = useCrmStore();
+  const { user } = useAuth();
   
   // DEBUG: Log customers data
   React.useEffect(() => {
@@ -355,8 +357,10 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       
       const quoteData = {
         quote_number: values.quoteNumber,
+        customer_id: values.customer || null,
         customer_name: customer?.name || '',
         customer_email: customer?.email || '',
+        project_id: values.project || null,
         project_title: project?.title || '',
         quote_date: values.date,
         valid_until: values.validUntil,
@@ -367,8 +371,15 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         total_amount: currentGrandTotal,
         status: 'concept',
         admin_signature_data: adminSignature || null,
+        user_id: user?.id || null,
         updated_at: new Date().toISOString()
       };
+      
+      console.log('💾 Saving quote with customer data:', {
+        customer_id: values.customer,
+        customer_name: customer?.name,
+        customer_email: customer?.email
+      });
 
       const quoteToUpdate = quoteId || existingQuote?.id;
       let result;
@@ -564,8 +575,10 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
 
       const quoteData = {
         quote_number: values.quoteNumber,
+        customer_id: values.customer || null,
         customer_name: customer?.name || '',
         customer_email: customer?.email || '',
+        project_id: values.project || null,
         project_title: project?.title || '',
         quote_date: values.date,
         valid_until: values.validUntil,
@@ -579,8 +592,15 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         status: 'concept',
         public_token: tokenData,
         admin_signature_data: adminSignature || null,
+        user_id: user?.id || null,
         updated_at: new Date().toISOString()
       };
+      
+      console.log('💾 Saving final quote with customer data:', {
+        customer_id: values.customer,
+        customer_name: customer?.name,
+        customer_email: customer?.email
+      });
 
       const quoteToUpdate = quoteId || existingQuote?.id;
       let result;

@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Eye, ExternalLink, Trash2, CheckCircle, Mail, Copy, Pencil, FileSignature, RotateCcw, MoreHorizontal, Download, Printer, Archive } from "lucide-react";
+import { Eye, ExternalLink, Trash2, CheckCircle, Mail, Copy, Pencil, FileSignature, RotateCcw, MoreHorizontal, Download, Archive } from "lucide-react";
 import { Quote } from '@/types/quote';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -45,67 +45,23 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [quoteToDelete, setQuoteToDelete] = useState<Quote | null>(null);
 
-  const handlePDFDownload = async (quoteId: string) => {
+  const handlePDFDownload = async (quote: Quote) => {
     try {
-      console.log('📄 Downloading PDF for quote:', quoteId);
+      console.log('📄 Downloading PDF for quote:', quote.id);
       
-      // Find quote to get quote number for filename
-      const quote = quotes.find(q => q.id === quoteId);
-      const filename = `Offerte-${quote?.quote_number || 'onbekend'}.pdf`;
+      // Open de preview pagina zodat de gebruiker de PDF kan downloaden
+      // Dit is dezelfde functie als in de preview
+      onPreview(quote);
       
-      const { data, error } = await supabase.functions.invoke('generate-quote-pdf', {
-        body: { quoteId }
-      });
-
-      console.log('📄 PDF Response:', { data, error });
-
-      if (error) {
-        console.error('❌ PDF Generation Error:', error);
-        toast({
-          title: "PDF Fout",
-          description: `Kon PDF niet genereren: ${error.message}`,
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (data?.success && data?.htmlContent) {
-        // Open HTML in new window and trigger download
-        const printWindow = window.open('', '_blank');
-        if (printWindow) {
-          printWindow.document.write(data.htmlContent);
-          printWindow.document.close();
-          printWindow.focus();
-          
-          // Wait for content to load, then trigger print/save dialog
-          setTimeout(() => {
-            printWindow.print();
-          }, 500);
-          
-          toast({
-            title: "PDF Geopend",
-            description: "PDF is geopend. Gebruik 'Opslaan als PDF' in het printdialoog.",
-          });
-        } else {
-          toast({
-            title: "Pop-up Geblokkeerd",
-            description: "Sta pop-ups toe voor deze website om PDF te openen.",
-            variant: "destructive",
-          });
-        }
-      } else {
-        console.error('❌ No HTML content in response:', data);
-        toast({
-          title: "PDF Fout",
-          description: "Geen PDF content ontvangen van server.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('❌ Error downloading PDF:', error);
       toast({
-        title: "PDF Fout",
-        description: "Er is een onverwachte fout opgetreden bij het downloaden.",
+        title: "Preview geopend",
+        description: "Gebruik de 'Download PDF' knop in de preview om de PDF te downloaden.",
+      });
+    } catch (error) {
+      console.error('❌ Error opening preview:', error);
+      toast({
+        title: "Fout",
+        description: "Kon preview niet openen.",
         variant: "destructive",
       });
     }
@@ -331,15 +287,10 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                    
                    <DropdownMenuSeparator />
                    
-                   <DropdownMenuItem onClick={() => handlePDFDownload(quote.id!)}>
+                   <DropdownMenuItem onClick={() => handlePDFDownload(quote)}>
                      <Download className="mr-2 h-4 w-4" />
                      PDF downloaden
                    </DropdownMenuItem>
-                   
-                   <DropdownMenuItem onClick={() => handlePrint(quote.id!)}>
-                      <Printer className="mr-2 h-4 w-4" />
-                      PDF Printen
-                    </DropdownMenuItem>
                    
                    {onDelete && (
                      <DropdownMenuSeparator />

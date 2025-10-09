@@ -32,12 +32,46 @@ export const SendQuoteDialog: React.FC<SendQuoteDialogProps> = ({
   });
 
   React.useEffect(() => {
-    if (quote && isOpen) {
-      setFormData({
-        recipientEmail: quote.customer_email || '',
-        recipientName: quote.customer_name || '',
-        subject: `Offerte ${quote.quote_number} - SMANS BV`,
-        message: `Beste ${quote.customer_name || 'klant'},
+    const loadCustomerEmail = async () => {
+      if (quote && isOpen) {
+        console.log('📧 SendQuoteDialog: Loading customer data for quote:', {
+          quote_id: quote.id,
+          customer_email: quote.customer_email,
+          customer_id: (quote as any).customer_id
+        });
+        
+        let customerEmail = quote.customer_email || '';
+        let customerName = quote.customer_name || '';
+        
+        // Als er geen email is maar wel een customer_id, haal dan de email op
+        if (!customerEmail && (quote as any).customer_id) {
+          console.log('📧 SendQuoteDialog: No email in quote, fetching from customer_id:', (quote as any).customer_id);
+          try {
+            const { data: customer, error } = await supabase
+              .from('customers')
+              .select('email, name')
+              .eq('id', (quote as any).customer_id)
+              .single();
+            
+            if (error) {
+              console.error('❌ Error fetching customer:', error);
+            } else if (customer) {
+              console.log('✅ Fetched customer email:', customer.email);
+              customerEmail = customer.email || '';
+              if (!customerName) customerName = customer.name || '';
+            }
+          } catch (err) {
+            console.error('❌ Exception fetching customer:', err);
+          }
+        }
+        
+        console.log('📧 SendQuoteDialog: Setting form data with email:', customerEmail);
+        
+        setFormData({
+          recipientEmail: customerEmail,
+          recipientName: customerName,
+          subject: `Offerte ${quote.quote_number} - SMANS BV`,
+          message: `Beste ${customerName || 'klant'},
 
 Hierbij ontvangt u onze offerte voor het project "${quote.project_title || 'uw project'}".
 
@@ -47,8 +81,11 @@ Voor vragen kunt u altijd contact met ons opnemen.
 
 Met vriendelijke groet,
 SMANS BV`
-      });
-    }
+        });
+      }
+    };
+    
+    loadCustomerEmail();
   }, [quote, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {

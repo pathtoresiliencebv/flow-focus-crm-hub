@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Eye, Send, Download, Trash2, MoreHorizontal, FileText, Printer, Pencil, Copy, Archive, CheckCircle, Bell, Mail } from "lucide-react";
+import { Eye, Send, Download, Trash2, MoreHorizontal, FileText, Pencil, Copy, Archive, CheckCircle, Bell, Mail } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { nl } from "date-fns/locale";
@@ -211,137 +211,17 @@ export const InvoicesTable = ({
                        PDF Preview
                      </DropdownMenuItem>
                      
-                     <DropdownMenuItem onClick={async () => {
-                       try {
-                         console.log('📄 Downloading PDF for invoice:', invoice.id);
-                         const filename = `Factuur-${invoice.invoice_number}.pdf`;
-                         
-                         const { data, error } = await supabase.functions.invoke('generate-invoice-pdf', {
-                           body: { invoiceId: invoice.id }
-                         });
-
-                         if (error) {
-                           console.error('❌ PDF Generation Error:', error);
-                           toast({
-                             title: "PDF Fout",
-                             description: `Kon PDF niet genereren: ${error.message}`,
-                             variant: "destructive",
-                           });
-                           return;
-                         }
-
-                        if (data?.success && data?.htmlContent) {
-                          // Create a temporary container for html2pdf
-                          const tempDiv = document.createElement('div');
-                          tempDiv.innerHTML = data.htmlContent;
-                          tempDiv.style.position = 'absolute';
-                          tempDiv.style.left = '-9999px';
-                          document.body.appendChild(tempDiv);
-
-                          // PDF options
-                          const opt = {
-                            margin: [10, 10, 10, 10] as [number, number, number, number],
-                            filename: filename,
-                            image: { type: 'jpeg' as const, quality: 0.98 },
-                            html2canvas: { scale: 2, useCORS: true },
-                            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
-                          };
-
-                          // Generate and download PDF
-                          // Temporarily disabled PDF generation
-                          console.log('PDF generation temporarily disabled');
-                          
-                          // Clean up temp div
-                          document.body.removeChild(tempDiv);
-                          
-                          toast({
-                            title: "PDF Tijdelijk Uitgeschakeld",
-                            description: "PDF generatie is tijdelijk uitgeschakeld voor build fixes.",
-                          });
-                        } else {
-                          console.error('❌ No HTML content in response:', data);
-                          toast({
-                            title: "PDF Fout",
-                            description: "Geen PDF content ontvangen van server.",
-                            variant: "destructive",
-                          });
-                        }
-                       } catch (error) {
-                         console.error('❌ Error downloading PDF:', error);
-                         toast({
-                           title: "PDF Fout",
-                           description: "Er is een onverwachte fout opgetreden bij het downloaden.",
-                           variant: "destructive",
-                         });
-                       }
+                    <DropdownMenuItem onClick={() => {
+                       console.log('📄 Opening invoice detail for PDF download:', invoice.id);
+                       navigate(`/invoices/${invoice.id}`);
+                       toast({
+                         title: "Factuur geopend",
+                         description: "Gebruik de 'Download PDF' knop in de factuur om de PDF te downloaden.",
+                       });
                      }}>
                        <Download className="mr-2 h-4 w-4" />
-                       PDF Downloaden
+                       PDF downloaden
                      </DropdownMenuItem>
-
-                     <DropdownMenuItem onClick={async () => {
-                       try {
-                        console.log('🖨️ Opening PDF for invoice:', invoice.id);
-                        const filename = `Factuur-${invoice.invoice_number}.pdf`;
-                        
-                        const { data, error } = await supabase.functions.invoke('generate-invoice-pdf', {
-                          body: { invoiceId: invoice.id }
-                        });
-
-                        if (error) {
-                          console.error('❌ PDF Error:', error);
-                          toast({
-                            title: "PDF Fout",
-                            description: `Kon PDF niet genereren: ${error.message}`,
-                            variant: "destructive",
-                          });
-                          return;
-                        }
-
-                        if (data?.success && data?.htmlContent) {
-                          // Open HTML in new window for printing
-                          const printWindow = window.open('', '_blank');
-                          if (printWindow) {
-                            printWindow.document.write(data.htmlContent);
-                            printWindow.document.close();
-                            printWindow.focus();
-                            
-                            // Wait for content to load, then trigger print
-                            setTimeout(() => {
-                              printWindow.print();
-                            }, 500);
-                            
-                            toast({
-                              title: "PDF Geopend",
-                              description: "Het PDF bestand is geopend voor afdrukken.",
-                            });
-                          } else {
-                            toast({
-                              title: "Pop-up Geblokkeerd",
-                              description: "Sta pop-ups toe voor deze website om PDF te openen.",
-                              variant: "destructive",
-                            });
-                          }
-                        } else {
-                          console.error('❌ No HTML content:', data);
-                          toast({
-                            title: "PDF Fout",
-                            description: "Geen PDF content ontvangen van server.",
-                            variant: "destructive",
-                          });
-                        }
-                       } catch (error) {
-                         console.error('❌ Error generating PDF:', error);
-                         toast({
-                           title: "PDF Fout",
-                           description: "Er is een onverwachte fout opgetreden.",
-                           variant: "destructive",
-                         });
-                       }
-                      }}>
-                        <Printer className="mr-2 h-4 w-4" />
-                        PDF Printen
-                      </DropdownMenuItem>
 
                     {onArchiveInvoice && (
                       <DropdownMenuItem onClick={() => onArchiveInvoice(invoice)}>
