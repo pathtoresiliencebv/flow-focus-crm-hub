@@ -245,6 +245,47 @@ export const MultiBlockInvoicePreview: React.FC<MultiBlockInvoicePreviewProps> =
         </div>
       </div>
 
+      {/* Payment Reminder Schedule */}
+      {invoice.payment_status !== 'paid' && invoice.status !== 'paid' && (
+        <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+          <h4 className="font-semibold text-amber-900 mb-3 flex items-center gap-2">
+            <span className="text-lg">📅</span>
+            Herinneringsschema
+          </h4>
+          <div className="space-y-2">
+            {[1, 2, 3].map((reminderNum) => {
+              const dueDate = new Date(invoice.due_date);
+              const reminderDate = new Date(dueDate);
+              reminderDate.setDate(dueDate.getDate() + (reminderNum * 14));
+              
+              return (
+                <div key={reminderNum} className="flex items-center gap-3 text-sm">
+                  <span className="flex-shrink-0 w-6 h-6 bg-amber-200 text-amber-900 rounded-full flex items-center justify-center font-bold text-xs">
+                    {reminderNum}
+                  </span>
+                  <span className="text-gray-700">
+                    {reminderNum === 1 ? '1e' : reminderNum === 2 ? '2e' : '3e'} herinnering:
+                  </span>
+                  <span className="font-medium text-amber-900">
+                    {reminderDate.toLocaleDateString('nl-NL', { 
+                      day: 'numeric', 
+                      month: 'long', 
+                      year: 'numeric' 
+                    })}
+                  </span>
+                  <span className="text-gray-500">
+                    ({14 * reminderNum} dagen na vervaldatum)
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-xs text-amber-700 mt-3 italic">
+            💡 Automatische herinneringen worden verstuurd als de factuur niet is betaald
+          </p>
+        </div>
+      )}
+
       {/* Message */}
       {invoice.notes && (
         <div className="mb-4 p-3 bg-blue-50 rounded-lg">
