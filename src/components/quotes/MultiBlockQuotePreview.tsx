@@ -303,15 +303,15 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
       {/* Quote details */}
       <div className="grid grid-cols-3 gap-2 mb-2">
         <div>
-          <h4 className="font-medium text-gray-700">Offertedatum</h4>
-          <p className="text-sm text-gray-600">{new Date(quote.quote_date).toLocaleDateString('nl-NL')}</p>
+          <h4 className="font-medium text-gray-700 text-xs">Offertedatum</h4>
+          <p className="text-xs text-gray-600">{new Date(quote.quote_date).toLocaleDateString('nl-NL')}</p>
         </div>
         <div>
-          <h4 className="font-medium text-gray-700">Geldig tot</h4>
-          <p className="text-sm text-gray-600">{new Date(quote.valid_until).toLocaleDateString('nl-NL')}</p>
+          <h4 className="font-medium text-gray-700 text-xs">Geldig tot</h4>
+          <p className="text-xs text-gray-600">{new Date(quote.valid_until).toLocaleDateString('nl-NL')}</p>
         </div>
         <div>
-          <h4 className="font-medium text-gray-700">Status</h4>
+          <h4 className="font-medium text-gray-700 text-xs">Status</h4>
           <p className="text-sm text-gray-600 capitalize">{quote.status}</p>
         </div>
       </div>
@@ -351,7 +351,7 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
                 // Product block with borders and structure
                 productBlockIndex++;
                 return (
-                  <div key={`${block.id}-${blockIndex}`} className="bg-white border border-gray-200 rounded-lg p-3 shadow-sm mb-2">
+                  <div key={`${block.id}-${blockIndex}`} className="border-l-2 border-smans-primary pl-2 mb-2">
                     {/* Block Title - only for product blocks */}
                     <div className="mb-2 pb-1 border-b border-gray-200">
                       <h3 className="text-base font-semibold text-gray-900 mb-1">

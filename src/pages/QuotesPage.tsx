@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePageHeader } from "@/contexts/PageHeaderContext";
+import { useI18n } from "@/contexts/I18nContext";
 import { Quotes } from "@/components/Quotes";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -8,6 +9,7 @@ import { Plus } from "lucide-react";
 export default function QuotesPage() {
   const { setTitle, setActions } = usePageHeader();
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   // ✅ FIXED: Wrap in useCallback for stable reference
   const handleNewQuote = useCallback(() => {
