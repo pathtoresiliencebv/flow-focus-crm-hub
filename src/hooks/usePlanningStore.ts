@@ -44,17 +44,33 @@ export const usePlanningStore = () => {
   const [planningItems, setPlanningItems] = useState<PlanningItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchPlanningItems = async () => {
+  const fetchPlanningItems = async (dateRange?: { start: string; end: string }) => {
     if (!user) return;
 
     try {
       setLoading(true);
-      console.log('Fetching planning for user:', user.id);
+      console.log('Fetching planning for user:', user.id, dateRange ? `(${dateRange.start} to ${dateRange.end})` : '(all)');
 
       let query = supabase
         .from('planning_items')
         .select('*')
         .order('start_date', { ascending: true });
+
+      // OPTIMIZATION: Add date range filter to reduce data transfer
+      // Fetch 3 months: 1 month before and 2 months after current date
+      if (dateRange) {
+        query = query
+          .gte('start_date', dateRange.start)
+          .lte('start_date', dateRange.end);
+      } else {
+        // Default: fetch current month ± 2 months if no range specified
+        const now = new Date();
+        const startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const endDate = new Date(now.getFullYear(), now.getMonth() + 3, 0);
+        query = query
+          .gte('start_date', format(startDate, 'yyyy-MM-dd'))
+          .lte('start_date', format(endDate, 'yyyy-MM-dd'));
+      }
 
       // Role-based filtering
       const isAdmin = hasPermission('users_view'); // Administrators can see all planning

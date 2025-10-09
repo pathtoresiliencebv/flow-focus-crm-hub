@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Quote, QuoteBlock } from '@/types/quote';
@@ -12,6 +12,7 @@ export const useQuotes = () => {
     try {
       setLoading(true);
       console.log('Fetching quotes, includeArchived:', includeArchived);
+      const startTime = performance.now();
       
       let query = supabase
         .from('quotes')
@@ -24,7 +25,10 @@ export const useQuotes = () => {
         query = query.eq('is_archived', false);
       }
       
-      const { data, error } = await query.order('created_at', { ascending: false });
+      // OPTIMIZATION: Limit to recent quotes for better performance
+      const { data, error } = await query
+        .order('created_at', { ascending: false })
+        .limit(200);
 
       if (error) {
         console.error('Error fetching quotes:', error);
@@ -37,10 +41,13 @@ export const useQuotes = () => {
       }
 
       if (data) {
+        const fetchTime = performance.now();
+        console.log(`📊 Fetched ${data.length} quotes in ${(fetchTime - startTime).toFixed(0)}ms`);
         console.log(`Processing ${data.length} quotes from database`);
         
         const quotesWithBlocks = data.map((quote, index) => {
-          console.log(`Processing quote ${index + 1}/${data.length}:`, quote.quote_number);
+          // Removed verbose logging for performance
+          // console.log(`Processing quote ${index + 1}/${data.length}:`, quote.quote_number);
           
           let blocks: QuoteBlock[] = [];
           
@@ -113,7 +120,8 @@ export const useQuotes = () => {
           } as Quote;
         });
         
-        console.log(`Successfully processed ${quotesWithBlocks.length} quotes`);
+        const endTime = performance.now();
+        console.log(`✅ Successfully processed ${quotesWithBlocks.length} quotes in ${(endTime - startTime).toFixed(0)}ms total`);
         setQuotes(quotesWithBlocks);
       } else {
         console.log('No quotes data received');
@@ -129,7 +137,6 @@ export const useQuotes = () => {
       setQuotes([]);
     } finally {
       setLoading(false);
-      console.log('Quotes loading completed');
     }
   };
 

@@ -402,3 +402,4 @@ echo -e "  open $TEST_RESULTS_DIR/${TIMESTAMP}_report.html"
 echo ""
 
 exit 0
+

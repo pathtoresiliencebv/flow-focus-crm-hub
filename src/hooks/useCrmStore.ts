@@ -20,13 +20,34 @@ export type ProjectWithCustomerName = Project & {
 
 // --- API functions for react-query ---
 const fetchCustomers = async (): Promise<Customer[]> => {
-  const { data, error } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
+  // OPTIMIZATION: Only fetch recent/active customers (last 2 years)
+  const twoYearsAgo = new Date();
+  twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+  
+  const { data, error } = await supabase
+    .from('customers')
+    .select('*')
+    .gte('created_at', twoYearsAgo.toISOString())
+    .order('created_at', { ascending: false })
+    .limit(500); // Reasonable limit
+  
   if (error) throw error;
+  console.log(`✅ Fetched ${data.length} customers (filtered to last 2 years)`);
   return data;
 };
 
 const fetchProjects = async () => {
-  const { data, error } = await supabase.from('projects').select('*, customers(name)').order('created_at', { ascending: false });
+  // OPTIMIZATION: Only fetch recent/active projects (last year + active status)
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  
+  const { data, error } = await supabase
+    .from('projects')
+    .select('*, customers(name)')
+    .or(`status.neq.afgerond,created_at.gte.${oneYearAgo.toISOString()}`)
+    .order('created_at', { ascending: false })
+    .limit(500); // Reasonable limit
+  
   if (error) throw error;
   
   // Transform the data to add a simple 'customer' name property
@@ -37,6 +58,8 @@ const fetchProjects = async () => {
       customer: customers?.name ?? 'Onbekende klant'
     };
   });
+  
+  console.log(`✅ Fetched ${transformedData.length} projects (filtered to last year + active)`);
   return transformedData as ProjectWithCustomerName[];
 };
 

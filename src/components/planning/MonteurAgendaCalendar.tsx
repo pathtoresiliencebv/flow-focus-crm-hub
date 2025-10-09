@@ -151,6 +151,12 @@ export function MonteurAgendaCalendar({
   );
   const [isLoading, setIsLoading] = useState(false);
 
+  // OPTIMIZATION: Cache for availability data to prevent recalculation
+  // Key format: "YYYY-MM-[monteurId1,monteurId2,...]"
+  const [availabilityCache] = useState<Map<string, Map<string, Map<string, DayAvailability>>>>(
+    new Map()
+  );
+
   // Calculate month dates
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -159,6 +165,12 @@ export function MonteurAgendaCalendar({
   // Get weekday names
   const weekDays = ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za'];
 
+  // Generate cache key for current month and monteurs
+  const getCacheKey = (date: Date, monteurIdsList: string[]) => {
+    const sortedIds = [...monteurIdsList].sort().join(',');
+    return `${format(date, 'yyyy-MM')}-[${sortedIds}]`;
+  };
+
   // Load availability data for current month
   useEffect(() => {
     loadAvailabilityData();
@@ -166,6 +178,16 @@ export function MonteurAgendaCalendar({
 
   const loadAvailabilityData = async () => {
     if (monteurIds.length === 0) return;
+
+    const cacheKey = getCacheKey(currentMonth, monteurIds);
+    
+    // OPTIMIZATION: Check cache first
+    const cachedData = availabilityCache.get(cacheKey);
+    if (cachedData) {
+      console.log(`💾 Using cached availability data for ${format(currentMonth, 'MMMM yyyy', { locale: nl })}`);
+      setAvailabilityData(cachedData);
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -177,7 +199,16 @@ export function MonteurAgendaCalendar({
       const data = await calculateMonthAvailability(monteurIds, year, month);
       setAvailabilityData(data);
       
-      console.log(`✅ Loaded availability for ${monteurIds.length} monteurs`);
+      // OPTIMIZATION: Store in cache
+      availabilityCache.set(cacheKey, data);
+      
+      // OPTIMIZATION: Limit cache size to prevent memory issues (keep last 6 months)
+      if (availabilityCache.size > 6) {
+        const firstKey = availabilityCache.keys().next().value;
+        availabilityCache.delete(firstKey);
+      }
+      
+      console.log(`✅ Loaded and cached availability for ${monteurIds.length} monteurs`);
     } catch (error) {
       console.error('Error loading availability data:', error);
     } finally {
