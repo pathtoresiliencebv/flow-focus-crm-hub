@@ -820,7 +820,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   }) || [];
 
   const handleCustomerAdded = async (customer: any) => {
-    console.log('Customer added:', customer);
+    console.log('✅ Customer added:', customer);
     
     try {
       // Force invalidate and refetch customers query for immediate UI update
@@ -828,41 +828,70 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       
       // Small delay to ensure query refetch completes then set customer
       setTimeout(() => {
+        console.log('🔄 Setting customer in form:', customer.id);
         form.setValue('customer', customer.id);
         
-        // Email is no longer part of form
-      }, 200);
+        // Force form to re-validate customer field
+        form.trigger('customer');
+        
+        toast({
+          title: "Klant toegevoegd",
+          description: `${customer.name} is toegevoegd en geselecteerd voor de offerte.`,
+        });
+      }, 300);
       
       setShowCustomerAdd(false);
-      
-      // Remove duplicate toast - CustomerQuickAdd handles its own notifications
       
       // Force a preview update
       forcePreviewUpdate();
     } catch (error) {
-      console.error('Error handling customer add:', error);
+      console.error('❌ Error handling customer add:', error);
+      toast({
+        title: "Fout",
+        description: "Kon klant niet selecteren. Probeer opnieuw.",
+        variant: "destructive",
+      });
       setShowCustomerAdd(false);
     }
   };
 
-  const handleProjectAdded = useCallback((projectId: string) => {
-    console.log('Project added, setting projectId to:', projectId);
+  const handleProjectAdded = useCallback(async (projectId: string) => {
+    console.log('✅ Project added, setting projectId to:', projectId);
     
-    // Immediately set the project in the form
-    form.setValue('project', projectId);
-    setShowProjectAdd(false);
-    
-    // Force form to re-validate project field
-    form.trigger('project');
-    
-    // Force preview update to ensure the new project shows up
-    forcePreviewUpdate();
-    
-    toast({
-      title: "Project toegevoegd",
-      description: "Het nieuwe project is toegevoegd en geselecteerd.",
-    });
-  }, [form, forcePreviewUpdate, toast]);
+    try {
+      // Force invalidate and refetch projects query
+      await queryClient.invalidateQueries({ queryKey: ['projects'] });
+      
+      // Small delay to ensure query refetch completes
+      setTimeout(() => {
+        console.log('🔄 Setting project in form:', projectId);
+        
+        // Set the project in the form
+        form.setValue('project', projectId);
+        
+        // Force form to re-validate project field
+        form.trigger('project');
+        
+        // Force preview update
+        forcePreviewUpdate();
+        
+        toast({
+          title: "Project toegevoegd",
+          description: "Het nieuwe project is toegevoegd en geselecteerd voor de offerte.",
+        });
+      }, 300);
+      
+      setShowProjectAdd(false);
+    } catch (error) {
+      console.error('❌ Error handling project add:', error);
+      toast({
+        title: "Fout",
+        description: "Kon project niet selecteren. Probeer opnieuw.",
+        variant: "destructive",
+      });
+      setShowProjectAdd(false);
+    }
+  }, [form, forcePreviewUpdate, toast, queryClient]);
 
   // Email is no longer auto-filled
 
