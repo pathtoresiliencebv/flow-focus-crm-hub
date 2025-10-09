@@ -12,7 +12,7 @@ import { MobileReceiptCard } from '@/components/mobile/MobileReceiptCard';
 import { IconBox } from '@/components/ui/icon-box';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
-import { Clock, Check, X, Eye, Mail, Settings, CheckSquare } from 'lucide-react';
+import { Clock, Check, X, Eye, Mail, Settings, CheckSquare, Inbox, Upload } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -46,7 +46,7 @@ interface Receipt {
 export const Receipts = () => {
   const isMobile = useIsMobile();
   const { profile } = useAuth();
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState('pending'); // Start with "Inkomend" tab
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
@@ -356,18 +356,8 @@ export const Receipts = () => {
     );
   }
 
-  // Show error state if no receipts and not loading
-  if (!loading && receipts.length === 0) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="text-4xl mb-4">📄</div>
-          <h3 className="text-lg font-semibold mb-2">Geen bonnetjes</h3>
-          <p className="text-gray-600">Er zijn nog geen bonnetjes geüpload.</p>
-        </div>
-      </div>
-    );
-  }
+  // ✅ REMOVED: Always show interface, even with 0 receipts
+  // Empty states are now shown within each tab
 
   const pendingReceipts = receipts.filter(r => r.status === 'pending');
   const allSelectedPending = selectedReceipts.size > 0 && selectedReceipts.size === pendingReceipts.length;
@@ -375,17 +365,24 @@ export const Receipts = () => {
   return (
     <div className="p-4 space-y-6">
       {/* Icon Boxes Navigation */}
-      <div className="grid grid-cols-3 md:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-3 md:grid-cols-6 gap-4 mb-6">
+        <IconBox
+          icon={<Inbox className="h-6 w-6" />}
+          label="Inkomend"
+          active={activeTab === "pending"}
+          onClick={() => setActiveTab("pending")}
+          count={receipts.filter(r => r.status === 'pending').length}
+        />
         <IconBox
           icon={<Check className="h-6 w-6" />}
-          label="Goedgekeurd"
-          active={activeTab === "approved"}
-          onClick={() => setActiveTab("approved")}
-          count={receipts.filter(r => r.status === 'approved').length}
+          label="Verwerkt"
+          active={activeTab === "processed"}
+          onClick={() => setActiveTab("processed")}
+          count={receipts.filter(r => r.status === 'approved' || r.status === 'rejected').length}
         />
         <IconBox
           icon={<Clock className="h-6 w-6" />}
-          label="Bonnetjes"
+          label="Alle"
           active={activeTab === "all"}
           onClick={() => setActiveTab("all")}
           count={receipts.length}
@@ -457,6 +454,151 @@ export const Receipts = () => {
       )}
 
       {/* Content */}
+      {/* Inkomende Bonnetjes (Pending) */}
+      {activeTab === "pending" && (
+        <div className="space-y-4">
+          {receipts.filter(r => r.status === 'pending').length === 0 ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Inbox className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Geen inkomende bonnetjes</h3>
+                <p className="text-gray-600 mb-4">Er zijn momenteel geen bonnetjes die goedkeuring vereisen.</p>
+                <Button onClick={() => setShowUploadDialog(true)}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Bonnetje uploaden
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            receipts.filter(r => r.status === 'pending').map((receipt) => (
+              <Card key={receipt.id} className="border-orange-200 bg-orange-50/30">
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-center">
+                    <div className="flex-1">
+                      {['Administrator', 'Administratie'].includes(profile?.role || '') && (
+                        <Checkbox
+                          checked={selectedReceipts.has(receipt.id)}
+                          onCheckedChange={() => {
+                            const newSelected = new Set(selectedReceipts);
+                            if (newSelected.has(receipt.id)) {
+                              newSelected.delete(receipt.id);
+                            } else {
+                              newSelected.add(receipt.id);
+                            }
+                            setSelectedReceipts(newSelected);
+                          }}
+                          className="mr-3 inline-block"
+                        />
+                      )}
+                      <div className="inline-block">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium">{receipt.description}</h4>
+                          <Badge className="bg-orange-100 text-orange-800 border-orange-200">
+                            <Clock className="h-3 w-3 mr-1" />
+                            Wacht op goedkeuring
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {formatDate(receipt.created_at)} • {formatAmount(receipt.amount)}
+                        </p>
+                        {receipt.email_from && (
+                          <p className="text-xs text-muted-foreground">Via email: {receipt.email_from}</p>
+                        )}
+                        {receipt.user_name && (
+                          <p className="text-xs text-muted-foreground">Ingediend door: {receipt.user_name}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => viewReceipt(receipt)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      {['Administrator', 'Administratie'].includes(profile?.role || '') && (
+                        <>
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleApprovalAction(receipt.id, 'approve')} 
+                            disabled={loading}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm" 
+                            onClick={() => handleApprovalAction(receipt.id, 'reject')} 
+                            disabled={loading}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Verwerkte Bonnetjes (Approved + Rejected) */}
+      {activeTab === "processed" && (
+        <div className="space-y-4">
+          {receipts.filter(r => r.status === 'approved' || r.status === 'rejected').length === 0 ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Check className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Geen verwerkte bonnetjes</h3>
+                <p className="text-gray-600">Er zijn nog geen goedgekeurde of afgewezen bonnetjes.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            receipts.filter(r => r.status === 'approved' || r.status === 'rejected').map((receipt) => (
+              <Card key={receipt.id}>
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium">{receipt.description}</h4>
+                        {receipt.status === 'approved' ? (
+                          <Badge className="bg-green-100 text-green-800 border-green-200">
+                            <Check className="h-3 w-3 mr-1" />
+                            Goedgekeurd
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-red-100 text-red-800 border-red-200">
+                            <X className="h-3 w-3 mr-1" />
+                            Afgewezen
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {formatDate(receipt.created_at)} • {formatAmount(receipt.amount)}
+                      </p>
+                      {receipt.user_name && (
+                        <p className="text-xs text-muted-foreground">Door: {receipt.user_name}</p>
+                      )}
+                      {receipt.approver_name && (
+                        <p className="text-xs text-muted-foreground">
+                          {receipt.status === 'approved' ? 'Goedgekeurd' : 'Afgewezen'} door: {receipt.approver_name}
+                        </p>
+                      )}
+                      {receipt.rejection_reason && receipt.status === 'rejected' && (
+                        <p className="text-xs text-red-600 mt-1">Reden: {receipt.rejection_reason}</p>
+                      )}
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => viewReceipt(receipt)}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      )}
+
       {/* Goedgekeurde Bonnetjes */}
       {activeTab === "approved" && (
         <div className="space-y-4">
