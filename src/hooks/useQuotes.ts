@@ -239,14 +239,30 @@ export const useQuotes = () => {
 
   const duplicateQuote = async (quoteId: string) => {
     try {
-      // Fetch the original quote
+      console.log('🔄 Duplicating quote:', quoteId);
+      
+      // Fetch the original quote with ALL data
       const { data: originalQuote, error: fetchError } = await supabase
         .from('quotes')
         .select('*')
         .eq('id', quoteId)
         .single();
 
-      if (fetchError) throw fetchError;
+      if (fetchError) {
+        console.error('❌ Error fetching original quote:', fetchError);
+        throw fetchError;
+      }
+
+      if (!originalQuote) {
+        throw new Error('Offerte niet gevonden');
+      }
+
+      console.log('✅ Original quote fetched:', {
+        id: originalQuote.id,
+        quote_number: originalQuote.quote_number,
+        has_items: !!originalQuote.items,
+        items_count: originalQuote.items ? (Array.isArray(originalQuote.items) ? originalQuote.items.length : 0) : 0
+      });
 
       // Generate new quote number with retry logic
       let newQuoteNumber = null;
@@ -266,6 +282,7 @@ export const useQuotes = () => {
               
             if (!existing) {
               newQuoteNumber = data;
+              console.log('✅ Generated unique quote number:', newQuoteNumber);
               break;
             }
           }
@@ -279,7 +296,8 @@ export const useQuotes = () => {
       
       // Fallback if all attempts failed
       if (!newQuoteNumber) {
-        newQuoteNumber = `OFF-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+        newQuoteNumber = `OFF-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}-DUP`;
+        console.warn('⚠️ Using fallback quote number:', newQuoteNumber);
       }
 
       // Create duplicate quote
@@ -287,39 +305,70 @@ export const useQuotes = () => {
       const validUntil = new Date();
       validUntil.setDate(today.getDate() + 30);
 
+      // ✅ IMPROVED: Deep clone items to ensure no reference issues
+      let duplicatedItems = null;
+      if (originalQuote.items) {
+        try {
+          duplicatedItems = JSON.parse(JSON.stringify(originalQuote.items));
+          console.log('✅ Items deep cloned successfully');
+        } catch (err) {
+          console.error('❌ Error cloning items:', err);
+          duplicatedItems = originalQuote.items; // Fallback to shallow copy
+        }
+      }
+
       const duplicateData = {
+        // Copy all fields from original
         ...originalQuote,
+        // Override with new values
         id: undefined, // Let database generate new ID
         quote_number: newQuoteNumber,
         quote_date: today.toISOString().split('T')[0],
         valid_until: validUntil.toISOString().split('T')[0],
         status: 'concept',
+        items: duplicatedItems, // ✅ Include cloned items
+        // Reset all signature and approval data
         public_token: null,
         admin_signature_data: null,
         client_signature_data: null,
         client_name: null,
         client_signed_at: null,
+        pdf_url: null, // ✅ Reset PDF URL
+        // Let database handle timestamps
         created_at: undefined,
         updated_at: undefined,
       };
 
-      const { error: insertError } = await supabase
-        .from('quotes')
-        .insert([duplicateData]);
+      console.log('📝 Inserting duplicate quote:', {
+        quote_number: duplicateData.quote_number,
+        customer_id: duplicateData.customer_id,
+        has_items: !!duplicateData.items
+      });
 
-      if (insertError) throw insertError;
+      const { data: newQuote, error: insertError } = await supabase
+        .from('quotes')
+        .insert([duplicateData])
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('❌ Error inserting duplicate:', insertError);
+        throw insertError;
+      }
+
+      console.log('✅ Quote duplicated successfully:', newQuote?.id);
 
       toast({
-        title: "Succes",
-        description: "Offerte gedupliceerd",
+        title: "✅ Offerte gedupliceerd",
+        description: `Nieuwe offerte ${newQuoteNumber} is aangemaakt`,
       });
 
       await fetchQuotes(true);
-    } catch (error) {
-      console.error('Error duplicating quote:', error);
+    } catch (error: any) {
+      console.error('❌ Error duplicating quote:', error);
       toast({
-        title: "Fout",
-        description: "Kon offerte niet dupliceren",
+        title: "❌ Fout bij dupliceren",
+        description: error.message || "Kon offerte niet dupliceren",
         variant: "destructive",
       });
     }

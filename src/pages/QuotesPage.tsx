@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { Quotes } from "@/components/Quotes";
@@ -9,11 +9,14 @@ export default function QuotesPage() {
   const { setTitle, setActions } = usePageHeader();
   const navigate = useNavigate();
 
-  const handleNewQuote = () => {
+  // ✅ FIXED: Wrap in useCallback for stable reference
+  const handleNewQuote = useCallback(() => {
+    console.log('📝 Nieuwe Offerte button clicked!');
     navigate('/quotes/new');
-  };
+  }, [navigate]);
 
   useEffect(() => {
+    console.log('📝 QuotesPage: Setting up header');
     setTitle("Offertes");
     setActions(
       <Button 
@@ -26,10 +29,11 @@ export default function QuotesPage() {
       </Button>
     );
     return () => {
+      console.log('📝 QuotesPage: Cleaning up header');
       setTitle("");
       setActions(null);
     };
-  }, [navigate, setTitle, setActions]);
+  }, [setTitle, setActions, handleNewQuote]);
 
   return <Quotes />;
 }

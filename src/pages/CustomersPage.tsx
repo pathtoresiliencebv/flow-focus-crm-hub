@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { Customers } from "@/components/Customers";
 import { Button } from "@/components/ui/button";
@@ -9,15 +9,19 @@ export default function CustomersPage() {
   const [showNewCustomerDialog, setShowNewCustomerDialog] = useState(false);
   const [showSearchBar, setShowSearchBar] = useState(false);
 
-  const handleNewCustomer = () => {
+  // ✅ FIXED: Wrap in useCallback for stable references
+  const handleNewCustomer = useCallback(() => {
+    console.log('👤 Nieuwe Klant button clicked!');
     setShowNewCustomerDialog(true);
-  };
+  }, []);
 
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
+    console.log('🔍 Zoeken button clicked!');
     setShowSearchBar(true);
-  };
+  }, []);
 
   useEffect(() => {
+    console.log('📝 CustomersPage: Setting up header');
     setTitle("Klanten");
     setActions(
       <>
@@ -36,10 +40,11 @@ export default function CustomersPage() {
       </>
     );
     return () => {
+      console.log('📝 CustomersPage: Cleaning up header');
       setTitle("");
       setActions(null);
     };
-  }, [setTitle, setActions]);
+  }, [setTitle, setActions, handleNewCustomer, handleSearch]);
 
   return (
     <Customers 

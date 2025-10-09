@@ -195,71 +195,152 @@ export function useInvoices() {
 
   const duplicateInvoiceMutation = useMutation({
     mutationFn: async (invoiceId: string) => {
-    // Get original invoice with items
-    const { data: original, error: fetchError } = await supabase
-      .from('invoices')
-      .select(`
-        *,
-        invoice_items (*)
-      `)
-      .eq('id', invoiceId)
-      .single();
+      console.log('🔄 Duplicating invoice:', invoiceId);
+      
+      // Get original invoice with items
+      const { data: original, error: fetchError } = await supabase
+        .from('invoices')
+        .select(`
+          *,
+          invoice_items (*)
+        `)
+        .eq('id', invoiceId)
+        .single();
 
-    if (fetchError) throw fetchError;
+      if (fetchError) {
+        console.error('❌ Error fetching original invoice:', fetchError);
+        throw fetchError;
+      }
 
-    // Generate new invoice number
-    const { data: newNumber, error: numberError } = await supabase.rpc('generate_invoice_number');
-    if (numberError) throw numberError;
+      if (!original) {
+        throw new Error('Factuur niet gevonden');
+      }
 
-    // Create duplicate invoice
-    const duplicateData = {
-      ...original,
-      id: undefined,
-      invoice_number: newNumber,
-      status: 'concept',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      sent_at: null,
-      paid_at: null
-    };
+      console.log('✅ Original invoice fetched:', {
+        id: original.id,
+        invoice_number: original.invoice_number,
+        items_count: original.invoice_items?.length || 0
+      });
 
-    const { data: newInvoice, error: createError } = await supabase
-      .from('invoices')
-      .insert([duplicateData])
-      .select()
-      .single();
+      // Generate new invoice number with retry logic
+      let newNumber = null;
+      let attempts = 0;
+      const maxAttempts = 5;
+      
+      while (attempts < maxAttempts && !newNumber) {
+        try {
+          const { data, error } = await supabase.rpc('generate_invoice_number');
+          if (data && !error) {
+            // Verify uniqueness
+            const { data: existing } = await supabase
+              .from('invoices')
+              .select('id')
+              .eq('invoice_number', data)
+              .maybeSingle();
+              
+            if (!existing) {
+              newNumber = data;
+              console.log('✅ Generated unique invoice number:', newNumber);
+              break;
+            }
+          }
+        } catch (error) {
+          console.error(`Invoice number generation attempt ${attempts + 1} failed:`, error);
+        }
+        attempts++;
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 200 * attempts));
+      }
+      
+      // Fallback if all attempts failed
+      if (!newNumber) {
+        newNumber = `FACT-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}-DUP`;
+        console.warn('⚠️ Using fallback invoice number:', newNumber);
+      }
 
-    if (createError) throw createError;
+      // Prepare duplicate data (exclude invoice_items from spread)
+      const { invoice_items, ...invoiceDataWithoutItems } = original;
 
-    // Duplicate invoice items
-    if (original.invoice_items?.length > 0) {
-      const duplicateItems = original.invoice_items.map((item: any) => ({
-        ...item,
+      // Create duplicate invoice
+      const duplicateData = {
+        ...invoiceDataWithoutItems,
         id: undefined,
-        invoice_id: newInvoice.id
-      }));
+        invoice_number: newNumber,
+        status: 'concept',
+        invoice_date: new Date().toISOString().split('T')[0],
+        due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // +30 days
+        created_at: undefined, // Let database handle
+        updated_at: undefined, // Let database handle
+        // Reset payment/sending data
+        sent_at: null,
+        paid_at: null,
+        payment_date: null,
+        payment_status: 'pending',
+        // Reset PDF and signatures
+        pdf_url: null,
+        admin_signature_data: null,
+        client_signature_data: null,
+        client_signed_at: null,
+      };
 
-      const { error: itemsError } = await supabase
-        .from('invoice_items')
-        .insert(duplicateItems);
+      console.log('📝 Inserting duplicate invoice:', {
+        invoice_number: duplicateData.invoice_number,
+        customer_id: duplicateData.customer_id
+      });
 
-      if (itemsError) throw itemsError;
-    }
+      const { data: newInvoice, error: createError } = await supabase
+        .from('invoices')
+        .insert([duplicateData])
+        .select()
+        .single();
 
-    return newInvoice;
+      if (createError) {
+        console.error('❌ Error inserting duplicate invoice:', createError);
+        throw createError;
+      }
+
+      console.log('✅ Invoice created:', newInvoice.id);
+
+      // Duplicate invoice items
+      if (invoice_items && invoice_items.length > 0) {
+        console.log(`📝 Duplicating ${invoice_items.length} invoice items...`);
+        
+        const duplicateItems = invoice_items.map((item: any) => {
+          // Deep clone to avoid reference issues
+          const { id, invoice_id, created_at, updated_at, ...itemData } = item;
+          return {
+            ...itemData,
+            invoice_id: newInvoice.id
+          };
+        });
+
+        const { error: itemsError } = await supabase
+          .from('invoice_items')
+          .insert(duplicateItems);
+
+        if (itemsError) {
+          console.error('❌ Error inserting invoice items:', itemsError);
+          throw itemsError;
+        }
+
+        console.log('✅ Invoice items duplicated successfully');
+      }
+
+      console.log('✅ Invoice duplicated successfully:', newInvoice.id);
+      return newInvoice;
     },
-    onSuccess: () => {
+    onSuccess: (newInvoice) => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       toast({
-        title: "Factuur gedupliceerd",
-        description: "De factuur is succesvol gedupliceerd.",
+        title: "✅ Factuur gedupliceerd",
+        description: `Nieuwe factuur ${newInvoice.invoice_number} is aangemaakt`,
       });
     },
-    onError: (error) => {
-      console.error('Error duplicating invoice:', error);
+    onError: (error: any) => {
+      console.error('❌ Error duplicating invoice:', error);
       toast({
-        title: "Fout bij dupliceren",
-        description: "Er is een fout opgetreden bij het dupliceren van de factuur.",
+        title: "❌ Fout bij dupliceren",
+        description: error.message || "Er is een fout opgetreden bij het dupliceren van de factuur.",
         variant: "destructive",
       });
     }

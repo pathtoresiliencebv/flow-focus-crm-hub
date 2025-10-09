@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { Dashboard } from "@/components/Dashboard";
 import { SimplifiedPlanningManagement } from "@/components/SimplifiedPlanningManagement";
@@ -12,19 +12,24 @@ export default function DashboardPage() {
   const [viewMode, setViewMode] = useState<'month' | 'availability'>('month');
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
 
-  const handleMonthViewClick = () => {
+  // ✅ FIXED: Wrap in useCallback for stable references
+  const handleMonthViewClick = useCallback(() => {
+    console.log('📊 Dashboard Maand view clicked!');
     setViewMode('month');
-  };
+  }, []);
 
-  const handleAvailabilityViewClick = () => {
+  const handleAvailabilityViewClick = useCallback(() => {
+    console.log('📊 Dashboard Beschikbaarheid view clicked!');
     setViewMode('availability');
-  };
+  }, []);
 
-  const handleNewCustomerClick = () => {
+  const handleNewCustomerClick = useCallback(() => {
+    console.log('➕ Dashboard Nieuwe Klant Afspraak clicked!');
     setShowCustomerDialog(true);
-  };
+  }, []);
 
   useEffect(() => {
+    console.log('📝 DashboardPage: Setting up header with viewMode:', viewMode);
     setTitle("Planning");
     setActions(
       <div className="flex items-center gap-3">
@@ -58,10 +63,11 @@ export default function DashboardPage() {
       </div>
     );
     return () => {
+      console.log('📝 DashboardPage: Cleaning up header');
       setTitle("");
       setActions(null);
     };
-  }, [viewMode, setTitle, setActions]);
+  }, [viewMode, setTitle, setActions, handleMonthViewClick, handleAvailabilityViewClick, handleNewCustomerClick]);
 
   // Show planning for admin/administratie, regular dashboard for installateurs
   if (profile?.role === 'Installateur') {

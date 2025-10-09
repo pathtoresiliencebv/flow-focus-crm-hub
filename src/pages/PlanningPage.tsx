@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { SimplifiedPlanningManagement } from "@/components/SimplifiedPlanningManagement";
 import { Button } from "@/components/ui/button";
@@ -9,19 +9,24 @@ export default function PlanningPage() {
   const [viewMode, setViewMode] = useState<'month' | 'availability'>('month');
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
 
-  const handleMonthViewClick = () => {
+  // ✅ FIXED: Wrap in useCallback for stable references
+  const handleMonthViewClick = useCallback(() => {
+    console.log('📅 Maand view clicked!');
     setViewMode('month');
-  };
+  }, []);
 
-  const handleAvailabilityViewClick = () => {
+  const handleAvailabilityViewClick = useCallback(() => {
+    console.log('📅 Beschikbaarheid view clicked!');
     setViewMode('availability');
-  };
+  }, []);
 
-  const handleNewCustomerClick = () => {
+  const handleNewCustomerClick = useCallback(() => {
+    console.log('➕ Nieuwe Klant Afspraak clicked!');
     setShowCustomerDialog(true);
-  };
+  }, []);
 
   useEffect(() => {
+    console.log('📝 PlanningPage: Setting up header with viewMode:', viewMode);
     setTitle("Planning");
     setActions(
       <div className="flex items-center gap-3">
@@ -55,10 +60,11 @@ export default function PlanningPage() {
       </div>
     );
     return () => {
+      console.log('📝 PlanningPage: Cleaning up header');
       setTitle("");
       setActions(null);
     };
-  }, [viewMode, setTitle, setActions]);
+  }, [viewMode, setTitle, setActions, handleMonthViewClick, handleAvailabilityViewClick, handleNewCustomerClick]);
 
   return (
     <div className="h-full">

@@ -7,24 +7,28 @@ import { FileText, Wrench } from "lucide-react";
 
 export default function InvoicesPage() {
   const { setTitle, setActions } = usePageHeader();
-  const navigate = useNavigate();
   const [showNewInvoice, setShowNewInvoice] = useState(false);
   const [invoiceType, setInvoiceType] = useState<'simple' | 'detailed'>('simple');
 
   // ✅ Use useCallback to create stable function references
   const handleNewInvoice = useCallback(() => {
     console.log('🟦 Normale Factuur button clicked!');
+    console.log('🟦 Current state:', { showNewInvoice, invoiceType });
     setInvoiceType('simple');
     setShowNewInvoice(true);
-  }, []);
+    console.log('🟦 State updated to simple + true');
+  }, [showNewInvoice, invoiceType]);
 
   const handleNewWerkbon = useCallback(() => {
     console.log('🟧 Werkbon Factuur button clicked!');
+    console.log('🟧 Current state:', { showNewInvoice, invoiceType });
     setInvoiceType('detailed');
     setShowNewInvoice(true);
-  }, []);
+    console.log('🟧 State updated to detailed + true');
+  }, [showNewInvoice, invoiceType]);
 
   useEffect(() => {
+    console.log('📝 InvoicesPage: Setting up header with handlers');
     setTitle("Facturatie");
     setActions(
       <>
@@ -47,10 +51,11 @@ export default function InvoicesPage() {
       </>
     );
     return () => {
+      console.log('📝 InvoicesPage: Cleaning up header');
       setTitle("");
       setActions(null);
     };
-  }, [navigate, setTitle, setActions, handleNewInvoice, handleNewWerkbon]);
+  }, [setTitle, setActions, handleNewInvoice, handleNewWerkbon]);
 
   return (
     <Invoicing 
