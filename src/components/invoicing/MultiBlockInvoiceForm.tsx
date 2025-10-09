@@ -405,11 +405,13 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
       
       toast({
         title: "Factuur opgeslagen",
-        description: "Factuur is klaar om te versturen.",
+        description: "Factuur is succesvol opgeslagen en klaar om te versturen.",
       });
       
-      // Navigate to send page
-      navigate(`/invoices/${savedInvoiceId}/send`);
+      // ✅ FIX: Close dialog instead of navigate to prevent auth loop
+      if (onClose) {
+        onClose();
+      }
       
     } catch (error) {
       console.error('Error preparing invoice for send:', error);

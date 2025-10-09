@@ -188,11 +188,10 @@ export function InvoiceForm({ onClose, customers, projects }: InvoiceFormProps) 
           description: `Factuur ${result.invoice_number} is succesvol opgeslagen.`,
         });
 
-        // Navigate to invoice send page
+        // ✅ FIX: Only close dialog, don't navigate to prevent auth loop
         if (onClose) {
           onClose();
         }
-        navigate(`/invoices/${result.id}/send`);
       } else {
         throw new Error('Failed to create invoice');
       }
