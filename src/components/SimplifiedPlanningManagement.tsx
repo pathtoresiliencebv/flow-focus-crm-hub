@@ -284,14 +284,41 @@ export function SimplifiedPlanningManagement({
               setShowProjectSidebar(true);
             }}
             onPlanningClick={(planning) => {
+              console.log('Planning item clicked:', planning);
               setSelectedPlanning(planning);
-              // Navigate to project if project_id exists
-              if (planning.project_id) {
-                navigate(`/project/${planning.project_id}`);
-              } else {
+              
+              // Check if project_id exists
+              if (!planning.project_id) {
+                console.warn('No project_id found in planning item');
                 toast({
                   title: "Geen project gekoppeld",
                   description: "Deze planning heeft geen project gekoppeld.",
+                });
+                return;
+              }
+              
+              // Verify project exists
+              const projectExists = projects.find(p => p.id === planning.project_id);
+              console.log('Project exists check:', projectExists ? 'Yes' : 'No');
+              
+              if (!projectExists) {
+                toast({
+                  title: "Project niet gevonden",
+                  description: "Het gekoppelde project bestaat niet meer.",
+                  variant: "destructive",
+                });
+                return;
+              }
+              
+              // Navigate to project
+              console.log('Navigating to project:', planning.project_id);
+              try {
+                navigate(`/project/${planning.project_id}`);
+              } catch (error) {
+                console.error('Navigation error:', error);
+                toast({
+                  title: "Navigatie fout",
+                  description: "Kon niet naar project navigeren.",
                   variant: "destructive",
                 });
               }

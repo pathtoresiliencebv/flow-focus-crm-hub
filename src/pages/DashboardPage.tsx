@@ -12,6 +12,18 @@ export default function DashboardPage() {
   const [viewMode, setViewMode] = useState<'month' | 'availability'>('month');
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
 
+  const handleMonthViewClick = () => {
+    setViewMode('month');
+  };
+
+  const handleAvailabilityViewClick = () => {
+    setViewMode('availability');
+  };
+
+  const handleNewCustomerClick = () => {
+    setShowCustomerDialog(true);
+  };
+
   useEffect(() => {
     setTitle("Planning");
     setActions(
@@ -20,7 +32,7 @@ export default function DashboardPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setViewMode('month')}
+            onClick={handleMonthViewClick}
             className={viewMode === 'month' ? 'bg-[#fee2e2] text-[hsl(0,71%,36%)] hover:bg-[#fecaca] shadow-sm font-semibold' : 'hover:bg-gray-200'}
           >
             <CalendarDays className="h-4 w-4 mr-2" />
@@ -29,7 +41,7 @@ export default function DashboardPage() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setViewMode('availability')}
+            onClick={handleAvailabilityViewClick}
             className={viewMode === 'availability' ? 'bg-[#fee2e2] text-[hsl(0,71%,36%)] hover:bg-[#fecaca] shadow-sm font-semibold' : 'hover:bg-gray-200'}
           >
             <CalendarRange className="h-4 w-4 mr-2" />
@@ -37,7 +49,7 @@ export default function DashboardPage() {
           </Button>
         </div>
         <Button 
-          onClick={() => setShowCustomerDialog(true)} 
+          onClick={handleNewCustomerClick} 
           className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)]"
         >
           <Plus className="h-5 w-5 mr-2" />
@@ -49,7 +61,7 @@ export default function DashboardPage() {
       setTitle("");
       setActions(null);
     };
-  }, [viewMode]);
+  }, [viewMode, setTitle, setActions]);
 
   // Show planning for admin/administratie, regular dashboard for installateurs
   if (profile?.role === 'Installateur') {
