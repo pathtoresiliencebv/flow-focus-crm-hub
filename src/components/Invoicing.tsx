@@ -30,6 +30,8 @@ export const Invoicing: React.FC<InvoicingProps> = ({
   const [activeTab, setActiveTab] = useState("active");
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [showFinalizationDialog, setShowFinalizationDialog] = useState(false);
+  const [showPreviewDialog, setShowPreviewDialog] = useState(false);
+  const [previewInvoice, setPreviewInvoice] = useState<any>(null);
   const [showNewInvoiceForm, setShowNewInvoiceForm] = useState(showNewInvoice || window.location.pathname === "/invoices/new");
   const [currentInvoiceType, setCurrentInvoiceType] = useState<'simple' | 'detailed'>(invoiceType);
   const [filters, setFilters] = useState({
@@ -169,6 +171,12 @@ export const Invoicing: React.FC<InvoicingProps> = ({
     }
   };
 
+  const handleViewInvoice = (invoice: any) => {
+    console.log('👁️ View invoice:', invoice.id, invoice.invoice_number);
+    setPreviewInvoice(invoice);
+    setShowPreviewDialog(true);
+  };
+
   // Filter invoices based on current filters - only active invoices
   const filteredInvoices = invoices
     .filter(invoice => !invoice.is_archived)
@@ -267,6 +275,7 @@ export const Invoicing: React.FC<InvoicingProps> = ({
               onArchiveInvoice={handleArchiveInvoice}
               onFinalizeInvoice={handleFinalizeInvoice}
               onSendReminder={handleSendReminder}
+              onViewInvoice={handleViewInvoice}
             />
           </div>
         )}
@@ -286,6 +295,12 @@ export const Invoicing: React.FC<InvoicingProps> = ({
         onFinalized={() => {
           refetch();
         }}
+      />
+
+      <InvoicePreviewDialog
+        open={showPreviewDialog}
+        onOpenChange={setShowPreviewDialog}
+        invoice={previewInvoice}
       />
     </div>
   );

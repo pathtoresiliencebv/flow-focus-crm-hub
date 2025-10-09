@@ -208,11 +208,6 @@ export const InvoicesTable = ({
                       </DropdownMenuItem>
                     )}
                     
-                     <DropdownMenuItem onClick={() => window.open(`/invoices/${invoice.id}/preview`, '_blank')}>
-                       <FileText className="mr-2 h-4 w-4" />
-                       PDF Preview
-                     </DropdownMenuItem>
-                     
                     <DropdownMenuItem onClick={() => {
                        console.log('📄 Opening invoice detail for PDF download:', invoice.id);
                        navigate(`/invoices/${invoice.id}`);

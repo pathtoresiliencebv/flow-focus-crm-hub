@@ -72,6 +72,20 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('✅ Using recipient:', finalRecipientName, '<' + finalRecipientEmail + '>');
 
+    // Check if RESEND_API_KEY is configured
+    const resendKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendKey) {
+      console.error('❌ RESEND_API_KEY is not configured!');
+      return new Response(
+        JSON.stringify({ error: 'Email service not configured. Contact administrator.' }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+    console.log('✅ RESEND_API_KEY is configured');
+
     // Always generate payment link if not already exists
     let paymentLinkUrl = invoice.payment_link_url;
     
@@ -164,11 +178,20 @@ const handler = async (req: Request): Promise<Response> => {
     // Generate PDF attachment
     let attachments = [];
     try {
+      console.log('🔄 Attempting to generate PDF attachment...');
       const pdfResponse = await supabase.functions.invoke('generate-invoice-pdf', {
         body: { invoiceId: invoiceId }
       });
       
-      if (pdfResponse.data && pdfResponse.data.success) {
+      console.log('📄 PDF Response:', { 
+        hasData: !!pdfResponse.data, 
+        hasError: !!pdfResponse.error,
+        success: pdfResponse.data?.success 
+      });
+      
+      if (pdfResponse.error) {
+        console.warn('⚠️ PDF generation returned error (continuing without PDF):', pdfResponse.error);
+      } else if (pdfResponse.data && pdfResponse.data.success) {
         const baseFilename = `factuur-${invoice.invoice_number}`;
         
         // Add main invoice PDF
@@ -178,11 +201,11 @@ const handler = async (req: Request): Promise<Response> => {
           type: pdfResponse.data.contentType
         });
         
-        console.log('PDF attachment generated successfully:', attachments.length, 'files');
+        console.log('✅ PDF attachment generated successfully:', attachments.length, 'files');
       }
-    } catch (pdfError) {
-      console.error('Failed to generate PDF attachment:', pdfError);
-      // Continue without attachment
+    } catch (pdfError: any) {
+      console.warn('⚠️ Failed to generate PDF attachment (continuing without PDF):', pdfError.message);
+      // Continue without attachment - PDF is optional
     }
 
     // Create enhanced email HTML content with modern styling
