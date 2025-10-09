@@ -7,7 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Plus, X, Users, CheckCircle2, Calendar as CalendarIcon, CalendarDays, CalendarRange } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { LocationSearch } from './LocationSearch';
 import { CustomerPlanningDialog, type PlanningFormData } from './CustomerPlanningDialog';
@@ -445,6 +448,68 @@ export function SimplifiedPlanningManagement({
                 key={`desc-${selectedProject?.id || 'no-project'}`}
                 rows={3}
               />
+            </div>
+
+            {/* Date Picker */}
+            <div>
+              <Label>Datum *</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !selectedDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {selectedDate ? format(selectedDate, 'EEEE dd MMMM yyyy', { locale: nl }) : 'Selecteer een datum'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => {
+                      console.log('📅 Datum geselecteerd:', date);
+                      setSelectedDate(date);
+                    }}
+                    locale={nl}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Monteur Selector */}
+            <div>
+              <Label htmlFor="monteur">Monteur *</Label>
+              <Select 
+                value={selectedMonteur || 'none'} 
+                onValueChange={(value) => {
+                  console.log('🔧 Monteur geselecteerd:', value);
+                  if (value === 'none') {
+                    setSelectedMonteur('');
+                  } else {
+                    setSelectedMonteur(value);
+                  }
+                }}
+              >
+                <SelectTrigger className={!selectedMonteur ? 'border-red-300' : ''}>
+                  <SelectValue placeholder="Selecteer een monteur" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none" disabled>Selecteer een monteur</SelectItem>
+                  {monteurs.map((monteur) => (
+                    <SelectItem key={monteur.id} value={monteur.id}>
+                      {monteur.full_name || monteur.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!selectedMonteur && (
+                <p className="text-xs text-red-500 mt-1">Selecteer een monteur om de planning aan te maken</p>
+              )}
             </div>
             
             {/* Duration Selector */}
