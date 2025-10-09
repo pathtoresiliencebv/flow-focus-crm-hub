@@ -236,9 +236,9 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
   };
 
   return (
-    <div className="bg-white shadow-sm">
+    <div className="bg-white">
       {/* PDF Actions Header */}
-      <div className="flex justify-end gap-2 p-2 border-b border-gray-200 print:hidden">
+      <div className="flex justify-end gap-2 p-1 border-b border-gray-100 print:hidden">
         <Button 
           onClick={handleDownloadPDF}
           disabled={downloadLoading}
@@ -254,10 +254,10 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
       <div 
         ref={previewRef} 
         className={cn(
-          "p-3 text-xs",
+          "p-2 text-xs",
           isGeneratingPDF 
             ? "max-h-none overflow-visible" 
-            : "max-h-[80vh] overflow-y-auto",
+            : "max-h-[85vh] overflow-y-auto",
           "print:max-h-none print:overflow-visible"
         )}
       >
@@ -312,25 +312,25 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
         </div>
         <div>
           <h4 className="font-medium text-gray-700 text-xs">Status</h4>
-          <p className="text-sm text-gray-600 capitalize">{quote.status}</p>
+          <p className="text-xs text-gray-600 capitalize">{quote.status}</p>
         </div>
       </div>
 
       {/* Message */}
       {quote.message && (
-        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-          <h4 className="font-medium text-gray-700 mb-2">Bericht:</h4>
-          <p className="text-sm text-gray-600 whitespace-pre-line">{quote.message}</p>
+        <div className="mb-2 p-2 bg-blue-50 rounded">
+          <h4 className="font-medium text-gray-700 mb-1 text-xs">Bericht:</h4>
+          <p className="text-xs text-gray-600 whitespace-pre-line">{quote.message}</p>
         </div>
       )}
 
       {/* Quote blocks - ENHANCED VISIBILITY */}
-      <div className="space-y-1 mb-4">
+      <div className="space-y-1 mb-2">
         {quote.blocks && quote.blocks.length > 0 ? (
           <>
-            <div className="mb-3">
-              <h3 className="text-xl font-bold text-gray-900 mb-2">OFFERTEONDERDELEN</h3>
-              <div className="w-full h-1 bg-gradient-to-r from-smans-primary to-transparent rounded"></div>
+            <div className="mb-2">
+              <h3 className="text-xs font-bold text-gray-900 mb-1">OFFERTEONDERDELEN</h3>
+              <div className="w-full h-0.5 bg-gradient-to-r from-smans-primary to-transparent"></div>
             </div>
             {(() => {
               const productBlocks = quote.blocks.filter(b => b.type === 'product');
@@ -351,10 +351,10 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
                 // Product block with borders and structure
                 productBlockIndex++;
                 return (
-                  <div key={`${block.id}-${blockIndex}`} className="border-l-2 border-smans-primary pl-2 mb-2">
+                  <div key={`${block.id}-${blockIndex}`} className="mb-1">
                     {/* Block Title - only for product blocks */}
-                    <div className="mb-2 pb-1 border-b border-gray-200">
-                      <h3 className="text-base font-semibold text-gray-900 mb-1">
+                    <div className="mb-1 pb-0.5 border-b border-gray-100">
+                      <h3 className="text-xs font-semibold text-gray-900">
                         {block.title}
                       </h3>
                       <div className="text-xs text-gray-500">
@@ -402,8 +402,8 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
                            </div>
                          </div>
                      ) : (
-                       <div className="text-center py-12 bg-yellow-50 rounded-lg border-2 border-dashed border-yellow-300">
-                         <div className="text-yellow-800 font-medium mb-2 text-lg">⚠️ Geen items toegevoegd</div>
+                       <div className="text-center py-6 bg-yellow-50 rounded border border-dashed border-yellow-300">
+                         <div className="text-yellow-800 font-medium mb-1 text-xs">⚠️ Geen items toegevoegd</div>
                          <div className="text-yellow-700">
                            Dit blok is leeg. Voeg producten of diensten toe om ze hier te zien in de offerte.
                          </div>
@@ -441,27 +441,27 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
             })()}
           </>
         ) : (
-          <div className="text-gray-400 italic text-center py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-            <div className="text-xl font-medium mb-3">Geen blokken toegevoegd aan deze offerte</div>
-            <div className="text-base">Voeg eerst blokken toe om ze hier te zien</div>
+          <div className="text-gray-400 italic text-center py-8 bg-gray-50 rounded border border-dashed border-gray-200">
+            <div className="text-xs font-medium mb-1">Geen blokken toegevoegd aan deze offerte</div>
+            <div className="text-xs">Voeg eerst blokken toe om ze hier te zien</div>
           </div>
         )}
       </div>
 
       {/* Grand totals */}
-      <div className="flex justify-end border-t-2 border-gray-200 pt-3 bg-gray-50 rounded-lg p-3 mt-4">
-        <div className="w-72 space-y-1">
-          <div className="flex justify-between py-1 text-base">
+      <div className="flex justify-end border-t border-gray-200 pt-2 mt-2">
+        <div className="w-64 space-y-0.5">
+          <div className="flex justify-between py-0.5 text-xs">
             <span className="font-bold text-gray-900">Totaal excl. BTW:</span>
             <span className="font-bold">€{(quote.total_amount || 0).toFixed(2)}</span>
           </div>
-          <div className="flex justify-between py-1 text-base">
+          <div className="flex justify-between py-0.5 text-xs">
             <span className="font-bold text-gray-900">Totaal BTW:</span>
             <span className="font-bold">€{(quote.total_vat_amount || 0).toFixed(2)}</span>
           </div>
-          <div className="flex justify-between py-2 border-t-2 border-gray-300">
-            <span className="font-bold text-xl text-gray-900">EINDTOTAAL:</span>
-            <span className="font-bold text-xl text-smans-primary">
+          <div className="flex justify-between py-1 border-t border-gray-200">
+            <span className="font-bold text-sm text-gray-900">EINDTOTAAL:</span>
+            <span className="font-bold text-sm text-smans-primary">
               €{((quote.total_amount || 0) + (quote.total_vat_amount || 0)).toFixed(2)}
             </span>
           </div>
@@ -470,14 +470,14 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
 
       {/* Signatures Section - Always show if quote is approved or if signatures exist */}
       {(quote.status === 'goedgekeurd' || quote.status === 'approved' || quote.client_signature_data || quote.admin_signature_data) && (
-        <div className="mt-12 pt-8 border-t-2 border-gray-200">
-          <h3 className="text-xl font-bold text-gray-900 mb-6">HANDTEKENINGEN</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="mt-2 pt-2 border-t border-gray-200">
+          <h3 className="text-xs font-bold text-gray-900 mb-2">HANDTEKENINGEN</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             
             {/* Client Signature */}
             <div>
-              <h4 className="font-medium text-gray-900 mb-4">Klant Handtekening</h4>
-              <div className="border rounded-lg p-4 bg-gray-50">
+              <h4 className="font-medium text-gray-900 mb-2 text-xs">Klant Handtekening</h4>
+              <div className="border rounded p-2 bg-gray-50">
                 {quote.client_signature_data ? (
                   <>
                     <img 
@@ -485,7 +485,7 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
                       alt="Klant handtekening" 
                       className="max-w-full h-24 object-contain mb-3 bg-white p-2 rounded"
                     />
-                    <div className="text-sm text-gray-600 space-y-1">
+                    <div className="text-xs text-gray-600 space-y-0.5">
                       <p><strong>Naam:</strong> {quote.client_name || 'Niet opgegeven'}</p>
                       {quote.client_signed_at && (
                         <p><strong>Ondertekend op:</strong> {new Date(quote.client_signed_at).toLocaleDateString('nl-NL', { 
@@ -506,10 +506,10 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
                     )}
                   </>
                 ) : (
-                  <div className="text-center py-8 text-gray-400">
-                    <p className="text-sm">Nog niet ondertekend</p>
+                  <div className="text-center py-4 text-gray-400">
+                    <p className="text-xs">Nog niet ondertekend</p>
                     {(quote.status === 'goedgekeurd' || quote.status === 'approved') && (
-                      <p className="text-xs mt-2 text-green-600">✅ Wel goedgekeurd</p>
+                      <p className="text-xs mt-1 text-green-600">✅ Wel goedgekeurd</p>
                     )}
                   </div>
                 )}
@@ -518,20 +518,20 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
 
             {/* Admin Signature */}
             <div>
-              <h4 className="font-medium text-gray-900 mb-4">{settings.company_name || 'SMANS BV'}</h4>
-              <div className="border rounded-lg p-4 bg-gray-50">
+              <h4 className="font-medium text-gray-900 mb-2 text-xs">{settings.company_name || 'SMANS BV'}</h4>
+              <div className="border rounded p-2 bg-gray-50">
                 {quote.admin_signature_data ? (
                   <>
                     <img 
                       src={quote.admin_signature_data} 
                       alt="Bedrijf handtekening" 
-                      className="max-w-full h-24 object-contain mb-3 bg-white p-2 rounded"
+                      className="max-w-full h-24 object-contain mb-2 bg-white p-2 rounded"
                     />
-                    <p className="text-sm text-gray-600">Namens {settings.company_name || 'SMANS BV'}</p>
+                    <p className="text-xs text-gray-600">Namens {settings.company_name || 'SMANS BV'}</p>
                   </>
                 ) : (
-                  <div className="text-center py-8 text-gray-400">
-                    <p className="text-sm">Nog niet ondertekend</p>
+                  <div className="text-center py-4 text-gray-400">
+                    <p className="text-xs">Nog niet ondertekend</p>
                   </div>
                 )}
               </div>
@@ -542,16 +542,16 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
 
       {/* PDF Attachments Display */}
       {attachments && attachments.length > 0 && (
-        <div className="mt-8 pt-6 border-t border-gray-200">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">BIJLAGEN</h3>
-          <div className="space-y-2">
+        <div className="mt-2 pt-2 border-t border-gray-200">
+          <h3 className="text-xs font-bold text-gray-900 mb-2">BIJLAGEN</h3>
+          <div className="space-y-1">
             {attachments.map((attachment, index) => (
-              <div key={index} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border">
+              <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded border">
                 <div className="w-8 h-8 bg-red-500 rounded flex items-center justify-center">
                   <span className="text-white text-xs font-bold">PDF</span>
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-gray-900">{attachment.name}</p>
+                  <p className="text-xs font-medium text-gray-900">{attachment.name}</p>
                   <p className="text-xs text-gray-500">
                     {attachment.size ? `${(attachment.size / 1024 / 1024).toFixed(1)} MB` : 'Bijlage'}
                   </p>
@@ -571,19 +571,19 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
       )}
 
       {/* Footer */}
-      <div className="mt-12 pt-8 border-t border-gray-200">
-        <div className="text-sm text-gray-600 space-y-2">
+      <div className="mt-2 pt-2 border-t border-gray-200">
+        <div className="text-xs text-gray-600 space-y-1">
           <p><strong>Deze offerte is geldig tot {new Date(quote.valid_until).toLocaleDateString('nl-NL')}.</strong></p>
           <p>Door akkoord te gaan met deze offerte gaat u een overeenkomst aan met {settings.company_name || 'SMANS BV'} onder de hieronder vermelde voorwaarden.</p>
           <p>Prijzen zijn inclusief BTW tenzij anders vermeld. Bij aanvaarding van deze offerte zijn onze algemene voorwaarden van toepassing.</p>
         </div>
         
-        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-          <h4 className="font-medium text-gray-900 mb-2">Akkoord verklaring:</h4>
-          <p className="text-sm text-gray-600">
+        <div className="mt-2 p-2 bg-gray-50 rounded">
+          <h4 className="font-medium text-gray-900 mb-1 text-xs">Akkoord verklaring:</h4>
+          <p className="text-xs text-gray-600">
             Door digitaal te ondertekenen gaat u akkoord met de voorwaarden en prijzen zoals vermeld in deze offerte.
           </p>
-          <p className="text-xs text-gray-500 mt-2">
+          <p className="text-xs text-gray-500 mt-1">
             <a href="/algemene-voorwaarden" className="underline hover:text-gray-700">
               Lees onze algemene voorwaarden
             </a>

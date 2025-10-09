@@ -163,9 +163,9 @@ export const MultiBlockInvoicePreview: React.FC<MultiBlockInvoicePreviewProps> =
   };
 
   return (
-    <div className="bg-white shadow-sm">
+    <div className="bg-white">
       {/* PDF Actions Header */}
-      <div className="flex justify-end gap-2 p-2 border-b border-gray-200 print:hidden">
+      <div className="flex justify-end gap-2 p-1 border-b border-gray-100 print:hidden">
         <Button 
           onClick={handleDownloadPDF}
           disabled={downloadLoading}
@@ -181,10 +181,10 @@ export const MultiBlockInvoicePreview: React.FC<MultiBlockInvoicePreviewProps> =
       <div 
         ref={previewRef} 
         className={cn(
-          "p-3 text-xs",
+          "p-2 text-xs",
           isGeneratingPDF 
             ? "max-h-none overflow-visible" 
-            : "max-h-[80vh] overflow-y-auto",
+            : "max-h-[85vh] overflow-y-auto",
           "print:max-h-none print:overflow-visible"
         )}
       >
@@ -302,7 +302,7 @@ export const MultiBlockInvoicePreview: React.FC<MultiBlockInvoicePreviewProps> =
         </div>
         
         {invoice.invoice_items && invoice.invoice_items.length > 0 ? (
-          <div className="border-l-2 border-smans-primary pl-2 mb-2">
+          <div className="mb-1">
             <div className="mb-2">
               {/* Table with items */}
               <div className="bg-gray-50 rounded border">

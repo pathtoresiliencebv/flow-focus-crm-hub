@@ -9,12 +9,12 @@
  * - Legend
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Info } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths, getDay } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, addMonths, subMonths, getDay, getWeek } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import {
   calculateMonthAvailability,
@@ -138,6 +138,15 @@ const COLOR_MAP = {
   },
 };
 
+/**
+ * Helper: Split array into chunks of specified size
+ */
+function chunk<T>(array: T[], size: number): T[][] {
+  return Array.from({ length: Math.ceil(array.length / size) }, (_, i) =>
+    array.slice(i * size, i * size + size)
+  );
+}
+
 export function MonteurAgendaCalendar({
   monteurIds,
   monteurs,
@@ -162,8 +171,42 @@ export function MonteurAgendaCalendar({
   const monthEnd = endOfMonth(currentMonth);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-  // Get weekday names
-  const weekDays = ['Zo', 'Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za'];
+  // Get weekday names (Monday first)
+  const weekDays = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
+
+  // Calculate complete calendar grid with padding days
+  const allDaysWithPadding = useMemo(() => {
+    // Calculate padding for start of month (Monday = 0)
+    const startDayOfWeek = getDay(monthStart);
+    const paddingDays = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1; // Monday start
+
+    // Calculate padding for end of month
+    const endDayOfWeek = getDay(monthEnd);
+    const trailingDays = endDayOfWeek === 0 ? 0 : 7 - endDayOfWeek;
+
+    console.log(`📅 Calendar grid: ${paddingDays} padding + ${daysInMonth.length} days + ${trailingDays} trailing = ${paddingDays + daysInMonth.length + trailingDays} total`);
+
+    // Create complete array with padding
+    return [
+      // Padding: previous month
+      ...Array.from({ length: paddingDays }, (_, i) => {
+        const date = new Date(monthStart);
+        date.setDate(date.getDate() - (paddingDays - i));
+        return { date, isCurrentMonth: false };
+      }),
+      // Current month
+      ...daysInMonth.map(date => ({ date, isCurrentMonth: true })),
+      // Padding: next month
+      ...Array.from({ length: trailingDays }, (_, i) => {
+        const date = new Date(monthEnd);
+        date.setDate(date.getDate() + i + 1);
+        return { date, isCurrentMonth: false };
+      })
+    ];
+  }, [monthStart, monthEnd, daysInMonth]);
+
+  // Split days into weeks (rows of 7)
+  const weekRows = useMemo(() => chunk(allDaysWithPadding, 7), [allDaysWithPadding]);
 
   // Generate cache key for current month and monteurs
   const getCacheKey = (date: Date, monteurIdsList: string[]) => {
@@ -339,137 +382,135 @@ export function MonteurAgendaCalendar({
             </div>
           </div>
 
-          {/* Calendar Grid */}
+          {/* Calendar Grid - Week by Week */}
           <div className="overflow-x-auto">
-            <div className="min-w-[800px]">
-              {/* Header Row with Day Names */}
-              <div className="grid grid-cols-[150px_repeat(7,1fr)] gap-1 mb-2">
-                <div className="font-medium text-sm text-muted-foreground">
-                  Monteur
-                </div>
-                {weekDays.map((day, index) => (
-                  <div
-                    key={index}
-                    className="text-center font-medium text-sm text-muted-foreground"
-                  >
-                    {day}
-                  </div>
-                ))}
-              </div>
-
-              {/* Monteur Rows */}
-              {monteurIds.map((monteurId) => {
-                const monteurAvailability = availabilityData.get(monteurId);
-                const monteurName = getMonteurName(monteurId);
-
+            <div className="min-w-[800px] space-y-6">
+              {/* Render each week as a separate section */}
+              {weekRows.map((week, weekIndex) => {
+                const weekNumber = getWeek(week[0].date);
+                
                 return (
-                  <div key={monteurId} className="mb-3">
-                    <div className="grid grid-cols-[150px_repeat(7,1fr)] gap-1">
-                      {/* Monteur Name */}
-                      <div className="flex items-center pr-2">
-                        <p className="font-medium text-sm truncate">{monteurName}</p>
+                  <div key={weekIndex} className="space-y-2">
+                    {/* Week Header */}
+                    <div className="grid grid-cols-[150px_repeat(7,1fr)] gap-1 mb-1">
+                      <div className="flex items-center text-xs text-muted-foreground">
+                        Week {weekNumber}
                       </div>
-
-                      {/* Week Grid */}
-                      {Array.from({ length: 7 }, (_, dayIndex) => {
-                        // Find first day of month's weekday
-                        const firstDayOfWeek = getDay(monthStart);
-                        
-                        // Calculate actual day number
-                        const dayNumber = dayIndex - firstDayOfWeek + 1;
-                        
-                        if (dayNumber < 1 || dayNumber > daysInMonth.length) {
-                          // Empty cell for days outside current month
-                          return (
-                            <div
-                              key={dayIndex}
-                              className="h-20 border border-gray-100 rounded bg-gray-50/50"
-                            />
-                          );
-                        }
-
-                        const date = daysInMonth[dayNumber - 1];
-                        const dateStr = date.toISOString().split('T')[0];
-                        const availability = monteurAvailability?.get(dateStr);
-
-                        if (!availability) {
-                          return (
-                            <div
-                              key={dayIndex}
-                              className="h-20 border border-gray-200 rounded bg-gray-50 flex items-center justify-center"
-                            >
-                              <span className="text-xs text-muted-foreground">
-                                {dayNumber}
-                              </span>
-                            </div>
-                          );
-                        }
-
-                        const colors = COLOR_MAP[availability.color];
-                        const isClickable =
-                          availability.status === 'available' || availability.status === 'partial';
-                        const isTodayDate = isToday(date);
-
-                        return (
-                          <TooltipProvider key={dayIndex}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <button
-                                  onClick={() => handleDayClick(monteurId, date)}
-                                  disabled={!isClickable}
-                                  className={`
-                                    h-20 border rounded p-1 transition-colors
-                                    ${colors.bg} ${colors.border}
-                                    ${isClickable ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}
-                                    ${isTodayDate ? 'ring-2 ring-primary' : ''}
-                                    flex flex-col items-center justify-center
-                                  `}
-                                >
-                                  <span className={`text-xs font-semibold ${colors.text} mb-1`}>
-                                    {dayNumber}
-                                  </span>
-                                  
-                                  {availability.status !== 'outside_hours' && (
-                                    <>
-                                      <Badge
-                                        variant="secondary"
-                                        className={`text-[10px] px-1 py-0 h-4 ${colors.text} bg-white/50`}
-                                      >
-                                        {availability.percentage}%
-                                      </Badge>
-                                      <span className={`text-[10px] ${colors.text} mt-0.5`}>
-                                        {availability.availableHours.toFixed(1)}/{availability.totalHours.toFixed(1)}u
-                                      </span>
-                                    </>
-                                  )}
-                                </button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <div className="text-xs space-y-1">
-                                  <p className="font-semibold">
-                                    {format(date, 'EEEE d MMMM', { locale: nl })}
-                                  </p>
-                                  <p>Monteur: {monteurName}</p>
-                                  {availability.status !== 'outside_hours' && availability.status !== 'time_off' && (
-                                    <>
-                                      <p>
-                                        Beschikbaar: {availability.availableHours.toFixed(1)} van{' '}
-                                        {availability.totalHours.toFixed(1)} uur
-                                      </p>
-                                      <p>
-                                        {availability.bookings.length} {availability.bookings.length === 1 ? 'afspraak' : 'afspraken'}
-                                      </p>
-                                    </>
-                                  )}
-                                  {availability.status === 'time_off' && <p>🟠 Verlof/Vrij</p>}
-                                  {availability.status === 'outside_hours' && <p>⚫ Geen werktijd</p>}
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        );
-                      })}
+                      {week.map((dayData, dayIdx) => (
+                        <div
+                          key={dayIdx}
+                          className="text-center text-xs font-medium text-muted-foreground"
+                        >
+                          <div>{weekDays[dayIdx]}</div>
+                          <div className={dayData.isCurrentMonth ? 'text-foreground font-semibold' : 'text-muted-foreground/50'}>
+                            {format(dayData.date, 'd')}
+                          </div>
+                        </div>
+                      ))}
                     </div>
+
+                    {/* Monteur Rows for this Week */}
+                    {monteurIds.map((monteurId) => {
+                      const monteurAvailability = availabilityData.get(monteurId);
+                      const monteurName = getMonteurName(monteurId);
+
+                      return (
+                        <div key={monteurId} className="grid grid-cols-[150px_repeat(7,1fr)] gap-1">
+                          {/* Monteur Name */}
+                          <div className="flex items-center pr-2">
+                            <p className="font-medium text-sm truncate">{monteurName}</p>
+                          </div>
+
+                          {/* Day Cells for this Week */}
+                          {week.map((dayData, dayIdx) => {
+                            const { date, isCurrentMonth } = dayData;
+                            const dateStr = date.toISOString().split('T')[0];
+                            const availability = monteurAvailability?.get(dateStr);
+
+                            // No availability data
+                            if (!availability) {
+                              return (
+                                <div
+                                  key={dayIdx}
+                                  className={`h-20 border border-gray-200 rounded flex items-center justify-center ${
+                                    isCurrentMonth ? 'bg-gray-50' : 'bg-gray-50/50 opacity-40'
+                                  }`}
+                                >
+                                  <span className="text-xs text-muted-foreground">
+                                    {format(date, 'd')}
+                                  </span>
+                                </div>
+                              );
+                            }
+
+                            const colors = COLOR_MAP[availability.color];
+                            const isClickable =
+                              availability.status === 'available' || availability.status === 'partial';
+                            const isTodayDate = isToday(date);
+
+                            return (
+                              <TooltipProvider key={dayIdx}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      onClick={() => handleDayClick(monteurId, date)}
+                                      disabled={!isClickable}
+                                      className={`
+                                        h-20 border rounded p-1 transition-colors
+                                        ${colors.bg} ${colors.border}
+                                        ${isClickable ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}
+                                        ${isTodayDate ? 'ring-2 ring-primary ring-offset-1' : ''}
+                                        ${!isCurrentMonth ? 'opacity-40' : ''}
+                                        flex flex-col items-center justify-center
+                                      `}
+                                    >
+                                      <span className={`text-xs font-semibold ${colors.text} mb-1`}>
+                                        {format(date, 'd')}
+                                      </span>
+                                      
+                                      {availability.status !== 'outside_hours' && (
+                                        <>
+                                          <Badge
+                                            variant="secondary"
+                                            className={`text-[10px] px-1 py-0 h-4 ${colors.text} bg-white/50`}
+                                          >
+                                            {availability.percentage}%
+                                          </Badge>
+                                          <span className={`text-[10px] ${colors.text} mt-0.5`}>
+                                            {availability.availableHours.toFixed(1)}/{availability.totalHours.toFixed(1)}u
+                                          </span>
+                                        </>
+                                      )}
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <div className="text-xs space-y-1">
+                                      <p className="font-semibold">
+                                        {format(date, 'EEEE d MMMM', { locale: nl })}
+                                      </p>
+                                      <p>Monteur: {monteurName}</p>
+                                      {availability.status !== 'outside_hours' && availability.status !== 'time_off' && (
+                                        <>
+                                          <p>
+                                            Beschikbaar: {availability.availableHours.toFixed(1)} van{' '}
+                                            {availability.totalHours.toFixed(1)} uur
+                                          </p>
+                                          <p>
+                                            {availability.bookings.length} {availability.bookings.length === 1 ? 'afspraak' : 'afspraken'}
+                                          </p>
+                                        </>
+                                      )}
+                                      {availability.status === 'time_off' && <p>🟠 Verlof/Vrij</p>}
+                                      {availability.status === 'outside_hours' && <p>⚫ Geen werktijd</p>}
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })}
