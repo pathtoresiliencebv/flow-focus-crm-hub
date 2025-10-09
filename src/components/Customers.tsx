@@ -16,15 +16,37 @@ import { MobileCustomerCard } from './customers/MobileCustomerCard';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { SlidePanel } from '@/components/ui/slide-panel';
 
-export const Customers = () => {
+interface CustomersProps {
+  showNewCustomerDialog?: boolean;
+  onCloseNewCustomerDialog?: () => void;
+  showSearchBar?: boolean;
+  onSearchToggle?: (show: boolean) => void;
+}
+
+export const Customers: React.FC<CustomersProps> = ({ 
+  showNewCustomerDialog = false, 
+  onCloseNewCustomerDialog, 
+  showSearchBar = false,
+  onSearchToggle 
+}) => {
   const navigate = useNavigate();
   const { customers, deleteCustomer } = useCrmStore();
   const { hasPermission } = useAuth();
   const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState('');
-  const [newCustomerPanelOpen, setNewCustomerPanelOpen] = useState(false);
+  const [showSearch, setShowSearch] = useState(showSearchBar);
+  const [newCustomerPanelOpen, setNewCustomerPanelOpen] = useState(showNewCustomerDialog);
   const [editCustomerPanelOpen, setEditCustomerPanelOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+
+  // Sync with prop changes
+  React.useEffect(() => {
+    setNewCustomerPanelOpen(showNewCustomerDialog);
+  }, [showNewCustomerDialog]);
+
+  React.useEffect(() => {
+    setShowSearch(showSearchBar);
+  }, [showSearchBar]);
 
   const filteredCustomers = customers.filter(customer =>
     customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -49,11 +71,17 @@ export const Customers = () => {
 
   const handleCustomerCreated = () => {
     setNewCustomerPanelOpen(false);
+    onCloseNewCustomerDialog?.();
   };
 
   const handleCustomerUpdated = () => {
     setEditCustomerPanelOpen(false);
     setSelectedCustomer(null);
+  };
+
+  const handlePanelClose = () => {
+    setNewCustomerPanelOpen(false);
+    onCloseNewCustomerDialog?.();
   };
 
   const getStatusColor = (status: string) => {
@@ -71,6 +99,32 @@ export const Customers = () => {
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
+      {/* Search Bar */}
+      {showSearch && (
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Zoek op naam, email of stad..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => {
+              setShowSearch(false);
+              onSearchToggle?.(false);
+            }}
+          >
+            Sluiten
+          </Button>
+        </div>
+      )}
+      
       {/* Customers List/Table */}
       <Card>
         <CardHeader>
@@ -177,7 +231,7 @@ export const Customers = () => {
       {/* New Customer Panel */}
       <SlidePanel
         isOpen={newCustomerPanelOpen}
-        onClose={() => setNewCustomerPanelOpen(false)}
+        onClose={handlePanelClose}
         title="Nieuwe klant toevoegen"
         size="lg"
       >

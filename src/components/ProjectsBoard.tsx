@@ -188,12 +188,22 @@ const ProjectCard = memo(({ project, index }: { project: Project, index: number 
   );
 });
 
-export const ProjectsBoard: React.FC = memo(() => {
+interface ProjectsBoardProps {
+  showNewProjectDialog?: boolean;
+  onCloseNewProjectDialog?: () => void;
+}
+
+export const ProjectsBoard: React.FC<ProjectsBoardProps> = memo(({ showNewProjectDialog = false, onCloseNewProjectDialog }) => {
   const { projects, updateProject, isLoading, debug } = useCrmStore();
   const { hasPermission, profile } = useAuth();
-  const [newProjectPanelOpen, setNewProjectPanelOpen] = useState(false);
+  const [newProjectPanelOpen, setNewProjectPanelOpen] = useState(showNewProjectDialog);
   const [selectedStatus, setSelectedStatus] = useState<ProjectStatus>("te-plannen");
   const { setTitle } = usePageHeader();
+
+  // Sync with prop changes
+  React.useEffect(() => {
+    setNewProjectPanelOpen(showNewProjectDialog);
+  }, [showNewProjectDialog]);
 
   React.useEffect(() => {
     setTitle("Projecten");
@@ -256,8 +266,14 @@ export const ProjectsBoard: React.FC = memo(() => {
 
   const handleProjectCreated = useCallback(() => {
     setNewProjectPanelOpen(false);
+    onCloseNewProjectDialog?.();
     // Projects will automatically update through the useCrmStore hook
-  }, []);
+  }, [onCloseNewProjectDialog]);
+
+  const handlePanelClose = useCallback(() => {
+    setNewProjectPanelOpen(false);
+    onCloseNewProjectDialog?.();
+  }, [onCloseNewProjectDialog]);
 
   const projectsByStatus = useMemo(() => 
     statusColumns.reduce<Record<string, Project[]>>((acc, column) => {
@@ -271,7 +287,7 @@ export const ProjectsBoard: React.FC = memo(() => {
     <div className="p-4 sm:p-6 space-y-6">
       <SlidePanel
         isOpen={newProjectPanelOpen}
-        onClose={() => setNewProjectPanelOpen(false)}
+        onClose={handlePanelClose}
         title="Nieuw project aanmaken"
         size="lg"
       >

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { ProjectsBoard } from "@/components/ProjectsBoard";
 import { Button } from "@/components/ui/button";
@@ -6,11 +6,20 @@ import { Plus } from "lucide-react";
 
 export default function ProjectsPage() {
   const { setTitle, setActions } = usePageHeader();
+  const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
+
+  const handleNewProject = () => {
+    setShowNewProjectDialog(true);
+  };
 
   useEffect(() => {
     setTitle("Projecten");
     setActions(
-      <Button size="sm" className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)] text-white">
+      <Button 
+        size="sm" 
+        className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)] text-white"
+        onClick={handleNewProject}
+      >
         <Plus className="h-4 w-4 mr-2" />
         Nieuw Project
       </Button>
@@ -19,8 +28,13 @@ export default function ProjectsPage() {
       setTitle("");
       setActions(null);
     };
-  }, []);
+  }, [setTitle, setActions]);
 
-  return <ProjectsBoard />;
+  return (
+    <ProjectsBoard 
+      showNewProjectDialog={showNewProjectDialog}
+      onCloseNewProjectDialog={() => setShowNewProjectDialog(false)}
+    />
+  );
 }
 

@@ -9,6 +9,14 @@ export default function InvoicesPage() {
   const { setTitle, setActions } = usePageHeader();
   const navigate = useNavigate();
 
+  const handleNewInvoice = () => {
+    navigate('/invoices/new');
+  };
+
+  const handleNewWerkbon = () => {
+    navigate('/invoices/new?type=werkbon');
+  };
+
   useEffect(() => {
     setTitle("Facturatie");
     setActions(
@@ -16,7 +24,7 @@ export default function InvoicesPage() {
         <Button 
           size="sm" 
           variant="outline"
-          onClick={() => navigate('/invoices/new')}
+          onClick={handleNewInvoice}
         >
           <FileText className="h-4 w-4 mr-2" />
           Normale Factuur
@@ -24,7 +32,7 @@ export default function InvoicesPage() {
         <Button 
           size="sm" 
           className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)] text-white"
-          onClick={() => navigate('/invoices/new?type=werkbon')}
+          onClick={handleNewWerkbon}
         >
           <Wrench className="h-4 w-4 mr-2" />
           Werkbon Factuur
@@ -35,7 +43,7 @@ export default function InvoicesPage() {
       setTitle("");
       setActions(null);
     };
-  }, [navigate]);
+  }, [navigate, setTitle, setActions]);
 
   return <Invoicing />;
 }

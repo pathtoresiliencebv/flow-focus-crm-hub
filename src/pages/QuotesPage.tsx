@@ -9,13 +9,17 @@ export default function QuotesPage() {
   const { setTitle, setActions } = usePageHeader();
   const navigate = useNavigate();
 
+  const handleNewQuote = () => {
+    navigate('/quotes/new');
+  };
+
   useEffect(() => {
     setTitle("Offertes");
     setActions(
       <Button 
         size="sm" 
         className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)] text-white"
-        onClick={() => navigate('/quotes/new')}
+        onClick={handleNewQuote}
       >
         <Plus className="h-4 w-4 mr-2" />
         Nieuwe Offerte
@@ -25,7 +29,7 @@ export default function QuotesPage() {
       setTitle("");
       setActions(null);
     };
-  }, [navigate]);
+  }, [navigate, setTitle, setActions]);
 
   return <Quotes />;
 }
