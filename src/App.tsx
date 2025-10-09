@@ -37,6 +37,7 @@ const InvoiceSend = lazy(() => import("@/pages/InvoiceSend"));
 const ProjectDelivery = lazy(() => import("@/pages/ProjectDelivery"));
 const MobileDashboard = lazy(() => import("@/components/mobile/MobileDashboard"));
 import { useIsMobile } from "@/hooks/use-mobile";
+import '@/utils/buttonDiagnostics'; // Button diagnostics for debugging
 
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TranslationProvider } from "@/contexts/TranslationContext";
