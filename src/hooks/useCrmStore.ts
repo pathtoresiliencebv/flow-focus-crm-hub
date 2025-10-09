@@ -77,11 +77,19 @@ export const useCrmStore = () => {
   const { data: allCustomers = [], isLoading: isLoadingCustomers } = useQuery<Customer[]>({
     queryKey: ['customers'],
     queryFn: fetchCustomers,
+    staleTime: 5 * 60 * 1000, // 5 minutes - data blijft fresh
+    cacheTime: 10 * 60 * 1000, // 10 minutes - cache blijft bewaard
+    refetchOnWindowFocus: false, // Niet refetchen bij window focus
+    refetchOnMount: false, // Niet refetchen bij mount als data fresh is
   });
 
   const { data: allProjects = [], isLoading: isLoadingProjects } = useQuery<ProjectWithCustomerName[]>({
     queryKey: ['projects'],
     queryFn: fetchProjects,
+    staleTime: 5 * 60 * 1000, // 5 minutes - data blijft fresh
+    cacheTime: 10 * 60 * 1000, // 10 minutes - cache blijft bewaard
+    refetchOnWindowFocus: false, // Niet refetchen bij window focus
+    refetchOnMount: false, // Niet refetchen bij mount als data fresh is
   });
 
   // Filter data based on user role

@@ -5,6 +5,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
+// Cache voor planning items - voorkomt constant herladen
+let planningCache: PlanningItem[] | null = null;
+let cacheTimestamp: number = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minuten
+
 export interface PlanningItem {
   id: string;
   user_id: string;
@@ -44,8 +49,17 @@ export const usePlanningStore = () => {
   const [planningItems, setPlanningItems] = useState<PlanningItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchPlanningItems = async (dateRange?: { start: string; end: string }) => {
+  const fetchPlanningItems = async (dateRange?: { start: string; end: string }, forceRefresh = false) => {
     if (!user) return;
+
+    // Check cache - als data fresh is, gebruik cached data
+    const now = Date.now();
+    if (!forceRefresh && planningCache && (now - cacheTimestamp) < CACHE_DURATION) {
+      console.log('✅ Using cached planning data (fresh)');
+      setPlanningItems(planningCache);
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -88,6 +102,11 @@ export const usePlanningStore = () => {
       }
 
       console.log('Fetched planning items:', data?.length || 0);
+      
+      // Update cache
+      planningCache = data || [];
+      cacheTimestamp = Date.now();
+      
       setPlanningItems(data || []);
     } catch (error) {
       console.error('Error in fetchPlanningItems:', error);
@@ -137,6 +156,10 @@ export const usePlanningStore = () => {
           
           if (error) throw error;
           
+          // Invalideer cache bij wijzigingen
+          planningCache = null;
+          cacheTimestamp = 0;
+          
           setPlanningItems(prev => prev.map(item => 
             item.id === existing.id ? data : item
           ));
@@ -183,6 +206,11 @@ export const usePlanningStore = () => {
       }
 
       console.log('Planning item created successfully:', data);
+      
+      // Invalideer cache bij wijzigingen
+      planningCache = null;
+      cacheTimestamp = 0;
+      
       setPlanningItems(prev => [...prev, data]);
       
       // Update project status to 'gepland' if project is linked
@@ -388,6 +416,10 @@ export const usePlanningStore = () => {
         throw error;
       }
 
+      // Invalideer cache bij wijzigingen
+      planningCache = null;
+      cacheTimestamp = 0;
+      
       setPlanningItems(prev => 
         prev.map(item => item.id === id ? { ...item, ...data } : item)
       );
@@ -422,6 +454,10 @@ export const usePlanningStore = () => {
         console.error('Error deleting planning:', error);
         throw error;
       }
+
+      // Invalideer cache bij wijzigingen
+      planningCache = null;
+      cacheTimestamp = 0;
 
       setPlanningItems(prev => prev.filter(item => item.id !== id));
       
