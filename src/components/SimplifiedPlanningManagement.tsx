@@ -313,7 +313,7 @@ export function SimplifiedPlanningManagement({
               // Navigate to project
               console.log('Navigating to project:', planning.project_id);
               try {
-                navigate(`/project/${planning.project_id}`);
+                navigate(`/projects/${planning.project_id}`);
               } catch (error) {
                 console.error('Navigation error:', error);
                 toast({
