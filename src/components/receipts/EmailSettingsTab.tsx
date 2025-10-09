@@ -56,6 +56,17 @@ export const EmailSettingsTab: React.FC = () => {
 
       if (error && error.code !== 'PGRST116') {
         // PGRST116 = no rows returned
+        // Check if table doesn't exist (42P01 = undefined_table)
+        if (error.code === '42P01' || error.message.includes('does not exist')) {
+          console.warn('⚠️ receipt_email_config table does not exist. Run migration: 20251009000000_receipt_enhancements.sql');
+          toast({
+            title: 'Database migratie vereist',
+            description: 'De email configuratie tabel bestaat nog niet. Neem contact op met de beheerder.',
+            variant: 'destructive',
+          });
+          setLoading(false);
+          return;
+        }
         throw error;
       }
 

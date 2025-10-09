@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { SlidePanel } from '@/components/ui/slide-panel';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -767,58 +768,62 @@ export const Receipts = () => {
       {/* Settings Tab */}
       {activeTab === "settings" && <EmailSettingsTab />}
 
-      {/* Upload Dialog */}
-      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Nieuw bonnetje uploaden</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Bestand</Label>
-              <ImageUpload value={newReceipt.fileData} onChange={handleFileUpload} />
-            </div>
-            <div>
-              <Label htmlFor="amount">Bedrag (optioneel)</Label>
-              <Input
-                id="amount"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                value={newReceipt.amount}
-                onChange={(e) => setNewReceipt(prev => ({ ...prev, amount: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="description">Omschrijving</Label>
-              <Input
-                id="description"
-                placeholder="Bijv. tankstation, kantoorbenodigdheden"
-                value={newReceipt.description}
-                onChange={(e) => setNewReceipt(prev => ({ ...prev, description: e.target.value }))}
-              />
-            </div>
-            <div>
-              <Label htmlFor="category">Categorie</Label>
-              <Input
-                id="category"
-                placeholder="Bijv. transport, materiaal, kantoor"
-                value={newReceipt.category}
-                onChange={(e) => setNewReceipt(prev => ({ ...prev, category: e.target.value }))}
-              />
-            </div>
+      {/* Upload SlidePanel */}
+      <SlidePanel
+        isOpen={showUploadDialog}
+        onClose={() => setShowUploadDialog(false)}
+        title="Nieuw bonnetje uploaden"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div>
+            <Label>Bestand *</Label>
+            <ImageUpload value={newReceipt.fileData} onChange={handleFileUpload} />
+            <p className="text-xs text-muted-foreground mt-1">
+              Upload een foto of scan van het bonnetje
+            </p>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowUploadDialog(false)} disabled={loading}>
+          <div>
+            <Label htmlFor="amount">Bedrag (optioneel)</Label>
+            <Input
+              id="amount"
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              value={newReceipt.amount}
+              onChange={(e) => setNewReceipt(prev => ({ ...prev, amount: e.target.value }))}
+            />
+          </div>
+          <div>
+            <Label htmlFor="description">Omschrijving</Label>
+            <Input
+              id="description"
+              placeholder="Bijv. tankstation, kantoorbenodigdheden"
+              value={newReceipt.description}
+              onChange={(e) => setNewReceipt(prev => ({ ...prev, description: e.target.value }))}
+            />
+          </div>
+          <div>
+            <Label htmlFor="category">Categorie</Label>
+            <Input
+              id="category"
+              placeholder="Bijv. transport, materiaal, kantoor"
+              value={newReceipt.category}
+              onChange={(e) => setNewReceipt(prev => ({ ...prev, category: e.target.value }))}
+            />
+          </div>
+          
+          <div className="flex gap-2 pt-4">
+            <Button variant="outline" onClick={() => setShowUploadDialog(false)} disabled={loading} className="flex-1">
               Annuleren
             </Button>
-            <Button onClick={saveReceipt} disabled={loading}>
+            <Button onClick={saveReceipt} disabled={loading} className="flex-1">
               <Upload className="mr-2 h-4 w-4" />
               {loading ? 'Bezig...' : 'Opslaan'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      </SlidePanel>
 
       {/* Confirmation Dialog */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
