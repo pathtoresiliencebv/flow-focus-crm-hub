@@ -19,7 +19,7 @@ export default function QuotesPage() {
 
   useEffect(() => {
     console.log('📝 QuotesPage: Setting up header');
-    setTitle("Offertes");
+    setTitle(t('nav_quotes', 'Offertes'));
     setActions(
       <Button 
         size="sm" 
@@ -27,7 +27,7 @@ export default function QuotesPage() {
         onClick={handleNewQuote}
       >
         <Plus className="h-4 w-4 mr-2" />
-        Nieuwe Offerte
+        {t('button_new_quote', 'Nieuwe Offerte')}
       </Button>
     );
     return () => {
@@ -35,7 +35,7 @@ export default function QuotesPage() {
       setTitle("");
       setActions(null);
     };
-  }, [setTitle, setActions, handleNewQuote]);
+  }, [setTitle, setActions, handleNewQuote, t]);
 
   return <Quotes />;
 }
