@@ -20,20 +20,25 @@ export type ProjectWithCustomerName = Project & {
 
 // --- API functions for react-query ---
 const fetchCustomers = async (): Promise<Customer[]> => {
-  // OPTIMIZATION: Only fetch recent/active customers (last 2 years)
-  const twoYearsAgo = new Date();
-  twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+  console.log('🔍 useCrmStore: Fetching customers from database...');
   
+  // ⚠️ TEMPORARY FIX: Fetch ALL customers to diagnose the issue
+  // TODO: Re-enable date filtering once issue is resolved
   const { data, error } = await supabase
     .from('customers')
     .select('*')
-    .gte('created_at', twoYearsAgo.toISOString())
     .order('created_at', { ascending: false })
-    .limit(500); // Reasonable limit
+    .limit(1000); // Increased limit
   
-  if (error) throw error;
-  console.log(`✅ Fetched ${data.length} customers (filtered to last 2 years)`);
-  return data;
+  if (error) {
+    console.error('❌ useCrmStore: Error fetching customers:', error);
+    throw error;
+  }
+  
+  console.log(`✅ useCrmStore: Fetched ${data?.length || 0} customers`);
+  console.log('🔍 useCrmStore: Sample customer:', data?.[0]);
+  
+  return data || [];
 };
 
 const fetchProjects = async () => {
@@ -93,11 +98,18 @@ export const useCrmStore = () => {
   }, [allProjects, profile?.role, user?.id]);
 
   const filteredCustomers = useMemo(() => {
+    console.log('🔍 useCrmStore: Filtering customers. Role:', profile?.role);
+    console.log('🔍 useCrmStore: All customers count:', allCustomers?.length);
+    
     if (profile?.role === 'Installateur') {
       // Installateurs only see customers from their assigned projects
       const assignedProjectCustomerIds = filteredProjects.map(p => p.customer_id);
-      return allCustomers.filter(c => assignedProjectCustomerIds.includes(c.id));
+      const filtered = allCustomers.filter(c => assignedProjectCustomerIds.includes(c.id));
+      console.log('🔍 useCrmStore: Filtered for Installateur:', filtered.length);
+      return filtered;
     }
+    
+    console.log('🔍 useCrmStore: Returning all customers:', allCustomers?.length);
     return allCustomers;
   }, [allCustomers, filteredProjects, profile?.role]);
 

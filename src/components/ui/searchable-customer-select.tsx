@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -32,10 +32,33 @@ export function SearchableCustomerSelect({
 }: SearchableCustomerSelectProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  
+  // Reset error when customers change
+  useEffect(() => {
+    setError(null);
+  }, [customers]);
 
   // Ensure customers is always an array
   const safeCustomers = useMemo(() => {
-    return Array.isArray(customers) ? customers : [];
+    try {
+      console.log('🔍 SearchableCustomerSelect: Raw customers prop:', customers);
+      console.log('🔍 SearchableCustomerSelect: Is array?', Array.isArray(customers));
+      console.log('🔍 SearchableCustomerSelect: Count:', customers?.length);
+      
+      if (!customers) {
+        console.warn('⚠️ SearchableCustomerSelect: Customers prop is null/undefined!');
+        return [];
+      }
+      
+      const safe = Array.isArray(customers) ? customers : [];
+      console.log('🔍 SearchableCustomerSelect: Safe customers:', safe);
+      return safe;
+    } catch (err) {
+      console.error('❌ SearchableCustomerSelect: Error in safeCustomers:', err);
+      setError('Fout bij laden van klanten');
+      return [];
+    }
   }, [customers]);
 
   // Find selected customer
@@ -45,13 +68,24 @@ export function SearchableCustomerSelect({
 
   // Filter customers based on search query
   const filteredCustomers = useMemo(() => {
-    if (!safeCustomers || safeCustomers.length === 0) return [];
+    console.log('🔍 SearchableCustomerSelect: Starting filter. SafeCustomers:', safeCustomers);
+    
+    if (!safeCustomers || safeCustomers.length === 0) {
+      console.warn('⚠️ SearchableCustomerSelect: No customers available!');
+      return [];
+    }
     
     // ✅ CRITICAL FIX: Filter out any customers without a valid ID first
     // Radix UI Command component crashes if CommandItem has empty/undefined value
-    const validCustomers = safeCustomers.filter(customer => 
-      customer && customer.id && customer.id.trim() !== ''
-    );
+    const validCustomers = safeCustomers.filter(customer => {
+      const isValid = customer && customer.id && customer.id.trim() !== '';
+      if (!isValid) {
+        console.error('❌ Invalid customer found:', customer);
+      }
+      return isValid;
+    });
+    
+    console.log('✅ SearchableCustomerSelect: Valid customers count:', validCustomers.length);
     
     if (!searchQuery) return validCustomers;
     
@@ -71,6 +105,16 @@ export function SearchableCustomerSelect({
     setOpen(false);
     setSearchQuery('');
   };
+
+  // Show error state if there's an error
+  if (error) {
+    return (
+      <div className="w-full p-3 border border-red-300 bg-red-50 rounded-md">
+        <p className="text-sm text-red-800">❌ {error}</p>
+        <p className="text-xs text-red-600 mt-1">Probeer de pagina te vernieuwen</p>
+      </div>
+    );
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -124,45 +168,65 @@ export function SearchableCustomerSelect({
           </CommandEmpty>
           <CommandGroup className="max-h-[300px] overflow-auto">
             {Array.isArray(filteredCustomers) && filteredCustomers.length > 0 ? (
-              filteredCustomers.map((customer) => {
-                // ✅ DOUBLE CHECK: Skip if customer or id is invalid (should never happen due to filter above)
-                if (!customer?.id) return null;
-                
-                return (
-                  <CommandItem
-                    key={customer.id}
-                    value={customer.id}
-                    onSelect={() => handleSelect(customer.id)}
-                    className="flex items-center gap-2 py-2"
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === customer.id ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{customer.name || 'Onbekend'}</div>
-                      <div className="text-xs text-muted-foreground flex items-center gap-2">
-                        {customer.email && (
-                          <span className="truncate">{customer.email}</span>
+              <>
+                {filteredCustomers
+                  .filter((customer) => {
+                    // ✅ CRITICAL FIX: Filter out invalid customers BEFORE mapping
+                    // Radix UI Command crashes if we return null in map
+                    const isValid = customer && 
+                                   customer.id && 
+                                   typeof customer.id === 'string' && 
+                                   customer.id.trim() !== '';
+                    
+                    if (!isValid) {
+                      console.error('❌ SearchableCustomerSelect: Invalid customer filtered out:', customer);
+                    }
+                    
+                    return isValid;
+                  })
+                  .map((customer) => (
+                    <CommandItem
+                      key={customer.id}
+                      value={customer.id}
+                      onSelect={() => handleSelect(customer.id)}
+                      className="flex items-center gap-2 py-2"
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          value === customer.id ? "opacity-100" : "opacity-0"
                         )}
-                        {customer.phone && (
-                          <span className="shrink-0">• {customer.phone}</span>
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium truncate">{customer.name || 'Onbekend'}</div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-2">
+                          {customer.email && (
+                            <span className="truncate">{customer.email}</span>
+                          )}
+                          {customer.phone && (
+                            <span className="shrink-0">• {customer.phone}</span>
+                          )}
+                        </div>
+                        {customer.company_name && (
+                          <div className="text-xs text-muted-foreground truncate">
+                            {customer.company_name}
+                          </div>
                         )}
                       </div>
-                      {customer.company_name && (
-                        <div className="text-xs text-muted-foreground truncate">
-                          {customer.company_name}
-                        </div>
-                      )}
-                    </div>
-                  </CommandItem>
-                );
-              })
+                    </CommandItem>
+                  ))
+                }
+              </>
             ) : (
               <div className="py-6 text-center text-sm text-muted-foreground">
-                Geen klanten beschikbaar
+                {safeCustomers.length === 0 ? (
+                  <>
+                    <p>Geen klanten beschikbaar</p>
+                    <p className="text-xs mt-2">Voeg eerst een klant toe via de + knop</p>
+                  </>
+                ) : (
+                  <p>Geen klanten gevonden voor "{searchQuery}"</p>
+                )}
               </div>
             )}
           </CommandGroup>

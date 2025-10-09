@@ -50,6 +50,15 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   existingQuote
 }) => {
   const { customers, projects, isLoading: crmLoading, addCustomer } = useCrmStore();
+  
+  // DEBUG: Log customers data
+  React.useEffect(() => {
+    console.log('🔍 MultiBlockQuoteForm: CRM Loading:', crmLoading);
+    console.log('🔍 MultiBlockQuoteForm: Customers:', customers);
+    console.log('🔍 MultiBlockQuoteForm: Customers count:', customers?.length);
+    console.log('🔍 MultiBlockQuoteForm: Customers sample:', customers?.slice(0, 3));
+  }, [customers, crmLoading]);
+  
   const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
