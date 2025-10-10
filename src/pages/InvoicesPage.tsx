@@ -11,21 +11,20 @@ export default function InvoicesPage() {
   const [invoiceType, setInvoiceType] = useState<'simple' | 'detailed'>('simple');
 
   // ✅ Use useCallback to create stable function references
+  // Note: setState functions are stable and don't need to be in dependencies
   const handleNewInvoice = useCallback(() => {
     console.log('🟦 Normale Factuur button clicked!');
-    console.log('🟦 Current state:', { showNewInvoice, invoiceType });
     setInvoiceType('simple');
     setShowNewInvoice(true);
     console.log('🟦 State updated to simple + true');
-  }, [showNewInvoice, invoiceType]);
+  }, []); // Empty dependencies - handlers are stable
 
   const handleNewWerkbon = useCallback(() => {
     console.log('🟧 Werkbon Factuur button clicked!');
-    console.log('🟧 Current state:', { showNewInvoice, invoiceType });
     setInvoiceType('detailed');
     setShowNewInvoice(true);
     console.log('🟧 State updated to detailed + true');
-  }, [showNewInvoice, invoiceType]);
+  }, []); // Empty dependencies - handlers are stable
 
   useEffect(() => {
     console.log('📝 InvoicesPage: Setting up header with handlers');
