@@ -49,19 +49,72 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
     try {
       console.log('📄 Downloading PDF for quote:', quote.id);
       
-      // Open de preview pagina zodat de gebruiker de PDF kan downloaden
-      // Dit is dezelfde functie als in de preview
-      onPreview(quote);
-      
-      toast({
-        title: "Preview geopend",
-        description: "Gebruik de 'Download PDF' knop in de preview om de PDF te downloaden.",
+      const { data, error } = await supabase.functions.invoke('generate-quote-pdf', {
+        body: { 
+          quoteId: quote.id,
+          includeSigned: quote.status === 'approved' || quote.status === 'goedgekeurd'
+        }
       });
-    } catch (error) {
-      console.error('❌ Error opening preview:', error);
+
+      if (error) {
+        console.error('❌ PDF Generation Error:', error);
+        toast({
+          title: "PDF Fout",
+          description: `Kon PDF niet genereren: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data?.success && data?.htmlContent) {
+        // Create a temporary element to render the HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = data.htmlContent;
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        tempDiv.style.top = '-9999px';
+        document.body.appendChild(tempDiv);
+
+        // Use html2pdf to generate and download PDF
+        const html2pdf = (await import('html2pdf.js')).default;
+        
+        const opt = {
+          margin: [10, 10, 10, 10],
+          filename: `Offerte-${quote.quote_number || 'onbekend'}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { 
+            scale: 2, 
+            useCORS: true,
+            scrollY: 0,
+            scrollX: 0,
+            windowHeight: tempDiv.scrollHeight,
+            logging: false
+          },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compressPDF: true },
+          pagebreak: { mode: ['css', 'legacy'], avoid: ['img', 'table', '.avoid-break'] },
+        };
+
+        await html2pdf().set(opt).from(tempDiv).save();
+        
+        // Clean up
+        document.body.removeChild(tempDiv);
+
+        toast({
+          title: "PDF Gedownload",
+          description: "PDF is succesvol gedownload",
+        });
+      } else {
+        toast({
+          title: "PDF Fout",
+          description: "Geen PDF data ontvangen",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error('❌ Error downloading PDF:', error);
       toast({
-        title: "Fout",
-        description: "Kon preview niet openen.",
+        title: "Fout bij PDF downloaden",
+        description: error.message || "Er ging iets mis bij het downloaden van de PDF.",
         variant: "destructive",
       });
     }

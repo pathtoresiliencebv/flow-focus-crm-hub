@@ -8,6 +8,7 @@ const corsHeaders = {
 
 interface GenerateQuotePDFRequest {
   quoteId: string;
+  includeSigned?: boolean;
 }
 
 const generateQuoteHTML = (quote: any, settings: any) => {
@@ -232,7 +233,7 @@ const generateQuoteHTML = (quote: any, settings: any) => {
         </table>
       </div>
 
-      ${quote.client_signature_data || quote.admin_signature_data ? `
+      ${quote.client_signature_data || quote.admin_signature_data || (quote.status === 'approved' || quote.status === 'goedgekeurd') ? `
       <div class="signature-section">
         ${quote.client_signature_data ? `
         <div class="signature-box">
@@ -240,10 +241,18 @@ const generateQuoteHTML = (quote: any, settings: any) => {
           <p>${quote.client_name || ''}</p>
           <p>${quote.client_signed_at ? new Date(quote.client_signed_at).toLocaleDateString() : ''}</p>
           ${(quote.status === 'approved' || quote.status === 'goedgekeurd') ? `
-          <div style="margin-top: 12px; padding: 8px; background-color: #fee2e2; color: #991b1b; border-radius: 4px; font-size: 12px; font-weight: 600;">
+          <div style="margin-top: 12px; padding: 8px; background-color: #dcfce7; color: #166534; border-radius: 4px; font-size: 12px; font-weight: 600;">
             ✅ Goedgekeurd door klant
           </div>
           ` : ''}
+        </div>
+        ` : ''}
+        ${(quote.status === 'approved' || quote.status === 'goedgekeurd') && !quote.client_signature_data ? `
+        <div class="signature-box">
+          <p><strong>Status:</strong></p>
+          <div style="margin-top: 8px; padding: 8px; background-color: #dcfce7; color: #166534; border-radius: 4px; font-size: 12px; font-weight: 600;">
+            ✅ Goedgekeurd
+          </div>
         </div>
         ` : ''}
         ${quote.admin_signature_data ? `
@@ -269,7 +278,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { quoteId }: GenerateQuotePDFRequest = await req.json();
+    const { quoteId, includeSigned = false }: GenerateQuotePDFRequest = await req.json();
 
     if (!quoteId) {
       return new Response(
