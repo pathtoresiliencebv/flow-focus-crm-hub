@@ -122,13 +122,17 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     if (crmLoading) return;
     
     if (existingQuote) {
-      // Load existing quote data
+      console.log('📝 Loading existing quote:', existingQuote.id);
+      console.log('📝 Customer ID from quote:', existingQuote.customer_id);
+      console.log('📝 Project ID from quote:', existingQuote.project_id);
+      
+      // ✅ FIX: Use actual customer_id and project_id from existingQuote
       form.reset({
-        customer: '',  // Will need to find customer ID
+        customer: existingQuote.customer_id || '',
         quoteNumber: existingQuote.quote_number,
         date: existingQuote.quote_date,
         validUntil: existingQuote.valid_until,
-        project: '',  // Will need to find project ID
+        project: existingQuote.project_id || '',
         message: existingQuote.message || '',
       });
       
