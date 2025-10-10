@@ -7,7 +7,7 @@ import { AlertTriangle, RefreshCw, Loader2 } from 'lucide-react';
 
 interface AdminSectionWrapperProps {
   children: React.ReactNode;
-  section: 'customers' | 'projects' | 'planning' | 'timeRegistration' | 'receipts' | 'quotes' | 'personnel' | 'users' | 'settings';
+  section: 'customers' | 'projects' | 'planning' | 'timeRegistration' | 'receipts' | 'quotes' | 'personnel' | 'users' | 'settings' | 'email' | 'chat';
   title: string;
   icon?: React.ReactNode;
 }
@@ -31,7 +31,9 @@ export const AdminSectionWrapper: React.FC<AdminSectionWrapperProps> = ({
     loadUsers,
     loadPersonnel,
     loadTimeRegistration,
-    loadSettings
+    loadSettings,
+    loadEmail,
+    loadChat
   } = useAdminDataLoader();
 
   // Check if user is Administrator
@@ -54,6 +56,8 @@ export const AdminSectionWrapper: React.FC<AdminSectionWrapperProps> = ({
       case 'personnel': return loadPersonnel;
       case 'timeRegistration': return loadTimeRegistration;
       case 'settings': return loadSettings;
+      case 'email': return loadEmail;
+      case 'chat': return loadChat;
       default: return () => Promise.resolve();
     }
   };

@@ -13,6 +13,8 @@ interface LoadingState {
   personnel: boolean;
   users: boolean;
   settings: boolean;
+  email: boolean;
+  chat: boolean;
 }
 
 interface LoadingErrors {
@@ -25,6 +27,8 @@ interface LoadingErrors {
   personnel?: string;
   users?: string;
   settings?: string;
+  email?: string;
+  chat?: string;
 }
 
 export const useAdminDataLoader = () => {
@@ -41,6 +45,8 @@ export const useAdminDataLoader = () => {
     personnel: false,
     users: false,
     settings: false,
+    email: false,
+    chat: false,
   });
   
   const [errors, setErrors] = useState<LoadingErrors>({});
@@ -214,6 +220,41 @@ export const useAdminDataLoader = () => {
     });
   }, [loadData]);
 
+  // Load email with proper error handling
+  const loadEmail = useCallback(async () => {
+    await loadData('email', async () => {
+      // For email, we might not need to load specific data
+      // or we could load email accounts/settings
+      const { data, error } = await supabase
+        .from('email_accounts')
+        .select('*')
+        .limit(1);
+      
+      if (error && error.code !== 'PGRST116') { // Table doesn't exist is OK
+        throw error;
+      }
+      return data || [];
+    });
+  }, [loadData]);
+
+  // Load chat with proper error handling
+  const loadChat = useCallback(async () => {
+    await loadData('chat', async () => {
+      // For chat, we might not need to load specific data
+      // or we could load chat settings/messages
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      
+      if (error && error.code !== 'PGRST116') { // Table doesn't exist is OK
+        throw error;
+      }
+      return data || [];
+    });
+  }, [loadData]);
+
   // Initialize all data loading
   const initializeData = useCallback(async () => {
     if (!isAdmin || isInitialized) return;
@@ -231,6 +272,8 @@ export const useAdminDataLoader = () => {
         loadPersonnel(),
         loadTimeRegistration(),
         loadSettings(),
+        loadEmail(),
+        loadChat(),
       ]);
       
       setIsInitialized(true);
@@ -238,7 +281,7 @@ export const useAdminDataLoader = () => {
     } catch (error) {
       console.error('❌ useAdminDataLoader: Error during initialization:', error);
     }
-  }, [isAdmin, isInitialized, loadCustomers, loadProjects, loadPlanning, loadReceipts, loadQuotes, loadUsers, loadPersonnel, loadTimeRegistration, loadSettings]);
+  }, [isAdmin, isInitialized, loadCustomers, loadProjects, loadPlanning, loadReceipts, loadQuotes, loadUsers, loadPersonnel, loadTimeRegistration, loadSettings, loadEmail, loadChat]);
 
   // Auto-initialize when admin is ready
   useEffect(() => {
@@ -281,6 +324,8 @@ export const useAdminDataLoader = () => {
     loadPersonnel,
     loadTimeRegistration,
     loadSettings,
+    loadEmail,
+    loadChat,
     initializeData,
     getErrorMessage,
     isLoading,

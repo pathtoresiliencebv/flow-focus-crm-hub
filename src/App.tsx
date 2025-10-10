@@ -155,9 +155,17 @@ function App() {
                           <UsersPage />
                         </AdminSectionWrapper>
                       } />
-                      <Route path="/email" element={<EmailPage />} />
+                      <Route path="/email" element={
+                        <AdminSectionWrapper section="email" title="Email">
+                          <EmailPage />
+                        </AdminSectionWrapper>
+                      } />
                       <Route path="/webmail" element={<WebmailPage />} />
-                      <Route path="/chat" element={<ChatPage />} />
+                      <Route path="/chat" element={
+                        <AdminSectionWrapper section="chat" title="Chat">
+                          <ChatPage />
+                        </AdminSectionWrapper>
+                      } />
                       <Route path="/settings" element={
                         <AdminSectionWrapper section="settings" title="Instellingen">
                           <SettingsPage />
