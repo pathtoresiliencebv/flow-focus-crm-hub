@@ -101,6 +101,23 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
     );
   }
 
+  // ✅ FIX: Declare calculate functions BEFORE they are used
+  const calculateBlockTotals = (block: InvoiceBlock) => {
+    const productItems = block.items.filter(item => item.type === 'product');
+    block.subtotal = productItems.reduce((sum, item) => sum + (item.total || 0), 0);
+    block.vat_amount = productItems.reduce((sum, item) => {
+      const itemTotal = item.total || 0;
+      const vatRate = item.vat_rate || 0;
+      return sum + (itemTotal * vatRate / 100);
+    }, 0);
+  };
+
+  const calculateTotals = () => {
+    const totalAmount = blocks.reduce((sum, block) => sum + block.subtotal, 0);
+    const totalVAT = blocks.reduce((sum, block) => sum + block.vat_amount, 0);
+    return { totalAmount, totalVAT };
+  };
+
   const generateInvoiceNumber = async () => {
     try {
       const { data, error } = await supabase.rpc('generate_invoice_number');
@@ -303,21 +320,7 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
     setUpdateCounter(prev => prev + 1);
   };
 
-  const calculateBlockTotals = (block: InvoiceBlock) => {
-    const productItems = block.items.filter(item => item.type === 'product');
-    block.subtotal = productItems.reduce((sum, item) => sum + (item.total || 0), 0);
-    block.vat_amount = productItems.reduce((sum, item) => {
-      const itemTotal = item.total || 0;
-      const vatRate = item.vat_rate || 0;
-      return sum + (itemTotal * vatRate / 100);
-    }, 0);
-  };
-
-  const calculateTotals = () => {
-    const totalAmount = blocks.reduce((sum, block) => sum + block.subtotal, 0);
-    const totalVAT = blocks.reduce((sum, block) => sum + block.vat_amount, 0);
-    return { totalAmount, totalVAT };
-  };
+  // ✅ calculateBlockTotals and calculateTotals are now declared at the top (lines 105-119)
 
   const onDragEnd = (result: any) => {
     if (!result.destination) return;
