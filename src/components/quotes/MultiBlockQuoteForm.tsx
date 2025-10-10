@@ -1335,7 +1335,6 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
           attachments={attachments} 
         />
       </div>
-      </div>
 
       {/* Sidebar voor nieuwe klant toevoegen */}
       <Sheet open={showCustomerAdd} onOpenChange={setShowCustomerAdd}>
@@ -1376,6 +1375,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
           </div>
         </SheetContent>
       </Sheet>
+      </div>
 
     </div>
   );
