@@ -150,11 +150,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         loginInProgressRef.current = false;
         setIsLoggingIn(false);
         
+        // First, try to get the current session
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('Error getting session:', error);
-          if (mounted) setIsLoading(false);
+          if (mounted) {
+            setUser(null);
+            setSession(null);
+            setProfile(null);
+            setIsLoading(false);
+          }
           return;
         }
         
@@ -190,29 +196,49 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setIsLoading(false);
         } else {
           console.log('⚠️ No session found, user needs to login');
-          if (mounted) setIsLoading(false);
+          if (mounted) {
+            setUser(null);
+            setSession(null);
+            setProfile(null);
+            setIsLoading(false);
+          }
         }
         
+        // Set up auth state change listener
         const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
-          if (!mounted || event === 'INITIAL_SESSION') return;
+          if (!mounted) return;
           
-          console.log('🔐 Auth state changed:', event);
+          console.log('🔐 Auth state changed:', event, session ? 'with session' : 'no session');
           
+          // Update state based on auth change
           setSession(session);
           const currentUser = session?.user ?? null;
           setUser(currentUser);
           
-          if (currentUser && event === 'SIGNED_IN') {
+          if (currentUser && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+            console.log('🔄 User signed in or token refreshed, fetching profile...');
             await fetchProfile(currentUser);
-          } else if (!currentUser) {
+          } else if (!currentUser && (event === 'SIGNED_OUT' || event === 'USER_UPDATED')) {
+            console.log('🚪 User signed out, clearing profile...');
             setProfile(null);
+            localStorage.removeItem('user_profile_cache');
+          }
+          
+          // Always set loading to false after auth state change
+          if (mounted) {
+            setIsLoading(false);
           }
         });
         
         subscription = data.subscription;
       } catch (error) {
         console.error('Error initializing auth:', error);
-        if (mounted) setIsLoading(false);
+        if (mounted) {
+          setUser(null);
+          setSession(null);
+          setProfile(null);
+          setIsLoading(false);
+        }
       }
     };
 

@@ -15,6 +15,7 @@ import { nl } from "date-fns/locale";
 import { ProjectMaterials } from "./ProjectMaterials";
 import { ProjectPersonnel } from "./ProjectPersonnel";
 import { ProjectActivities } from "./ProjectActivities";
+import { ProjectTasks } from "./ProjectTasks";
 
 const ProjectDetail = () => {
   const { projectId } = useParams();
@@ -363,59 +364,7 @@ const ProjectDetail = () => {
 
               {/* PROJECT TAKEN TAB */}
               <TabsContent value="taken" className="p-4">
-                {loadingData ? (
-                  <p className="text-center text-muted-foreground py-8">Laden...</p>
-                ) : tasks.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">Geen taken gevonden</p>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b text-left">
-                          {profile?.role === 'Installateur' && <th className="pb-2 px-2 w-10"></th>}
-                          <th className="pb-2 px-2 font-medium text-sm text-muted-foreground">TAAK</th>
-                          <th className="pb-2 px-2 font-medium text-sm text-muted-foreground">STATUS</th>
-                          <th className="pb-2 px-2 font-medium text-sm text-muted-foreground">TOEGEWEZEN AAN</th>
-                          <th className="pb-2 px-2 font-medium text-sm text-muted-foreground">EINDDATUM</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {tasks.map((task) => (
-                          <tr key={task.id} className="border-b hover:bg-muted/50">
-                            {/* Checkbox for Monteurs */}
-                            {profile?.role === 'Installateur' && (
-                              <td className="py-3 px-2">
-                                <Checkbox
-                                  checked={task.status === 'voltooid'}
-                                  onCheckedChange={() => handleTaskToggle(task.id, task.status)}
-                                  disabled={task.assigned_to !== user?.id}
-                                />
-                              </td>
-                            )}
-                            <td className="py-3 px-2 font-medium">{task.title}</td>
-                            <td className="py-3 px-2">
-                              <Badge 
-                                variant={
-                                  task.status === 'voltooid' ? 'outline' : 
-                                  task.status === 'in_progress' ? 'default' : 
-                                  'secondary'
-                                }
-                              >
-                                {task.status === 'voltooid' ? 'Voltooid' : 
-                                 task.status === 'in_progress' ? 'In uitvoering' : 
-                                 'Niet gestart'}
-                              </Badge>
-                            </td>
-                            <td className="py-3 px-2">{task.assignee?.full_name || '-'}</td>
-                            <td className="py-3 px-2">
-                              {task.due_date ? format(new Date(task.due_date), 'dd-MM-yyyy') : '-'}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                <ProjectTasks projectId={projectId || ''} />
               </TabsContent>
 
               {/* WERKBONNEN TAB */}

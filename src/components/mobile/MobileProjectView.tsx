@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PullToRefresh } from "@/components/ui/pull-to-refresh";
 import { Camera, Clock, CheckCircle, FileText, User, MapPin, Phone, Receipt, Navigation } from "lucide-react";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
+import { ProjectTasks } from "@/components/ProjectTasks";
 import { useCrmStore } from "@/hooks/useCrmStore";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNativeCapabilities } from "@/hooks/useNativeCapabilities";

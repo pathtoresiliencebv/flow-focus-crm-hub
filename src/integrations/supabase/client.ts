@@ -16,5 +16,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: typeof window !== 'undefined' ? window.localStorage : undefined, // Use localStorage for session persistence
     storageKey: 'supabase.auth.token', // Custom storage key for session data
     flowType: 'pkce', // Use PKCE flow for better security
+    debug: process.env.NODE_ENV === 'development', // Enable debug logging in development
   },
 });

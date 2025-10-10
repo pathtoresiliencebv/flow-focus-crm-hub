@@ -60,9 +60,10 @@ const queryClient = new QueryClient({
 
 // Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading, profile } = useAuth();
+  const { isAuthenticated, isLoading, profile, session } = useAuth();
   const isMobile = useIsMobile();
 
+  // Show loading state while checking authentication
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -74,7 +75,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!isAuthenticated) {
+  // Only redirect to login if we're sure there's no session
+  if (!isAuthenticated || !session) {
     return <LoginScreen />;
   }
 
