@@ -286,7 +286,7 @@ export function SimplifiedPlanningManagement({
         console.log(`👥 Saving ${additionalMonteurs.length} additional monteurs...`);
         
         const participants = additionalMonteurs.map(userId => ({
-          planning_item_id: savedPlanning.id,
+          planning_id: savedPlanning.id,
           user_id: userId,
           role: 'monteur'
         }));
