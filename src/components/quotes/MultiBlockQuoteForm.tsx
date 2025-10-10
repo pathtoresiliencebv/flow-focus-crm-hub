@@ -863,13 +863,16 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     }
   };
 
-  // Get current form values only when needed
-  const currentFormValues = form.getValues();
-  
-  const filteredProjects = projects?.filter(project => {
-    const selectedCustomer = customers.find(c => c.id === currentFormValues.customer);
-    return selectedCustomer && project.customer === selectedCustomer.name;
-  }) || [];
+  // ✅ FIX: Use useMemo to safely compute filtered projects
+  const currentCustomerId = form.watch('customer');
+  const filteredProjects = useMemo(() => {
+    if (!currentCustomerId || !projects || !customers) return [];
+    
+    const selectedCustomer = customers.find(c => c.id === currentCustomerId);
+    if (!selectedCustomer) return [];
+    
+    return projects.filter(project => project.customer === selectedCustomer.name);
+  }, [currentCustomerId, projects, customers]);
 
   const handleCustomerAdded = async (customer: any) => {
     console.log('✅ Customer added:', customer);
@@ -961,11 +964,14 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   // Create preview quote object - only update when blocks change, not on every form field change
   const previewQuote: Quote = useMemo(() => {
     const formValues = form.getValues();
+    const selectedCustomer = customers.find(c => c.id === formValues.customer);
+    const selectedProject = projects?.find(p => p.id === formValues.project);
+    
     const quote = {
       quote_number: formValues.quoteNumber || `OFF-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
-      customer_name: customers.find(c => c.id === formValues.customer)?.name || '',
-      customer_email: customers.find(c => c.id === formValues.customer)?.email || '',
-      project_title: projects?.find(p => p.id === formValues.project)?.title || '',
+      customer_name: selectedCustomer?.name || '',
+      customer_email: selectedCustomer?.email || '',
+      project_title: selectedProject?.title || '',
       quote_date: formValues.date || new Date().toISOString().split('T')[0],
       valid_until: formValues.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       message: formValues.message || '',
