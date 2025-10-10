@@ -270,14 +270,14 @@ export const SimpleInvoiceForm: React.FC<SimpleInvoiceFormProps> = ({
               <Label htmlFor="project_id">Project</Label>
               <Select
                 value={watch('project_id') || ''}
-                onValueChange={(value) => setValue('project_id', value)}
+                onValueChange={(value) => setValue('project_id', value === 'none' ? null : value)}
                 disabled={!selectedCustomerId || customerProjects.length === 0}
               >
                 <SelectTrigger className="mt-1.5">
                   <SelectValue placeholder="Selecteer project" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Geen project</SelectItem>
+                  <SelectItem value="none">Geen project</SelectItem>
                   {customerProjects.map((project) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.title}

@@ -179,7 +179,7 @@ export const SimplePlanningForm = ({ selectedDate, onClose, onSubmit }: SimplePl
                 <SelectValue placeholder="Geen" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Geen</SelectItem>
+                <SelectItem value="none">Geen</SelectItem>
                 <SelectItem value="15min">15 minuten</SelectItem>
                 <SelectItem value="30min">30 minuten</SelectItem>
                 <SelectItem value="1hr">1 uur</SelectItem>

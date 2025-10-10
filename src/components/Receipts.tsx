@@ -877,7 +877,7 @@ export const Receipts = () => {
                     <SelectValue placeholder="Selecteer een gebruiker..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Geen specifieke gebruiker</SelectItem>
+                    <SelectItem value="none">Geen specifieke gebruiker</SelectItem>
                     {users.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.full_name} ({user.role})

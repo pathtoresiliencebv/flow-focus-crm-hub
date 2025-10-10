@@ -368,7 +368,7 @@ export const EventCreateDialog: React.FC<EventCreateDialogProps> = ({
                       <SelectValue placeholder="Selecteer rol" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Geen rol</SelectItem>
+                      <SelectItem value="none">Geen rol</SelectItem>
                       <SelectItem value="Administrator">Administrator</SelectItem>
                       <SelectItem value="Installateur">Installateur</SelectItem>
                       <SelectItem value="Administratie">Administratie</SelectItem>
@@ -385,7 +385,7 @@ export const EventCreateDialog: React.FC<EventCreateDialogProps> = ({
                     <SelectValue placeholder="Selecteer gebruiker" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Geen gebruiker</SelectItem>
+                    <SelectItem value="none">Geen gebruiker</SelectItem>
                     {users.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
                         {user.full_name} ({user.role})

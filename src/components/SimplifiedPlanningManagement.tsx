@@ -220,6 +220,8 @@ export function SimplifiedPlanningManagement({
       status: 'Gepland',
       project_id: selectedProject?.id || null,
       expected_duration_minutes: selectedDuration,
+      // Add project_status to prevent enum error
+      project_status: selectedProject?.id ? 'gepland' : null,
     };
 
     console.log('📦 Planning data created:', planningData);

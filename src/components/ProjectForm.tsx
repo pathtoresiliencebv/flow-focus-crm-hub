@@ -184,9 +184,9 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
                 </SelectTrigger>
                 <SelectContent>
                   {crmLoading ? (
-                    <SelectItem value="" disabled>Klanten laden...</SelectItem>
+                    <SelectItem value="loading" disabled>Klanten laden...</SelectItem>
                   ) : customers.length === 0 ? (
-                    <SelectItem value="" disabled>Geen klanten beschikbaar</SelectItem>
+                    <SelectItem value="no-customers" disabled>Geen klanten beschikbaar</SelectItem>
                   ) : (
                     customers.map((customer) => (
                       <SelectItem key={customer.id} value={customer.id}>
@@ -234,9 +234,9 @@ export const ProjectForm = ({ onClose, initialStatus = "te-plannen", existingPro
               </SelectTrigger>
               <SelectContent>
                 {usersLoading ? (
-                  <SelectItem value="" disabled>Monteurs laden...</SelectItem>
+                  <SelectItem value="loading" disabled>Monteurs laden...</SelectItem>
                 ) : usersError ? (
-                  <SelectItem value="" disabled>Fout bij laden monteurs</SelectItem>
+                  <SelectItem value="error" disabled>Fout bij laden monteurs</SelectItem>
                 ) : (
                   <>
                     <SelectItem value="unassigned">Geen toewijzing</SelectItem>

@@ -404,7 +404,7 @@ export const ApprovalRulesManager: React.FC = () => {
                   <SelectValue placeholder="Alle rollen" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Alle rollen</SelectItem>
+                  <SelectItem value="all">Alle rollen</SelectItem>
                   <SelectItem value="Installateur">Installateur</SelectItem>
                   <SelectItem value="Administratie">Administratie</SelectItem>
                   <SelectItem value="Administrator">Administrator</SelectItem>
