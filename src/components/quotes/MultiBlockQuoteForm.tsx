@@ -1013,9 +1013,9 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
-      {/* Left side - Form */}
-      <div className="lg:col-span-2 space-y-4 pr-2">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-full">
+      {/* Left side - Form - Breder gemaakt */}
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-medium">Nieuwe offerte - Meerdere blokken</h3>
           <div className={`px-3 py-1 rounded-lg text-sm font-medium ${
@@ -1346,8 +1346,8 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         </Form>
       </div>
 
-      {/* Right side - Preview */}
-      <div className="lg:col-span-3">
+      {/* Right side - Preview - Breder gemaakt */}
+      <div>
         <div className="flex items-center gap-2 mb-2">
           <Eye className="h-3 w-3" />
           <h4 className="text-xs font-medium text-gray-600">Preview</h4>

@@ -35,9 +35,9 @@ export default function NewQuote() {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center gap-4 mb-6">
+    <div className="min-h-screen bg-background p-2">
+      <div className="max-w-full mx-auto px-2">
+        <div className="flex items-center gap-4 mb-4">
           <Button
             variant="ghost"
             size="sm"
@@ -50,7 +50,7 @@ export default function NewQuote() {
           <h1 className="text-2xl font-bold">Nieuwe offerte aanmaken</h1>
         </div>
         
-        <div className="bg-card rounded-lg shadow-sm border p-6">
+        <div className="bg-card rounded-lg shadow-sm border p-4">
           <Suspense fallback={<QuoteFormSkeleton />}>
             <MultiBlockQuoteForm onClose={handleClose} />
           </Suspense>

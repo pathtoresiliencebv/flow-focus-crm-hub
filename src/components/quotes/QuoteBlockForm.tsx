@@ -287,15 +287,16 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Items List - Consistent met factuur layout */}
+        {/* Items List - Bredere layout voor betere zichtbaarheid */}
         {block.items.map((item, index) => {
           const localItem = localItemStates[item.id] || item;
           
           return (
-            <div key={item.id} className="grid grid-cols-12 gap-3 items-center py-2 border-b border-border/50 last:border-b-0">
+            <div key={item.id} className="grid grid-cols-[1fr,180px,150px,120px,140px,50px] gap-3 items-center py-2 border-b border-border/50 last:border-b-0">
               {item.type === 'product' ? (
                 <>
-                  <div className="col-span-4">
+                  {/* Beschrijving - Flexibele breedte */}
+                  <div>
                     <Input
                       value={localItem.description}
                       onChange={(e) => handleLocalInputChange(item.id, 'description', e.target.value)}
@@ -304,7 +305,9 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                       className="h-10 text-base"
                     />
                   </div>
-                  <div className="col-span-2">
+                  
+                  {/* Aantal - 180px breed */}
+                  <div>
                     <div className="flex items-center gap-1">
                       <Button
                         type="button"
@@ -334,7 +337,9 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                       </Button>
                     </div>
                   </div>
-                  <div className="col-span-2">
+                  
+                  {/* Prijs - 150px breed */}
+                  <div>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-base">€</span>
                       <Input
@@ -349,32 +354,47 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                       />
                     </div>
                   </div>
-                  <div className="col-span-2">
-                    <div className="relative">
-                      <Select
-                        value={localItem.vat_rate?.toString() || '21'}
-                        onValueChange={(value) => {
-                          handleLocalInputChange(item.id, 'vat_rate', Number(value));
-                          handleInputBlur(item.id);
-                        }}
-                      >
-                        <SelectTrigger className="h-10 text-base">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="0">0%</SelectItem>
-                          <SelectItem value="9">9%</SelectItem>
-                          <SelectItem value="21">21%</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  
+                  {/* BTW% - 120px breed */}
+                  <div>
+                    <Select
+                      value={localItem.vat_rate?.toString() || '21'}
+                      onValueChange={(value) => {
+                        handleLocalInputChange(item.id, 'vat_rate', Number(value));
+                        handleInputBlur(item.id);
+                      }}
+                    >
+                      <SelectTrigger className="h-10 text-base">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">0%</SelectItem>
+                        <SelectItem value="9">9%</SelectItem>
+                        <SelectItem value="21">21%</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div className="col-span-1 text-right text-base font-medium">
+                  
+                  {/* Totaal - 140px breed */}
+                  <div className="text-right text-base font-medium">
                     €{(localItem.total || 0).toFixed(2)}
+                  </div>
+                  
+                  {/* Delete button - 50px */}
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleDeleteItem(item.id)}
+                      className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
                   </div>
                 </>
               ) : (
-                <div className="col-span-11">
+                <div className="col-span-full">
                   <RichTextEditor
                     value={localItem.description}
                     onChange={(value) => {
