@@ -142,25 +142,45 @@ export const useQuotes = () => {
 
   const deleteQuote = async (quoteId: string) => {
     try {
+      console.log('🗂️ Archiving quote:', quoteId);
+      
+      // ✅ FIX: Get current user ID properly via JavaScript
+      const { data: { user } } = await supabase.auth.getUser();
+      const currentUserId = user?.id;
+
+      if (!currentUserId) {
+        console.error('❌ No user ID available for archiving');
+        toast({
+          title: "Fout",
+          description: "Kon gebruiker niet identificeren.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('👤 Archiving as user:', currentUserId);
+
       // Soft delete: archive instead of delete
       const { error } = await supabase
         .from('quotes')
         .update({ 
           is_archived: true, 
           archived_at: new Date().toISOString(),
-          archived_by: 'auth.uid()' // Will be resolved by RLS
+          archived_by: currentUserId // ✅ Use actual user ID from auth
         })
         .eq('id', quoteId);
 
       if (error) {
-        console.error('Error archiving quote:', error);
+        console.error('❌ Error archiving quote:', error);
         toast({
           title: "Fout",
-          description: "Kon offerte niet archiveren.",
+          description: `Kon offerte niet archiveren: ${error.message}`,
           variant: "destructive",
         });
         return;
       }
+
+      console.log('✅ Quote archived successfully');
 
       toast({
         title: "Offerte gearchiveerd ✓",
@@ -169,7 +189,12 @@ export const useQuotes = () => {
 
       fetchQuotes(true);
     } catch (error) {
-      console.error('Error archiving quote:', error);
+      console.error('❌ Error archiving quote:', error);
+      toast({
+        title: "Fout",
+        description: "Er is een onverwachte fout opgetreden.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -317,11 +342,14 @@ export const useQuotes = () => {
         }
       }
 
+      // ✅ FIX: Create object WITHOUT id field (don't use undefined)
+      // Destructure to remove fields that should be auto-generated
+      const { id: _id, created_at: _created, updated_at: _updated, ...quoteWithoutAutoFields } = originalQuote;
+      
       const duplicateData = {
-        // Copy all fields from original
-        ...originalQuote,
+        // Copy all fields from original (except auto-generated ones)
+        ...quoteWithoutAutoFields,
         // Override with new values
-        id: undefined, // Let database generate new ID
         quote_number: newQuoteNumber,
         quote_date: today.toISOString().split('T')[0],
         valid_until: validUntil.toISOString().split('T')[0],
@@ -334,9 +362,7 @@ export const useQuotes = () => {
         client_name: null,
         client_signed_at: null,
         // pdf_url removed - column doesn't exist in schema
-        // Let database handle timestamps
-        created_at: undefined,
-        updated_at: undefined,
+        // Let database generate id, created_at, updated_at
       };
 
       console.log('📝 Inserting duplicate quote:', {
