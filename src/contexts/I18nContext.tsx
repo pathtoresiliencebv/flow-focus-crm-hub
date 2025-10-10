@@ -60,8 +60,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
     initializeI18n();
 
-    // Listen to auth state changes
+    // Listen to auth state changes - only for SIGNED_IN and SIGNED_OUT
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'INITIAL_SESSION') return; // Skip initial session
+      
       const newUserId = session?.user?.id || null;
       setUserId(newUserId);
       

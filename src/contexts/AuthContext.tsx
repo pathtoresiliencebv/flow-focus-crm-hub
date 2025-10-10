@@ -139,7 +139,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     
     const initializeAuth = async () => {
       try {
-        // First, try to get the current session
+        // Get current session
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -160,7 +160,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setUser(currentUser);
           
           if (currentUser) {
-            // Check cache age - 30 minutes max
+            // Use cached profile if available and fresh
             const cached = localStorage.getItem('user_profile_cache');
             let shouldRefresh = true;
             
@@ -170,6 +170,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 const age = Date.now() - (parsed.timestamp || 0);
                 const cacheMaxAge = 30 * 60 * 1000; // 30 minutes
                 shouldRefresh = age >= cacheMaxAge;
+                
+                if (!shouldRefresh) {
+                  console.log('✅ Using cached profile (still fresh)');
+                  setProfile(parsed.profile);
+                }
               } catch (e) {
                 console.error('Error parsing cached profile:', e);
               }
@@ -178,8 +183,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             if (shouldRefresh) {
               console.log('🔄 Fetching fresh profile data...');
               await fetchProfile(currentUser);
-            } else {
-              console.log('✅ Using cached profile (still fresh)');
             }
           }
           setIsLoading(false);
@@ -193,27 +196,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           }
         }
         
-        // Set up auth state change listener
+        // Set up auth state change listener - ONLY for actual auth changes
         const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
-          if (!mounted) return;
+          if (!mounted || event === 'INITIAL_SESSION') return;
           
           console.log('🔐 Auth state changed:', event, session ? 'with session' : 'no session');
           
-          // Update state based on auth change
           setSession(session);
           const currentUser = session?.user ?? null;
           setUser(currentUser);
           
-          if (currentUser && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-            console.log('🔄 User signed in or token refreshed, fetching profile...');
+          if (currentUser && event === 'SIGNED_IN') {
+            console.log('🔄 User signed in, fetching profile...');
             await fetchProfile(currentUser);
-          } else if (!currentUser && (event === 'SIGNED_OUT' || event === 'USER_UPDATED')) {
+          } else if (!currentUser && event === 'SIGNED_OUT') {
             console.log('🚪 User signed out, clearing profile...');
             setProfile(null);
             localStorage.removeItem('user_profile_cache');
           }
           
-          // Always set loading to false after auth state change
           if (mounted) {
             setIsLoading(false);
           }
