@@ -12,7 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNativeCapabilities } from "@/hooks/useNativeCapabilities";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { compressImage } from "@/lib/image-utils";
+import { compressImage } from "@/utils/imageCompression";
 
 interface MobileMaterialsReceiptsProps {
   projectId: string;
@@ -112,8 +112,13 @@ export const MobileMaterialsReceipts: React.FC<MobileMaterialsReceiptsProps> = (
         throw new Error('Gebruiker niet gevonden');
       }
 
+      // Convert dataUrl to blob and compress
+      const response = await fetch(capturedImage);
+      const blob = await response.blob();
+      const file = new File([blob], 'receipt.jpg', { type: 'image/jpeg' });
+      
       // Compress image before upload
-      const compressedBlob = await compressImage(capturedImage, {
+      const compressedFile = await compressImage(file, {
         maxWidth: 1920,
         maxHeight: 1920,
         quality: 0.6
@@ -122,7 +127,7 @@ export const MobileMaterialsReceipts: React.FC<MobileMaterialsReceiptsProps> = (
       const fileName = `${user.id}/${Date.now()}_receipt.jpg`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('receipts')
-        .upload(fileName, compressedBlob, {
+        .upload(fileName, compressedFile, {
           contentType: 'image/jpeg',
           upsert: false
         });
