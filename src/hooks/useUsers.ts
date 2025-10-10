@@ -10,18 +10,25 @@ interface User {
 }
 
 const fetchUsers = async (): Promise<User[]> => {
+  console.log('🔍 fetchUsers: Starting...');
+  
   try {
     const { data, error } = await supabase
       .from('profiles')
       .select('id, full_name, role, email')
       .order('created_at', { ascending: false });
     
+    console.log('📦 fetchUsers: Response -', { data: data?.length, error });
+    
     if (error) {
       console.warn('Error fetching users:', error);
+      // Return empty array instead of throwing
       return [];
     }
     
-    return data || [];
+    const result = data || [];
+    console.log('✅ fetchUsers: Loaded', result.length, 'users');
+    return result;
   } catch (err) {
     console.warn('Exception fetching users:', err);
     return [];
@@ -35,8 +42,10 @@ export const useUsers = () => {
   const { data: users = [], isLoading, error, refetch } = useQuery<User[]>({
     queryKey: ['users'],
     queryFn: fetchUsers,
-    retry: false, // Don't retry on permission errors
+    retry: 1, // Retry once on errors
     enabled: canViewUsers, // Only fetch if user has permission
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 10 * 60 * 1000, // 10 minutes
   });
 
   // Filter monteurs (Installateur role)
