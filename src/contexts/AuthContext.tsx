@@ -206,8 +206,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           const currentUser = session?.user ?? null;
           setUser(currentUser);
           
-          if (currentUser && event === 'SIGNED_IN') {
-            console.log('🔄 User signed in, fetching profile...');
+          if (currentUser && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+            console.log('🔄 User signed in or token refreshed, fetching profile...');
             await fetchProfile(currentUser);
           } else if (!currentUser && event === 'SIGNED_OUT') {
             console.log('🚪 User signed out, clearing profile...');

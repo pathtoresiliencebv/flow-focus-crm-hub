@@ -11,10 +11,23 @@ import { useProjectTasks } from "@/hooks/useProjectTasks";
 import { MobileProjectView } from './MobileProjectView';
 
 export const MobileDashboard: React.FC = () => {
-  const { profile, user } = useAuth();
+  const { profile, user, isAuthenticated, session } = useAuth();
   const { projects, customers } = useCrmStore();
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [planningItems, setPlanningItems] = useState<any[]>([]);
+
+  // Auth check to prevent logout during navigation
+  if (!isAuthenticated || !user || !session) {
+    console.log('🔐 MobileDashboard: Auth check failed, redirecting to login');
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Authenticatie controleren...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Fetch planning items for current user
   useEffect(() => {
