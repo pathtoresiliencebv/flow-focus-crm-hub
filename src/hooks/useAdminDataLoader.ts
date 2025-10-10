@@ -240,18 +240,29 @@ export const useAdminDataLoader = () => {
   // Load chat with proper error handling
   const loadChat = useCallback(async () => {
     await loadData('chat', async () => {
-      // For chat, we might not need to load specific data
-      // or we could load chat settings/messages
-      const { data, error } = await supabase
-        .from('chat_messages')
+      // Load chat channels and participants for admin overview
+      const { data: channels, error: channelsError } = await supabase
+        .from('chat_channels')
         .select('*')
-        .order('created_at', { ascending: false })
+        .limit(50);
+      
+      if (channelsError && channelsError.code !== 'PGRST116') {
+        throw channelsError;
+      }
+
+      const { data: participants, error: participantsError } = await supabase
+        .from('chat_participants')
+        .select('*')
         .limit(100);
       
-      if (error && error.code !== 'PGRST116') { // Table doesn't exist is OK
-        throw error;
+      if (participantsError && participantsError.code !== 'PGRST116') {
+        throw participantsError;
       }
-      return data || [];
+
+      return {
+        channels: channels || [],
+        participants: participants || []
+      };
     });
   }, [loadData]);
 
