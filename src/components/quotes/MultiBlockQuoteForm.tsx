@@ -110,6 +110,12 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   // ✅ Use ref to track initialization and prevent infinite loops
   const isInitialized = useRef(false);
   
+  // ✅ FIX: Use ref to always have latest blocks for save functions
+  const blocksRef = useRef(blocks);
+  useEffect(() => {
+    blocksRef.current = blocks;
+  }, [blocks]);
+  
   useEffect(() => {
     // Only proceed if CRM data is loaded
     if (crmLoading) return;
@@ -303,6 +309,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     
     // Update preview without forcing component remount
     setPreviewKey(prev => prev + 1);
+    setUpdateCounter(prev => prev + 1); // ✅ Trigger save callbacks update
   }, [forcePreviewUpdate]);
 
   const deleteBlock = useCallback((index: number) => {
@@ -376,8 +383,10 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       const customer = customers.find(c => c.id === values.customer);
       const project = projects?.find(p => p.id === values.project);
       
-      const currentTotalAmount = blocks.reduce((sum, block) => sum + (block.subtotal || 0), 0);
-      const currentTotalVAT = blocks.reduce((sum, block) => sum + (block.vat_amount || 0), 0);
+      // ✅ FIX: Use blocksRef.current to get latest blocks
+      const currentBlocks = blocksRef.current;
+      const currentTotalAmount = currentBlocks.reduce((sum, block) => sum + (block.subtotal || 0), 0);
+      const currentTotalVAT = currentBlocks.reduce((sum, block) => sum + (block.vat_amount || 0), 0);
       const currentGrandTotal = currentTotalAmount + currentTotalVAT;
       
       const quoteData = {
@@ -390,7 +399,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         quote_date: values.date,
         valid_until: values.validUntil,
         message: values.message || '',
-        items: JSON.parse(JSON.stringify(blocks)),
+        items: JSON.parse(JSON.stringify(currentBlocks)),
         subtotal: currentTotalAmount,
         vat_amount: currentTotalVAT,
         total_amount: currentGrandTotal,
@@ -491,13 +500,15 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   
   const triggerAutoSave = useCallback(async () => {
     const formValues = form.getValues();
-    const currentData = JSON.stringify({ ...formValues, blocks, adminSignature });
+    // ✅ FIX: Use blocksRef.current to get latest blocks
+    const currentData = JSON.stringify({ ...formValues, blocks: blocksRef.current, adminSignature });
     
     // Only save if data has changed
     if (currentData === lastSaveData) return;
     
     // Check if there's sufficient data to save
-    if (formValues.customer && formValues.quoteNumber && blocks.length > 0) {
+    // ✅ FIX: Use blocksRef.current to get latest blocks
+    if (formValues.customer && formValues.quoteNumber && blocksRef.current.length > 0) {
       try {
         const savedId = await saveAsDraft(formValues, false);
         if (savedId) {
@@ -559,13 +570,16 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     setSaving(true);
     
     try {
+      // ✅ FIX: Use blocksRef.current to get latest blocks
+      const currentBlocks = blocksRef.current;
+      
       // Validation
       const errors = [];
       if (!values.customer) errors.push("Selecteer eerst een klant");
       if (!values.quoteNumber) errors.push("Offertenummer ontbreekt");
-      if (blocks.length === 0) errors.push("Voeg ten minste één blok toe");
+      if (currentBlocks.length === 0) errors.push("Voeg ten minste één blok toe");
       
-      const blocksWithItems = blocks.filter(block => 
+      const blocksWithItems = currentBlocks.filter(block => 
         block.type === 'textblock' || (block.items && block.items.length > 0)
       );
       if (blocksWithItems.length === 0) errors.push("Voeg items toe aan de blokken");
@@ -594,8 +608,8 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         tokenData = `quote_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       }
 
-      const currentTotalAmount = blocks.reduce((sum, block) => sum + (block.subtotal || 0), 0);
-      const currentTotalVAT = blocks.reduce((sum, block) => sum + (block.vat_amount || 0), 0);
+      const currentTotalAmount = currentBlocks.reduce((sum, block) => sum + (block.subtotal || 0), 0);
+      const currentTotalVAT = currentBlocks.reduce((sum, block) => sum + (block.vat_amount || 0), 0);
       const currentGrandTotal = currentTotalAmount + currentTotalVAT;
 
       const quoteData = {
@@ -608,7 +622,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         quote_date: values.date,
         valid_until: values.validUntil,
         message: values.message || '',
-        items: JSON.parse(JSON.stringify(blocks)),
+        items: JSON.parse(JSON.stringify(currentBlocks)),
         payment_terms: JSON.stringify(paymentTerms),
         attachments: JSON.stringify(attachments),
         subtotal: currentTotalAmount,
@@ -968,7 +982,8 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     const formValues = form.getValues();
     
     // Only save if we have meaningful data
-    if (formValues.customer && formValues.quoteNumber && blocks.length > 0) {
+    // ✅ FIX: Use blocksRef.current to get latest blocks
+    if (formValues.customer && formValues.quoteNumber && blocksRef.current.length > 0) {
       console.log('Saving on form blur...');
       saveAsDraft(formValues, false).catch(console.error);
     }
@@ -980,6 +995,9 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     const selectedCustomer = customers.find(c => c.id === formValues.customer);
     const selectedProject = projects?.find(p => p.id === formValues.project);
     
+    // ✅ FIX: Use blocksRef.current to get latest blocks
+    const currentBlocks = blocksRef.current;
+    
     const quote = {
       quote_number: formValues.quoteNumber || `OFF-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
       customer_name: selectedCustomer?.name || '',
@@ -988,7 +1006,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       quote_date: formValues.date || new Date().toISOString().split('T')[0],
       valid_until: formValues.validUntil || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       message: formValues.message || '',
-      blocks: JSON.parse(JSON.stringify(blocks)), // Deep copy to ensure re-render
+      blocks: JSON.parse(JSON.stringify(currentBlocks)), // Deep copy to ensure re-render
       total_amount: totalAmount,
       total_vat_amount: totalVAT,
       status: 'concept' as const,
