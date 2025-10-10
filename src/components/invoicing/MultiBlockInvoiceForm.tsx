@@ -101,7 +101,7 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
     );
   }
 
-  // ✅ FIX: Declare calculate functions BEFORE they are used
+  // ✅ FIX: Declare calculate functions BEFORE they are used (to prevent TDZ error)
   const calculateBlockTotals = (block: InvoiceBlock) => {
     const productItems = block.items.filter(item => item.type === 'product');
     block.subtotal = productItems.reduce((sum, item) => sum + (item.total || 0), 0);
