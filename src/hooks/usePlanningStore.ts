@@ -5,11 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
-// ✅ FIX: Cache variables declared at module scope (shared between all hook instances)
-// These must be outside the hook function to persist across component re-renders
-let planningCache: PlanningItem[] | null = null;
-let cacheTimestamp: number = 0;
-
 export interface PlanningItem {
   id: string;
   user_id: string;
@@ -52,16 +47,6 @@ export const usePlanningStore = () => {
   const fetchPlanningItems = async (dateRange?: { start: string; end: string }, forceRefresh = false) => {
     if (!user) return;
 
-    // Check cache - als data fresh is, gebruik cached data (5 minutes)
-    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-    const now = Date.now();
-    if (!forceRefresh && planningCache && (now - cacheTimestamp) < CACHE_DURATION) {
-      console.log('✅ Using cached planning data (fresh)');
-      setPlanningItems(planningCache);
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoading(true);
       console.log('Fetching planning for user:', user.id, dateRange ? `(${dateRange.start} to ${dateRange.end})` : '(all)');
@@ -103,10 +88,6 @@ export const usePlanningStore = () => {
       }
 
       console.log('Fetched planning items:', data?.length || 0);
-      
-      // Update cache
-      planningCache = data || [];
-      cacheTimestamp = Date.now();
       
       setPlanningItems(data || []);
     } catch (error) {
@@ -157,10 +138,6 @@ export const usePlanningStore = () => {
           
           if (error) throw error;
           
-          // Invalideer cache bij wijzigingen
-          planningCache = null;
-          cacheTimestamp = 0;
-          
           setPlanningItems(prev => prev.map(item => 
             item.id === existing.id ? data : item
           ));
@@ -207,10 +184,6 @@ export const usePlanningStore = () => {
       }
 
       console.log('Planning item created successfully:', data);
-      
-      // Invalideer cache bij wijzigingen
-      planningCache = null;
-      cacheTimestamp = 0;
       
       setPlanningItems(prev => [...prev, data]);
       
@@ -417,10 +390,6 @@ export const usePlanningStore = () => {
         throw error;
       }
 
-      // Invalideer cache bij wijzigingen
-      planningCache = null;
-      cacheTimestamp = 0;
-      
       setPlanningItems(prev => 
         prev.map(item => item.id === id ? { ...item, ...data } : item)
       );
@@ -455,10 +424,6 @@ export const usePlanningStore = () => {
         console.error('Error deleting planning:', error);
         throw error;
       }
-
-      // Invalideer cache bij wijzigingen
-      planningCache = null;
-      cacheTimestamp = 0;
 
       setPlanningItems(prev => prev.filter(item => item.id !== id));
       
