@@ -140,7 +140,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     
     const initializeAuth = async () => {
       try {
-        // Get session once
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -155,23 +154,33 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setUser(currentUser);
           
           if (currentUser) {
-            // Only fetch profile if we don't have cached profile or it's stale
-            const hasCachedProfile = profile !== null;
-            if (!hasCachedProfile) {
+            // Check cache age
+            const cached = localStorage.getItem('user_profile_cache');
+            let shouldRefresh = true;
+            
+            if (cached) {
+              try {
+                const parsed = JSON.parse(cached);
+                const age = Date.now() - (parsed.timestamp || 0);
+                const cacheMaxAge = 30 * 60 * 1000; // 30 minutes
+                shouldRefresh = age >= cacheMaxAge;
+              } catch (e) {
+                console.error('Error parsing cached profile:', e);
+              }
+            }
+            
+            if (shouldRefresh) {
               console.log('🔄 Fetching fresh profile data...');
               await fetchProfile(currentUser);
             } else {
-              console.log('✅ Using cached profile, will refresh in background');
-              // Refresh profile in background without showing loading spinner
-              fetchProfile(currentUser);
+              console.log('✅ Using cached profile (still fresh)');
             }
           }
-          setIsLoading(false); // Set loading false immediately if we have cache
+          setIsLoading(false);
         }
         
-        // Listen to CHANGES only (not initial)
         const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
-          if (!mounted || event === 'INITIAL_SESSION') return; // Skip initial session event
+          if (!mounted || event === 'INITIAL_SESSION') return;
           
           console.log('🔐 Auth state changed:', event);
           
@@ -199,7 +208,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       mounted = false;
       subscription?.unsubscribe();
     };
-  }, [fetchProfile, profile]);
+  }, [fetchProfile]);
 
   const login = async (email: string, password: string, preferredLanguage: string = 'nl') => {
     // Prevent multiple simultaneous login attempts

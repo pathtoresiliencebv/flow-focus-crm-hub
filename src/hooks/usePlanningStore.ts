@@ -172,6 +172,8 @@ export const usePlanningStore = () => {
 
       console.log('Planning data to insert:', planningData);
 
+      console.log('💾 Saving planning with data:', planningData);
+      
       const { data, error } = await supabase
         .from('planning_items')
         .insert(planningData)
@@ -179,7 +181,13 @@ export const usePlanningStore = () => {
         .single();
 
       if (error) {
-        console.error('Error creating planning:', error);
+        console.error('❌ Database error when saving planning:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          planningData
+        });
         throw error;
       }
 
@@ -213,11 +221,16 @@ export const usePlanningStore = () => {
       });
 
       return data;
-    } catch (error) {
-      console.error('Error adding planning item:', error);
+    } catch (error: any) {
+      console.error('❌ Error adding planning:', {
+        error,
+        message: error?.message,
+        details: error?.details,
+        planningData: newItem
+      });
       toast({
         title: "Fout bij aanmaken",
-        description: "Er ging iets mis bij het aanmaken van de planning.",
+        description: error?.message || "Er ging iets mis bij het aanmaken van de planning.",
         variant: "destructive"
       });
       return null;

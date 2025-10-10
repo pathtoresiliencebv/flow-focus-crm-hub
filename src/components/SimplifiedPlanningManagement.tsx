@@ -259,6 +259,7 @@ export function SimplifiedPlanningManagement({
   const savePlanning = async (planningData: any) => {
     try {
       console.log('💾 Saving planning with data:', planningData);
+      console.log('👥 Additional monteurs:', additionalMonteurs);
       
       // Step 1: Save main planning item
       const { data: savedPlanning, error: planningError } = await supabase
@@ -267,7 +268,16 @@ export function SimplifiedPlanningManagement({
         .select()
         .single();
 
-      if (planningError) throw planningError;
+      if (planningError) {
+        console.error('❌ Database error when saving planning:', {
+          message: planningError.message,
+          details: planningError.details,
+          hint: planningError.hint,
+          code: planningError.code,
+          planningData
+        });
+        throw planningError;
+      }
       
       console.log('✅ Planning saved successfully! ID:', savedPlanning.id);
 
@@ -310,11 +320,20 @@ export function SimplifiedPlanningManagement({
       setShowConflictDialog(false);
       setPendingPlanningData(null);
       setDetectedConflicts([]);
-    } catch (error) {
-      console.error('❌ Error adding planning:', error);
+    } catch (error: any) {
+      console.error('❌ Error in savePlanning:', {
+        error,
+        message: error?.message,
+        details: error?.details,
+        hint: error?.hint,
+        code: error?.code,
+        stack: error?.stack,
+        planningData,
+        additionalMonteurs
+      });
       toast({
         title: "❌ Fout bij toevoegen planning",
-        description: "Er ging iets mis bij het toevoegen van de planning.",
+        description: error?.message || "Er ging iets mis bij het toevoegen van de planning.",
         variant: "destructive",
       });
     }

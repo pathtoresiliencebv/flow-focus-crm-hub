@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -203,25 +203,30 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     }
   }, [form, existingQuote, crmLoading]);
 
-  // Add default attachments for new quotes
+  // Add default attachments for new quotes (only once)
+  const attachmentsInitialized = useRef(false);
   useEffect(() => {
+    if (attachmentsInitialized.current) return;
+    
     console.log('📎 MultiBlockQuoteForm: Checking default attachments...', {
       existingQuote: !!existingQuote,
       quoteSettings: quoteSettings,
       defaultAttachments: quoteSettings?.default_attachments,
-      currentAttachmentsCount: attachments.length,
       quoteSettingsLoading
     });
 
-    if (!existingQuote && quoteSettings?.default_attachments && attachments.length === 0) {
+    if (!existingQuote && quoteSettings?.default_attachments && !quoteSettingsLoading) {
       const defaultAttachments = Array.isArray(quoteSettings.default_attachments) 
         ? quoteSettings.default_attachments 
         : [];
       
-      console.log('✅ MultiBlockQuoteForm: Adding default attachments:', defaultAttachments);
-      setAttachments(defaultAttachments);
+      if (defaultAttachments.length > 0) {
+        console.log('✅ MultiBlockQuoteForm: Adding default attachments:', defaultAttachments);
+        setAttachments(defaultAttachments);
+        attachmentsInitialized.current = true;
+      }
     }
-  }, [existingQuote, quoteSettings, attachments.length, quoteSettingsLoading]);
+  }, [existingQuote, quoteSettings, quoteSettingsLoading]);
 
   // Remove continuous auto-save - now using blur-based saving
 
