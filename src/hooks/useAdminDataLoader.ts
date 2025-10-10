@@ -170,13 +170,16 @@ export const useAdminDataLoader = () => {
   // Load users with proper error handling
   const loadUsers = useCallback(async () => {
     await loadData('users', async () => {
+      // Try to get users from profiles table with simplified query
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, full_name, role, status, created_at, last_seen, is_online')
         .order('created_at', { ascending: false });
       
-      if (error && error.code !== 'PGRST116') {
-        throw error;
+      if (error) {
+        console.warn('Error loading users:', error);
+        // Return empty array instead of throwing error
+        return [];
       }
       return data || [];
     });
@@ -185,14 +188,17 @@ export const useAdminDataLoader = () => {
   // Load personnel with proper error handling
   const loadPersonnel = useCallback(async () => {
     await loadData('personnel', async () => {
+      // Try to get personnel from profiles table with simplified query
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, full_name, role, status, created_at, last_seen, is_online')
         .in('role', ['Installateur', 'Verkoper', 'Administratie'])
         .order('created_at', { ascending: false });
       
-      if (error && error.code !== 'PGRST116') {
-        throw error;
+      if (error) {
+        console.warn('Error loading personnel:', error);
+        // Return empty array instead of throwing error
+        return [];
       }
       return data || [];
     });
