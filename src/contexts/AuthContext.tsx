@@ -39,9 +39,6 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Track last login attempt for timeout mechanism (outside component for persistence)
-let lastLoginAttempt = 0;
-
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   // Check for cached profile first
   const getCachedProfile = () => {
@@ -67,10 +64,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [profile, setProfile] = useState<UserProfile | null>(cachedProfile);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(!cachedProfile);
-  
-  // Use ref for synchronous login lock to prevent race conditions on fast double-clicks
-  const loginInProgressRef = useRef(false);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const fetchProfile = useCallback(async (user: User) => {
     const { data: profileData, error } = await supabase
@@ -146,10 +139,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     
     const initializeAuth = async () => {
       try {
-        // Reset login lock during initialization to prevent stuck states
-        loginInProgressRef.current = false;
-        setIsLoggingIn(false);
-        
         // First, try to get the current session
         const { data: { session }, error } = await supabase.auth.getSession();
         
@@ -251,33 +240,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, [fetchProfile]);
 
   const login = async (email: string, password: string, preferredLanguage: string = 'nl') => {
-    // Force reset lock if stuck (safety mechanism with 5 second timeout)
-    if (loginInProgressRef.current) {
-      const timeSinceLastLogin = Date.now() - lastLoginAttempt;
-      if (timeSinceLastLogin > 5000) {
-        console.warn('⚠️ Login lock stuck, force resetting after 5 seconds...');
-        loginInProgressRef.current = false;
-        setIsLoggingIn(false);
-      } else {
-        console.log('⏸️ Login already in progress, skipping duplicate attempt');
-        return;
-      }
-    }
-    
-    lastLoginAttempt = Date.now();
-    loginInProgressRef.current = true;
-    setIsLoggingIn(true);
     console.log('🔐 Login attempt:', { email, preferredLanguage });
     
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    
-      console.log('🔐 Login response:', { 
-        hasData: !!data, 
-        hasUser: !!data?.user, 
-        hasSession: !!data?.session,
-        error: error?.message 
-      });
     
       if (error) {
         console.error('❌ Login error:', error);
@@ -341,11 +307,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         description: "Er is een onverwachte fout opgetreden.",
         variant: "destructive"
       });
-    } finally {
-      // Always reset the login state, ensuring multiple logins are possible
-      loginInProgressRef.current = false;
-      setIsLoggingIn(false);
-      console.log('🔓 Login state reset, ready for next login');
     }
   };
   
