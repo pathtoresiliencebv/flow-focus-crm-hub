@@ -863,16 +863,18 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     }
   };
 
-  // ✅ FIX: Use useMemo to safely compute filtered projects
-  const currentCustomerId = form.watch('customer');
+  // ✅ FIX: Safely compute filtered projects without root-level watch
   const filteredProjects = useMemo(() => {
+    // Get customer ID inside useMemo to avoid initialization issues
+    const currentCustomerId = form.getValues('customer');
+    
     if (!currentCustomerId || !projects || !customers) return [];
     
     const selectedCustomer = customers.find(c => c.id === currentCustomerId);
     if (!selectedCustomer) return [];
     
     return projects.filter(project => project.customer === selectedCustomer.name);
-  }, [currentCustomerId, projects, customers]);
+  }, [form.watch('customer'), projects, customers]); // Watch inside dependency array
 
   const handleCustomerAdded = async (customer: any) => {
     console.log('✅ Customer added:', customer);
