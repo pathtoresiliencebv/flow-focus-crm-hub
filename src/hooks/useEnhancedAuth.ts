@@ -5,6 +5,7 @@ import { useDeviceRegistration } from './useDeviceRegistration';
 import { useMultiFactorAuth } from './useMultiFactorAuth';
 import { useSecurityService } from './useSecurityService';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface EnhancedAuthState {
   isAuthenticated: boolean;
@@ -102,10 +103,20 @@ export const useEnhancedAuth = () => {
     }
   ): Promise<boolean> => {
     try {
-      // Step 1: Basic authentication
-      await login(email, password);
+      // Step 1: Basic authentication - use direct Supabase call to avoid double login
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       
-      if (!isAuthenticated) {
+      if (error) {
+        console.error('Enhanced login error:', error);
+        toast({
+          title: "Login Failed",
+          description: error.message,
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      if (!data.user) {
         return false;
       }
 

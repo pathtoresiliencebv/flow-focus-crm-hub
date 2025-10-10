@@ -54,7 +54,7 @@ export default function InvoicesPage() {
       setTitle("");
       setActions(null);
     };
-  }, [setTitle, setActions, handleNewInvoice, handleNewWerkbon]);
+  }, [setTitle, setActions]); // Remove handlers from dependencies
 
   return (
     <Invoicing 

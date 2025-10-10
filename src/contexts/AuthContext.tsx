@@ -240,7 +240,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
   }, [fetchProfile]);
 
+  // Add login lock to prevent multiple simultaneous calls
+  const loginInProgressRef = useRef(false);
+
   const login = async (email: string, password: string, preferredLanguage: string = 'nl') => {
+    // Prevent multiple simultaneous login attempts
+    if (loginInProgressRef.current) {
+      console.log('⏸️ Login already in progress, skipping duplicate attempt');
+      return;
+    }
+    
+    loginInProgressRef.current = true;
     console.log('🔐 Login attempt:', { email, preferredLanguage });
     
     try {
@@ -308,6 +318,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         description: "Er is een onverwachte fout opgetreden.",
         variant: "destructive"
       });
+    } finally {
+      // Always reset the login lock
+      loginInProgressRef.current = false;
+      console.log('🔓 Login state reset, ready for next login');
     }
   };
   

@@ -30,7 +30,7 @@ export default function ProjectsPage() {
       setTitle("");
       setActions(null);
     };
-  }, [setTitle, setActions, handleNewProject]);
+  }, [setTitle, setActions]); // Remove handleNewProject from dependencies
 
   return (
     <ProjectsBoard 
