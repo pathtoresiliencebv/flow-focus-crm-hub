@@ -16,6 +16,7 @@ import { ProjectMaterials } from "./ProjectMaterials";
 import { ProjectPersonnel } from "./ProjectPersonnel";
 import { ProjectActivities } from "./ProjectActivities";
 import { ProjectTasks } from "./ProjectTasks";
+import { ProjectCompletionSlider } from "./ProjectCompletionSlider";
 
 const ProjectDetail = () => {
   const { projectId } = useParams();
@@ -339,6 +340,18 @@ const ProjectDetail = () => {
 
             {/* Activiteit - New Component with Database Integration */}
             <ProjectActivities projectId={projectId!} />
+
+            {/* Project Completion Slider */}
+            <ProjectCompletionSlider 
+              projectId={projectId!}
+              projectName={project?.name || ''}
+              customerName={customer?.name || ''}
+              isCompleted={project?.status === 'afgerond'}
+              onCompletionChange={() => {
+                // Refresh project data
+                window.location.reload();
+              }}
+            />
           </div>
         </div>
 
