@@ -9,6 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Camera, Receipt, Package, Trash2 } from "lucide-react";
 import { useProjectMaterials } from "@/hooks/useProjectMaterials";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNativeCapabilities } from "@/hooks/useNativeCapabilities";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { compressImage } from "@/lib/image-utils";
 
 interface MobileMaterialsReceiptsProps {
   projectId: string;
@@ -16,6 +20,8 @@ interface MobileMaterialsReceiptsProps {
 
 export const MobileMaterialsReceipts: React.FC<MobileMaterialsReceiptsProps> = ({ projectId }) => {
   const { profile } = useAuth();
+  const { takePicture } = useNativeCapabilities();
+  const { toast } = useToast();
   const { 
     materials, 
     receipts, 
@@ -46,6 +52,9 @@ export const MobileMaterialsReceipts: React.FC<MobileMaterialsReceiptsProps> = (
     receipt_photo_url: ""
   });
 
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
   const canManage = profile?.role !== 'Bekijker';
 
   const handleMaterialSubmit = async (e: React.FormEvent) => {
@@ -62,17 +71,94 @@ export const MobileMaterialsReceipts: React.FC<MobileMaterialsReceiptsProps> = (
     }
   };
 
+  const handleTakePhoto = async () => {
+    try {
+      const result = await takePicture({
+        allowEditing: true
+      });
+      
+      if (result?.dataUrl) {
+        setCapturedImage(result.dataUrl);
+        setReceiptForm(prev => ({ ...prev, receipt_photo_url: result.dataUrl }));
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error);
+      toast({
+        title: "Camera fout",
+        description: "Kon geen foto maken",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleReceiptSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!capturedImage) {
+      toast({
+        title: "Foto vereist",
+        description: "Maak eerst een foto van het bonnetje",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    
     try {
+      // Upload image to storage
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Gebruiker niet gevonden');
+      }
+
+      // Compress image before upload
+      const compressedBlob = await compressImage(capturedImage, {
+        maxWidth: 1920,
+        maxHeight: 1920,
+        quality: 0.6
+      });
+
+      const fileName = `${user.id}/${Date.now()}_receipt.jpg`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('receipts')
+        .upload(fileName, compressedBlob, {
+          contentType: 'image/jpeg',
+          upsert: false
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('receipts')
+        .getPublicUrl(fileName);
+
+      // Add receipt with photo URL
       await addReceipt({
         ...receiptForm,
-        receipt_photo_url: receiptForm.receipt_photo_url || 'placeholder-url'
+        receipt_photo_url: publicUrl
       });
+      
       setReceiptForm({ supplier: "", total_amount: 0, description: "", category: "material", receipt_photo_url: "" });
+      setCapturedImage(null);
       setReceiptDialogOpen(false);
+      
+      toast({
+        title: "Bonnetje toegevoegd",
+        description: "Het bonnetje is succesvol opgeslagen",
+      });
     } catch (error) {
-      // Error handled by hook
+      console.error('Error uploading receipt:', error);
+      toast({
+        title: "Upload fout",
+        description: "Kon bonnetje niet uploaden",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -301,12 +387,51 @@ export const MobileMaterialsReceipts: React.FC<MobileMaterialsReceiptsProps> = (
                         placeholder="Wat is gekocht?"
                       />
                     </div>
+                    
+                    {/* Camera Section */}
+                    <div>
+                      <Label>Bonnetje Foto</Label>
+                      <div className="space-y-2">
+                        {capturedImage ? (
+                          <div className="relative">
+                            <img 
+                              src={capturedImage} 
+                              alt="Bonnetje foto" 
+                              className="w-full h-32 object-cover rounded border"
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setCapturedImage(null);
+                                setReceiptForm(prev => ({ ...prev, receipt_photo_url: "" }));
+                              }}
+                              className="absolute top-2 right-2"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleTakePhoto}
+                            className="w-full h-32 flex flex-col items-center justify-center gap-2"
+                          >
+                            <Camera className="h-8 w-8" />
+                            <span>Foto maken</span>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    
                     <div className="flex gap-2">
                       <Button type="button" variant="outline" onClick={() => setReceiptDialogOpen(false)} className="flex-1">
                         Annuleren
                       </Button>
-                      <Button type="submit" className="flex-1">
-                        Toevoegen
+                      <Button type="submit" disabled={isUploading} className="flex-1">
+                        {isUploading ? "Uploaden..." : "Toevoegen"}
                       </Button>
                     </div>
                   </form>
