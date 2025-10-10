@@ -63,6 +63,25 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
     }
   }, [handleTitleSave, handleTitleCancel]);
 
+  // ✅ FIX: Declare calculate functions BEFORE they are used in other callbacks
+  const calculateBlockSubtotal = useCallback((items: QuoteItem[]): number => {
+    return items.reduce((sum, item) => {
+      if (item.type === 'product') {
+        return sum + (item.unit_price * item.quantity);
+      }
+      return sum;
+    }, 0);
+  }, []);
+
+  const calculateBlockVAT = useCallback((items: QuoteItem[]): number => {
+    return items.reduce((sum, item) => {
+      if (item.type === 'product') {
+        return sum + ((item.unit_price * item.quantity) * (item.vat_rate / 100));
+      }
+      return sum;
+    }, 0);
+  }, []);
+
   // Direct add items without popup form (like invoice)
   const handleAddItem = useCallback((type: 'product' | 'textblock') => {
     const newItem: QuoteItem = {
@@ -88,24 +107,6 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
 
     onUpdateBlock(updatedBlock);
   }, [block, onUpdateBlock, calculateBlockSubtotal, calculateBlockVAT]);
-
-  const calculateBlockSubtotal = useCallback((items: QuoteItem[]): number => {
-    return items.reduce((sum, item) => {
-      if (item.type === 'product') {
-        return sum + (item.unit_price * item.quantity);
-      }
-      return sum;
-    }, 0);
-  }, []);
-
-  const calculateBlockVAT = useCallback((items: QuoteItem[]): number => {
-    return items.reduce((sum, item) => {
-      if (item.type === 'product') {
-        return sum + ((item.unit_price * item.quantity) * (item.vat_rate / 100));
-      }
-      return sum;
-    }, 0);
-  }, []);
 
   const handleLocalInputChange = useCallback((itemId: string, field: keyof QuoteItem, value: any) => {
     setLocalItemStates(prev => ({
