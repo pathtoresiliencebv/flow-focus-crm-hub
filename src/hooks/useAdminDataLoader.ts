@@ -170,37 +170,43 @@ export const useAdminDataLoader = () => {
   // Load users with proper error handling
   const loadUsers = useCallback(async () => {
     await loadData('users', async () => {
-      // Try to get users from profiles table with simplified query
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.warn('Error loading users:', error);
-        // Return empty array instead of throwing error
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          console.warn('Error loading users:', error);
+          return [];
+        }
+        return data || [];
+      } catch (err) {
+        console.warn('Exception loading users:', err);
         return [];
       }
-      return data || [];
     });
   }, [loadData]);
 
   // Load personnel with proper error handling
   const loadPersonnel = useCallback(async () => {
     await loadData('personnel', async () => {
-      // Try to get personnel from profiles table with simplified query
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .in('role', ['Installateur', 'Verkoper', 'Administratie'])
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.warn('Error loading personnel:', error);
-        // Return empty array instead of throwing error
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('role', ['Installateur', 'Verkoper', 'Administratie'])
+          .order('created_at', { ascending: false });
+        
+        if (error) {
+          console.warn('Error loading personnel:', error);
+          return [];
+        }
+        return data || [];
+      } catch (err) {
+        console.warn('Exception loading personnel:', err);
         return [];
       }
-      return data || [];
     });
   }, [loadData]);
 
