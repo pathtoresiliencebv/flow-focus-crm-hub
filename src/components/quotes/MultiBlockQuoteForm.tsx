@@ -349,13 +349,13 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     const total = blocks.reduce((sum, block) => sum + (block.subtotal || 0), 0);
     console.log('MultiBlockQuoteForm: Calculated total amount:', total, 'from blocks:', blocks);
     return total;
-  }, [blocks, updateCounter]);
+  }, [updateCounter]); // ✅ Removed blocks - will recalculate when updateCounter changes
 
   const totalVAT = useMemo(() => {
     const vat = blocks.reduce((sum, block) => sum + (block.vat_amount || 0), 0);
     console.log('MultiBlockQuoteForm: Calculated total VAT:', vat, 'from blocks:', blocks);
     return vat;
-  }, [blocks, updateCounter]);
+  }, [updateCounter]); // ✅ Removed blocks - will recalculate when updateCounter changes
 
   const grandTotal = useMemo(() => {
     const grand = totalAmount + totalVAT;
@@ -367,7 +367,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   useEffect(() => {
     console.log('MultiBlockQuoteForm: Blocks state changed:', blocks);
     console.log('MultiBlockQuoteForm: Total calculations - Amount:', totalAmount, 'VAT:', totalVAT, 'Grand:', grandTotal);
-  }, [blocks, totalAmount, totalVAT, grandTotal]);
+  }, [updateCounter, totalAmount, totalVAT, grandTotal]); // ✅ Removed blocks - use updateCounter instead
 
   const saveAsDraft = useCallback(async (values: z.infer<typeof formSchema>, closeAfter: boolean = true, quoteId?: string) => {
     setSaving(true);
@@ -483,7 +483,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     } finally {
       setSaving(false);
     }
-  }, [customers, projects, adminSignature, toast, blocks, onClose]);
+  }, [customers, projects, adminSignature, toast, onClose]); // ✅ Removed blocks - accessed via closure
 
   // Blur-based auto-save with debouncing
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<number | null>(null);
@@ -509,7 +509,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         // Don't show error toast for auto-save failures to avoid spam
       }
     }
-  }, [form, blocks, adminSignature, saveAsDraft, lastSaveData]);
+  }, [form, adminSignature, saveAsDraft, lastSaveData]); // ✅ Removed blocks - accessed via closure
 
   const scheduleAutoSave = useCallback(() => {
     if (autoSaveTimeout) {
@@ -682,7 +682,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     } finally {
       setSaving(false);
     }
-  }, [customers, projects, adminSignature, toast, blocks, paymentTerms, attachments, onClose]);
+  }, [customers, projects, adminSignature, toast, paymentTerms, attachments, onClose]); // ✅ Removed blocks - accessed via closure
 
   const handleSaveAsTemplate = async (templateData: {
     name: string;
@@ -760,7 +760,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       console.log('💾 handleSaveDraft: FINALLY - Setting saving to false');
       setSaving(false);
     }
-  }, [form, saveAsDraft, toast, blocks]);
+  }, [form, saveAsDraft, toast]); // ✅ Removed blocks - accessed via closure
 
   const handleSaveAndSend = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -972,7 +972,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       console.log('Saving on form blur...');
       saveAsDraft(formValues, false).catch(console.error);
     }
-  }, [form, blocks, saveAsDraft]);
+  }, [form, saveAsDraft]); // ✅ Removed blocks - accessed via closure
 
   // Create preview quote object - only update when blocks change, not on every form field change
   const previewQuote: Quote = useMemo(() => {
@@ -996,7 +996,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     };
     console.log('MultiBlockQuoteForm: Created preview quote with updateCounter:', updateCounter, 'previewKey:', previewKey, quote);
     return quote;
-  }, [customers, projects, blocks, totalAmount, totalVAT, adminSignature, updateCounter, previewKey]);
+  }, [customers, projects, totalAmount, totalVAT, adminSignature, updateCounter, previewKey]); // ✅ Removed blocks - accessed via closure, updates via updateCounter/previewKey
 
   // Show loading state if CRM data is still loading
   if (crmLoading) {
