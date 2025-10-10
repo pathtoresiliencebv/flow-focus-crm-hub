@@ -71,7 +71,7 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
   // Auto-save timer
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout>>();
 
-  // ✅ FIX: Declare calculate functions BEFORE they are used (to prevent TDZ error)
+  // ✅ FIX: Declare ALL functions BEFORE useEffect to prevent TDZ error
   const calculateBlockTotals = (block: InvoiceBlock) => {
     const productItems = block.items.filter(item => item.type === 'product');
     block.subtotal = productItems.reduce((sum, item) => sum + (item.total || 0), 0);
@@ -87,36 +87,6 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
     const totalVAT = blocks.reduce((sum, block) => sum + block.vat_amount, 0);
     return { totalAmount, totalVAT };
   };
-
-  // ✅ useEffect hooks - must be before early return but can reference functions declared later
-  useEffect(() => {
-    // Functions will be hoisted/available at runtime
-    generateInvoiceNumber();
-    if (invoiceId) {
-      loadInvoice(invoiceId);
-    } else {
-      addBlock('product');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [invoiceId]);
-
-  useEffect(() => {
-    setPreviewKey(prev => prev + 1);
-    triggerAutoSave();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCustomerId, selectedProjectId, invoiceNumber, invoiceDate, dueDate, message, blocks]);
-
-  // ✅ Loading check AFTER all hooks (including useEffect)
-  if (crmLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Klantgegevens laden...</p>
-        </div>
-      </div>
-    );
-  }
 
   const generateInvoiceNumber = async () => {
     try {
@@ -205,32 +175,6 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
     }
   };
 
-  const triggerAutoSave = () => {
-    if (autoSaveTimer.current) {
-      clearTimeout(autoSaveTimer.current);
-    }
-    
-    autoSaveTimer.current = setTimeout(() => {
-      if (selectedCustomerId && blocks.length > 0) {
-        handleAutoSave();
-      }
-    }, 2000) as ReturnType<typeof setTimeout>;
-  };
-
-  const handleAutoSave = async () => {
-    if (!selectedCustomerId || !invoiceNumber) return;
-    
-    setAutoSaveStatus('saving');
-    try {
-      await saveInvoice(true);
-      setAutoSaveStatus('saved');
-      setTimeout(() => setAutoSaveStatus('idle'), 2000);
-    } catch (error) {
-      setAutoSaveStatus('idle');
-      console.error('Auto-save failed:', error);
-    }
-  };
-
   const addBlock = (type: 'product' | 'textblock') => {
     const newBlock: InvoiceBlock = {
       id: crypto.randomUUID(),
@@ -258,6 +202,62 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
     setBlocks([...blocks, newBlock]);
     setUpdateCounter(prev => prev + 1);
   };
+
+  const triggerAutoSave = () => {
+    if (autoSaveTimer.current) {
+      clearTimeout(autoSaveTimer.current);
+    }
+    
+    autoSaveTimer.current = setTimeout(() => {
+      if (selectedCustomerId && blocks.length > 0) {
+        handleAutoSave();
+      }
+    }, 2000) as ReturnType<typeof setTimeout>;
+  };
+
+  const handleAutoSave = async () => {
+    if (!selectedCustomerId || !invoiceNumber) return;
+    
+    setAutoSaveStatus('saving');
+    try {
+      await saveInvoice(true);
+      setAutoSaveStatus('saved');
+      setTimeout(() => setAutoSaveStatus('idle'), 2000);
+    } catch (error) {
+      setAutoSaveStatus('idle');
+      console.error('Auto-save failed:', error);
+    }
+  };
+
+  // ✅ useEffect hooks - NOW all functions are declared before
+  useEffect(() => {
+    generateInvoiceNumber();
+    if (invoiceId) {
+      loadInvoice(invoiceId);
+    } else {
+      addBlock('product');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invoiceId]);
+
+  useEffect(() => {
+    setPreviewKey(prev => prev + 1);
+    triggerAutoSave();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCustomerId, selectedProjectId, invoiceNumber, invoiceDate, dueDate, message, blocks]);
+
+  // ✅ Loading check AFTER all hooks (including useEffect)
+  if (crmLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Klantgegevens laden...</p>
+        </div>
+      </div>
+    );
+  }
+
 
   const removeBlock = (blockId: string) => {
     setBlocks(blocks.filter(block => block.id !== blockId));
