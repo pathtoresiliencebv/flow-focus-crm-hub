@@ -43,6 +43,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { TranslationProvider } from "@/contexts/TranslationContext";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { AdminSectionWrapper } from "@/components/AdminSectionWrapper";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 
@@ -109,21 +110,57 @@ function App() {
                         {/* Protected routes with Layout */}
                         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                       <Route path="/" element={<DashboardPage />} />
-                      <Route path="/customers" element={<CustomersPage />} />
+                      <Route path="/customers" element={
+                        <AdminSectionWrapper section="customers" title="Klanten">
+                          <CustomersPage />
+                        </AdminSectionWrapper>
+                      } />
                       <Route path="/customers/:customerId" element={<CustomerDetailPage />} />
-                      <Route path="/projects" element={<ProjectsPage />} />
+                      <Route path="/projects" element={
+                        <AdminSectionWrapper section="projects" title="Projecten">
+                          <ProjectsPage />
+                        </AdminSectionWrapper>
+                      } />
                       <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
-                      <Route path="/planning" element={<PlanningPage />} />
-                      <Route path="/time" element={<TimePage />} />
-                      <Route path="/receipts" element={<ReceiptsPage />} />
-                      <Route path="/quotes" element={<QuotesPage />} />
+                      <Route path="/planning" element={
+                        <AdminSectionWrapper section="planning" title="Planning">
+                          <PlanningPage />
+                        </AdminSectionWrapper>
+                      } />
+                      <Route path="/time" element={
+                        <AdminSectionWrapper section="timeRegistration" title="Tijdregistratie">
+                          <TimePage />
+                        </AdminSectionWrapper>
+                      } />
+                      <Route path="/receipts" element={
+                        <AdminSectionWrapper section="receipts" title="Bonnetjes">
+                          <ReceiptsPage />
+                        </AdminSectionWrapper>
+                      } />
+                      <Route path="/quotes" element={
+                        <AdminSectionWrapper section="quotes" title="Offertes">
+                          <QuotesPage />
+                        </AdminSectionWrapper>
+                      } />
                       <Route path="/invoices" element={<InvoicesPage />} />
-                      <Route path="/personnel" element={<PersonnelPage />} />
-                      <Route path="/users" element={<UsersPage />} />
+                      <Route path="/personnel" element={
+                        <AdminSectionWrapper section="personnel" title="Personeel">
+                          <PersonnelPage />
+                        </AdminSectionWrapper>
+                      } />
+                      <Route path="/users" element={
+                        <AdminSectionWrapper section="users" title="Gebruikers">
+                          <UsersPage />
+                        </AdminSectionWrapper>
+                      } />
                       <Route path="/email" element={<EmailPage />} />
                       <Route path="/webmail" element={<WebmailPage />} />
                       <Route path="/chat" element={<ChatPage />} />
-                      <Route path="/settings" element={<SettingsPage />} />
+                      <Route path="/settings" element={
+                        <AdminSectionWrapper section="settings" title="Instellingen">
+                          <SettingsPage />
+                        </AdminSectionWrapper>
+                      } />
                     </Route>
 
                     {/* Other protected routes without Layout */}

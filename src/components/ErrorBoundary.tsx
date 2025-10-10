@@ -1,4 +1,7 @@
-import React, { Component, ReactNode } from 'react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface Props {
   children: ReactNode;
@@ -11,35 +14,69 @@ interface State {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { hasError: false };
-  }
+  public state: State = {
+    hasError: false
+  };
 
-  static getDerivedStateFromError(error: Error): State {
+  public static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: any) {
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
-    console.error('Component stack:', errorInfo.componentStack);
-    console.error('Error stack:', error.stack);
   }
 
-  render() {
+  private handleRetry = () => {
+    this.setState({ hasError: false, error: undefined });
+  };
+
+  public render() {
     if (this.state.hasError) {
-      return this.props.fallback || (
-        <div className="flex flex-col items-center justify-center min-h-screen p-4">
-          <h1 className="text-2xl font-bold text-destructive mb-4">Er is iets misgegaan</h1>
-          <p className="text-muted-foreground mb-4">
-            De applicatie heeft een onverwachte fout ondervonden.
-          </p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
-          >
-            Pagina herladen
-          </button>
+      if (this.props.fallback) {
+        return this.props.fallback;
+      }
+
+      return (
+        <div className="flex h-screen items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                Er is een fout opgetreden
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Er is een onverwachte fout opgetreden. Probeer de pagina te vernieuwen.
+              </p>
+              
+              {this.state.error && (
+                <details className="text-xs text-muted-foreground">
+                  <summary className="cursor-pointer">Technische details</summary>
+                  <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto">
+                    {this.state.error.message}
+                  </pre>
+                </details>
+              )}
+              
+              <div className="flex gap-2">
+                <Button 
+                  onClick={this.handleRetry}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Opnieuw proberen
+                </Button>
+                <Button 
+                  onClick={() => window.location.reload()}
+                  className="flex-1"
+                >
+                  Pagina vernieuwen
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       );
     }

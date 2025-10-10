@@ -1,0 +1,287 @@
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+
+interface LoadingState {
+  customers: boolean;
+  projects: boolean;
+  planning: boolean;
+  timeRegistration: boolean;
+  receipts: boolean;
+  quotes: boolean;
+  personnel: boolean;
+  users: boolean;
+  settings: boolean;
+}
+
+interface LoadingErrors {
+  customers?: string;
+  projects?: string;
+  planning?: string;
+  timeRegistration?: string;
+  receipts?: string;
+  quotes?: string;
+  personnel?: string;
+  users?: string;
+  settings?: string;
+}
+
+export const useAdminDataLoader = () => {
+  const { profile, user } = useAuth();
+  const { toast } = useToast();
+  
+  const [loadingState, setLoadingState] = useState<LoadingState>({
+    customers: false,
+    projects: false,
+    planning: false,
+    timeRegistration: false,
+    receipts: false,
+    quotes: false,
+    personnel: false,
+    users: false,
+    settings: false,
+  });
+  
+  const [errors, setErrors] = useState<LoadingErrors>({});
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Check if user is Administrator
+  const isAdmin = profile?.role === 'Administrator';
+
+  // Generic data loader with error handling
+  const loadData = useCallback(async (
+    section: keyof LoadingState,
+    queryFn: () => Promise<any>
+  ) => {
+    if (!isAdmin) return;
+
+    try {
+      setLoadingState(prev => ({ ...prev, [section]: true }));
+      setErrors(prev => ({ ...prev, [section]: undefined }));
+      
+      await queryFn();
+      
+      setLoadingState(prev => ({ ...prev, [section]: false }));
+    } catch (error: any) {
+      console.error(`Error loading ${section}:`, error);
+      
+      const errorMessage = error?.message || `Kon ${section} niet laden`;
+      setErrors(prev => ({ ...prev, [section]: errorMessage }));
+      setLoadingState(prev => ({ ...prev, [section]: false }));
+      
+      // Show toast for critical errors
+      if (error?.code === 'PGRST301' || error?.code === '42501') {
+        toast({
+          title: "Toegang geweigerd",
+          description: `Geen toegang tot ${section}. Controleer uw rechten.`,
+          variant: "destructive",
+        });
+      }
+    }
+  }, [isAdmin, toast]);
+
+  // Load customers with proper error handling
+  const loadCustomers = useCallback(async () => {
+    await loadData('customers', async () => {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1000);
+      
+      if (error) throw error;
+      return data;
+    });
+  }, [loadData]);
+
+  // Load projects with proper error handling
+  const loadProjects = useCallback(async () => {
+    await loadData('projects', async () => {
+      const { data, error } = await supabase
+        .from('projects')
+        .select(`
+          *,
+          customers:customer_id (
+            id,
+            name,
+            email,
+            phone
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(1000);
+      
+      if (error) throw error;
+      return data;
+    });
+  }, [loadData]);
+
+  // Load planning with proper error handling
+  const loadPlanning = useCallback(async () => {
+    await loadData('planning', async () => {
+      const { data, error } = await supabase
+        .from('planning_items')
+        .select('*')
+        .order('start_date', { ascending: true });
+      
+      if (error) throw error;
+      return data;
+    });
+  }, [loadData]);
+
+  // Load receipts with proper error handling
+  const loadReceipts = useCallback(async () => {
+    await loadData('receipts', async () => {
+      const { data, error } = await supabase
+        .from('receipts')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1000);
+      
+      if (error) throw error;
+      return data;
+    });
+  }, [loadData]);
+
+  // Load quotes with proper error handling
+  const loadQuotes = useCallback(async () => {
+    await loadData('quotes', async () => {
+      const { data, error } = await supabase
+        .from('quotes')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1000);
+      
+      if (error) throw error;
+      return data;
+    });
+  }, [loadData]);
+
+  // Load users with proper error handling
+  const loadUsers = useCallback(async () => {
+    await loadData('users', async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    });
+  }, [loadData]);
+
+  // Load personnel with proper error handling
+  const loadPersonnel = useCallback(async () => {
+    await loadData('personnel', async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .in('role', ['Installateur', 'Verkoper', 'Administratie'])
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    });
+  }, [loadData]);
+
+  // Load time registration with proper error handling
+  const loadTimeRegistration = useCallback(async () => {
+    await loadData('timeRegistration', async () => {
+      const { data, error } = await supabase
+        .from('work_time_logs')
+        .select('*')
+        .order('started_at', { ascending: false })
+        .limit(1000);
+      
+      if (error) throw error;
+      return data;
+    });
+  }, [loadData]);
+
+  // Load settings with proper error handling
+  const loadSettings = useCallback(async () => {
+    await loadData('settings', async () => {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('*');
+      
+      if (error) throw error;
+      return data;
+    });
+  }, [loadData]);
+
+  // Initialize all data loading
+  const initializeData = useCallback(async () => {
+    if (!isAdmin || isInitialized) return;
+
+    console.log('🔄 useAdminDataLoader: Initializing data for Administrator...');
+    
+    try {
+      await Promise.allSettled([
+        loadCustomers(),
+        loadProjects(),
+        loadPlanning(),
+        loadReceipts(),
+        loadQuotes(),
+        loadUsers(),
+        loadPersonnel(),
+        loadTimeRegistration(),
+        loadSettings(),
+      ]);
+      
+      setIsInitialized(true);
+      console.log('✅ useAdminDataLoader: Data initialization completed');
+    } catch (error) {
+      console.error('❌ useAdminDataLoader: Error during initialization:', error);
+    }
+  }, [isAdmin, isInitialized, loadCustomers, loadProjects, loadPlanning, loadReceipts, loadQuotes, loadUsers, loadPersonnel, loadTimeRegistration, loadSettings]);
+
+  // Auto-initialize when admin is ready
+  useEffect(() => {
+    if (isAdmin && user && !isInitialized) {
+      initializeData();
+    }
+  }, [isAdmin, user, isInitialized, initializeData]);
+
+  // Get error message for a specific section
+  const getErrorMessage = (section: keyof LoadingState): string | undefined => {
+    return errors[section];
+  };
+
+  // Check if a section is loading
+  const isLoading = (section: keyof LoadingState): boolean => {
+    return loadingState[section];
+  };
+
+  // Check if any section has errors
+  const hasErrors = (): boolean => {
+    return Object.values(errors).some(error => error !== undefined);
+  };
+
+  // Get all error messages
+  const getAllErrors = (): LoadingErrors => {
+    return { ...errors };
+  };
+
+  return {
+    loadingState,
+    errors,
+    isInitialized,
+    isAdmin,
+    loadCustomers,
+    loadProjects,
+    loadPlanning,
+    loadReceipts,
+    loadQuotes,
+    loadUsers,
+    loadPersonnel,
+    loadTimeRegistration,
+    loadSettings,
+    initializeData,
+    getErrorMessage,
+    isLoading,
+    hasErrors,
+    getAllErrors,
+  };
+};
