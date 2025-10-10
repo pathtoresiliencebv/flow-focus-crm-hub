@@ -200,6 +200,9 @@ export const ProjectsBoard: React.FC<ProjectsBoardProps> = memo(({ showNewProjec
   const [selectedStatus, setSelectedStatus] = useState<ProjectStatus>("te-plannen");
   const { setTitle } = usePageHeader();
 
+  // Add error boundary for users loading
+  const { users, monteurs, isLoading: usersLoading, error: usersError } = useUsers();
+
   // Sync with prop changes
   React.useEffect(() => {
     console.log('🔄 ProjectsBoard: showNewProjectDialog changed to:', showNewProjectDialog);
@@ -220,18 +223,24 @@ export const ProjectsBoard: React.FC<ProjectsBoardProps> = memo(({ showNewProjec
   }, [isLoading, projects.length, debug]);
 
   // Show loading state while data is being fetched
-  if (isLoading) {
+  if (isLoading || usersLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600">Projecten laden...</p>
           <p className="text-xs text-gray-400 mt-2">
-            Debug: {debug?.isLoadingCustomers ? 'Customers loading' : ''} {debug?.isLoadingProjects ? 'Projects loading' : ''}
+            Debug: {debug?.isLoadingCustomers ? 'Customers loading' : ''} {debug?.isLoadingProjects ? 'Projects loading' : ''} {usersLoading ? 'Users loading' : ''}
           </p>
         </div>
       </div>
     );
+  }
+
+  // Show error state if users failed to load
+  if (usersError) {
+    console.warn('Users loading error:', usersError);
+    // Continue rendering but with empty users array
   }
 
   // If user is Installateur, show simplified view

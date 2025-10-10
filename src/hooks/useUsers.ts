@@ -10,9 +10,22 @@ interface User {
 }
 
 const fetchUsers = async (): Promise<User[]> => {
-  const { data, error } = await supabase.rpc('get_all_user_details');
-  if (error) throw error;
-  return data;
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, full_name, role, email')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.warn('Error fetching users:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (err) {
+    console.warn('Exception fetching users:', err);
+    return [];
+  }
 };
 
 export const useUsers = () => {
