@@ -14,6 +14,7 @@ import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import { ProjectMaterials } from "./ProjectMaterials";
 import { ProjectPersonnel } from "./ProjectPersonnel";
+import { ProjectActivities } from "./ProjectActivities";
 
 const ProjectDetail = () => {
   const { projectId } = useParams();
@@ -325,47 +326,8 @@ const ProjectDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Activiteit */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Activiteit</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {loadingData ? (
-                  <p className="text-sm text-muted-foreground">Laden...</p>
-                ) : activities.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nog geen activiteit</p>
-                ) : (
-                  <div className="space-y-3">
-                    {activities.map((activity, idx) => (
-                      <div key={idx} className="flex gap-3 text-sm">
-                        <div className="mt-1">
-                          {activity.status === 'voltooid' ? (
-                            <CheckCircle2 className="h-4 w-4 text-green-600" />
-                          ) : (
-                            <Edit className="h-4 w-4 text-blue-600" />
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm">
-                            <span className="font-medium">{activity.assignee?.full_name || 'Iemand'}</span>
-                            {' '}
-                            {activity.status === 'voltooid' ? 'heeft de taak' : 'heeft de status van'}
-                            {' '}
-                            <span className="font-medium">'{activity.title}'</span>
-                            {' '}
-                            {activity.status === 'voltooid' ? 'voltooid' : 'gewijzigd'}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {format(new Date(activity.updated_at), "d MMMM 'om' HH:mm", { locale: nl })}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {/* Activiteit - New Component with Database Integration */}
+            <ProjectActivities projectId={projectId!} />
           </div>
         </div>
 
