@@ -241,43 +241,43 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   }, []);
 
   const addBlock = useCallback(() => {
-    const newBlock: QuoteBlock = {
-      id: crypto.randomUUID(),
-      title: `Blok ${blocks.length + 1}`,
-      type: 'product',
-      items: [],
-      subtotal: 0,
-      vat_amount: 0,
-      order_index: blocks.length
-    };
-    console.log('MultiBlockQuoteForm: Adding new block:', newBlock);
     setBlocks(prevBlocks => {
+      const newBlock: QuoteBlock = {
+        id: crypto.randomUUID(),
+        title: `Blok ${prevBlocks.length + 1}`,
+        type: 'product',
+        items: [],
+        subtotal: 0,
+        vat_amount: 0,
+        order_index: prevBlocks.length
+      };
+      console.log('MultiBlockQuoteForm: Adding new block:', newBlock);
       const newBlocks = [...prevBlocks, newBlock];
       console.log('MultiBlockQuoteForm: New blocks state:', newBlocks);
       return newBlocks;
     });
     forcePreviewUpdate();
-  }, [blocks.length, forcePreviewUpdate]);
+  }, [forcePreviewUpdate]);
 
   const addTextBlock = useCallback(() => {
-    const newTextBlock: QuoteBlock = {
-      id: crypto.randomUUID(),
-      title: 'Tekstblok',
-      type: 'textblock',
-      items: [],
-      subtotal: 0,
-      vat_amount: 0,
-      order_index: blocks.length,
-      content: ''
-    };
-    console.log('MultiBlockQuoteForm: Adding new text block:', newTextBlock);
     setBlocks(prevBlocks => {
+      const newTextBlock: QuoteBlock = {
+        id: crypto.randomUUID(),
+        title: 'Tekstblok',
+        type: 'textblock',
+        items: [],
+        subtotal: 0,
+        vat_amount: 0,
+        order_index: prevBlocks.length,
+        content: ''
+      };
+      console.log('MultiBlockQuoteForm: Adding new text block:', newTextBlock);
       const newBlocks = [...prevBlocks, newTextBlock];
       console.log('MultiBlockQuoteForm: New blocks state:', newBlocks);
       return newBlocks;
     });
     forcePreviewUpdate();
-  }, [blocks.length, forcePreviewUpdate]);
+  }, [forcePreviewUpdate]);
 
   const updateBlock = useCallback((index: number, updatedBlock: QuoteBlock) => {
     console.log('MultiBlockQuoteForm: Updating block at index', index, 'with block:', updatedBlock);
@@ -306,16 +306,17 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   }, [forcePreviewUpdate]);
 
   const deleteBlock = useCallback((index: number) => {
-    if (blocks.length > 1) {
-      console.log('MultiBlockQuoteForm: Deleting block at index:', index);
-      setBlocks(prevBlocks => {
+    setBlocks(prevBlocks => {
+      if (prevBlocks.length > 1) {
+        console.log('MultiBlockQuoteForm: Deleting block at index:', index);
         const newBlocks = prevBlocks.filter((_, i) => i !== index);
         console.log('MultiBlockQuoteForm: Blocks after deletion:', newBlocks);
         return newBlocks;
-      });
-      forcePreviewUpdate();
-    }
-  }, [blocks.length, forcePreviewUpdate]);
+      }
+      return prevBlocks;
+    });
+    forcePreviewUpdate();
+  }, [forcePreviewUpdate]);
 
   const handleDragEnd = useCallback((result: DropResult) => {
     if (!result.destination) {
