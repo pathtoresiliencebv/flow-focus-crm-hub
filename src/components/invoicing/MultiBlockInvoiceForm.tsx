@@ -528,6 +528,19 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
     message: message,
     payment_terms: paymentTerms,
     blocks: blocks,
+    // Convert blocks to invoice_items for preview
+    invoice_items: blocks.flatMap(block => 
+      block.items.map(item => ({
+        id: item.id,
+        type: item.type,
+        description: item.description,
+        quantity: item.quantity || 1,
+        unit_price: item.unit_price || 0,
+        vat_rate: item.vat_rate || 0,
+        total: item.total || 0,
+        formatting: item.formatting
+      }))
+    ),
     total_amount: totalAmount,
     total_vat_amount: totalVAT,
     status: 'concept'
