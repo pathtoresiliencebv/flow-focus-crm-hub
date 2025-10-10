@@ -70,21 +70,6 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
   
   // Auto-save timer
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout>>();
-  
-  useEffect(() => {
-    generateInvoiceNumber();
-    if (invoiceId) {
-      loadInvoice(invoiceId);
-    } else {
-      // Start with one empty product block
-      addBlock('product');
-    }
-  }, [invoiceId]);
-
-  useEffect(() => {
-    setPreviewKey(prev => prev + 1);
-    triggerAutoSave();
-  }, [selectedCustomerId, selectedProjectId, invoiceNumber, invoiceDate, dueDate, message, blocks]);
 
   // ✅ Loading check AFTER all hooks
   if (crmLoading) {
@@ -526,6 +511,22 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
     total_vat_amount: totalVAT,
     status: 'concept'
   };
+
+  // ✅ useEffect hooks AFTER all function declarations but BEFORE JSX return
+  useEffect(() => {
+    generateInvoiceNumber();
+    if (invoiceId) {
+      loadInvoice(invoiceId);
+    } else {
+      // Start with one empty product block
+      addBlock('product');
+    }
+  }, [invoiceId]);
+
+  useEffect(() => {
+    setPreviewKey(prev => prev + 1);
+    triggerAutoSave();
+  }, [selectedCustomerId, selectedProjectId, invoiceNumber, invoiceDate, dueDate, message, blocks]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">

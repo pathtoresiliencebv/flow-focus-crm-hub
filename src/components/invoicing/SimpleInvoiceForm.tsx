@@ -68,13 +68,6 @@ export const SimpleInvoiceForm: React.FC<SimpleInvoiceFormProps> = ({
   const subtotal = totalAmount / (1 + vatRate / 100);
   const vatAmount = totalAmount - subtotal;
 
-  // Load existing invoice if editing
-  useEffect(() => {
-    if (invoiceId) {
-      loadInvoice();
-    }
-  }, [invoiceId]);
-
   // ✅ Loading check AFTER all hooks
   if (crmLoading) {
     return (
@@ -225,6 +218,13 @@ export const SimpleInvoiceForm: React.FC<SimpleInvoiceFormProps> = ({
   const customer = customers.find(c => c.id === selectedCustomerId);
   const project = watch('project_id') ? projects.find(p => p.id === watch('project_id')) : null;
   
+  // ✅ useEffect AFTER all function declarations but BEFORE JSX return
+  useEffect(() => {
+    if (invoiceId) {
+      loadInvoice();
+    }
+  }, [invoiceId]);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
       {/* Left side - Form */}
