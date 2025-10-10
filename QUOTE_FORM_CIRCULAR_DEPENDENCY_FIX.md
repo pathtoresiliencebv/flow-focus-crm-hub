@@ -3,13 +3,30 @@
 ## Problem
 Users were getting "Er is iets misgegaan" error with `ReferenceError: Cannot access 'C' before initialization` when trying to create new quotes or invoices.
 
-## Root Cause
-In `MultiBlockQuoteForm.tsx`, **MULTIPLE hooks** had circular dependencies with the `blocks` state variable:
-1. Multiple `useCallback` hooks accessed `blocks` or `blocks.length` AND listed `blocks` in dependency arrays
-2. Multiple `useMemo` hooks accessed `blocks` AND listed `blocks` in dependency arrays  
-3. `useEffect` hooks had `blocks` in their dependency arrays
+## Root Cause Analysis
 
-During production build minification, this created variable reference loops causing the initialization error.
+### Initial Diagnosis (Incorrect)
+Initially thought the issue was in `MultiBlockQuoteForm.tsx` with circular dependencies in the `blocks` state variable.
+
+### Actual Root Cause (Correct) ✅
+The REAL problem was in **`QuoteBlockForm.tsx`** - a **Temporal Dead Zone (TDZ) / Hoisting Error**:
+
+```typescript
+// ❌ WRONG - Functions used before declaration
+const handleAddItem = useCallback((type) => {
+  // ... uses calculateBlockSubtotal and calculateBlockVAT
+}, [block, onUpdateBlock, calculateBlockSubtotal, calculateBlockVAT]);
+//                       ^^^^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^
+//                       THESE DON'T EXIST YET!
+
+// Declared AFTER handleAddItem
+const calculateBlockSubtotal = useCallback(...);
+const calculateBlockVAT = useCallback(...);
+```
+
+During JavaScript minification/bundling, `useCallback` dependencies are evaluated **at declaration time**. When `handleAddItem` tries to reference `calculateBlockSubtotal` and `calculateBlockVAT` in its dependency array, those functions haven't been declared yet - they're in the **Temporal Dead Zone**.
+
+This caused `ReferenceError: Cannot access 'C' before initialization` where 'C' was the minified name for one of the calculate functions.
 
 ## Solution
 Removed `blocks` from ALL dependency arrays and used alternative approaches:
@@ -62,9 +79,11 @@ const deleteBlock = useCallback((index: number) => {
 }, [forcePreviewUpdate]);
 ```
 
-### Changes Made - Phase 2 (Complete Fix)
+### Changes Made - Phase 2 (Continued Fixes - Not the Root Cause)
 
 After deployment of Phase 1, the error persisted. Investigation revealed MORE circular dependencies with `blocks`:
+
+**Note: These fixes were good practice but did NOT resolve the actual error!**
 
 #### 4. Fixed `totalAmount` useMemo (line 348-352)
 **Before:** `}, [blocks, updateCounter]);`  
@@ -113,10 +132,63 @@ After deployment of Phase 1, the error persisted. Investigation revealed MORE ci
 - Removed blocks, accessed via closure
 - Updates triggered by updateCounter and previewKey changes
 
-## Summary of All Fixes
-**Total circular dependencies fixed: 12**
+### Changes Made - Phase 3 (THE ACTUAL FIX) ✅
 
-### Callbacks Fixed (8):
+After deeper investigation, found the **REAL ROOT CAUSE** in `QuoteBlockForm.tsx`:
+
+#### 13. Fixed Function Declaration Order in QuoteBlockForm.tsx
+
+**The Problem:**
+Multiple callbacks (`handleAddItem`, `handleInputBlur`, `handleDeleteItem`, `updateQuantity`) had `calculateBlockSubtotal` and `calculateBlockVAT` in their dependency arrays, but those functions were declared AFTER the callbacks that used them.
+
+**The Fix:**
+Moved `calculateBlockSubtotal` and `calculateBlockVAT` declarations BEFORE all callbacks that use them:
+
+```typescript
+// ✅ CORRECT ORDER - Declare calculate functions FIRST
+const calculateBlockSubtotal = useCallback((items: QuoteItem[]): number => {
+  return items.reduce((sum, item) => {
+    if (item.type === 'product') {
+      return sum + (item.unit_price * item.quantity);
+    }
+    return sum;
+  }, 0);
+}, []);
+
+const calculateBlockVAT = useCallback((items: QuoteItem[]): number => {
+  return items.reduce((sum, item) => {
+    if (item.type === 'product') {
+      return sum + ((item.unit_price * item.quantity) * (item.vat_rate / 100));
+    }
+    return sum;
+  }, 0);
+}, []);
+
+// NOW these can reference the calculate functions safely
+const handleAddItem = useCallback((type: 'product' | 'textblock') => {
+  const updatedItems = [...block.items, newItem];
+  const updatedBlock: QuoteBlock = {
+    ...block,
+    items: updatedItems,
+    subtotal: calculateBlockSubtotal(updatedItems), // ✅ Now defined
+    vat_amount: calculateBlockVAT(updatedItems)      // ✅ Now defined
+  };
+  onUpdateBlock(updatedBlock);
+}, [block, onUpdateBlock, calculateBlockSubtotal, calculateBlockVAT]);
+```
+
+## Summary of All Fixes
+
+### The Root Cause Fix (What Actually Solved It) ✅
+**File: `QuoteBlockForm.tsx`**
+- **Issue**: Temporal Dead Zone - functions used in dependencies before declaration
+- **Fix**: Moved `calculateBlockSubtotal` and `calculateBlockVAT` BEFORE all callbacks that reference them
+- **Impact**: Resolved the `ReferenceError: Cannot access 'C' before initialization` error
+
+### Additional Improvements (Good Practice, But Not The Root Cause)
+**Total circular dependencies cleaned in MultiBlockQuoteForm.tsx: 12**
+
+#### Callbacks Fixed (8):
 1. `addBlock` - Use functional state update
 2. `addTextBlock` - Use functional state update  
 3. `deleteBlock` - Use functional state update
@@ -126,18 +198,26 @@ After deployment of Phase 1, the error persisted. Investigation revealed MORE ci
 7. `handleSaveDraft` - Remove blocks from deps
 8. `handleFormBlur` - Remove blocks from deps
 
-### Memos Fixed (3):
+#### Memos Fixed (3):
 9. `totalAmount` - Remove blocks, use updateCounter
 10. `totalVAT` - Remove blocks, use updateCounter
 11. `previewQuote` - Remove blocks, use updateCounter/previewKey
 
-### Effects Fixed (1):
+#### Effects Fixed (1):
 12. Debug useEffect - Use updateCounter instead of blocks
 
 ## Files Modified
+
+### Critical Fix (Solved The Problem) ✅
+- **`flow-focus-crm-hub/src/components/quotes/QuoteBlockForm.tsx`** (Commit 185e318)
+  - Moved calculate functions before their usage
+  - Fixed Temporal Dead Zone / hoisting error
+  - **This was the actual cause of the error!**
+
+### Additional Improvements (Good Practice)
 - `flow-focus-crm-hub/src/components/quotes/MultiBlockQuoteForm.tsx` (2 commits)
-  - Commit 1 (c6d16ef): Fixed addBlock, addTextBlock, deleteBlock
-  - Commit 2 (e9cb734): Fixed ALL remaining circular dependencies
+  - Commit c6d16ef: Fixed addBlock, addTextBlock, deleteBlock
+  - Commit e9cb734: Fixed ALL remaining circular dependencies with blocks
 
 ## Files Verified (No Changes Needed)
 - `flow-focus-crm-hub/src/components/invoicing/MultiBlockInvoiceForm.tsx` - Uses regular functions, not `useCallback`, so no circular dependency issue
@@ -150,10 +230,28 @@ After deployment of Phase 1, the error persisted. Investigation revealed MORE ci
 - ✅ Closure access pattern implemented for state reads
 - ✅ Update tracking via updateCounter and previewKey
 
-## Best Practice
-**Never reference state variables directly inside useCallback when they're also in the dependency array.**
+## Best Practices Learned
 
-Always use functional state updates to access current state inside callbacks:
+### 1. Function Declaration Order Matters! ⚠️
+**ALWAYS declare functions BEFORE they are referenced in dependency arrays:**
+
+```typescript
+// ✅ CORRECT - Declare helper functions FIRST
+const helperFunction = useCallback(() => { ... }, []);
+const mainFunction = useCallback(() => {
+  helperFunction(); // Safe - already declared
+}, [helperFunction]);
+
+// ❌ WRONG - Temporal Dead Zone Error
+const mainFunction = useCallback(() => {
+  helperFunction(); // Error - doesn't exist yet!
+}, [helperFunction]);
+const helperFunction = useCallback(() => { ... }, []);
+```
+
+### 2. Avoid Circular State Dependencies
+**Never reference state variables directly inside useCallback when they're also in the dependency array:**
+
 ```typescript
 // ✅ CORRECT
 const updateSomething = useCallback(() => {
@@ -170,6 +268,20 @@ const updateSomething = useCallback(() => {
 }, [state.something]); // circular dependency
 ```
 
+### 3. Check Minified Error Stack Traces
+When you see errors like `Cannot access 'C' before initialization` in production:
+- The variable name is minified
+- Look for **hoisting issues** and **declaration order problems**
+- The error happens during module initialization, not runtime
+
 ## Impact
-Users can now successfully create new quotes and invoices without initialization errors.
+✅ Users can now successfully create new quotes and invoices without initialization errors!
+
+## Debugging Process
+1. **Initial assumption**: Circular dependency in `blocks` state (incorrect)
+2. **Secondary fixes**: Removed all `blocks` from dependency arrays (good practice, but didn't solve it)
+3. **Deep investigation**: Found the ACTUAL issue in `QuoteBlockForm.tsx` function declaration order
+4. **Root cause**: Temporal Dead Zone error from referencing functions before declaration
+
+**Lesson:** Always investigate the FULL call stack and all related components when debugging minified production errors!
 
