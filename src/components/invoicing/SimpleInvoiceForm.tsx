@@ -380,7 +380,6 @@ export const SimpleInvoiceForm: React.FC<SimpleInvoiceFormProps> = ({
             </CardContent>
           </Card>
         )}
-      </div>
 
           {/* Actions */}
           <div className="flex gap-2 pt-4">
