@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useAdminDataLoader } from '@/hooks/useAdminDataLoader';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -114,6 +114,17 @@ export const AdminSectionWrapper: React.FC<AdminSectionWrapperProps> = ({
     );
   }
 
-  // Show normal content
-  return <>{children}</>;
+  // Show normal content with Suspense for error boundary
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">{title} laden...</p>
+        </div>
+      </div>
+    }>
+      {children}
+    </Suspense>
+  );
 };

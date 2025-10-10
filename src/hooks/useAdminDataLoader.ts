@@ -60,9 +60,10 @@ export const useAdminDataLoader = () => {
       setLoadingState(prev => ({ ...prev, [section]: true }));
       setErrors(prev => ({ ...prev, [section]: undefined }));
       
-      await queryFn();
+      const result = await queryFn();
       
       setLoadingState(prev => ({ ...prev, [section]: false }));
+      return result;
     } catch (error: any) {
       console.error(`Error loading ${section}:`, error);
       
@@ -78,6 +79,8 @@ export const useAdminDataLoader = () => {
           variant: "destructive",
         });
       }
+      
+      throw error; // Re-throw to be caught by error boundary
     }
   }, [isAdmin, toast]);
 

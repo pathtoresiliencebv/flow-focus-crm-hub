@@ -117,9 +117,11 @@ function App() {
                       } />
                       <Route path="/customers/:customerId" element={<CustomerDetailPage />} />
                       <Route path="/projects" element={
-                        <AdminSectionWrapper section="projects" title="Projecten">
-                          <ProjectsPage />
-                        </AdminSectionWrapper>
+                        <ErrorBoundary>
+                          <AdminSectionWrapper section="projects" title="Projecten">
+                            <ProjectsPage />
+                          </AdminSectionWrapper>
+                        </ErrorBoundary>
                       } />
                       <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
                       <Route path="/planning" element={

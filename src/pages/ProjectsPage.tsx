@@ -3,6 +3,7 @@ import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { ProjectsBoard } from "@/components/ProjectsBoard";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function ProjectsPage() {
   const { setTitle, setActions } = usePageHeader();
@@ -33,10 +34,12 @@ export default function ProjectsPage() {
   }, [setTitle, setActions]); // Remove handleNewProject from dependencies
 
   return (
-    <ProjectsBoard 
-      showNewProjectDialog={showNewProjectDialog}
-      onCloseNewProjectDialog={() => setShowNewProjectDialog(false)}
-    />
+    <ErrorBoundary>
+      <ProjectsBoard 
+        showNewProjectDialog={showNewProjectDialog}
+        onCloseNewProjectDialog={() => setShowNewProjectDialog(false)}
+      />
+    </ErrorBoundary>
   );
 }
 
