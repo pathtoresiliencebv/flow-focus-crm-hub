@@ -53,7 +53,8 @@ export function SimplifiedPlanningManagement({
   const [showProjectSidebar, setShowProjectSidebar] = useState(false);
   const [showConflictDialog, setShowConflictDialog] = useState(false);
   const [selectedProject, setSelectedProject] = useState<any>(null);
-  const [selectedMonteur, setSelectedMonteur] = useState<string>('');
+  const [selectedMonteur, setSelectedMonteur] = useState<string>(''); // Primary monteur
+  const [additionalMonteurs, setAdditionalMonteurs] = useState<string[]>([]); // Extra monteurs
   const [selectedLocation, setSelectedLocation] = useState<any>(null);
   const [selectedDuration, setSelectedDuration] = useState<number>(240); // Default 4 hours
   const [calculatedTimes, setCalculatedTimes] = useState<{
@@ -258,12 +259,45 @@ export function SimplifiedPlanningManagement({
   const savePlanning = async (planningData: any) => {
     try {
       console.log('💾 Saving planning with data:', planningData);
-      await addPlanningItem(planningData);
-      console.log('✅ Planning saved successfully!');
+      
+      // Step 1: Save main planning item
+      const { data: savedPlanning, error: planningError } = await supabase
+        .from('planning_items')
+        .insert(planningData)
+        .select()
+        .single();
+
+      if (planningError) throw planningError;
+      
+      console.log('✅ Planning saved successfully! ID:', savedPlanning.id);
+
+      // Step 2: Save additional monteurs to planning_participants
+      if (additionalMonteurs.length > 0) {
+        console.log(`👥 Saving ${additionalMonteurs.length} additional monteurs...`);
+        
+        const participants = additionalMonteurs.map(userId => ({
+          planning_item_id: savedPlanning.id,
+          user_id: userId,
+          role: 'monteur'
+        }));
+
+        const { error: participantsError } = await supabase
+          .from('planning_participants')
+          .insert(participants);
+
+        if (participantsError) {
+          console.error('⚠️ Error saving participants:', participantsError);
+          // Don't fail completely, just log
+        } else {
+          console.log(`✅ Saved ${additionalMonteurs.length} additional monteurs`);
+        }
+      }
 
       toast({
         title: "✅ Planning toegevoegd!",
-        description: `Planning is succesvol toegevoegd voor ${format(new Date(planningData.start_date), 'dd MMMM yyyy', { locale: nl })}.`,
+        description: additionalMonteurs.length > 0
+          ? `Planning toegevoegd voor ${format(new Date(planningData.start_date), 'dd MMMM yyyy', { locale: nl })} met ${additionalMonteurs.length + 1} monteur(s).`
+          : `Planning is succesvol toegevoegd voor ${format(new Date(planningData.start_date), 'dd MMMM yyyy', { locale: nl })}.`,
       });
       
       // Reset state
@@ -271,6 +305,7 @@ export function SimplifiedPlanningManagement({
       setShowProjectSidebar(false);
       setSelectedProject(null);
       setSelectedMonteur('');
+      setAdditionalMonteurs([]); // ✅ Reset additional monteurs
       setSelectedLocation(null);
       setShowConflictDialog(false);
       setPendingPlanningData(null);
@@ -512,34 +547,83 @@ export function SimplifiedPlanningManagement({
               </Popover>
             </div>
 
-            {/* Monteur Selector */}
-            <div>
-              <Label htmlFor="monteur">Monteur *</Label>
-              <Select 
-                value={selectedMonteur || 'none'} 
-                onValueChange={(value) => {
-                  console.log('🔧 Monteur geselecteerd:', value);
-                  if (value === 'none') {
-                    setSelectedMonteur('');
-                  } else {
-                    setSelectedMonteur(value);
-                  }
-                }}
-              >
-                <SelectTrigger className={!selectedMonteur ? 'border-red-300' : ''}>
-                  <SelectValue placeholder="Selecteer een monteur" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none" disabled>Selecteer een monteur</SelectItem>
-                  {installers.map((installer) => (
-                    <SelectItem key={installer.id} value={installer.id}>
-                      {installer.full_name || installer.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {!selectedMonteur && (
-                <p className="text-xs text-red-500 mt-1">Selecteer een monteur om de planning aan te maken</p>
+            {/* Monteur Selector - Multi-select */}
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="monteur">Hoofd Monteur *</Label>
+                <Select 
+                  value={selectedMonteur || 'none'} 
+                  onValueChange={(value) => {
+                    console.log('🔧 Hoofd monteur geselecteerd:', value);
+                    if (value === 'none') {
+                      setSelectedMonteur('');
+                    } else {
+                      setSelectedMonteur(value);
+                      // Remove from additional monteurs if was selected there
+                      setAdditionalMonteurs(prev => prev.filter(id => id !== value));
+                    }
+                  }}
+                >
+                  <SelectTrigger className={!selectedMonteur ? 'border-red-300' : ''}>
+                    <SelectValue placeholder="Selecteer hoofd monteur" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none" disabled>Selecteer hoofd monteur</SelectItem>
+                    {installers.map((installer) => (
+                      <SelectItem key={installer.id} value={installer.id}>
+                        {installer.full_name || installer.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!selectedMonteur && (
+                  <p className="text-xs text-red-500 mt-1">Selecteer een hoofd monteur</p>
+                )}
+              </div>
+
+              {/* Additional Monteurs (Optional) */}
+              {selectedMonteur && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <Label className="text-sm font-medium text-blue-900 mb-2 block">
+                    Extra Monteurs (Optioneel)
+                  </Label>
+                  <p className="text-xs text-blue-600 mb-2">
+                    Selecteer extra monteurs die mee gaan. Deze planning verschijnt ook in hun agenda.
+                  </p>
+                  <div className="space-y-2 max-h-[120px] overflow-y-auto">
+                    {installers
+                      .filter(installer => installer.id !== selectedMonteur)
+                      .map((installer) => (
+                        <label
+                          key={installer.id}
+                          className="flex items-center gap-2 p-2 rounded hover:bg-blue-100 cursor-pointer transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={additionalMonteurs.includes(installer.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setAdditionalMonteurs(prev => [...prev, installer.id]);
+                                console.log('➕ Extra monteur toegevoegd:', installer.full_name);
+                              } else {
+                                setAdditionalMonteurs(prev => prev.filter(id => id !== installer.id));
+                                console.log('➖ Extra monteur verwijderd:', installer.full_name);
+                              }
+                            }}
+                            className="rounded border-blue-300"
+                          />
+                          <span className="text-sm text-gray-700">
+                            {installer.full_name || installer.email}
+                          </span>
+                        </label>
+                      ))}
+                  </div>
+                  {additionalMonteurs.length > 0 && (
+                    <p className="text-xs text-blue-700 mt-2 font-medium">
+                      ✓ {additionalMonteurs.length} extra monteur{additionalMonteurs.length !== 1 ? 's' : ''} geselecteerd
+                    </p>
+                  )}
+                </div>
               )}
             </div>
             
