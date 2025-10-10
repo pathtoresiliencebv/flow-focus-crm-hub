@@ -60,7 +60,7 @@ const queryClient = new QueryClient({
 
 // Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading, profile, session } = useAuth();
+  const { isAuthenticated, isLoading, profile, session, user } = useAuth();
   const isMobile = useIsMobile();
 
   // Show loading state while checking authentication
@@ -75,8 +75,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Only redirect to login if we're sure there's no session
-  if (!isAuthenticated || !session) {
+  // More robust auth check - check both user and session
+  if (!user || !session || !isAuthenticated) {
+    console.log('🔐 Auth check failed:', { user: !!user, session: !!session, isAuthenticated });
     return <LoginScreen />;
   }
 
