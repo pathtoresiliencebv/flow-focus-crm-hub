@@ -55,13 +55,15 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   const { customers, projects, isLoading: crmLoading, addCustomer } = useCrmStore();
   const { user } = useAuth();
   
-  // DEBUG: Log customers data
+  // DEBUG: Log customers data - only log once on mount
   React.useEffect(() => {
-    console.log('🔍 MultiBlockQuoteForm: CRM Loading:', crmLoading);
-    console.log('🔍 MultiBlockQuoteForm: Customers:', customers);
-    console.log('🔍 MultiBlockQuoteForm: Customers count:', customers?.length);
-    console.log('🔍 MultiBlockQuoteForm: Customers sample:', customers?.slice(0, 3));
-  }, [customers, crmLoading]);
+    if (!crmLoading) {
+      console.log('🔍 MultiBlockQuoteForm: CRM Loading:', crmLoading);
+      console.log('🔍 MultiBlockQuoteForm: Customers:', customers);
+      console.log('🔍 MultiBlockQuoteForm: Customers count:', customers?.length);
+      console.log('🔍 MultiBlockQuoteForm: Customers sample:', customers?.slice(0, 3));
+    }
+  }, [crmLoading]); // ✅ Only depend on loading state, not customers array
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -104,22 +106,16 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     },
   });
 
-  // ✅ Show loader while CRM data is loading
-  if (crmLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Klantgegevens laden...</p>
-        </div>
-      </div>
-    );
-  }
-
   // Initialize form with existing quote data or generate new quote number
+  // ✅ Use ref to track initialization and prevent infinite loops
+  const isInitialized = useRef(false);
+  
   useEffect(() => {
     // Only proceed if CRM data is loaded
     if (crmLoading) return;
+    
+    // Only initialize once
+    if (isInitialized.current) return;
     
     if (existingQuote) {
       console.log('📝 Loading existing quote:', existingQuote.id);
@@ -150,6 +146,8 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
       if (existingQuote.attachments) {
         setAttachments(Array.isArray(existingQuote.attachments) ? existingQuote.attachments : []);
       }
+      
+      isInitialized.current = true;
     } else {
         // Generate unique quote number for new quotes
       const generateQuoteNumber = async () => {
@@ -200,8 +198,9 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         }
       };
       generateQuoteNumber();
+      isInitialized.current = true;
     }
-  }, [form, existingQuote, crmLoading]);
+  }, [existingQuote, crmLoading]); // ✅ Removed 'form' from dependencies
 
   // Add default attachments for new quotes (only once)
   const attachmentsInitialized = useRef(false);
@@ -224,9 +223,15 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         console.log('✅ MultiBlockQuoteForm: Adding default attachments:', defaultAttachments);
         setAttachments(defaultAttachments);
         attachmentsInitialized.current = true;
+      } else {
+        // Mark as initialized even if no attachments to prevent re-running
+        attachmentsInitialized.current = true;
       }
+    } else if (!quoteSettingsLoading) {
+      // Mark as initialized if settings are loaded but no attachments needed
+      attachmentsInitialized.current = true;
     }
-  }, [existingQuote, quoteSettings, quoteSettingsLoading]);
+  }, [existingQuote, quoteSettingsLoading]); // ✅ Removed quoteSettings object from dependencies
 
   // Remove continuous auto-save - now using blur-based saving
 
@@ -547,7 +552,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [form, blocks, saveAsDraft]);
+  }, []); // ✅ Empty deps - event handler accesses latest values via closure
 
   const saveAndPrepareToSend = useCallback(async (values: z.infer<typeof formSchema>, quoteId?: string) => {
     setSaving(true);
@@ -868,18 +873,18 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     }
   };
 
-  // ✅ FIX: Safely compute filtered projects without root-level watch
+  // ✅ FIX: Watch customer BEFORE useMemo to prevent infinite loop
+  const selectedCustomerId = form.watch('customer');
+  
+  // Filter projects based on selected customer
   const filteredProjects = useMemo(() => {
-    // Get customer ID inside useMemo to avoid initialization issues
-    const currentCustomerId = form.getValues('customer');
+    if (!selectedCustomerId || !projects || !customers) return [];
     
-    if (!currentCustomerId || !projects || !customers) return [];
-    
-    const selectedCustomer = customers.find(c => c.id === currentCustomerId);
+    const selectedCustomer = customers.find(c => c.id === selectedCustomerId);
     if (!selectedCustomer) return [];
     
     return projects.filter(project => project.customer === selectedCustomer.name);
-  }, [form.watch('customer'), projects, customers]); // Watch inside dependency array
+  }, [selectedCustomerId, projects, customers]); // ✅ Use watched value, not form.watch() call
 
   const handleCustomerAdded = async (customer: any) => {
     console.log('✅ Customer added:', customer);
