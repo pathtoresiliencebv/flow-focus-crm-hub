@@ -19,6 +19,7 @@ interface CustomerFormProps {
 
 export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) => {
   const { addCustomer, updateCustomer } = useCrmStore();
+  const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: existingCustomer?.name || "",
     email: existingCustomer?.email || "",
@@ -80,16 +81,24 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSaving(true);
     
-    if (existingCustomer) {
-      updateCustomer(existingCustomer.id, formData);
-    } else {
-      addCustomer(formData);
+    try {
+      if (existingCustomer) {
+        await updateCustomer(existingCustomer.id, formData);
+      } else {
+        await addCustomer(formData);
+      }
+      
+      // ✅ Close only AFTER successful save and query invalidation
+      onClose();
+    } catch (error) {
+      console.error('Error saving customer:', error);
+      // Toast is already shown by useCrmStore mutation
+      setIsSaving(false); // Re-enable button on error
     }
-    
-    onClose();
   };
 
   return (
@@ -367,11 +376,11 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
       </Tabs>
       
       <DialogFooter className="mt-4">
-        <Button variant="outline" type="button" onClick={onClose} className="h-9">
+        <Button variant="outline" type="button" onClick={onClose} className="h-9" disabled={isSaving}>
           Annuleren
         </Button>
-        <Button type="submit" className="h-9">
-          {existingCustomer ? "Bijwerken" : "Toevoegen"}
+        <Button type="submit" className="h-9" disabled={isSaving}>
+          {isSaving ? 'Opslaan...' : existingCustomer ? 'Bijwerken' : 'Toevoegen'}
         </Button>
       </DialogFooter>
     </form>
