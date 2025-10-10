@@ -219,58 +219,71 @@ export const SimpleInvoiceForm: React.FC<SimpleInvoiceFormProps> = ({
     p => p.customer_id === selectedCustomerId
   );
 
+  // Preview invoice object
+  const customer = customers.find(c => c.id === selectedCustomerId);
+  const project = watch('project_id') ? projects.find(p => p.id === watch('project_id')) : null;
+  
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="space-y-4">
-        {/* Customer Selection */}
-        <div className="space-y-2">
-          <Label htmlFor="customer_id">Klant *</Label>
-          <Select
-            value={selectedCustomerId}
-            onValueChange={(value) => {
-              setSelectedCustomerId(value);
-              setValue('customer_id', value);
-              setValue('project_id', ''); // Reset project when customer changes
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Selecteer een klant" />
-            </SelectTrigger>
-            <SelectContent>
-              {customers.map((customer) => (
-                <SelectItem key={customer.id} value={customer.id}>
-                  {customer.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.customer_id && (
-            <p className="text-sm text-red-500">Klant is verplicht</p>
-          )}
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
+      {/* Left side - Form */}
+      <div className="lg:col-span-2 space-y-4 pr-2">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-medium">Nieuwe factuur</h3>
+          <div className="px-3 py-1 rounded-lg text-sm font-medium bg-gray-100 text-gray-800">
+            Concept
+          </div>
         </div>
 
-        {/* Project Selection (Optional) */}
-        {selectedCustomerId && customerProjects.length > 0 && (
-          <div className="space-y-2">
-            <Label htmlFor="project_id">Project (optioneel)</Label>
-            <Select
-              value={watch('project_id')}
-              onValueChange={(value) => setValue('project_id', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecteer een project" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Geen project</SelectItem>
-                {customerProjects.map((project) => (
-                  <SelectItem key={project.id} value={project.id}>
-                    {project.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {/* Customer & Project */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="customer_id">Klant *</Label>
+              <Select
+                value={selectedCustomerId}
+                onValueChange={(value) => {
+                  setSelectedCustomerId(value);
+                  setValue('customer_id', value);
+                  setValue('project_id', '');
+                }}
+              >
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue placeholder="Selecteer klant" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customers.map((customer) => (
+                    <SelectItem key={customer.id} value={customer.id}>
+                      {customer.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.customer_id && (
+                <p className="text-sm text-red-500 mt-1">Klant is verplicht</p>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="project_id">Project</Label>
+              <Select
+                value={watch('project_id') || ''}
+                onValueChange={(value) => setValue('project_id', value)}
+                disabled={!selectedCustomerId || customerProjects.length === 0}
+              >
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue placeholder="Selecteer project" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Geen project</SelectItem>
+                  {customerProjects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        )}
 
         {/* Dates */}
         <div className="grid grid-cols-2 gap-4">
@@ -369,36 +382,157 @@ export const SimpleInvoiceForm: React.FC<SimpleInvoiceFormProps> = ({
         )}
       </div>
 
-      {/* Actions */}
-      <div className="flex justify-end gap-2 pt-4 border-t">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onClose}
-          disabled={isSaving}
-        >
-          <X className="h-4 w-4 mr-2" />
-          Annuleren
-        </Button>
-        <Button
-          type="submit"
-          disabled={isSaving}
-          className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)]"
-        >
-          {isSaving ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Opslaan...
-            </>
-          ) : (
-            <>
-              <Save className="h-4 w-4 mr-2" />
-              {invoiceId ? 'Bijwerken' : 'Aanmaken'}
-            </>
+          {/* Actions */}
+          <div className="flex gap-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isSaving}
+              className="flex-1"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Annuleren
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSaving}
+              className="bg-blue-600 hover:bg-blue-700 text-white flex-1"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Opslaan...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  {invoiceId ? 'Bijwerken' : 'Aanmaken'}
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Herinneringsschema onderaan */}
+          {watch('due_date') && (
+            <div className="mt-8 p-6 bg-white border-2 border-amber-400 rounded-xl shadow-lg">
+              <h4 className="font-bold text-xl text-amber-900 mb-5 flex items-center gap-3">
+                <span className="text-3xl">⏰</span>
+                Automatische Betalingsherinneringen
+              </h4>
+              <div className="space-y-4">
+                {[1, 2, 3].map((num) => {
+                  const due = new Date(watch('due_date'));
+                  const reminderDate = new Date(due);
+                  reminderDate.setDate(due.getDate() + (num * 14));
+                  
+                  return (
+                    <div key={num} className="flex items-center gap-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200 hover:border-amber-400 transition-all">
+                      <span className="flex-shrink-0 w-12 h-12 bg-amber-500 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">
+                        {num}
+                      </span>
+                      <div className="flex-1">
+                        <span className="font-semibold text-gray-800 text-base block">
+                          {num === 1 ? '1e' : num === 2 ? '2e' : '3e'} herinnering
+                        </span>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="font-bold text-amber-900 text-lg">
+                            {reminderDate.toLocaleDateString('nl-NL', { 
+                              day: 'numeric', 
+                              month: 'long', 
+                              year: 'numeric' 
+                            })}
+                          </span>
+                          <span className="text-sm text-gray-600">
+                            ({14 * num} dagen na vervaldatum)
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-sm text-amber-800 mt-5 italic flex items-center gap-2 bg-amber-100 p-3 rounded-lg">
+                <span className="text-lg">💡</span>
+                <span className="font-medium">Herinneringen worden automatisch verstuurd als de factuur niet is betaald</span>
+              </p>
+            </div>
           )}
-        </Button>
+        </form>
       </div>
-    </form>
+
+      {/* Right side - Preview */}
+      <div className="lg:col-span-3 h-[calc(100vh-120px)] sticky top-4">
+        <div className="h-full bg-white rounded-lg border p-6 overflow-auto">
+          <h4 className="text-sm font-medium text-gray-600 mb-4">Preview</h4>
+          {customer ? (
+            <div className="space-y-6">
+              <div className="text-center border-b pb-4">
+                <h2 className="text-2xl font-bold">SMANS BV</h2>
+                <p className="text-sm text-gray-600 mt-1">Factuur</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="font-semibold text-gray-700">Van:</p>
+                  <p className="mt-1">SMANS BV</p>
+                  <p>Pauwstraat 8, Breda</p>
+                  <p>4815GL Breda</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-700">Aan:</p>
+                  <p className="mt-1">{customer.name}</p>
+                  {customer.address && <p>{customer.address}</p>}
+                  {customer.email && <p>{customer.email}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-600">Factuurdatum:</p>
+                  <p className="font-medium">{watch('invoice_date') ? new Date(watch('invoice_date')).toLocaleDateString('nl-NL') : '-'}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600">Vervaldatum:</p>
+                  <p className="font-medium">{watch('due_date') ? new Date(watch('due_date')).toLocaleDateString('nl-NL') : '-'}</p>
+                </div>
+              </div>
+
+              {project && (
+                <div className="text-sm">
+                  <p className="text-gray-600">Project:</p>
+                  <p className="font-medium">{project.title}</p>
+                </div>
+              )}
+
+              <div className="border-t pt-4">
+                <h3 className="font-semibold mb-2">Omschrijving</h3>
+                <p className="text-sm text-gray-700 whitespace-pre-line">{watch('description') || 'Geen omschrijving'}</p>
+              </div>
+
+              {totalAmount > 0 && (
+                <div className="border-t pt-4 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Subtotaal:</span>
+                    <span>€{subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>BTW ({vatRate}%):</span>
+                    <span>€{vatAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t font-bold text-lg">
+                    <span>Totaal:</span>
+                    <span className="text-primary">€{totalAmount.toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-center text-gray-400 mt-8">Selecteer een klant om preview te zien</p>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 

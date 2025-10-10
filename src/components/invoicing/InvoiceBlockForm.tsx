@@ -233,18 +233,18 @@ export const InvoiceBlockForm: React.FC<InvoiceBlockFormProps> = ({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Items List - Compact Grid Layout */}
+        {/* Items List - Ruimere Grid Layout voor betere zichtbaarheid */}
         {block.items.map((item) => (
-          <div key={item.id} className="grid grid-cols-12 gap-2 items-center py-2 border-b border-border/50 last:border-b-0">
+          <div key={item.id} className="grid grid-cols-12 gap-3 items-center py-2 border-b border-border/50 last:border-b-0">
             {item.type === 'product' ? (
               <>
-                <div className="col-span-5">
+                <div className="col-span-4">
                   <Input
                     value={item.description}
                     onChange={(e) => handleItemUpdate(item.id, { description: e.target.value })}
                     onBlur={() => {}}
                     placeholder="Beschrijving"
-                    className="h-9 text-sm"
+                    className="h-10 text-base"
                   />
                 </div>
                 <div className="col-span-2">
@@ -254,9 +254,9 @@ export const InvoiceBlockForm: React.FC<InvoiceBlockFormProps> = ({
                       size="sm"
                       variant="outline"
                       onClick={() => handleItemUpdate(item.id, { quantity: Math.max(0, (item.quantity || 1) - 1) })}
-                      className="h-9 w-9 p-0 shrink-0"
+                      className="h-10 w-10 p-0 shrink-0"
                     >
-                      <Minus className="h-3 w-3" />
+                      <Minus className="h-4 w-4" />
                     </Button>
                     <Input
                       type="number"
@@ -264,7 +264,7 @@ export const InvoiceBlockForm: React.FC<InvoiceBlockFormProps> = ({
                       onChange={(e) => handleItemUpdate(item.id, { quantity: Number(e.target.value) || 0 })}
                       onBlur={() => {}}
                       placeholder="Aantal"
-                      className="h-9 text-sm text-center"
+                      className="h-10 text-base text-center"
                       min="0"
                       step="0.01"
                     />
@@ -273,56 +273,55 @@ export const InvoiceBlockForm: React.FC<InvoiceBlockFormProps> = ({
                       size="sm"
                       variant="outline"
                       onClick={() => handleItemUpdate(item.id, { quantity: (item.quantity || 1) + 1 })}
-                      className="h-9 w-9 p-0 shrink-0"
+                      className="h-10 w-10 p-0 shrink-0"
                     >
-                      <Plus className="h-3 w-3" />
+                      <Plus className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
                 <div className="col-span-2">
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">€</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-base">€</span>
                     <Input
                       type="number"
                       value={item.unit_price || ''}
                       onChange={(e) => handleItemUpdate(item.id, { unit_price: Number(e.target.value) || 0 })}
                       onBlur={() => {}}
                       placeholder="0.00"
-                      className="h-9 text-sm pl-7"
+                      className="h-10 text-base pl-8"
                       min="0"
                       step="0.01"
                     />
                   </div>
                 </div>
-                <div className="col-span-1">
+                <div className="col-span-2">
                   <div className="relative">
                     <Select
                       value={item.vat_rate?.toString() || '21'}
                       onValueChange={(value) => handleItemUpdate(item.id, { vat_rate: Number(value) })}
                     >
-                      <SelectTrigger className="h-9 text-sm pr-7">
+                      <SelectTrigger className="h-10 text-base">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="0">0</SelectItem>
-                        <SelectItem value="9">9</SelectItem>
-                        <SelectItem value="21">21</SelectItem>
+                        <SelectItem value="0">0%</SelectItem>
+                        <SelectItem value="9">9%</SelectItem>
+                        <SelectItem value="21">21%</SelectItem>
                       </SelectContent>
                     </Select>
-                    <span className="absolute right-10 top-1/2 -translate-y-1/2 text-gray-500 text-sm pointer-events-none">%</span>
                   </div>
                 </div>
                 <div className="col-span-1 text-right">
-                  <span className="text-sm font-medium">€{(item.total || 0).toFixed(2)}</span>
+                  <span className="text-base font-medium">€{(item.total || 0).toFixed(2)}</span>
                 </div>
                 <div className="col-span-1 text-right">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDeleteItem(item.id)}
-                    className="text-destructive hover:text-destructive h-6 w-6 p-0"
+                    className="text-destructive hover:text-destructive h-7 w-7 p-0"
                   >
-                    <Trash2 className="h-3 w-3" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </>

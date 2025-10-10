@@ -802,6 +802,52 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
               Opslaan
             </Button>
           </div>
+
+          {/* Herinneringsschema onderaan - Prominenter en duidelijker */}
+          {selectedCustomerId && dueDate && (
+            <div className="mt-8 p-6 bg-white border-2 border-amber-400 rounded-xl shadow-lg">
+              <h4 className="font-bold text-xl text-amber-900 mb-5 flex items-center gap-3">
+                <span className="text-3xl">⏰</span>
+                Automatische Betalingsherinneringen
+              </h4>
+              <div className="space-y-4">
+                {[1, 2, 3].map((num) => {
+                  const due = new Date(dueDate);
+                  const reminderDate = new Date(due);
+                  reminderDate.setDate(due.getDate() + (num * 14));
+                  
+                  return (
+                    <div key={num} className="flex items-center gap-4 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200 hover:border-amber-400 transition-all">
+                      <span className="flex-shrink-0 w-12 h-12 bg-amber-500 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-md">
+                        {num}
+                      </span>
+                      <div className="flex-1">
+                        <span className="font-semibold text-gray-800 text-base block">
+                          {num === 1 ? '1e' : num === 2 ? '2e' : '3e'} herinnering
+                        </span>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="font-bold text-amber-900 text-lg">
+                            {reminderDate.toLocaleDateString('nl-NL', { 
+                              day: 'numeric', 
+                              month: 'long', 
+                              year: 'numeric' 
+                            })}
+                          </span>
+                          <span className="text-sm text-gray-600">
+                            ({14 * num} dagen na vervaldatum)
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-sm text-amber-800 mt-5 italic flex items-center gap-2 bg-amber-100 p-3 rounded-lg">
+                <span className="text-lg">💡</span>
+                <span className="font-medium">Herinneringen worden automatisch verstuurd als de factuur niet is betaald</span>
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
