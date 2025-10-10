@@ -57,7 +57,6 @@ export const ProjectQuickAdd = ({
         value: formData.value ? parseFloat(formData.value) : null,
         customer_id: selectedCustomerId,
         status: 'te-plannen' as const,
-        project_status: 'te-plannen',
         date: null,
         user_id: null, // Will be set by the backend/RLS
       };

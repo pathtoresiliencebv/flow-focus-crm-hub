@@ -217,11 +217,9 @@ export function SimplifiedPlanningManagement({
       location,
       assigned_user_id: selectedMonteur,
       user_id: user?.id || '',
-      status: 'Gepland',
+      status: 'gepland', // Use lowercase to match database enum
       project_id: selectedProject?.id || null,
       expected_duration_minutes: selectedDuration,
-      // Add project_status to prevent enum error
-      project_status: selectedProject?.id ? 'gepland' : null,
     };
 
     console.log('📦 Planning data created:', planningData);
