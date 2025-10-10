@@ -118,34 +118,27 @@ export const AdminReceiptApproval = () => {
 
     try {
       setProcessingAction(true);
-      console.log('🔄 Processing approval:', {
+      console.log('🔄 Processing approval via Edge Function:', {
         receiptId: selectedReceipt.id,
         action: approvalAction,
         hasRejectionReason: !!rejectionReason
       });
 
-      const updates: any = {
-        status: approvalAction === 'approve' ? 'approved' : 'rejected',
-        updated_at: new Date().toISOString()
-      };
-
-      if (approvalAction === 'reject') {
-        updates.rejection_reason = rejectionReason;
-      }
-
-      console.log('📝 Updating receipt with:', updates);
-
-      const { error } = await supabase
-        .from('receipts')
-        .update(updates)
-        .eq('id', selectedReceipt.id);
+      // ✅ FIX: Use Edge Function instead of direct database update
+      const { data, error } = await supabase.functions.invoke('receipt-approval', {
+        body: {
+          receiptId: selectedReceipt.id,
+          action: approvalAction,
+          reason: approvalAction === 'reject' ? rejectionReason : undefined
+        }
+      });
 
       if (error) {
-        console.error('❌ Supabase error:', error);
+        console.error('❌ Edge Function error:', error);
         throw error;
       }
 
-      console.log('✅ Approval successful');
+      console.log('✅ Approval successful via Edge Function:', data);
 
       toast({
         title: approvalAction === 'approve' ? "✅ Goedgekeurd" : "❌ Afgekeurd",
@@ -161,10 +154,10 @@ export const AdminReceiptApproval = () => {
       fetchReceipts();
 
     } catch (error: any) {
-      console.error('Error updating receipt:', error);
+      console.error('Error processing receipt approval:', error);
       toast({
         title: "Fout",
-        description: "Kon bonnetje niet bijwerken: " + error.message,
+        description: "Kon bonnetje niet verwerken: " + error.message,
         variant: "destructive"
       });
     } finally {

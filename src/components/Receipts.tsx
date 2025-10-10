@@ -223,7 +223,14 @@ export const Receipts = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.functions.invoke('receipt-approval', {
+      console.log('🔄 Processing receipt approval via Edge Function:', {
+        receiptId: pendingAction.id,
+        action: pendingAction.action,
+        hasReason: !!rejectionReason,
+        userId: selectedUserId
+      });
+
+      const { data, error } = await supabase.functions.invoke('receipt-approval', {
         body: {
           receiptId: pendingAction.id,
           action: pendingAction.action,
@@ -232,7 +239,12 @@ export const Receipts = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Edge Function error:', error);
+        throw error;
+      }
+
+      console.log('✅ Approval successful via Edge Function:', data);
 
       toast({
         title: pendingAction.action === 'approve' ? "Bonnetje goedgekeurd" : "Bonnetje afgewezen",
@@ -244,6 +256,7 @@ export const Receipts = () => {
       setSelectedUserId('');
       setShowConfirmDialog(false);
     } catch (error: any) {
+      console.error('Error processing receipt approval:', error);
       toast({ title: "Fout", description: "Kon actie niet uitvoeren: " + error.message, variant: "destructive" });
     } finally {
       setLoading(false);
