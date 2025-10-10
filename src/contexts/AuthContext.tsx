@@ -46,8 +46,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const cached = localStorage.getItem('user_profile_cache');
       if (cached) {
         const parsed = JSON.parse(cached);
-        // Check if cache is less than 5 minutes old
-        if (parsed.timestamp && Date.now() - parsed.timestamp < 5 * 60 * 1000) {
+        // Check if cache is less than 30 minutes old (verhoogd van 5 naar 30 minuten)
+        if (parsed.timestamp && Date.now() - parsed.timestamp < 30 * 60 * 1000) {
           console.log('✅ Using cached profile data');
           return parsed.profile;
         }

@@ -50,10 +50,10 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      refetchOnWindowFocus: true,
+      refetchOnWindowFocus: false, // Voorkomt onnodige refetches en auth loops
       refetchOnMount: true,
-      staleTime: 5 * 60 * 1000, // 5 minutes - prevents auth loop on refresh
-      gcTime: 10 * 60 * 1000, // 10 minutes - keeps cached data longer
+      staleTime: 0,
+      gcTime: 0,
     },
   },
 });
