@@ -71,7 +71,25 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
   // Auto-save timer
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout>>();
 
-  // ✅ Loading check AFTER all hooks
+  // ✅ useEffect hooks - must be before early return but can reference functions declared later
+  useEffect(() => {
+    // Functions will be hoisted/available at runtime
+    generateInvoiceNumber();
+    if (invoiceId) {
+      loadInvoice(invoiceId);
+    } else {
+      addBlock('product');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invoiceId]);
+
+  useEffect(() => {
+    setPreviewKey(prev => prev + 1);
+    triggerAutoSave();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCustomerId, selectedProjectId, invoiceNumber, invoiceDate, dueDate, message, blocks]);
+
+  // ✅ Loading check AFTER all hooks (including useEffect)
   if (crmLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -511,22 +529,6 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
     total_vat_amount: totalVAT,
     status: 'concept'
   };
-
-  // ✅ useEffect hooks AFTER all function declarations but BEFORE JSX return
-  useEffect(() => {
-    generateInvoiceNumber();
-    if (invoiceId) {
-      loadInvoice(invoiceId);
-    } else {
-      // Start with one empty product block
-      addBlock('product');
-    }
-  }, [invoiceId]);
-
-  useEffect(() => {
-    setPreviewKey(prev => prev + 1);
-    triggerAutoSave();
-  }, [selectedCustomerId, selectedProjectId, invoiceNumber, invoiceDate, dueDate, message, blocks]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">

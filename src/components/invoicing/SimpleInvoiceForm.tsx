@@ -68,7 +68,15 @@ export const SimpleInvoiceForm: React.FC<SimpleInvoiceFormProps> = ({
   const subtotal = totalAmount / (1 + vatRate / 100);
   const vatAmount = totalAmount - subtotal;
 
-  // ✅ Loading check AFTER all hooks
+  // ✅ useEffect - must be before early return but can reference functions declared later
+  useEffect(() => {
+    if (invoiceId) {
+      loadInvoice();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invoiceId]);
+
+  // ✅ Loading check AFTER all hooks (including useEffect)
   if (crmLoading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -217,13 +225,6 @@ export const SimpleInvoiceForm: React.FC<SimpleInvoiceFormProps> = ({
   // Preview invoice object
   const customer = customers.find(c => c.id === selectedCustomerId);
   const project = watch('project_id') ? projects.find(p => p.id === watch('project_id')) : null;
-  
-  // ✅ useEffect AFTER all function declarations but BEFORE JSX return
-  useEffect(() => {
-    if (invoiceId) {
-      loadInvoice();
-    }
-  }, [invoiceId]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
