@@ -7,35 +7,35 @@ import LoginScreen from "@/components/LoginScreen";
 // Layout
 import { Layout } from "@/components/Layout";
 
-// Lazy load all pages for code splitting
-const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
-const CustomersPage = lazy(() => import("@/pages/CustomersPage"));
-const CustomerDetailPage = lazy(() => import("@/pages/CustomerDetailPage"));
-const ProjectsPage = lazy(() => import("@/pages/ProjectsPage"));
-const ProjectDetailPage = lazy(() => import("@/pages/ProjectDetailPage"));
-const PlanningPage = lazy(() => import("@/pages/PlanningPage"));
-const TimePage = lazy(() => import("@/pages/TimePage"));
-const ReceiptsPage = lazy(() => import("@/pages/ReceiptsPage"));
-const QuotesPage = lazy(() => import("@/pages/QuotesPage"));
-const InvoicesPage = lazy(() => import("@/pages/InvoicesPage"));
-const PersonnelPage = lazy(() => import("@/pages/PersonnelPage"));
-const UsersPage = lazy(() => import("@/pages/UsersPage"));
-const EmailPage = lazy(() => import("@/pages/EmailPage"));
-const WebmailPage = lazy(() => import("@/pages/WebmailPage"));
-const ChatPage = lazy(() => import("@/pages/ChatPage"));
-const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
-const PublicQuote = lazy(() => import("@/pages/PublicQuote"));
-const NotFound = lazy(() => import("@/pages/NotFound"));
-const NewQuote = lazy(() => import("@/pages/NewQuote"));
-const EditQuote = lazy(() => import("@/pages/EditQuote"));
-const NewInvoice = lazy(() => import("@/pages/NewInvoice"));
-const EditInvoice = lazy(() => import("@/pages/EditInvoice"));
-const QuotePreview = lazy(() => import("@/pages/QuotePreview"));
-const QuoteSend = lazy(() => import("@/pages/QuoteSend"));
-const InvoiceDetailsPage = lazy(() => import("@/pages/InvoiceDetails"));
-const InvoiceSend = lazy(() => import("@/pages/InvoiceSend"));
-const ProjectDelivery = lazy(() => import("@/pages/ProjectDelivery"));
-const MobileDashboard = lazy(() => import("@/components/mobile/MobileDashboard"));
+// Lazy load all pages for code splitting with error handling
+const DashboardPage = lazy(() => import("@/pages/DashboardPage").catch(() => ({ default: () => <div>Error loading Dashboard</div> })));
+const CustomersPage = lazy(() => import("@/pages/CustomersPage").catch(() => ({ default: () => <div>Error loading Customers</div> })));
+const CustomerDetailPage = lazy(() => import("@/pages/CustomerDetailPage").catch(() => ({ default: () => <div>Error loading Customer Detail</div> })));
+const ProjectsPage = lazy(() => import("@/pages/ProjectsPage").catch(() => ({ default: () => <div>Error loading Projects</div> })));
+const ProjectDetailPage = lazy(() => import("@/pages/ProjectDetailPage").catch(() => ({ default: () => <div>Error loading Project Detail</div> })));
+const PlanningPage = lazy(() => import("@/pages/PlanningPage").catch(() => ({ default: () => <div>Error loading Planning</div> })));
+const TimePage = lazy(() => import("@/pages/TimePage").catch(() => ({ default: () => <div>Error loading Time</div> })));
+const ReceiptsPage = lazy(() => import("@/pages/ReceiptsPage").catch(() => ({ default: () => <div>Error loading Receipts</div> })));
+const QuotesPage = lazy(() => import("@/pages/QuotesPage").catch(() => ({ default: () => <div>Error loading Quotes</div> })));
+const InvoicesPage = lazy(() => import("@/pages/InvoicesPage").catch(() => ({ default: () => <div>Error loading Invoices</div> })));
+const PersonnelPage = lazy(() => import("@/pages/PersonnelPage").catch(() => ({ default: () => <div>Error loading Personnel</div> })));
+const UsersPage = lazy(() => import("@/pages/UsersPage").catch(() => ({ default: () => <div>Error loading Users</div> })));
+const EmailPage = lazy(() => import("@/pages/EmailPage").catch(() => ({ default: () => <div>Error loading Email</div> })));
+const WebmailPage = lazy(() => import("@/pages/WebmailPage").catch(() => ({ default: () => <div>Error loading Webmail</div> })));
+const ChatPage = lazy(() => import("@/pages/ChatPage").catch(() => ({ default: () => <div>Error loading Chat</div> })));
+const SettingsPage = lazy(() => import("@/pages/SettingsPage").catch(() => ({ default: () => <div>Error loading Settings</div> })));
+const PublicQuote = lazy(() => import("@/pages/PublicQuote").catch(() => ({ default: () => <div>Error loading Public Quote</div> })));
+const NotFound = lazy(() => import("@/pages/NotFound").catch(() => ({ default: () => <div>Error loading 404</div> })));
+const NewQuote = lazy(() => import("@/pages/NewQuote").catch(() => ({ default: () => <div>Error loading New Quote</div> })));
+const EditQuote = lazy(() => import("@/pages/EditQuote").catch(() => ({ default: () => <div>Error loading Edit Quote</div> })));
+const NewInvoice = lazy(() => import("@/pages/NewInvoice").catch(() => ({ default: () => <div>Error loading New Invoice</div> })));
+const EditInvoice = lazy(() => import("@/pages/EditInvoice").catch(() => ({ default: () => <div>Error loading Edit Invoice</div> })));
+const QuotePreview = lazy(() => import("@/pages/QuotePreview").catch(() => ({ default: () => <div>Error loading Quote Preview</div> })));
+const QuoteSend = lazy(() => import("@/pages/QuoteSend").catch(() => ({ default: () => <div>Error loading Quote Send</div> })));
+const InvoiceDetailsPage = lazy(() => import("@/pages/InvoiceDetails").catch(() => ({ default: () => <div>Error loading Invoice Details</div> })));
+const InvoiceSend = lazy(() => import("@/pages/InvoiceSend").catch(() => ({ default: () => <div>Error loading Invoice Send</div> })));
+const ProjectDelivery = lazy(() => import("@/pages/ProjectDelivery").catch(() => ({ default: () => <div>Error loading Project Delivery</div> })));
+const MobileDashboard = lazy(() => import("@/components/mobile/MobileDashboard").catch(() => ({ default: () => <div>Error loading Mobile Dashboard</div> })));
 import { useIsMobile } from "@/hooks/use-mobile";
 import '@/utils/buttonDiagnostics'; // Button diagnostics for debugging
 

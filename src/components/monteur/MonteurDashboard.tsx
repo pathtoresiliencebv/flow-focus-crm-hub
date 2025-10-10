@@ -83,14 +83,22 @@ export function MonteurDashboard({ onStartProject, onViewProject }: MonteurDashb
   };
 
   const handleStartProject = (planningItem: any) => {
+    console.log('🚀 Starting project for planning item:', planningItem);
     if (onStartProject) {
       onStartProject(planningItem.id);
     } else {
-      navigate(`/monteur/project-start/${planningItem.id}`);
+      // Navigate to project detail page for monteur workflow
+      const projectId = planningItem.project_id;
+      if (projectId) {
+        navigate(`/projects/${projectId}`);
+      } else {
+        console.error('No project ID found for planning item:', planningItem);
+      }
     }
   };
 
   const handleViewProject = (projectId: string) => {
+    console.log('👁️ Viewing project:', projectId);
     if (onViewProject) {
       onViewProject(projectId);
     } else {
