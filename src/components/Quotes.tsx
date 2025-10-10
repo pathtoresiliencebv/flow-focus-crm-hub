@@ -10,7 +10,7 @@ import { FileText, Archive } from 'lucide-react';
 import { QuotesTable } from './quotes/QuotesTable';
 import { MultiBlockQuoteForm } from './quotes/MultiBlockQuoteForm';
 import { QuotesPreviewDialog } from './quotes/QuotesPreviewDialog';
-import { SendQuoteDialog } from './quotes/SendQuoteDialog';
+import { SendQuoteSheet } from './quotes/SendQuoteSheet';
 import { ApproveQuoteDialog } from './quotes/ApproveQuoteDialog';
 import { Quote } from '@/types/quote';
 import { convertQuoteToInvoice } from '@/services/quoteToInvoiceService';
@@ -230,7 +230,7 @@ export function Quotes() {
         quote={selectedQuote}
       />
 
-      <SendQuoteDialog
+      <SendQuoteSheet
         isOpen={sendDialogOpen}
         onClose={() => setSendDialogOpen(false)}
         quote={selectedQuote}

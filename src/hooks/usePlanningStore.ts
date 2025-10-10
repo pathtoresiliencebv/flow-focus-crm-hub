@@ -5,6 +5,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
+// ✅ FIX: Cache variables declared at module scope (shared between all hook instances)
+// These must be outside the hook function to persist across component re-renders
+let planningCache: PlanningItem[] | null = null;
+let cacheTimestamp: number = 0;
+
 export interface PlanningItem {
   id: string;
   user_id: string;

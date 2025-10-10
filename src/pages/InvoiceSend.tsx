@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { SendInvoiceDialog } from '@/components/invoicing/SendInvoiceDialog';
+import { SendInvoiceSheet } from '@/components/invoicing/SendInvoiceSheet';
 import { useInvoices } from '@/hooks/useInvoices';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -101,12 +101,12 @@ export default function InvoiceSend() {
           <h1 className="text-2xl font-bold">Factuur verzenden - {invoice.invoice_number}</h1>
         </div>
         
-        <div className="bg-card rounded-lg shadow-sm border p-6">
-          <SendInvoiceDialog 
-            invoice={invoice}
-            onSend={handleSend}
-          />
-        </div>
+        <SendInvoiceSheet 
+          isOpen={true}
+          onClose={handleBack}
+          invoice={invoice}
+          onSent={() => navigate(-1)}
+        />
       </div>
     </div>
   );

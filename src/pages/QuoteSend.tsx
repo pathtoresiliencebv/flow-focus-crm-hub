@@ -2,7 +2,7 @@ import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { SendQuoteDialog } from '@/components/quotes/SendQuoteDialog';
+import { SendQuoteSheet } from '@/components/quotes/SendQuoteSheet';
 import { useQuotes } from '@/hooks/useQuotes';
 
 export default function QuoteSend() {
@@ -58,14 +58,12 @@ export default function QuoteSend() {
           <h1 className="text-2xl font-bold">Offerte verzenden - {quote.quote_number}</h1>
         </div>
         
-        <div className="bg-card rounded-lg shadow-sm border p-6">
-          <SendQuoteDialog
-            isOpen={true}
-            onClose={handleBack}
-            quote={quote}
-            onSent={handleSent}
-          />
-        </div>
+        <SendQuoteSheet
+          isOpen={true}
+          onClose={handleBack}
+          quote={quote}
+          onSent={handleSent}
+        />
       </div>
     </div>
   );

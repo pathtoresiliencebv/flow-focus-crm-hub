@@ -7,7 +7,7 @@ import { ArchivedInvoicesView } from "./invoicing/ArchivedInvoicesView";
 import { supabase } from "@/integrations/supabase/client";
 import { InvoiceFinalizationDialog } from "./invoicing/InvoiceFinalizationDialog";
 import { InvoicePreviewDialog } from "./invoicing/InvoicePreviewDialog";
-import { SendInvoiceDialog } from "./invoicing/SendInvoiceDialog";
+import { SendInvoiceSheet } from "./invoicing/SendInvoiceSheet";
 import { MultiBlockInvoiceForm } from "./invoicing/MultiBlockInvoiceForm";
 import { SimpleInvoiceForm } from "./invoicing/SimpleInvoiceForm";
 import { useInvoices } from "@/hooks/useInvoices";
@@ -274,7 +274,7 @@ export const Invoicing: React.FC<InvoicingProps> = ({
         invoice={previewInvoice}
       />
 
-      <SendInvoiceDialog
+      <SendInvoiceSheet
         isOpen={showSendDialog}
         onClose={() => {
           setShowSendDialog(false);
