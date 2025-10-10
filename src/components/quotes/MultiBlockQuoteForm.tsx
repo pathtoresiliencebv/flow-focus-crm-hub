@@ -1375,8 +1375,6 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
           </div>
         </SheetContent>
       </Sheet>
-      </div>
-
     </div>
   );
 };
