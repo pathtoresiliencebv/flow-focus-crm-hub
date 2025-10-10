@@ -95,6 +95,7 @@ function App() {
             <Routes>
               {/* Public routes - NO AUTH REQUIRED */}
               <Route path="/quote/:token" element={<PublicQuote />} />
+              <Route path="/404" element={<NotFound />} />
               
               {/* Protected routes with auth */}
               <Route path="/*" element={

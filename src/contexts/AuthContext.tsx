@@ -63,8 +63,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(cachedProfile);
   const [session, setSession] = useState<Session | null>(null);
-  // If we have cached profile, start with isLoading false to avoid auth spinner
   const [isLoading, setIsLoading] = useState(!cachedProfile);
+  const [isLoggingIn, setIsLoggingIn] = useState(false); // Prevent multiple login attempts
 
   const fetchProfile = useCallback(async (user: User) => {
     const { data: profileData, error } = await supabase
@@ -202,9 +202,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, [fetchProfile, profile]);
 
   const login = async (email: string, password: string, preferredLanguage: string = 'nl') => {
+    // Prevent multiple simultaneous login attempts
+    if (isLoggingIn) {
+      console.log('⏸️ Login already in progress, skipping duplicate attempt');
+      return;
+    }
+    
+    setIsLoggingIn(true);
     console.log('🔐 Login attempt:', { email, preferredLanguage });
     
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     
     console.log('🔐 Login response:', { 
       hasData: !!data, 
@@ -229,6 +237,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         description: description,
         variant: "destructive"
       });
+      setIsLoggingIn(false);
       return;
     } else {
       console.log('✅ Login successful, user ID:', data?.user?.id);
@@ -266,6 +275,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         title: "Ingelogd",
         description: `Welkom terug!`,
       });
+    }
+    } catch (err) {
+      console.error('❌ Unexpected login error:', err);
+      toast({
+        title: "Inloggen mislukt",
+        description: "Er is een onverwachte fout opgetreden.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoggingIn(false);
     }
   };
   
