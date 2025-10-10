@@ -48,6 +48,8 @@ export const useFixedChat = () => {
   
   const subscriptionRef = useRef<any>(null);
   const selectedConversationRef = useRef<string | null>(null);
+  const initializedRef = useRef<boolean>(false); // ✅ Prevent infinite loop
+  const isGeneratingRef = useRef<boolean>(false); // ✅ Prevent duplicate generation
 
   // Translate message using edge function
   const translateMessage = useCallback(async (text: string, fromLang: string, toLang: string): Promise<string> => {
@@ -110,7 +112,14 @@ export const useFixedChat = () => {
   // Generate conversations from available users
   const generateConversations = useCallback(async () => {
     if (!user || availableUsers.length === 0) return;
+    
+    // ✅ FIX: Prevent duplicate generation
+    if (isGeneratingRef.current) {
+      console.log('⏭️ Already generating conversations, skipping');
+      return;
+    }
 
+    isGeneratingRef.current = true;
     console.log('🔄 Generating conversations for', availableUsers.length, 'users');
 
     const conversationPromises = availableUsers.map(async (otherUser) => {
@@ -152,6 +161,7 @@ export const useFixedChat = () => {
     const conversations = await Promise.all(conversationPromises);
     console.log('✅ Generated conversations:', conversations.length);
     setConversations(conversations);
+    isGeneratingRef.current = false; // ✅ Allow next generation
   }, [user, availableUsers]);
 
   // Fetch messages for a specific conversation
@@ -506,15 +516,16 @@ export const useFixedChat = () => {
     };
   }, [user]);
 
-  // Initialize chat
+  // Initialize chat - ✅ FIX: Only run ONCE per user
   useEffect(() => {
-    if (!user) return;
+    if (!user || initializedRef.current) return;
 
     let mounted = true;
 
     const initializeChat = async () => {
       if (!mounted) return;
       
+      initializedRef.current = true; // ✅ Mark as initialized
       setLoading(true);
       console.log('🚀 Initializing chat for user:', user.id);
       
@@ -534,25 +545,26 @@ export const useFixedChat = () => {
         subscriptionRef.current = null;
       }
     };
-  }, [user, fetchAvailableUsers]);
+  }, [user]); // ✅ REMOVED fetchAvailableUsers from dependencies
 
-  // Update conversations when available users change
+  // Update conversations when available users change - ✅ FIX: Only trigger when user list actually changes
   useEffect(() => {
-    if (availableUsers.length > 0) {
+    if (availableUsers.length > 0 && user && !isGeneratingRef.current) {
       generateConversations();
     }
-  }, [availableUsers, generateConversations]);
+  }, [availableUsers, user, generateConversations]); // ✅ Keep dependencies but prevent loop with isGeneratingRef
 
-  // Setup realtime subscription after initialization
+  // Setup realtime subscription after initialization - ✅ FIX: Only run once when ready
   useEffect(() => {
-    if (!user || loading) return;
+    if (!user || loading || subscriptionRef.current) return;
 
+    console.log('🔌 Setting up realtime subscription');
     const cleanup = setupRealtimeSubscription();
     
     return () => {
       if (cleanup) cleanup();
     };
-  }, [user, loading, setupRealtimeSubscription]);
+  }, [user?.id, loading]); // ✅ REMOVED setupRealtimeSubscription from dependencies
 
   // Load user's language preference
   useEffect(() => {
