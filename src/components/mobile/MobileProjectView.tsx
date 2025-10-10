@@ -11,6 +11,7 @@ import { useProjectTasks } from "@/hooks/useProjectTasks";
 import { ProjectTasks } from "@/components/ProjectTasks";
 import { useCrmStore } from "@/hooks/useCrmStore";
 import { useAuth } from "@/contexts/AuthContext";
+import { useMonteurProjects } from "@/hooks/useMonteurProjects";
 import { useNativeCapabilities } from "@/hooks/useNativeCapabilities";
 import { useProjectDelivery } from "@/hooks/useProjectDelivery";
 import { MobileTimeRegistration } from './MobileTimeRegistration';
@@ -26,7 +27,8 @@ interface MobileProjectViewProps {
 export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId }) => {
   const { profile } = useAuth();
   const queryClient = useQueryClient();
-  const { projects, customers } = useCrmStore();
+  const { customers } = useCrmStore();
+  const { projects, getProjectById } = useMonteurProjects();
   const { tasksByBlock, completionPercentage, updateTask, isLoading } = useProjectTasks(projectId);
   const { hapticFeedback, networkStatus } = useNativeCapabilities();
   const { startProject, isStarting } = useProjectDelivery();
@@ -34,13 +36,37 @@ export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId 
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [workTimeLogId, setWorkTimeLogId] = useState<string | undefined>();
 
-  const project = projects.find(p => p.id === projectId);
+  const project = getProjectById(projectId);
   const customer = customers.find(c => c.id === project?.customer_id);
 
-  if (isLoading || !project) {
+  if (isLoading) {
     return (
       <div className="p-4 space-y-4">
         <div className="text-center">Laden...</div>
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div className="p-4 space-y-4">
+        <Card>
+          <CardContent className="text-center py-8">
+            <div className="text-destructive mb-4">
+              <FileText className="h-12 w-12 mx-auto" />
+            </div>
+            <h3 className="font-semibold mb-2">Project niet gevonden</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Dit project is niet aan u toegewezen of bestaat niet meer.
+            </p>
+            <Button 
+              variant="outline" 
+              onClick={() => window.history.back()}
+            >
+              Terug naar overzicht
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

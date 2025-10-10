@@ -3,16 +3,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Calendar, Clock, CheckCircle, MapPin, Phone, User } from "lucide-react";
+import { Calendar, Clock, CheckCircle, MapPin, Phone, User, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCrmStore } from "@/hooks/useCrmStore";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
+import { useMonteurProjects } from "@/hooks/useMonteurProjects";
 import { MobileProjectView } from './MobileProjectView';
 
 export const MobileDashboard: React.FC = () => {
   const { profile, user, isAuthenticated, session } = useAuth();
-  const { projects, customers } = useCrmStore();
+  const { customers } = useCrmStore();
+  const { projects, isLoading: projectsLoading, refreshProjects } = useMonteurProjects();
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [planningItems, setPlanningItems] = useState<any[]>([]);
 
@@ -58,8 +60,7 @@ export const MobileDashboard: React.FC = () => {
   // Projects that are already assigned to the monteur should be visible
   const myProjects = projects
     .filter(project => 
-      // Show if: assigned to me AND not completed
-      project.assigned_user_id === user?.id && 
+      // Show if: not completed (all assigned projects are already filtered by useMonteurProjects)
       project.status !== 'afgerond'
     )
     .sort((a, b) => {
@@ -78,8 +79,8 @@ export const MobileDashboard: React.FC = () => {
       if (planningB) return 1;
       
       // Neither has planning - sort by project date
-      const dateA = a.date ? new Date(a.date).getTime() : 0;
-      const dateB = b.date ? new Date(b.date).getTime() : 0;
+      const dateA = a.start_date ? new Date(a.start_date).getTime() : 0;
+      const dateB = b.start_date ? new Date(b.start_date).getTime() : 0;
       return dateB - dateA; // Newest first
     });
 
@@ -100,14 +101,39 @@ export const MobileDashboard: React.FC = () => {
     );
   }
 
+  // Show loading state
+  if (projectsLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Projecten laden...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-background border-b p-4">
-        <h1 className="text-xl font-bold">Mijn Projecten</h1>
-        <p className="text-sm text-muted-foreground">
-          Welkom {profile?.full_name || 'Monteur'}
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold">Mijn Projecten</h1>
+            <p className="text-sm text-muted-foreground">
+              Welkom {profile?.full_name || 'Monteur'}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={refreshProjects}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Vernieuwen
+          </Button>
+        </div>
       </div>
 
       <div className="p-4 space-y-4">
