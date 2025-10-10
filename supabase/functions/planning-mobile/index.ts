@@ -120,10 +120,11 @@ serve(async (req) => {
       console.log(`Creating planning item for project: ${project_id}`)
 
       // Check if user has permission to create planning
-      if (userRole === 'Installateur') {
+      // Monteurs can only create planning for themselves
+      if (userRole === 'Installateur' && assigned_user_id !== userId) {
         return new Response(JSON.stringify({
           success: false,
-          error: 'Insufficient permissions to create planning',
+          error: 'Monteurs can only create planning for themselves',
           code: 'PERMISSION_DENIED'
         }), {
           status: 403,
