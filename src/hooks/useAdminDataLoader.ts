@@ -173,7 +173,7 @@ export const useAdminDataLoader = () => {
       // Try to get users from profiles table with simplified query
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, role, status, created_at, last_seen, is_online')
+        .select('*')
         .order('created_at', { ascending: false });
       
       if (error) {
@@ -191,7 +191,7 @@ export const useAdminDataLoader = () => {
       // Try to get personnel from profiles table with simplified query
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, role, status, created_at, last_seen, is_online')
+        .select('*')
         .in('role', ['Installateur', 'Verkoper', 'Administratie'])
         .order('created_at', { ascending: false });
       
