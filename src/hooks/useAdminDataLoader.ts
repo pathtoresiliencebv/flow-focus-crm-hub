@@ -178,6 +178,7 @@ export const useAdminDataLoader = () => {
         
         if (error) {
           console.warn('Error loading users:', error);
+          // Return empty array instead of throwing error
           return [];
         }
         return data || [];
@@ -200,6 +201,7 @@ export const useAdminDataLoader = () => {
         
         if (error) {
           console.warn('Error loading personnel:', error);
+          // Return empty array instead of throwing error
           return [];
         }
         return data || [];
