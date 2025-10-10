@@ -50,18 +50,7 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
   const navigate = useNavigate();
   const { customers, projects, isLoading: crmLoading } = useCrmStore();
 
-  // ✅ Show loader while CRM data is loading
-  if (crmLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Klantgegevens laden...</p>
-        </div>
-      </div>
-    );
-  }
-  
+  // ✅ ALL HOOKS FIRST - Before any early returns (React Rules of Hooks)
   // Form state
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
@@ -96,6 +85,18 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
     setPreviewKey(prev => prev + 1);
     triggerAutoSave();
   }, [selectedCustomerId, selectedProjectId, invoiceNumber, invoiceDate, dueDate, message, blocks]);
+
+  // ✅ Loading check AFTER all hooks
+  if (crmLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Klantgegevens laden...</p>
+        </div>
+      </div>
+    );
+  }
 
   const generateInvoiceNumber = async () => {
     try {

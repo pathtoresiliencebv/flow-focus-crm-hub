@@ -39,6 +39,9 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// Track last login attempt for timeout mechanism (outside component for persistence)
+let lastLoginAttempt = 0;
+
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   // Check for cached profile first
   const getCachedProfile = () => {
@@ -143,6 +146,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     
     const initializeAuth = async () => {
       try {
+        // Reset login lock during initialization to prevent stuck states
+        loginInProgressRef.current = false;
+        setIsLoggingIn(false);
+        
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -151,13 +158,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           return;
         }
         
-        if (mounted) {
+        if (mounted && session) {
+          console.log('✅ Session restored from storage');
           setSession(session);
           const currentUser = session?.user ?? null;
           setUser(currentUser);
           
           if (currentUser) {
-            // Check cache age
+            // Check cache age - 30 minutes max
             const cached = localStorage.getItem('user_profile_cache');
             let shouldRefresh = true;
             
@@ -180,6 +188,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             }
           }
           setIsLoading(false);
+        } else {
+          console.log('⚠️ No session found, user needs to login');
+          if (mounted) setIsLoading(false);
         }
         
         const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -214,12 +225,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, [fetchProfile]);
 
   const login = async (email: string, password: string, preferredLanguage: string = 'nl') => {
-    // Prevent multiple simultaneous login attempts using a ref for immediate, synchronous check
+    // Force reset lock if stuck (safety mechanism with 5 second timeout)
     if (loginInProgressRef.current) {
-      console.log('⏸️ Login already in progress, skipping duplicate attempt');
-      return;
+      const timeSinceLastLogin = Date.now() - lastLoginAttempt;
+      if (timeSinceLastLogin > 5000) {
+        console.warn('⚠️ Login lock stuck, force resetting after 5 seconds...');
+        loginInProgressRef.current = false;
+        setIsLoggingIn(false);
+      } else {
+        console.log('⏸️ Login already in progress, skipping duplicate attempt');
+        return;
+      }
     }
     
+    lastLoginAttempt = Date.now();
     loginInProgressRef.current = true;
     setIsLoggingIn(true);
     console.log('🔐 Login attempt:', { email, preferredLanguage });

@@ -10,11 +10,11 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    persistSession: true, // Persist session in localStorage
-    autoRefreshToken: true, // Automatically refresh token
+    persistSession: true, // Persist session in localStorage for automatic login after refresh
+    autoRefreshToken: true, // Automatically refresh access token using refresh token (7 day expiry)
     detectSessionInUrl: true, // Detect session from URL for OAuth/magic links
-    storage: typeof window !== 'undefined' ? window.localStorage : undefined, // Use localStorage
-    storageKey: 'supabase.auth.token', // Custom storage key
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined, // Use localStorage for session persistence
+    storageKey: 'supabase.auth.token', // Custom storage key for session data
     flowType: 'pkce', // Use PKCE flow for better security
   },
 });
