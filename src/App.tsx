@@ -50,10 +50,10 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      refetchOnWindowFocus: false,
-      refetchOnMount: false, // Niet refetchen bij mount als data fresh is
-      staleTime: 5 * 60 * 1000, // 5 minuten - data blijft fresh voor monteurs
-      cacheTime: 10 * 60 * 1000, // 10 minuten - cache blijft bewaard
+      refetchOnWindowFocus: true,
+      refetchOnMount: true,
+      staleTime: 5 * 60 * 1000, // 5 minutes - prevents auth loop on refresh
+      gcTime: 10 * 60 * 1000, // 10 minutes - keeps cached data longer
     },
   },
 });

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +16,7 @@ import { MobileTimeRegistration } from './MobileTimeRegistration';
 import { MobilePhotoUpload } from './MobilePhotoUpload';
 import { MobileWorkOrder } from './MobileWorkOrder';
 import { MobileMaterialsReceipts } from './MobileMaterialsReceipts';
+import { MobileProjectCompletionDialog } from './MobileProjectCompletionDialog';
 
 interface MobileProjectViewProps {
   projectId: string;
@@ -24,13 +24,14 @@ interface MobileProjectViewProps {
 
 export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId }) => {
   const { profile } = useAuth();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { projects, customers } = useCrmStore();
   const { tasksByBlock, completionPercentage, updateTask, isLoading } = useProjectTasks(projectId);
   const { hapticFeedback, networkStatus } = useNativeCapabilities();
   const { startProject, isStarting } = useProjectDelivery();
   const [activeTab, setActiveTab] = useState("tasks");
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
+  const [workTimeLogId, setWorkTimeLogId] = useState<string | undefined>();
 
   const project = projects.find(p => p.id === projectId);
   const customer = customers.find(c => c.id === project?.customer_id);
@@ -57,12 +58,24 @@ export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId 
 
   const handleStartProject = async () => {
     await hapticFeedback();
-    await startProject(projectId);
+    const result = await startProject(projectId);
+    // Store work time log ID for completion
+    if (result?.id) {
+      setWorkTimeLogId(result.id);
+    }
   };
 
   const handleCompleteProject = async () => {
     await hapticFeedback();
-    navigate(`/projects/${projectId}/delivery`);
+    // Open completion dialog instead of navigation
+    setShowCompletionDialog(true);
+  };
+
+  const handleCompletionComplete = async () => {
+    // Refresh data after completion
+    await queryClient.invalidateQueries({ queryKey: ['projects'] });
+    await queryClient.invalidateQueries({ queryKey: ['project-tasks', projectId] });
+    setShowCompletionDialog(false);
   };
 
   const blockEntries = Object.entries(tasksByBlock);
@@ -250,6 +263,15 @@ export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId 
           </TabsContent>
         </div>
       </Tabs>
+
+      {/* Project Completion Dialog - AJAX based, no navigation */}
+      <MobileProjectCompletionDialog
+        project={project}
+        workTimeLogId={workTimeLogId}
+        isOpen={showCompletionDialog}
+        onClose={() => setShowCompletionDialog(false)}
+        onComplete={handleCompletionComplete}
+      />
     </div>
   );
 };

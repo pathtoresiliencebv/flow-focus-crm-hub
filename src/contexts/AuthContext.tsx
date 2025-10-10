@@ -40,9 +40,8 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(() => {
-    // Probeer cached profile te laden bij initialisatie
+  // Check for cached profile first
+  const getCachedProfile = () => {
     try {
       const cached = localStorage.getItem('user_profile_cache');
       if (cached) {
@@ -57,9 +56,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.error('Error loading cached profile:', e);
     }
     return null;
-  });
+  };
+
+  const cachedProfile = getCachedProfile();
+  
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(cachedProfile);
   const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // If we have cached profile, start with isLoading false to avoid auth spinner
+  const [isLoading, setIsLoading] = useState(!cachedProfile);
 
   const fetchProfile = useCallback(async (user: User) => {
     const { data: profileData, error } = await supabase
@@ -150,9 +155,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setUser(currentUser);
           
           if (currentUser) {
-            await fetchProfile(currentUser);
+            // Only fetch profile if we don't have cached profile or it's stale
+            const hasCachedProfile = profile !== null;
+            if (!hasCachedProfile) {
+              console.log('🔄 Fetching fresh profile data...');
+              await fetchProfile(currentUser);
+            } else {
+              console.log('✅ Using cached profile, will refresh in background');
+              // Refresh profile in background without showing loading spinner
+              fetchProfile(currentUser);
+            }
           }
-          setIsLoading(false); // Only set loading false once
+          setIsLoading(false); // Set loading false immediately if we have cache
         }
         
         // Listen to CHANGES only (not initial)
@@ -185,7 +199,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       mounted = false;
       subscription?.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, [fetchProfile, profile]);
 
   const login = async (email: string, password: string, preferredLanguage: string = 'nl') => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });

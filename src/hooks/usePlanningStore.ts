@@ -5,11 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
-// Cache voor planning items - voorkomt constant herladen
-let planningCache: PlanningItem[] | null = null;
-let cacheTimestamp: number = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minuten
-
 export interface PlanningItem {
   id: string;
   user_id: string;
@@ -52,7 +47,8 @@ export const usePlanningStore = () => {
   const fetchPlanningItems = async (dateRange?: { start: string; end: string }, forceRefresh = false) => {
     if (!user) return;
 
-    // Check cache - als data fresh is, gebruik cached data
+    // Check cache - als data fresh is, gebruik cached data (5 minutes)
+    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
     const now = Date.now();
     if (!forceRefresh && planningCache && (now - cacheTimestamp) < CACHE_DURATION) {
       console.log('✅ Using cached planning data (fresh)');
