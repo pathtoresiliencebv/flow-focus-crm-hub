@@ -243,13 +243,6 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                     Bekijken
                   </DropdownMenuItem>
                   
-                  {!isArchived && quote.status === 'concept' && (
-                    <DropdownMenuItem onClick={() => navigate(`/quotes/${quote.id}/edit`)}>
-                      <Pencil className="mr-2 h-4 w-4" />
-                      Bewerken
-                    </DropdownMenuItem>
-                  )}
-                  
                   {!isArchived && quote.public_token && (
                     <DropdownMenuItem onClick={() => onViewPublic(quote.public_token!)}>
                       <ExternalLink className="mr-2 h-4 w-4" />

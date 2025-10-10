@@ -172,13 +172,6 @@ export const InvoicesTable = ({
                       <Eye className="mr-2 h-4 w-4" />
                       Bekijken
                     </DropdownMenuItem>
-                    
-                    {invoice.status === 'concept' && onEditInvoice && (
-                      <DropdownMenuItem onClick={() => onEditInvoice(invoice)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Bewerken
-                      </DropdownMenuItem>
-                    )}
 
                     {invoice.status === 'concept' && onFinalizeInvoice && (
                       <DropdownMenuItem onClick={() => onFinalizeInvoice(invoice)}>
