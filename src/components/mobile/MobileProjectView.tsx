@@ -191,59 +191,7 @@ export const MobileProjectView: React.FC<MobileProjectViewProps> = ({ projectId 
         <div className="px-4 pb-20">
           <TabsContent value="tasks" className="space-y-4 mt-0">
             <PullToRefresh onRefresh={handleRefresh} disabled={!networkStatus?.connected}>
-            {blockEntries.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                Geen taken beschikbaar voor dit project.
-              </div>
-            ) : (
-              blockEntries.map(([blockTitle, tasks]) => (
-                <Card key={blockTitle}>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">{blockTitle}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {tasks.map((task) => (
-                      <div key={task.id} className="flex items-start gap-3 p-3 rounded-lg border">
-                        {task.is_info_block ? (
-                          <div className="flex items-start gap-3 w-full">
-                            <div className="h-4 w-4 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
-                              <div className="h-2 w-2 bg-blue-500 rounded-full" />
-                            </div>
-                            <p className="text-sm text-muted-foreground leading-relaxed">
-                              {task.info_text || task.task_description}
-                            </p>
-                          </div>
-                        ) : (
-                          <>
-                            <div 
-                              className={`h-5 w-5 rounded border-2 flex items-center justify-center cursor-pointer ${
-                                task.is_completed 
-                                  ? 'bg-green-500 border-green-500' 
-                                  : 'border-gray-300'
-                              }`}
-                              onClick={() => handleTaskToggle(task.id, !task.is_completed)}
-                            >
-                              {task.is_completed && (
-                                <CheckCircle className="h-3 w-3 text-white" />
-                              )}
-                            </div>
-                            <div className="flex-1">
-                              <p className={`text-sm ${
-                                task.is_completed 
-                                  ? 'line-through text-muted-foreground' 
-                                  : 'text-foreground'
-                              }`}>
-                                {task.task_description}
-                              </p>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              ))
-            )}
+              <ProjectTasks projectId={projectId} />
             </PullToRefresh>
           </TabsContent>
 
