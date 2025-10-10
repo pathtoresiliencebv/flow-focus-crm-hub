@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Package, Users, Calendar, Euro, Mail, Phone, User, MapPin, Clock, CheckCircle2, Circle, Edit } from "lucide-react";
+import { ArrowLeft, Package, Users, Calendar, Euro, Mail, Phone, User, MapPin, Clock, CheckCircle2, Circle, Edit, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,6 +27,7 @@ const ProjectDetail = () => {
   const [quotes, setQuotes] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
+  const [workOrders, setWorkOrders] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(false);
 
   // Find the project
@@ -41,8 +42,8 @@ const ProjectDetail = () => {
       console.log('📊 ProjectDetail: Fetching data for project:', projectId);
       setLoadingData(true);
       try {
-        // Execute all queries in parallel for 3x faster loading
-        const [taskResult, invoiceResult, quoteResult, activityResult] = await Promise.all([
+        // Execute all queries in parallel for faster loading
+        const [taskResult, invoiceResult, quoteResult, activityResult, workOrderResult] = await Promise.all([
           // Fetch tasks
           supabase
             .from('project_tasks')
@@ -75,13 +76,21 @@ const ProjectDetail = () => {
             `)
             .eq('project_id', projectId)
             .order('updated_at', { ascending: false })
-            .limit(5)
+            .limit(5),
+          
+          // Fetch work orders (werkbonnen)
+          supabase
+            .from('project_work_orders')
+            .select('*')
+            .eq('project_id', projectId)
+            .order('created_at', { ascending: false })
         ]);
         
         console.log('📊 ProjectDetail: Data fetched:', {
           tasks: taskResult.data?.length || 0,
           invoices: invoiceResult.data?.length || 0,
           quotes: quoteResult.data?.length || 0,
+          workOrders: workOrderResult.data?.length || 0,
           invoices_data: invoiceResult.data,
           quotes_data: quoteResult.data
         });
@@ -90,6 +99,7 @@ const ProjectDetail = () => {
         setInvoices(invoiceResult.data || []);
         setQuotes(quoteResult.data || []);
         setActivities(activityResult.data || []);
+        setWorkOrders(workOrderResult.data || []);
       } catch (error) {
         console.error('❌ Error fetching project data:', error);
       } finally {
@@ -339,6 +349,14 @@ const ProjectDetail = () => {
                 <TabsTrigger value="taken" className="data-[state=active]:bg-red-50 data-[state=active]:text-red-700">
                   Project taken
                 </TabsTrigger>
+                <TabsTrigger value="werkbonnen" className="relative">
+                  Werkbonnen
+                  {workOrders.length > 0 && (
+                    <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+                      {workOrders.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
                 <TabsTrigger value="facturen">Facturen</TabsTrigger>
                 <TabsTrigger value="offertes">Offertes</TabsTrigger>
               </TabsList>
@@ -396,6 +414,85 @@ const ProjectDetail = () => {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* WERKBONNEN TAB */}
+              <TabsContent value="werkbonnen" className="p-4">
+                {loadingData ? (
+                  <p className="text-center text-muted-foreground py-8">Laden...</p>
+                ) : workOrders.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    <p>Geen werkbonnen gevonden voor dit project</p>
+                    <p className="text-xs mt-2">Werkbonnen worden aangemaakt na project oplevering</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {workOrders.map((workOrder) => (
+                      <div 
+                        key={workOrder.id} 
+                        className="border rounded-lg p-4 hover:bg-emerald-50/50 transition-colors"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                              <p className="font-semibold text-lg">Werkbon {workOrder.work_order_number}</p>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              Ondertekend door: <span className="font-medium text-foreground">{workOrder.client_name}</span>
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Datum: {workOrder.signed_at ? format(new Date(workOrder.signed_at), 'dd MMM yyyy - HH:mm', { locale: nl }) : 'Onbekend'}
+                            </p>
+                          </div>
+                          
+                          {workOrder.pdf_url && (
+                            <Button
+                              size="sm"
+                              onClick={() => window.open(workOrder.pdf_url, '_blank')}
+                              className="bg-emerald-600 hover:bg-emerald-700"
+                            >
+                              <FileText className="h-4 w-4 mr-2" />
+                              Download PDF
+                            </Button>
+                          )}
+                        </div>
+
+                        {/* Summary Text */}
+                        {workOrder.summary_text && (
+                          <div className="bg-gray-50 rounded p-3 mt-3">
+                            <p className="text-xs font-semibold text-gray-700 mb-1">Samenvatting werkzaamheden:</p>
+                            <p className="text-sm text-gray-600">{workOrder.summary_text}</p>
+                          </div>
+                        )}
+
+                        {/* Signatures */}
+                        <div className="grid grid-cols-2 gap-4 mt-4">
+                          {workOrder.client_signature_data && (
+                            <div className="border rounded p-2">
+                              <p className="text-xs font-medium text-gray-600 mb-1">Handtekening Klant</p>
+                              <img 
+                                src={workOrder.client_signature_data} 
+                                alt="Klant handtekening" 
+                                className="w-full h-20 object-contain bg-white"
+                              />
+                            </div>
+                          )}
+                          {workOrder.installer_signature_data && (
+                            <div className="border rounded p-2">
+                              <p className="text-xs font-medium text-gray-600 mb-1">Handtekening Monteur</p>
+                              <img 
+                                src={workOrder.installer_signature_data} 
+                                alt="Monteur handtekening" 
+                                className="w-full h-20 object-contain bg-white"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </TabsContent>

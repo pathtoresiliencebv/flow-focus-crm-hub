@@ -36,11 +36,11 @@ const getActivityIcon = (type: string) => {
     case 'tasks_generated':
       return <FileText className="h-4 w-4 text-indigo-600" />;
     case 'workorder_added':
-      return <Receipt className="h-4 w-4 text-blue-600" />;
+      return <ClipboardCheck className="h-4 w-4 text-emerald-600" />;
     case 'receipt_added':
       return <Receipt className="h-4 w-4 text-orange-600" />;
     case 'task_completed':
-      return <CheckCircle2 className="h-4 w-4 text-green-600" />;
+      return <CheckCircle2 className="h-4 w-4 text-teal-600" />;
     case 'status_changed':
       return <Activity className="h-4 w-4 text-gray-600" />;
     default:
@@ -62,6 +62,12 @@ const getActivityColor = (type: string) => {
       return 'bg-purple-50 border-purple-200';
     case 'tasks_generated':
       return 'bg-indigo-50 border-indigo-200';
+    case 'workorder_added':
+      return 'bg-emerald-50 border-emerald-200';
+    case 'receipt_added':
+      return 'bg-orange-50 border-orange-200';
+    case 'task_completed':
+      return 'bg-teal-50 border-teal-200';
     default:
       return 'bg-gray-50 border-gray-200';
   }
@@ -206,24 +212,48 @@ export const ProjectActivities: React.FC<ProjectActivitiesProps> = ({ projectId 
 
                 {/* Optional: Show metadata */}
                 {activity.metadata && Object.keys(activity.metadata).length > 0 && (
-                  <div className="mt-2 text-xs text-muted-foreground">
-                    {activity.metadata.task_count && (
-                      <span className="inline-flex items-center gap-1">
-                        <FileText className="h-3 w-3" />
-                        {activity.metadata.task_count} taken
-                      </span>
+                  <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                    <div className="flex flex-wrap gap-3">
+                      {activity.metadata.task_count && (
+                        <span className="inline-flex items-center gap-1">
+                          <FileText className="h-3 w-3" />
+                          {activity.metadata.task_count} taken
+                        </span>
+                      )}
+                      {activity.metadata.participants && Array.isArray(activity.metadata.participants) && (
+                        <span className="inline-flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {activity.metadata.participants.length} monteur(s)
+                        </span>
+                      )}
+                      {activity.metadata.total_amount && (
+                        <span className="inline-flex items-center gap-1 font-semibold">
+                          <DollarSign className="h-3 w-3" />
+                          €{activity.metadata.total_amount}
+                        </span>
+                      )}
+                      {activity.metadata.work_order_number && (
+                        <span className="inline-flex items-center gap-1 font-medium text-emerald-700">
+                          <ClipboardCheck className="h-3 w-3" />
+                          {activity.metadata.work_order_number}
+                        </span>
+                      )}
+                      {activity.metadata.supplier && (
+                        <span className="inline-flex items-center gap-1">
+                          <Receipt className="h-3 w-3" />
+                          {activity.metadata.supplier}
+                        </span>
+                      )}
+                    </div>
+                    {activity.metadata.summary && (
+                      <p className="text-xs text-gray-600 italic mt-1">
+                        "{activity.metadata.summary}..."
+                      </p>
                     )}
-                    {activity.metadata.participants && Array.isArray(activity.metadata.participants) && (
-                      <span className="inline-flex items-center gap-1 ml-3">
-                        <Users className="h-3 w-3" />
-                        {activity.metadata.participants.length} monteur(s)
-                      </span>
-                    )}
-                    {activity.metadata.total_amount && (
-                      <span className="inline-flex items-center gap-1 ml-3">
-                        <DollarSign className="h-3 w-3" />
-                        €{activity.metadata.total_amount}
-                      </span>
+                    {activity.metadata.block_title && activity.activity_type === 'task_completed' && (
+                      <p className="text-xs text-gray-600">
+                        📋 {activity.metadata.block_title}
+                      </p>
                     )}
                   </div>
                 )}
