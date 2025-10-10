@@ -13,6 +13,8 @@ import {
   Navigation,
   Phone,
   Mail,
+  Eye,
+  FolderKanban,
   FileText,
   Image as ImageIcon
 } from "lucide-react";
@@ -50,15 +52,19 @@ export function MonteurDashboard({ onStartProject, onViewProject }: MonteurDashb
     isFuture(parseISO(item.start_date)) && !isToday(parseISO(item.start_date))
   ).sort((a, b) => a.start_date.localeCompare(b.start_date));
 
+  // All assigned projects (not just active ones)
+  const myProjects = projects.filter(p => 
+    p.assigned_user_id === user?.id
+  );
+
   // Active projects (in-uitvoering status)
-  const activeProjects = projects.filter(p => 
-    p.status === 'in-uitvoering' && p.assigned_user_id === user?.id
+  const activeProjects = myProjects.filter(p => 
+    p.status === 'in-uitvoering'
   );
 
   // Completed today
-  const completedToday = projects.filter(p => 
+  const completedToday = myProjects.filter(p => 
     p.status === 'afgerond' && 
-    p.assigned_user_id === user?.id &&
     p.updated_at && isToday(parseISO(p.updated_at))
   );
 
@@ -182,7 +188,7 @@ export function MonteurDashboard({ onStartProject, onViewProject }: MonteurDashb
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="today">
             Vandaag ({todayPlanning.length})
           </TabsTrigger>
@@ -191,6 +197,9 @@ export function MonteurDashboard({ onStartProject, onViewProject }: MonteurDashb
           </TabsTrigger>
           <TabsTrigger value="upcoming">
             Komende ({upcomingPlanning.length})
+          </TabsTrigger>
+          <TabsTrigger value="projects">
+            Projecten ({myProjects.length})
           </TabsTrigger>
         </TabsList>
 
@@ -463,6 +472,119 @@ export function MonteurDashboard({ onStartProject, onViewProject }: MonteurDashb
                     {item.description && (
                       <p className="text-sm text-gray-600">{item.description}</p>
                     )}
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
+        </TabsContent>
+
+        {/* PROJECTS TAB */}
+        <TabsContent value="projects" className="space-y-4">
+          {myProjects.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center py-8">
+                  <FolderKanban className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                    Geen projecten toegewezen
+                  </h3>
+                  <p className="text-sm text-gray-500">
+                    Er zijn momenteel geen projecten aan u toegewezen.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            myProjects.map((project) => {
+              const customer = customers.find(c => c.id === project.customer_id);
+              const isActive = project.status === 'in-uitvoering';
+              const isCompleted = project.status === 'afgerond';
+
+              return (
+                <Card key={project.id} className={isActive ? "border-green-500 border-2" : ""}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <CardTitle className="text-lg">{project.title}</CardTitle>
+                          <Badge className={getStatusColor(project.status)}>
+                            {project.status}
+                          </Badge>
+                          {isActive && (
+                            <Badge className="bg-green-600">
+                              <Play className="h-3 w-3 mr-1" />
+                              Bezig
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                          {project.date && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-4 w-4" />
+                              {new Date(project.date).toLocaleDateString('nl-NL')}
+                            </span>
+                          )}
+                          {project.value && (
+                            <span className="flex items-center gap-1">
+                              💰 €{project.value.toLocaleString('nl-NL')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {project.description && (
+                      <p className="text-sm text-gray-600">{project.description}</p>
+                    )}
+
+                    {customer && (
+                      <div className="bg-blue-50 p-3 rounded-lg">
+                        <h4 className="font-semibold text-sm mb-2">👤 Klant Informatie</h4>
+                        <div className="space-y-1 text-sm">
+                          <p className="font-medium">{customer.name}</p>
+                          {customer.phone && (
+                            <a 
+                              href={`tel:${customer.phone}`}
+                              className="flex items-center gap-2 text-blue-600 hover:underline"
+                            >
+                              <Phone className="h-4 w-4" />
+                              {customer.phone}
+                            </a>
+                          )}
+                          {customer.email && (
+                            <a 
+                              href={`mailto:${customer.email}`}
+                              className="flex items-center gap-2 text-blue-600 hover:underline"
+                            >
+                              <Mail className="h-4 w-4" />
+                              {customer.email}
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={() => handleViewProject(project.id)}
+                        className="flex-1"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Bekijk Project
+                      </Button>
+                      {!isCompleted && (
+                        <Button 
+                          variant="outline"
+                          onClick={() => handleStartProject({ project_id: project.id })}
+                          className="flex-1"
+                        >
+                          <Play className="h-4 w-4 mr-2" />
+                          Start Project
+                        </Button>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               );
