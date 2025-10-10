@@ -173,7 +173,17 @@ export function SimplifiedPlanningManagement({
 
   // Handle planning submission with conflict detection
   const handlePlanningSubmit = async () => {
+    console.log('🚀 handlePlanningSubmit called!');
+    console.log('📋 Current state:', {
+      selectedDate,
+      selectedMonteur,
+      selectedDuration,
+      selectedLocation,
+      calculatedTimes
+    });
+    
     if (!selectedDate || !selectedMonteur) {
+      console.error('❌ Missing required fields:', { selectedDate, selectedMonteur });
       toast({
         title: "Ontbrekende gegevens",
         description: "Selecteer een datum en monteur.",
@@ -182,9 +192,20 @@ export function SimplifiedPlanningManagement({
       return;
     }
 
-    const title = (document.getElementById('title') as HTMLInputElement)?.value || 'Planning';
-    const description = (document.getElementById('description') as HTMLTextAreaElement)?.value || '';
-    const location = selectedLocation?.display_name || (document.getElementById('location') as HTMLInputElement)?.value || '';
+    const titleInput = document.getElementById('title') as HTMLInputElement;
+    const descriptionInput = document.getElementById('description') as HTMLTextAreaElement;
+    
+    console.log('📝 Form elements:', {
+      titleInput,
+      titleValue: titleInput?.value,
+      descriptionInput,
+      descriptionValue: descriptionInput?.value,
+      selectedLocation
+    });
+
+    const title = titleInput?.value || 'Planning';
+    const description = descriptionInput?.value || '';
+    const location = selectedLocation?.display_name || '';
 
     const planningData = {
       title,
@@ -200,6 +221,8 @@ export function SimplifiedPlanningManagement({
       expected_duration_minutes: selectedDuration,
     };
 
+    console.log('📦 Planning data created:', planningData);
+
     // Check for conflicts
     const existingBookings = planningItems.filter(
       (item) =>
@@ -207,13 +230,18 @@ export function SimplifiedPlanningManagement({
         item.start_date === planningData.start_date
     );
 
+    console.log('📅 Checking conflicts. Existing bookings:', existingBookings.length);
+
     const conflicts = checkTimeConflict(
       existingBookings,
       calculatedTimes.startTime,
       calculatedTimes.endTime
     );
 
+    console.log('⚠️ Conflicts detected:', conflicts.length);
+
     if (conflicts.length > 0) {
+      console.log('🚨 Showing conflict dialog for:', conflicts);
       // Show conflict dialog
       setDetectedConflicts(conflicts);
       setPendingPlanningData(planningData);
@@ -221,6 +249,7 @@ export function SimplifiedPlanningManagement({
       return;
     }
 
+    console.log('✅ No conflicts - proceeding to save');
     // No conflicts - save directly
     await savePlanning(planningData);
   };
@@ -228,7 +257,9 @@ export function SimplifiedPlanningManagement({
   // Save planning (after conflict resolution or directly)
   const savePlanning = async (planningData: any) => {
     try {
+      console.log('💾 Saving planning with data:', planningData);
       await addPlanningItem(planningData);
+      console.log('✅ Planning saved successfully!');
 
       toast({
         title: "✅ Planning toegevoegd!",
@@ -245,7 +276,7 @@ export function SimplifiedPlanningManagement({
       setPendingPlanningData(null);
       setDetectedConflicts([]);
     } catch (error) {
-      console.error('Error adding planning:', error);
+      console.error('❌ Error adding planning:', error);
       toast({
         title: "❌ Fout bij toevoegen planning",
         description: "Er ging iets mis bij het toevoegen van de planning.",
@@ -552,14 +583,20 @@ export function SimplifiedPlanningManagement({
           
           <SheetFooter className="mt-6">
             <Button 
-              onClick={() => setShowPlanningDialog(false)}
+              onClick={() => {
+                console.log('🔴 Annuleren button clicked');
+                setShowPlanningDialog(false);
+              }}
               variant="outline"
             >
               <X className="h-4 w-4 mr-2" />
               Annuleren
             </Button>
             <Button 
-              onClick={handlePlanningSubmit}
+              onClick={() => {
+                console.log('🟢 Plannen button clicked!');
+                handlePlanningSubmit();
+              }}
               className="bg-blue-600 hover:bg-blue-700"
             >
               <CheckCircle2 className="h-4 w-4 mr-2" />
