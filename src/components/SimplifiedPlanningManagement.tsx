@@ -287,8 +287,9 @@ export function SimplifiedPlanningManagement({
         
         const participants = additionalMonteurs.map(userId => ({
           planning_id: savedPlanning.id,
+          participant_type: 'monteur',
           user_id: userId,
-          role: 'monteur'
+          role: 'assistent'
         }));
 
         const { error: participantsError } = await supabase
