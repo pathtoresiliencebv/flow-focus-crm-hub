@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -64,7 +64,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [profile, setProfile] = useState<UserProfile | null>(cachedProfile);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(!cachedProfile);
-  const [isLoggingIn, setIsLoggingIn] = useState(false); // Prevent multiple login attempts
+  
+  // Use ref for synchronous login lock to prevent race conditions on fast double-clicks
+  const loginInProgressRef = useRef(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const fetchProfile = useCallback(async (user: User) => {
     const { data: profileData, error } = await supabase
@@ -211,45 +214,47 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, [fetchProfile]);
 
   const login = async (email: string, password: string, preferredLanguage: string = 'nl') => {
-    // Prevent multiple simultaneous login attempts
-    if (isLoggingIn) {
+    // Prevent multiple simultaneous login attempts using a ref for immediate, synchronous check
+    if (loginInProgressRef.current) {
       console.log('⏸️ Login already in progress, skipping duplicate attempt');
       return;
     }
     
+    loginInProgressRef.current = true;
     setIsLoggingIn(true);
     console.log('🔐 Login attempt:', { email, preferredLanguage });
     
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     
-    console.log('🔐 Login response:', { 
-      hasData: !!data, 
-      hasUser: !!data?.user, 
-      hasSession: !!data?.session,
-      error: error?.message 
-    });
-    
-    if (error) {
-      console.error('❌ Login error:', error);
-      let description = "Er is een onbekende fout opgetreden.";
-      if (error.message === 'Invalid login credentials') {
-        description = "Ongeldige inloggegevens. Controleer uw e-mailadres en wachtwoord.";
-      } else if (error.message.includes('Email not confirmed')) {
-        description = "Uw e-mailadres is nog niet bevestigd. Controleer uw inbox voor de bevestigingsmail.";
-      } else {
-        description = error.message;
-      }
-
-      toast({
-        title: "Inloggen mislukt",
-        description: description,
-        variant: "destructive"
+      console.log('🔐 Login response:', { 
+        hasData: !!data, 
+        hasUser: !!data?.user, 
+        hasSession: !!data?.session,
+        error: error?.message 
       });
-      setIsLoggingIn(false);
-      return;
-    } else {
+    
+      if (error) {
+        console.error('❌ Login error:', error);
+        let description = "Er is een onbekende fout opgetreden.";
+        if (error.message === 'Invalid login credentials') {
+          description = "Ongeldige inloggegevens. Controleer uw e-mailadres en wachtwoord.";
+        } else if (error.message.includes('Email not confirmed')) {
+          description = "Uw e-mailadres is nog niet bevestigd. Controleer uw inbox voor de bevestigingsmail.";
+        } else {
+          description = error.message;
+        }
+
+        toast({
+          title: "Inloggen mislukt",
+          description: description,
+          variant: "destructive"
+        });
+        return;
+      }
+      
       console.log('✅ Login successful, user ID:', data?.user?.id);
+      
       // Update user's language preference after successful login
       if (data.user && preferredLanguage) {
         try {
@@ -284,7 +289,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         title: "Ingelogd",
         description: `Welkom terug!`,
       });
-    }
     } catch (err) {
       console.error('❌ Unexpected login error:', err);
       toast({
@@ -293,7 +297,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         variant: "destructive"
       });
     } finally {
+      // Always reset the login state, ensuring multiple logins are possible
+      loginInProgressRef.current = false;
       setIsLoggingIn(false);
+      console.log('🔓 Login state reset, ready for next login');
     }
   };
   
