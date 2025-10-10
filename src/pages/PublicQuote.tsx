@@ -56,13 +56,20 @@ export default function PublicQuote() {
       const { data, error } = await publicSupabase
         .from('quote_settings')
         .select('*')
-        .single();
+        .maybeSingle(); // Use maybeSingle instead of single to handle 0 rows gracefully
+
+      if (error) {
+        console.warn('Could not fetch quote settings (using defaults):', error);
+        // Continue with empty settings - component will use defaults
+        return;
+      }
 
       if (data) {
         setSettings(data);
       }
     } catch (error) {
-      console.error('Error fetching settings:', error);
+      console.warn('Error fetching settings (using defaults):', error);
+      // Continue with empty settings - component will use defaults
     }
   };
 
@@ -187,7 +194,7 @@ export default function PublicQuote() {
 
     setSigning(true);
     try {
-      const { error } = await supabase
+      const { error } = await publicSupabase
         .from('quotes')
         .update({
           client_signature_data: clientSignature,
