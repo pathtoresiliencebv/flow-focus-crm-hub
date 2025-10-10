@@ -21,6 +21,11 @@ export const RoundcubeWebmail: React.FC = () => {
   const [editMode, setEditMode] = useState(false);
   const [tempUrl, setTempUrl] = useState('');
 
+  // Debug render cycles
+  useEffect(() => {
+    console.log('🔄 RoundcubeWebmail rendered');
+  });
+
   useEffect(() => {
     loadSettings();
   }, []);

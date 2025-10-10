@@ -15,6 +15,13 @@ export default function EditQuote() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('📄 EditQuote page loaded:', {
+      path: window.location.pathname,
+      id: id
+    });
+  }, []);
+
+  useEffect(() => {
     const fetchQuote = async () => {
       if (!id) {
         navigate('/quotes');

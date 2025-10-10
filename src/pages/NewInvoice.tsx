@@ -9,6 +9,12 @@ export default function NewInvoice() {
   const navigate = useNavigate();
   const { customers, projects } = useCrmStore();
 
+  React.useEffect(() => {
+    console.log('📄 NewInvoice page loaded:', {
+      path: window.location.pathname
+    });
+  }, []);
+
   const handleClose = () => {
     navigate('/?tab=invoices'); // Go back to invoices list
   };

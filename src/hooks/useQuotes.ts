@@ -333,7 +333,7 @@ export const useQuotes = () => {
         client_signature_data: null,
         client_name: null,
         client_signed_at: null,
-        pdf_url: null, // ✅ Reset PDF URL
+        // pdf_url removed - column doesn't exist in schema
         // Let database handle timestamps
         created_at: undefined,
         updated_at: undefined,

@@ -65,7 +65,21 @@ export const SendQuoteSheet: React.FC<SendQuoteSheetProps> = ({
           }
         }
         
-        console.log('📧 SendQuoteSheet: Setting form data with email:', customerEmail);
+        console.log('📧 SendQuoteSheet: Final email values:', {
+          customerEmail,
+          customerName,
+          quote_customer_email: quote.customer_email,
+          quote_customer_id: (quote as any).customer_id
+        });
+
+        if (!customerEmail) {
+          console.warn('⚠️ No customer email found for quote:', quote.id);
+          toast({
+            title: "Geen email gevonden",
+            description: "Voeg een email adres toe aan de klant om de offerte te kunnen versturen.",
+            variant: "destructive"
+          });
+        }
         
         setFormData({
           recipientEmail: customerEmail,
@@ -86,7 +100,7 @@ SMANS BV`
     };
     
     loadCustomerEmail();
-  }, [quote, isOpen]);
+  }, [quote, isOpen, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

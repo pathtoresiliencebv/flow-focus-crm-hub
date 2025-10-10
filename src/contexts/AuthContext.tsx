@@ -202,8 +202,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, [fetchProfile, profile]);
 
   const login = async (email: string, password: string, preferredLanguage: string = 'nl') => {
+    console.log('🔐 Login attempt:', { email, preferredLanguage });
+    
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    
+    console.log('🔐 Login response:', { 
+      hasData: !!data, 
+      hasUser: !!data?.user, 
+      hasSession: !!data?.session,
+      error: error?.message 
+    });
+    
     if (error) {
+      console.error('❌ Login error:', error);
       let description = "Er is een onbekende fout opgetreden.";
       if (error.message === 'Invalid login credentials') {
         description = "Ongeldige inloggegevens. Controleer uw e-mailadres en wachtwoord.";
@@ -218,7 +229,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         description: description,
         variant: "destructive"
       });
+      return;
     } else {
+      console.log('✅ Login successful, user ID:', data?.user?.id);
       // Update user's language preference after successful login
       if (data.user && preferredLanguage) {
         try {
@@ -248,6 +261,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
       }
 
+      console.log('✅ Login complete - showing success toast');
       toast({
         title: "Ingelogd",
         description: `Welkom terug!`,

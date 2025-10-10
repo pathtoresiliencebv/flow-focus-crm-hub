@@ -64,7 +64,21 @@ export const SendInvoiceSheet: React.FC<SendInvoiceSheetProps> = ({
           }
         }
         
-        console.log('📧 SendInvoiceSheet: Setting form data with email:', customerEmail);
+        console.log('📧 SendInvoiceSheet: Final email values:', {
+          customerEmail,
+          customerName,
+          invoice_customer_email: invoice.customer_email,
+          invoice_customer_id: invoice.customer_id
+        });
+
+        if (!customerEmail) {
+          console.warn('⚠️ No customer email found for invoice:', invoice.id);
+          toast({
+            title: "Geen email gevonden",
+            description: "Voeg een email adres toe aan de klant om de factuur te kunnen versturen.",
+            variant: "destructive"
+          });
+        }
         
         setFormData({
           recipientEmail: customerEmail,
@@ -88,7 +102,7 @@ SMANS BV`
     };
     
     loadCustomerEmail();
-  }, [invoice, isOpen]);
+  }, [invoice, isOpen, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

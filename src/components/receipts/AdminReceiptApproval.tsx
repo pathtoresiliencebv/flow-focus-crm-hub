@@ -118,6 +118,11 @@ export const AdminReceiptApproval = () => {
 
     try {
       setProcessingAction(true);
+      console.log('🔄 Processing approval:', {
+        receiptId: selectedReceipt.id,
+        action: approvalAction,
+        hasRejectionReason: !!rejectionReason
+      });
 
       const updates: any = {
         status: approvalAction === 'approve' ? 'approved' : 'rejected',
@@ -128,12 +133,19 @@ export const AdminReceiptApproval = () => {
         updates.rejection_reason = rejectionReason;
       }
 
+      console.log('📝 Updating receipt with:', updates);
+
       const { error } = await supabase
         .from('receipts')
         .update(updates)
         .eq('id', selectedReceipt.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Supabase error:', error);
+        throw error;
+      }
+
+      console.log('✅ Approval successful');
 
       toast({
         title: approvalAction === 'approve' ? "✅ Goedgekeurd" : "❌ Afgekeurd",

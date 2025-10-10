@@ -24,6 +24,12 @@ const QuoteFormSkeleton = () => (
 export default function NewQuote() {
   const navigate = useNavigate();
 
+  React.useEffect(() => {
+    console.log('📄 NewQuote page loaded:', {
+      path: window.location.pathname
+    });
+  }, []);
+
   const handleClose = () => {
     navigate('/?tab=quotes'); // Always go back to quotes list
   };

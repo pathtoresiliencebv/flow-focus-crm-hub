@@ -276,8 +276,7 @@ export function useInvoices() {
         paid_at: null,
         payment_date: null,
         payment_status: 'pending',
-        // Reset PDF and signatures
-        pdf_url: null,
+        // Reset signatures (pdf_url removed - column doesn't exist in schema)
         admin_signature_data: null,
         client_signature_data: null,
         client_signed_at: null,
@@ -410,22 +409,29 @@ export function useInvoices() {
 
   const sendPaymentReminder = async (invoice: Invoice) => {
     try {
-      const { error } = await supabase.functions.invoke('send-payment-reminder', {
+      console.log('📧 Sending payment reminder for invoice:', invoice.id, invoice.invoice_number);
+      
+      const { data, error } = await supabase.functions.invoke('send-payment-reminder', {
         body: {
-          invoiceNumber: invoice.invoice_number,
-          customerEmail: invoice.customer_email
+          invoiceId: invoice.id,        // ✅ CORRECT parameter name
+          reminderNumber: 1             // ✅ Always send first reminder
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Payment reminder error:', error);
+        throw error;
+      }
+      
+      console.log('✅ Payment reminder sent successfully:', data);
       
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       toast({
         title: "Herinnering verstuurd",
-        description: `Betalingsherinnering voor factuur ${invoice.invoice_number} is verstuurd.`,
+        description: `Betalingsherinnering verstuurd naar ${invoice.customer_email}`,
       });
     } catch (error) {
-      console.error('Error sending payment reminder:', error);
+      console.error('❌ Error sending payment reminder:', error);
       toast({
         title: "Fout bij versturen herinnering",
         description: "Er is een fout opgetreden bij het versturen van de betalingsherinnering.",

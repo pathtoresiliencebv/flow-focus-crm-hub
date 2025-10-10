@@ -37,6 +37,16 @@ export const MultiBlockInvoicePreview: React.FC<MultiBlockInvoicePreviewProps> =
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log('📄 Invoice data in preview:', {
+      hasBlocks: !!invoice?.blocks,
+      hasItems: !!invoice?.invoice_items,
+      blocks: invoice?.blocks,
+      items: invoice?.invoice_items,
+      invoiceId: invoice?.id
+    });
+  }, [invoice]);
+
+  useEffect(() => {
     fetchSettings();
   }, []);
 

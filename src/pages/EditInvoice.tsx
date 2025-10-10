@@ -27,6 +27,13 @@ export const EditInvoice = () => {
   });
 
   useEffect(() => {
+    console.log('📄 EditInvoice page loaded:', {
+      path: window.location.pathname,
+      id: id
+    });
+  }, []);
+
+  useEffect(() => {
     if (id) {
       fetchInvoice();
     }
@@ -233,3 +240,5 @@ export const EditInvoice = () => {
     </div>
   );
 };
+
+export default EditInvoice;

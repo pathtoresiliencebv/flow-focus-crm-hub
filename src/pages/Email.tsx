@@ -49,6 +49,11 @@ export default function Email() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
+  // Debug render cycles
+  React.useEffect(() => {
+    console.log('🔄 Email page rendered');
+  });
+
   // Email actions - work on database
   const handleStarToggle = async (messageId: string, currentlyStarred: boolean) => {
     try {
