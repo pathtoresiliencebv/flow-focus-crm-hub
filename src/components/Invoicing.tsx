@@ -142,10 +142,45 @@ export const Invoicing: React.FC<InvoicingProps> = ({
     }
   };
 
-  const handleViewInvoice = (invoice: any) => {
+  const handleViewInvoice = async (invoice: any) => {
     console.log('👁️ View invoice:', invoice.id, invoice.invoice_number);
-    setPreviewInvoice(invoice);
-    setShowPreviewDialog(true);
+    
+    // ✅ FIX: Fetch invoice_items before showing preview
+    try {
+      const { data: invoiceItems, error } = await supabase
+        .from('invoice_items')
+        .select('*')
+        .eq('invoice_id', invoice.id)
+        .order('order_index', { ascending: true });
+
+      if (error) {
+        console.error('❌ Error fetching invoice items:', error);
+        toast({
+          title: "Fout",
+          description: "Kon factuurregels niet laden.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('✅ Loaded invoice items:', invoiceItems?.length || 0, invoiceItems);
+
+      // Add invoice_items to invoice object
+      const invoiceWithItems = {
+        ...invoice,
+        invoice_items: invoiceItems || []
+      };
+
+      setPreviewInvoice(invoiceWithItems);
+      setShowPreviewDialog(true);
+    } catch (error) {
+      console.error('❌ Unexpected error loading invoice items:', error);
+      toast({
+        title: "Fout",
+        description: "Er is een fout opgetreden.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Filter invoices based on current filters - only active invoices
