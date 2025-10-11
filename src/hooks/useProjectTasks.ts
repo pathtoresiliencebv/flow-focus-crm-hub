@@ -36,6 +36,48 @@ export const useProjectTasks = (projectId: string) => {
         .select()
         .single();
       if (error) throw error;
+      
+      // ✅ Check if project status needs to be updated
+      if (projectId && taskData.is_completed !== undefined) {
+        // Get all tasks for this project
+        const { data: allTasks, error: tasksError } = await supabase
+          .from('project_tasks')
+          .select('is_completed, is_info_block')
+          .eq('project_id', projectId);
+        
+        if (!tasksError && allTasks) {
+          // Filter out info blocks
+          const completableTasks = allTasks.filter(t => !t.is_info_block);
+          const incompleteTasks = completableTasks.filter(t => !t.is_completed);
+          
+          // Get current project status
+          const { data: project, error: projectError } = await supabase
+            .from('projects')
+            .select('status')
+            .eq('id', projectId)
+            .single();
+          
+          if (!projectError && project) {
+            // If there are incomplete tasks and project is "afgerond", reset status
+            if (incompleteTasks.length > 0 && project.status === 'afgerond') {
+              console.log('📝 Found incomplete tasks, resetting project from afgerond to in-uitvoering...');
+              await supabase
+                .from('projects')
+                .update({ 
+                  status: 'in-uitvoering',
+                  completion_date: null,
+                  completion_id: null
+                })
+                .eq('id', projectId);
+              
+              // Invalidate projects query to reflect status change
+              queryClient.invalidateQueries({ queryKey: ['projects'] });
+              queryClient.invalidateQueries({ queryKey: ['monteur-projects'] });
+            }
+          }
+        }
+      }
+      
       return data;
     },
     onSuccess: () => {
@@ -77,7 +119,7 @@ export const useProjectTasks = (projectId: string) => {
           await supabase
             .from('projects')
             .update({ 
-              status: 'in_uitvoering',
+              status: 'in-uitvoering',
               completion_date: null, // Reset completion date
               completion_id: null // Remove completion reference
             })
@@ -85,6 +127,7 @@ export const useProjectTasks = (projectId: string) => {
           
           // Invalidate projects query to reflect status change
           queryClient.invalidateQueries({ queryKey: ['projects'] });
+          queryClient.invalidateQueries({ queryKey: ['monteur-projects'] });
         }
       }
       

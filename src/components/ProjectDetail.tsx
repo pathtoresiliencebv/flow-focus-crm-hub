@@ -371,6 +371,19 @@ const ProjectDetail = () => {
                     </div>
                   </SheetContent>
                 </Sheet>
+
+                <Button 
+                  className="w-full bg-red-700 hover:bg-red-800 text-white"
+                  onClick={() => navigate(`/receipts/project/${projectId}`)}
+                >
+                  <Receipt className="mr-2 h-4 w-4" />
+                  Bonnetjes
+                  {receipts.length > 0 && (
+                    <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs bg-white text-red-700">
+                      {receipts.length}
+                    </Badge>
+                  )}
+                </Button>
               </CardContent>
             </Card>
 
@@ -400,39 +413,39 @@ const ProjectDetail = () => {
                   Project taken
                 </TabsTrigger>
                 
-                {/* 🔒 Werkbonnen tab - Monteurs see ONLY their own work orders */}
-                {workOrders.length > 0 && (
-                  <TabsTrigger value="werkbonnen" className="relative">
-                    Werkbonnen
+                {/* 📋 Werkbonnen tab - Always visible, Monteurs see ONLY their own work orders */}
+                <TabsTrigger value="werkbonnen" className="relative">
+                  Werkbonnen
+                  {workOrders.length > 0 && (
                     <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
                       {profile?.role === 'Installateur' 
                         ? workOrders.filter((wo: any) => wo.created_by === user?.id).length 
                         : workOrders.length}
                     </Badge>
-                  </TabsTrigger>
-                )}
+                  )}
+                </TabsTrigger>
                 
-                {/* 📸 Foto's tab - Monteurs see ONLY their own photos */}
-                {completionPhotos.length > 0 && (
-                  <TabsTrigger value="fotos" className="relative">
-                    Foto's
+                {/* 📸 Foto's tab - Always visible, Monteurs see ONLY their own photos */}
+                <TabsTrigger value="fotos" className="relative">
+                  Foto's
+                  {completionPhotos.length > 0 && (
                     <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
                       {profile?.role === 'Installateur' 
                         ? completionPhotos.filter((p: any) => p.completion?.installer_id === user?.id).length 
                         : completionPhotos.length}
                     </Badge>
-                  </TabsTrigger>
-                )}
+                  )}
+                </TabsTrigger>
                 
-                {/* 🧾 Bonnetjes tab - Show project receipts */}
-                {receipts.length > 0 && (
-                  <TabsTrigger value="bonnetjes" className="relative">
-                    Bonnetjes
+                {/* 🧾 Bonnetjes tab - Always visible */}
+                <TabsTrigger value="bonnetjes" className="relative">
+                  Bonnetjes
+                  {receipts.length > 0 && (
                     <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
                       {receipts.length}
                     </Badge>
-                  </TabsTrigger>
-                )}
+                  )}
+                </TabsTrigger>
                 
                 {/* 🔒 Facturen en Offertes tabs NIET voor Installateurs */}
                 {profile?.role !== 'Installateur' && (
