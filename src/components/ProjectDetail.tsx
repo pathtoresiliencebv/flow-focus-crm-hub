@@ -25,6 +25,7 @@ const ProjectDetail = () => {
   const { profile, user } = useAuth();
   const [showMaterials, setShowMaterials] = useState(false);
   const [showPersonnel, setShowPersonnel] = useState(false);
+  const [showReceipts, setShowReceipts] = useState(false);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [quotes, setQuotes] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
@@ -372,18 +373,75 @@ const ProjectDetail = () => {
                   </SheetContent>
                 </Sheet>
 
-                <Button 
-                  className="w-full bg-red-700 hover:bg-red-800 text-white"
-                  onClick={() => navigate(`/receipts/project/${projectId}`)}
-                >
-                  <Receipt className="mr-2 h-4 w-4" />
-                  Bonnetjes
-                  {receipts.length > 0 && (
-                    <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs bg-white text-red-700">
-                      {receipts.length}
-                    </Badge>
-                  )}
-                </Button>
+                <Sheet open={showReceipts} onOpenChange={setShowReceipts}>
+                  <SheetTrigger asChild>
+                    <Button className="w-full bg-red-700 hover:bg-red-800 text-white">
+                      <Receipt className="mr-2 h-4 w-4" />
+                      Bonnetjes
+                      {receipts.length > 0 && (
+                        <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs bg-white text-red-700">
+                          {receipts.length}
+                        </Badge>
+                      )}
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+                    <SheetHeader>
+                      <SheetTitle>Project Bonnetjes</SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-4">
+                      {receipts.length > 0 ? (
+                        <div className="space-y-3">
+                          {receipts.map((receipt: any) => (
+                            <Card key={receipt.id}>
+                              <CardContent className="p-4">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <p className="font-medium">{receipt.description || 'Bonnetje'}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      €{receipt.amount?.toFixed(2) || '0.00'}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {format(new Date(receipt.created_at), 'dd-MM-yyyy HH:mm', { locale: nl })}
+                                    </p>
+                                  </div>
+                                  {receipt.status && (
+                                    <Badge 
+                                      variant={
+                                        receipt.status === 'approved' ? 'default' : 
+                                        receipt.status === 'rejected' ? 'destructive' : 
+                                        'secondary'
+                                      }
+                                    >
+                                      {receipt.status === 'approved' ? 'Goedgekeurd' :
+                                       receipt.status === 'rejected' ? 'Afgekeurd' :
+                                       'In behandeling'}
+                                    </Badge>
+                                  )}
+                                </div>
+                                {receipt.receipt_url && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="mt-2"
+                                    onClick={() => window.open(receipt.receipt_url, '_blank')}
+                                  >
+                                    Bekijk bonnetje
+                                  </Button>
+                                )}
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Receipt className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                          <p>Nog geen bonnetjes voor dit project</p>
+                        </div>
+                      )}
+                    </div>
+                  </SheetContent>
+                </Sheet>
               </CardContent>
             </Card>
 
