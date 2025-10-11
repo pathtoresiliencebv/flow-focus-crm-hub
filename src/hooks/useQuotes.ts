@@ -8,6 +8,12 @@ export const useQuotes = () => {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Auto-fetch quotes on mount
+  useEffect(() => {
+    console.log('📊 useQuotes: Initializing, fetching quotes...');
+    fetchQuotes();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const fetchQuotes = async (includeArchived = false) => {
     try {
       setLoading(true);

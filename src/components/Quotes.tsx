@@ -30,16 +30,31 @@ export function Quotes() {
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
   
   // Effect to detect route and show new quote form
   useEffect(() => {
     setShowNewQuoteForm(location.pathname === "/quotes/new");
   }, [location.pathname]);
 
+  // Timeout fallback to prevent infinite loading
+  useEffect(() => {
+    if (quotesLoading || crmLoading) {
+      const timer = setTimeout(() => {
+        console.warn('⚠️ Loading timeout reached, forcing render');
+        setLoadingTimeout(true);
+      }, 5000); // 5 second timeout
+      
+      return () => clearTimeout(timer);
+    } else {
+      setLoadingTimeout(false);
+    }
+  }, [quotesLoading, crmLoading]);
+
   // Combined loading state with timeout fallback
-  const loading = quotesLoading || crmLoading;
+  const loading = (quotesLoading || crmLoading) && !loadingTimeout;
   
-  // Show loading state if data is being fetched
+  // Show loading state if data is being fetched (with timeout)
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
