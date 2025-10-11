@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarDays, Users, FolderKanban, CheckCircle2, TrendingUp } from "lucide-react";
 import { useCrmStore } from "@/hooks/useCrmStore";
@@ -9,20 +9,20 @@ export const Dashboard = () => {
   const { projects, customers } = useCrmStore();
   const { profile, user } = useAuth();
 
-  // Filter projects based on user role (Installateurs only see their assigned projects)
-  const filteredProjects = profile?.role === 'Installateur' 
-    ? projects.filter(p => p.assigned_user_id === user?.id)
-    : projects;
+  // 🔥 CRITICAL FIX: useCrmStore ALREADY filters projects for Installateurs!
+  // No need to filter again here - that causes new array references every render → infinite loop!
+  // Just use the projects directly from useCrmStore
+  const filteredProjects = projects;
 
-  // Calculate statistics for admin/administratie
-  const stats = {
+  // 🔥 Memoize statistics to prevent infinite loops
+  const stats = useMemo(() => ({
     totalCustomers: customers.length,
     activeProjects: projects.filter(p => p.status !== 'afgerond' && p.status !== 'geannuleerd').length,
     completedProjects: projects.filter(p => p.status === 'afgerond').length,
     totalRevenue: projects
       .filter(p => p.status === 'afgerond')
       .reduce((sum, p) => sum + (p.value || 0), 0),
-  };
+  }), [customers.length, projects]);
 
   return (
     <div className="h-full bg-gradient-to-br from-slate-50 to-blue-50 overflow-auto">
