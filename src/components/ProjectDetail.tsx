@@ -524,7 +524,7 @@ const ProjectDetail = () => {
                         <div 
                           key={quote.id} 
                           className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                          onClick={() => navigate(`/quotes/${quote.id}`)}
+                          onClick={() => navigate(`/quotes/${quote.id}/preview`)}
                         >
                           <div className="flex-1">
                             <p className="font-medium">Offerte #{quote.quote_number}</p>
