@@ -101,8 +101,8 @@ export const useProjectCompletion = () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       queryClient.invalidateQueries({ queryKey: ['work_time_logs'] });
       toast({
-        title: "Project gestart ✅",
-        description: "Tijdsregistratie is gestart. Succes met je werk!",
+        title: "✅ Project Gestart!",
+        description: "Tijdsregistratie loopt automatisch mee. Succes met je werk!",
       });
     },
     onError: (error: Error) => {
@@ -159,13 +159,51 @@ export const useProjectCompletion = () => {
 
       // Update work_time_log if provided
       if (completionData.work_time_log_id) {
-        await supabase
+        const { data: workTimeLog, error: workTimeError } = await supabase
           .from('work_time_logs')
-          .update({ 
-            ended_at: new Date().toISOString(),
-            status: 'completed'
-          })
-          .eq('id', completionData.work_time_log_id);
+          .select('*')
+          .eq('id', completionData.work_time_log_id)
+          .single();
+        
+        if (!workTimeError && workTimeLog) {
+          // Update work_time_log as completed
+          await supabase
+            .from('work_time_logs')
+            .update({ 
+              ended_at: new Date().toISOString(),
+              status: 'completed'
+            })
+            .eq('id', completionData.work_time_log_id);
+          
+          // ✅ AUTOMATICALLY create project_registration from work_time_log
+          // This makes the time registration visible in the Time Registration page
+          console.log('⏱️ Creating automatic project_registration from work_time_log...');
+          
+          const startTime = new Date(workTimeLog.started_at);
+          const endTime = new Date();
+          const totalHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+          
+          const { error: registrationError } = await supabase
+            .from('project_registrations')
+            .insert({
+              project_id: completionData.project_id,
+              user_id: user.id,
+              registration_type: 'hours',
+              start_time: workTimeLog.started_at,
+              end_time: new Date().toISOString(),
+              hours_type: 'normaal', // Default to normal hours
+              quantity: totalHours,
+              description: `Automatisch geregistreerd bij project oplevering`,
+              is_approved: false // Needs approval
+            });
+          
+          if (registrationError) {
+            console.error('⚠️ Error creating project_registration:', registrationError);
+            // Don't throw - completion should still succeed
+          } else {
+            console.log('✅ Automatic project_registration created:', totalHours.toFixed(2), 'hours');
+          }
+        }
       }
 
       // Generate work order PDF automatically
@@ -201,9 +239,12 @@ export const useProjectCompletion = () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       queryClient.invalidateQueries({ queryKey: ['project_completions'] });
       queryClient.invalidateQueries({ queryKey: ['work_time_logs'] });
+      queryClient.invalidateQueries({ queryKey: ['time-registrations'] }); // ✅ Refresh time registrations
+      queryClient.invalidateQueries({ queryKey: ['project_work_orders'] }); // ✅ Refresh work orders
+      queryClient.invalidateQueries({ queryKey: ['completion_photos'] }); // ✅ Refresh completion photos
       toast({
-        title: "Project opgeleverd ✅",
-        description: "Het project is succesvol opgeleverd en afgerond.",
+        title: "✅ Project Opgeleverd!",
+        description: "Project afgerond en tijdsregistratie automatisch aangemaakt.",
       });
     },
     onError: (error: Error) => {
