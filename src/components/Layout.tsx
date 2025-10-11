@@ -207,11 +207,16 @@ function LayoutContent() {
                   <p className="text-xs text-muted-foreground">{profile?.role || 'Gebruiker'}</p>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => handleNavigation('/settings')}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  Instellingen
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
+                {/* 🔒 Installateurs kunnen GEEN instellingen zien */}
+                {hasPermission('settings_edit') && (
+                  <>
+                    <DropdownMenuItem onClick={() => handleNavigation('/settings')}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      Instellingen
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem onClick={logout} className="text-red-600">
                   <LogOut className="mr-2 h-4 w-4" />
                   Uitloggen

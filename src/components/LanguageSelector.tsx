@@ -51,19 +51,32 @@ export function LanguageSelector() {
     if (!user?.id) return;
 
     try {
+      console.log('🌍 LanguageSelector: Loading language for user:', user.id);
       const { data, error } = await supabase
         .from('user_language_preferences')
         .select('ui_language')
         .eq('user_id', user.id)
         .single();
 
-      if (!error && data?.ui_language) {
+      if (error) {
+        console.error('❌ Failed to load user language:', error);
+        // If no preference exists yet, use default 'nl'
+        if (error.code === 'PGRST116') {
+          console.log('ℹ️ No language preference found, using default: nl');
+          setCurrentLanguage('nl');
+          i18n.setLanguage('nl', user.id);
+        }
+        return;
+      }
+
+      if (data?.ui_language) {
         const lang = data.ui_language as Language;
+        console.log('✅ User language loaded:', lang);
         setCurrentLanguage(lang);
         i18n.setLanguage(lang, user.id);
       }
     } catch (error) {
-      console.error('Failed to load user language:', error);
+      console.error('❌ Exception loading user language:', error);
     }
   };
 
@@ -73,6 +86,8 @@ export function LanguageSelector() {
     setLoading(true);
     try {
       const lang = languageCode as Language;
+
+      console.log('🌍 Changing language to:', lang, 'for user:', user.id);
 
       // Update in database
       const { error } = await supabase
@@ -86,7 +101,12 @@ export function LanguageSelector() {
           onConflict: 'user_id'
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Database upsert error:', error);
+        throw error;
+      }
+
+      console.log('✅ Language saved to database:', lang);
 
       // Update i18n service and load translations
       await i18n.setLanguage(lang, user.id);
@@ -98,11 +118,11 @@ export function LanguageSelector() {
         title: "✅ Taal gewijzigd",
         description: `Interface taal is ingesteld op ${languageName}.`,
       });
-    } catch (error) {
-      console.error('Failed to change language:', error);
+    } catch (error: any) {
+      console.error('❌ Failed to change language:', error);
       toast({
         title: "❌ Fout bij wijzigen taal",
-        description: "Er ging iets mis bij het wijzigen van de taal.",
+        description: error?.message || "Er ging iets mis bij het wijzigen van de taal.",
         variant: "destructive",
       });
     } finally {
