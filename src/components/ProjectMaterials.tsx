@@ -80,7 +80,8 @@ export const ProjectMaterials = ({ projectId }: ProjectMaterialsProps) => {
   };
   
   // Check if user has permission to manage materials
-  const canManageMaterials = profile?.role === 'Administrator' || profile?.role === 'Administratie';
+  // ✅ Installateurs CAN add materials (they need to register materials used on projects)
+  const canManageMaterials = profile?.role === 'Administrator' || profile?.role === 'Administratie' || profile?.role === 'Installateur';
 
   return (
     <Card>
@@ -132,6 +133,8 @@ export const ProjectMaterials = ({ projectId }: ProjectMaterialsProps) => {
                     required
                   />
                 </div>
+              {/* 🔒 Installateurs vullen GEEN prijzen in - deze worden op 0 gezet */}
+              {profile?.role !== 'Installateur' && (
                 <div className="space-y-2">
                   <Label htmlFor="unit_price">Prijs per eenheid (€)</Label>
                   <Input
@@ -144,6 +147,7 @@ export const ProjectMaterials = ({ projectId }: ProjectMaterialsProps) => {
                     required
                   />
                 </div>
+              )}
               </div>
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -195,8 +199,13 @@ export const ProjectMaterials = ({ projectId }: ProjectMaterialsProps) => {
                   <TableHead>Materiaal</TableHead>
                   <TableHead>Leverancier</TableHead>
                   <TableHead>Aantal</TableHead>
-                  <TableHead>Prijs/eenheid</TableHead>
-                  <TableHead>Totaal</TableHead>
+                  {/* 🔒 Installateurs zien GEEN bedragen */}
+                  {profile?.role !== 'Installateur' && (
+                    <>
+                      <TableHead>Prijs/eenheid</TableHead>
+                      <TableHead>Totaal</TableHead>
+                    </>
+                  )}
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
@@ -206,8 +215,13 @@ export const ProjectMaterials = ({ projectId }: ProjectMaterialsProps) => {
                     <TableCell className="font-medium">{material.material_name}</TableCell>
                     <TableCell>{material.supplier || '-'}</TableCell>
                     <TableCell>{material.quantity}</TableCell>
-                    <TableCell>€{material.unit_price?.toFixed(2) || '0.00'}</TableCell>
-                    <TableCell>€{material.total_cost?.toFixed(2) || '0.00'}</TableCell>
+                    {/* 🔒 Installateurs zien GEEN bedragen */}
+                    {profile?.role !== 'Installateur' && (
+                      <>
+                        <TableCell>€{material.unit_price?.toFixed(2) || '0.00'}</TableCell>
+                        <TableCell>€{material.total_cost?.toFixed(2) || '0.00'}</TableCell>
+                      </>
+                    )}
                     <TableCell>
                       {canManageMaterials && (
                         <div className="flex gap-2">
@@ -232,12 +246,15 @@ export const ProjectMaterials = ({ projectId }: ProjectMaterialsProps) => {
                 ))}
               </TableBody>
             </Table>
-            <div className="mt-4 p-4 bg-muted rounded-lg">
-              <div className="flex justify-between items-center font-semibold">
-                <span>Totale materiaalkosten:</span>
-                <span>€{totalMaterialCost.toFixed(2)}</span>
+            {/* 🔒 Totale kosten NIET voor Installateurs */}
+            {profile?.role !== 'Installateur' && (
+              <div className="mt-4 p-4 bg-muted rounded-lg">
+                <div className="flex justify-between items-center font-semibold">
+                  <span>Totale materiaalkosten:</span>
+                  <span>€{totalMaterialCost.toFixed(2)}</span>
+                </div>
               </div>
-            </div>
+            )}
           </>
         )}
       </CardContent>
