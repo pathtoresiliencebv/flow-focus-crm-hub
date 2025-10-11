@@ -192,8 +192,13 @@ export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
   };
 
   const renderLink = (link: any, isCollapsible = false, mini = false) => {
-    if (link.permission && !hasPermission(link.permission)) {
-      return null;
+    // 🔍 DEBUG: Log permission checks
+    if (link.permission) {
+      const hasPerm = hasPermission(link.permission);
+      console.log(`🔍 Sidebar: ${link.label} (${link.permission}) → ${hasPerm ? '✅ SHOW' : '❌ HIDE'}`);
+      if (!hasPerm) {
+        return null;
+      }
     }
 
     const isActive = activeTab === link.key;
