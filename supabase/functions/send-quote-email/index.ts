@@ -139,7 +139,7 @@ const handler = async (req: Request): Promise<Response> => {
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://smanscrm.nl/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="SMANS" style="max-height: 60px; margin-bottom: 10px;">
+            <img src="https://smanscrm.nl/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="Onderhoud en Service J.J.P. Smans" style="max-height: 60px; margin-bottom: 10px;">
             <h1>Onderhoud en Service J.J.P. Smans</h1>
             <h2>Offerte ${quote.quote_number}</h2>
           </div>
