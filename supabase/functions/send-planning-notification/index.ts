@@ -72,7 +72,7 @@ serve(async (req) => {
       endDateTime: new Date(`${planning.start_date}T${planning.end_time}`),
       customerName: customer.full_name,
       customerEmail: customer.email,
-      monteurName: planning.assigned_user?.full_name || 'SMANS BV',
+      monteurName: planning.assigned_user?.full_name || 'Onderhoud en Service J.J.P. Smans',
       confirmationUrl: `${Deno.env.get('APP_URL') || 'https://smanscrm.nl'}/confirm/${planningId}`
     })
 
@@ -216,7 +216,7 @@ URL:${params.confirmationUrl}
 BEGIN:VALARM
 ACTION:DISPLAY
 TRIGGER:-PT24H
-DESCRIPTION:Herinnering: Afspraak morgen bij SMANS BV
+DESCRIPTION:Herinnering: Afspraak morgen bij Onderhoud en Service J.J.P. Smans
 END:VALARM
 END:VEVENT
 END:VCALENDAR`
@@ -252,7 +252,7 @@ function generateEmailHTML(params: any): string {
     <!-- Header -->
     <div style="background: linear-gradient(135deg, #3b82f6, #1e40af); color: white; padding: 30px 20px; text-align: center;">
       <h1 style="margin: 0; font-size: 24px;">📅 Afspraak ${notificationType === 'planning_created' ? 'Bevestiging' : 'Update'}</h1>
-      <p style="margin: 10px 0 0 0; opacity: 0.9;">SMANS BV - Uw kozijnenspecialist</p>
+      <p style="margin: 10px 0 0 0; opacity: 0.9;">Onderhoud en Service J.J.P. Smans - Uw specialist</p>
     </div>
 
     <!-- Content -->
@@ -325,13 +325,13 @@ function generateEmailHTML(params: any): string {
 
       <p style="margin: 20px 0;">
         Met vriendelijke groet,<br>
-        <strong>SMANS BV</strong>
+        <strong>Onderhoud en Service J.J.P. Smans</strong>
       </p>
     </div>
 
     <!-- Footer -->
     <div style="background: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
-      <p style="margin: 0 0 10px 0;"><strong>SMANS BV</strong></p>
+      <p style="margin: 0 0 10px 0;"><strong>Onderhoud en Service J.J.P. Smans</strong></p>
       <p style="margin: 5px 0; font-size: 14px; color: #64748b;">
         📧 info@smansbv.nl | 📞 +31 (0)20 123 4567
       </p>
@@ -356,9 +356,9 @@ function generateSMSMessage(params: any): string {
   const formattedTime = startDate.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
 
   if (notificationType === 'planning_cancelled') {
-    return `SMANS BV: Uw afspraak voor ${planning.title} is geannuleerd. Bel ons voor een nieuwe afspraak: 020-1234567`
+    return `Onderhoud en Service J.J.P. Smans: Uw afspraak voor ${planning.title} is geannuleerd. Bel ons voor een nieuwe afspraak: 020-1234567`
   }
 
-  return `SMANS BV: Afspraak ${notificationType === 'planning_created' ? 'bevestigd' : 'gewijzigd'} - ${planning.title} op ${formattedDate} om ${formattedTime}. Check uw email voor details.`
+  return `Onderhoud en Service J.J.P. Smans: Afspraak ${notificationType === 'planning_created' ? 'bevestigd' : 'gewijzigd'} - ${planning.title} op ${formattedDate} om ${formattedTime}. Check uw email voor details.`
 }
 

@@ -191,12 +191,12 @@ const generateInvoiceHTML = (invoice: any, settings: any, paymentData?: { paymen
     <body>
       <div class="header">
         <div class="company-info">
-          <h1>${settings?.company_name || 'SMANS BV'}</h1>
+          <h1>${settings?.company_name || 'Onderhoud en Service J.J.P. Smans'}</h1>
           <p>
             ${settings?.address || 'Adres niet beschikbaar'}<br>
             ${settings?.postal_code || ''} ${settings?.city || ''}<br>
             Tel: ${settings?.phone || ''}<br>
-            Email: ${settings?.email || 'info@smanscrm.nl'}
+            Email: ${settings?.email || 'info@smansonderhoud.nl'}
           </p>
         </div>
         
@@ -254,7 +254,7 @@ const generateInvoiceHTML = (invoice: any, settings: any, paymentData?: { paymen
           <p><strong>Te betalen binnen:</strong> ${Math.ceil((new Date(invoice.due_date).getTime() - new Date(invoice.invoice_date).getTime()) / (1000 * 60 * 60 * 24))} dagen</p>
           <p><strong>IBAN:</strong> ${settings?.iban || 'NL91ABNA0417164300'}</p>
           <p><strong>BIC:</strong> ${settings?.bic || 'ABNANL2A'}</p>
-          <p><strong>Ten name van:</strong> ${settings?.company_name || 'SMANS BV'}</p>
+          <p><strong>Ten name van:</strong> ${settings?.company_name || 'Onderhoud en Service J.J.P. Smans'}</p>
           
           <div class="qr-code">
             <p><strong>QR Code voor betaling:</strong></p>

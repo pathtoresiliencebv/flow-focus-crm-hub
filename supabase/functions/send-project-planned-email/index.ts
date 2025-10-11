@@ -74,7 +74,7 @@ Uw project "{project_title}" is ingepland.
 Wij zien u graag tegemoet!
 
 Met vriendelijke groet,
-SMANS BV`;
+Onderhoud en Service J.J.P. Smans`;
 
     // Format date in Dutch
     const planningDate = new Date(emailData.planningDate);
@@ -168,7 +168,7 @@ SMANS BV`;
       ${emailBody.split('\n').map(line => `<p>${line}</p>`).join('')}
     </div>
     <div class="footer">
-      <p><strong>SMANS BV</strong></p>
+      <p><strong>Onderhoud en Service J.J.P. Smans</strong></p>
       <p>📧 info@smansonderhoud.nl</p>
       <p>📞 Bel ons voor vragen</p>
     </div>

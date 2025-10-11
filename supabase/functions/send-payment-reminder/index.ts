@@ -345,7 +345,7 @@ const handler = async (req: Request): Promise<Response> => {
               
               <p style="margin-top: 25px;">
                 Met vriendelijke groet,<br>
-                <strong>SMANS BV</strong><br>
+                <strong>Onderhoud en Service J.J.P. Smans</strong><br>
                 <span style="color: #6b7280;">Team Administratie</span>
               </p>
             </div>
@@ -354,8 +354,8 @@ const handler = async (req: Request): Promise<Response> => {
               <p>Deze email is automatisch gegenereerd vanuit ons factureringssysteem.</p>
               <p>De factuur is bijgevoegd als PDF.</p>
               <div class="company-info">
-                <strong>SMANS BV</strong><br>
-                📧 info@smanscrm.nl • 📞 +31 (0)6 12345678
+                <strong>Onderhoud en Service J.J.P. Smans</strong><br>
+                📧 info@smansonderhoud.nl • 📞 +31 (0)6 12345678
               </div>
             </div>
           </div>
@@ -386,7 +386,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const emailResponse = await resend.emails.send({
-      from: "SMANS BV <factuur@smanscrm.nl>",
+      from: "Onderhoud en Service J.J.P. Smans <info@smansonderhoud.nl>",
       to: [recipientEmail],
       subject: reminderSubjects[reminderNumber - 1],
       html: emailHtml,

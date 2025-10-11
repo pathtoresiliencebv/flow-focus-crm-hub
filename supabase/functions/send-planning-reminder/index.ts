@@ -227,7 +227,7 @@ function generateReminderEmailHTML(params: any): string {
       <p style="font-size: 16px; margin: 0 0 20px 0;">Beste ${customer.full_name},</p>
       
       <p style="margin: 0 0 20px 0; font-size: 16px;">
-        Dit is een <strong>vriendelijke herinnering</strong> voor uw afspraak morgen bij SMANS BV.
+        Dit is een <strong>vriendelijke herinnering</strong> voor uw afspraak morgen bij Onderhoud en Service J.J.P. Smans.
       </p>
 
       <!-- Planning Details -->
@@ -291,13 +291,13 @@ function generateReminderEmailHTML(params: any): string {
 
       <p style="margin: 20px 0 0 0;">
         Tot morgen!<br>
-        <strong>Team SMANS BV</strong>
+        <strong>Team Onderhoud en Service J.J.P. Smans</strong>
       </p>
     </div>
 
     <!-- Footer -->
     <div style="background: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
-      <p style="margin: 0 0 10px 0;"><strong>SMANS BV - Uw Kozijnenspecialist</strong></p>
+      <p style="margin: 0 0 10px 0;"><strong>Onderhoud en Service J.J.P. Smans - Uw Specialist</strong></p>
       <p style="margin: 5px 0; font-size: 14px; color: #64748b;">
         www.smansbv.nl
       </p>

@@ -178,7 +178,7 @@ function buildEmailContent(params: {
   const boundary = `----=_Part_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
   
   let email = ''
-  email += `From: SMANS BV <${from}>\r\n`
+  email += `From: Onderhoud en Service J.J.P. Smans <${from}>\r\n`
   email += `To: ${to.join(', ')}\r\n`
   
   if (cc && cc.length > 0) {

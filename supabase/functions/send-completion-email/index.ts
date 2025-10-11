@@ -323,12 +323,12 @@ function generateEmailHTML(data: CompletionEmailData): string {
             
             <p style="margin-top: 20px;">Met vriendelijke groet,<br>
             <strong>${data.monteurName}</strong><br>
-            SMANS BV</p>
+            Onderhoud en Service J.J.P. Smans</p>
         </div>
         
         <div class="footer">
             <div class="company-info">
-                <p><strong>SMANS BV</strong></p>
+                <p><strong>Onderhoud en Service J.J.P. Smans</strong></p>
                 <p>📧 info@smansbv.nl | 📞 +31 (0)20 123 4567</p>
                 <p>🌐 www.smansbv.nl</p>
             </div>

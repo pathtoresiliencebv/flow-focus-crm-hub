@@ -140,7 +140,7 @@ const handler = async (req: Request): Promise<Response> => {
         <div class="container">
           <div class="header">
             <img src="https://smanscrm.nl/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="SMANS" style="max-height: 60px; margin-bottom: 10px;">
-            <h1>SMANS BV</h1>
+            <h1>Onderhoud en Service J.J.P. Smans</h1>
             <h2>Offerte ${quote.quote_number}</h2>
           </div>
           
@@ -191,7 +191,7 @@ const handler = async (req: Request): Promise<Response> => {
             <p>Voor vragen over deze offerte kunt u contact met ons opnemen.</p>
             
             <p>Met vriendelijke groet,<br>
-            <strong>SMANS BV</strong><br>
+            <strong>Onderhoud en Service J.J.P. Smans</strong><br>
             Team Verkoop</p>
           </div>
         </div>
@@ -240,9 +240,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send email via Resend
     const emailResponse = await resend.emails.send({
-      from: "SMANS BV <offerte@smanscrm.nl>",
+      from: "Onderhoud en Service J.J.P. Smans <info@smansonderhoud.nl>",
       to: [recipientEmail],
-      subject: subject || `Offerte ${quote.quote_number} - SMANS BV`,
+      subject: subject || `Offerte ${quote.quote_number} - Onderhoud en Service J.J.P. Smans`,
       html: emailHtml,
       attachments: attachments
     });
