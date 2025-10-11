@@ -31,7 +31,7 @@ export default function ProjectsPage() {
       setTitle("");
       setActions(null);
     };
-  }, [setTitle, setActions]); // Remove handleNewProject from dependencies
+  }, [setTitle, setActions, handleNewProject]); // Fixed: Added handleNewProject to dependencies
 
   return (
     <ErrorBoundary>

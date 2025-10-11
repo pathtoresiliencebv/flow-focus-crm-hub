@@ -82,23 +82,40 @@ export const ProjectActivities: React.FC<ProjectActivitiesProps> = ({ projectId 
       console.log('📊 ProjectActivities: Fetching activities for project:', projectId);
       
       try {
-        const { data, error } = await supabase
+        // First fetch activities
+        const { data: activitiesData, error: activitiesError } = await supabase
           .from('project_activities')
-          .select(`
-            *,
-            user:profiles!user_id(full_name, avatar_url)
-          `)
+          .select('*')
           .eq('project_id', projectId)
           .order('created_at', { ascending: false })
           .limit(20);
 
-        if (error) {
-          console.error('❌ Error fetching activities:', error);
-          throw error;
+        if (activitiesError) {
+          console.error('❌ Error fetching activities:', activitiesError);
+          throw activitiesError;
         }
 
-        console.log('✅ Fetched activities:', data?.length || 0);
-        setActivities(data || []);
+        // Then fetch user details separately for each unique user_id
+        const userIds = [...new Set(activitiesData?.map(a => a.user_id) || [])];
+        const { data: usersData, error: usersError } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .in('id', userIds);
+
+        if (usersError) {
+          console.warn('⚠️ Error fetching user details:', usersError);
+          // Continue without user details
+        }
+
+        // Map user data to activities
+        const usersMap = new Map(usersData?.map(u => [u.id, u]) || []);
+        const enrichedActivities = activitiesData?.map(activity => ({
+          ...activity,
+          user: usersMap.get(activity.user_id) || null
+        })) || [];
+
+        console.log('✅ Fetched activities:', enrichedActivities.length);
+        setActivities(enrichedActivities);
       } catch (error: any) {
         console.error('❌ Error in fetchActivities:', error);
       } finally {

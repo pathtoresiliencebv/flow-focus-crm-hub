@@ -174,7 +174,7 @@ export const useAdminDataLoader = () => {
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
-          .order('created_at', { ascending: false });
+          .order('updated_at', { ascending: false });
         
         if (error) {
           console.warn('Error loading users:', error);
@@ -197,7 +197,7 @@ export const useAdminDataLoader = () => {
           .from('profiles')
           .select('*')
           .in('role', ['Installateur', 'Verkoper', 'Administratie'])
-          .order('created_at', { ascending: false });
+          .order('updated_at', { ascending: false });
         
         if (error) {
           console.warn('Error loading personnel:', error);

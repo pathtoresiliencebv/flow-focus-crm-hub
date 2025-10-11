@@ -16,7 +16,7 @@ const fetchUsers = async (): Promise<User[]> => {
     const { data, error } = await supabase
       .from('profiles')
       .select('id, full_name, role, email')
-      .order('created_at', { ascending: false });
+      .order('updated_at', { ascending: false });
     
     console.log('📦 fetchUsers: Response -', { data: data?.length, error });
     
