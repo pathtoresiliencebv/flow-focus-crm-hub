@@ -319,26 +319,31 @@ export const useCrmStore = () => {
     userId: user?.id
   }), [isLoadingCustomers, isLoadingProjects, allProjects.length, projects.length, profile?.role, user?.id]);
 
-  // Memoize wrapper functions to prevent infinite loops - these were being recreated every render!
+  // Memoize wrapper functions with EMPTY deps - mutation objects are stable
+  // ⚠️ DO NOT add mutation.mutateAsync to deps - it changes every render!
   const updateCustomerFn = useCallback((id: string, data: UpdateCustomer) => 
     updateCustomerMutation.mutateAsync({ id, ...data }), 
-    [updateCustomerMutation.mutateAsync]
+    [] // Empty deps - the mutation object itself is stable
   );
 
   const updateProjectFn = useCallback((id: string, data: UpdateProject) => 
     updateProjectMutation.mutateAsync({ id, ...data }), 
-    [updateProjectMutation.mutateAsync]
+    [] // Empty deps - the mutation object itself is stable
   );
 
   // 🔥 CRITICAL: Memoize the entire return object to prevent infinite loops!
   // Without this, every call to useCrmStore() returns a NEW object reference,
   // which triggers re-renders in all components that destructure values from it.
+  // 
+  // ⚠️ IMPORTANT: DO NOT include mutation functions in deps!
+  // React Query mutations create new function references on every render,
+  // which would cause this useMemo to constantly re-run → infinite loop!
   return useMemo(() => ({
     customers,
     projects, // Components will now receive the transformed project object
     isLoading: isLoadingCustomers || isLoadingProjects,
     
-    // Provide async functions for components to call - now stable references
+    // Provide async functions for components to call
     addCustomer: addCustomerMutation.mutateAsync,
     updateCustomer: updateCustomerFn,
     deleteCustomer: deleteCustomerMutation.mutateAsync,
@@ -354,12 +359,7 @@ export const useCrmStore = () => {
     projects, 
     isLoadingCustomers, 
     isLoadingProjects, 
-    addCustomerMutation.mutateAsync,
-    updateCustomerFn,
-    deleteCustomerMutation.mutateAsync,
-    addProjectMutation.mutateAsync,
-    updateProjectFn,
-    deleteProjectMutation.mutateAsync,
     debug
+    // ❌ DO NOT ADD mutation functions here - they change every render!
   ]);
 };
