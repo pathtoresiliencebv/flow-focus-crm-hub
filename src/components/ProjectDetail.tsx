@@ -873,7 +873,8 @@ const ProjectDetail = () => {
           onClose={() => setShowDeliveryDialog(false)}
           onComplete={() => {
             setShowDeliveryDialog(false);
-            window.location.reload();
+            // Navigate to projects list after successful delivery
+            navigate('/projects');
           }}
         />
       )}
