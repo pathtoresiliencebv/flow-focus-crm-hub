@@ -224,32 +224,8 @@ export const ProjectsBoard: React.FC<ProjectsBoardProps> = memo(({ showNewProjec
     });
   }, [isLoading, projects.length]); // debug is only for logging, doesn't need to trigger re-runs
 
-  // Show loading state while data is being fetched
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Projecten laden...</p>
-          <p className="text-xs text-gray-400 mt-2">
-            Debug: {debug?.isLoadingCustomers ? 'Customers loading' : ''} {debug?.isLoadingProjects ? 'Projects loading' : ''}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  // Show error state if users failed to load but continue rendering
-  if (usersError) {
-    console.warn('Users loading error:', usersError);
-    // Continue rendering but with empty users array
-  }
-
-  // If user is Installateur, show simplified view
-  if (profile?.role === 'Installateur') {
-    return <InstallateurProjectList />;
-  }
-
+  // 🔥 CRITICAL: ALL HOOKS MUST BE BEFORE EARLY RETURNS!
+  // React Hooks Rule: Hooks must be called in the same order every render
   const handleDragEnd = useCallback(async (result: DropResult) => {
     const { destination, source, draggableId } = result;
 
@@ -295,6 +271,33 @@ export const ProjectsBoard: React.FC<ProjectsBoardProps> = memo(({ showNewProjec
     }, {}), 
     [projects]
   );
+
+  // Now we can do early returns AFTER all hooks are defined
+  // Show loading state while data is being fetched
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Projecten laden...</p>
+          <p className="text-xs text-gray-400 mt-2">
+            Debug: {debug?.isLoadingCustomers ? 'Customers loading' : ''} {debug?.isLoadingProjects ? 'Projects loading' : ''}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state if users failed to load but continue rendering
+  if (usersError) {
+    console.warn('Users loading error:', usersError);
+    // Continue rendering but with empty users array
+  }
+
+  // If user is Installateur, show simplified view
+  if (profile?.role === 'Installateur') {
+    return <InstallateurProjectList />;
+  }
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
