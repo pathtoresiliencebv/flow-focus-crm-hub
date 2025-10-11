@@ -266,32 +266,34 @@ const ProjectDetail = () => {
               </Card>
             )}
 
-            {/* Financieel overzicht */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Financieel overzicht</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Gebudgetteerd</p>
-                    <p className="text-2xl font-bold text-gray-700">{formatCurrency(project.value)}</p>
+            {/* Financieel overzicht - 🔒 NIET voor Installateurs */}
+            {profile?.role !== 'Installateur' && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">Financieel overzicht</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Gebudgetteerd</p>
+                      <p className="text-2xl font-bold text-gray-700">{formatCurrency(project.value)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Gefactureerd</p>
+                      <p className="text-2xl font-bold text-green-600">
+                        {formatCurrency(invoices.reduce((sum, inv) => sum + (inv.total_amount || inv.total || 0), 0))}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Resterend</p>
+                      <p className="text-2xl font-bold text-orange-600">
+                        {formatCurrency((project.value || 0) - invoices.reduce((sum, inv) => sum + (inv.total_amount || inv.total || 0), 0))}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Gefactureerd</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {formatCurrency(invoices.reduce((sum, inv) => sum + (inv.total_amount || inv.total || 0), 0))}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Resterend</p>
-                    <p className="text-2xl font-bold text-orange-600">
-                      {formatCurrency((project.value || 0) - invoices.reduce((sum, inv) => sum + (inv.total_amount || inv.total || 0), 0))}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* RIGHT COLUMN - Details buttons & Activity */}
@@ -371,8 +373,13 @@ const ProjectDetail = () => {
                     </Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="facturen">Facturen</TabsTrigger>
-                <TabsTrigger value="offertes">Offertes</TabsTrigger>
+                {/* 🔒 Facturen en Offertes tabs NIET voor Installateurs */}
+                {profile?.role !== 'Installateur' && (
+                  <>
+                    <TabsTrigger value="facturen">Facturen</TabsTrigger>
+                    <TabsTrigger value="offertes">Offertes</TabsTrigger>
+                  </>
+                )}
               </TabsList>
 
               {/* PROJECT TAKEN TAB */}

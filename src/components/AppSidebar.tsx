@@ -104,7 +104,8 @@ export function AppSidebar({ children }: AppSidebarProps) {
       label: "Bonnetjes",
       icon: <Receipt className="h-5 w-5" />,
       path: "/receipts",
-      permission: "invoices_view",
+      // 🔧 Changed from invoices_view to projects_view so Installateurs CAN upload receipts!
+      permission: "projects_view",
     },
     {
       label: "Personeel",
