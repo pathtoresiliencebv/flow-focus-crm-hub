@@ -44,7 +44,7 @@ export default function ProjectsPage() {
       setTitle("");
       setActions(null);
     };
-  }, [setTitle, setActions, headerActions]); // headerActions is now stable
+  }, [setTitle, setActions]); // Don't include headerActions - it's memoized and causes loops
 
   return (
     <ErrorBoundary>

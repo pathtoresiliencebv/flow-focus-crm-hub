@@ -71,7 +71,7 @@ export default function DashboardPage() {
       setTitle("");
       setActions(null);
     };
-  }, [setTitle, setActions, headerActions]);
+  }, [setTitle, setActions]); // Don't include headerActions - it's memoized and causes loops
 
   // Show planning for admin/administratie, regular dashboard for installateurs
   if (profile?.role === 'Installateur') {

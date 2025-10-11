@@ -57,7 +57,7 @@ export default function InvoicesPage() {
       setTitle("");
       setActions(null);
     };
-  }, [setTitle, setActions, headerActions])
+  }, [setTitle, setActions]); // Don't include headerActions - it's memoized and causes loops
 
   return (
     <Invoicing 
