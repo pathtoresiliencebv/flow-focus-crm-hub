@@ -221,38 +221,33 @@ export const useProjectCompletion = () => {
         }
       }
 
-      // Generate work order PDF automatically (async - don't wait)
-      setTimeout(async () => {
-        try {
-          console.log('📄 Generating work order PDF in background...');
-          const { data: workOrderData, error: workOrderError } = await supabase.functions.invoke('generate-work-order', {
-            body: { completionId: completion.id }
-          });
-          
-          if (workOrderError) {
-            console.error('Work order generation error:', workOrderError);
-          } else {
-            console.log('✅ Work order generated:', workOrderData);
-            // Refresh work orders after generation
-            setTimeout(() => {
-              queryClient.invalidateQueries({ queryKey: ['project_work_orders'] });
-              queryClient.invalidateQueries({ queryKey: ['project_completions'] });
-            }, 1000);
-          }
-        } catch (error) {
-          console.error('Unexpected error during work order generation:', error);
-        }
-      }, 100);
-      
       return completion;
     },
-    onSuccess: () => {
+    onSuccess: (completion) => {
       // Only invalidate essential queries - reduced to prevent loading loop
       queryClient.invalidateQueries({ queryKey: ['projects'] });
+      queryClient.invalidateQueries({ queryKey: ['project-activities', completion.project_id] });
       
       toast({
         title: "✅ Project Opgeleverd!",
         description: "Project afgerond. Werkbon wordt op de achtergrond gegenereerd en verstuurd.",
+      });
+
+      // Generate work order PDF in background (non-blocking)
+      // Using Promise without await to prevent blocking
+      supabase.functions.invoke('generate-work-order', {
+        body: { completionId: completion.id }
+      }).then(({ data, error }) => {
+        if (error) {
+          console.error('Work order generation error:', error);
+        } else {
+          console.log('✅ Work order generated:', data);
+          // Refresh work orders after generation
+          queryClient.invalidateQueries({ queryKey: ['project_work_orders'] });
+          queryClient.invalidateQueries({ queryKey: ['project_completions'] });
+        }
+      }).catch((error) => {
+        console.error('Unexpected error during work order generation:', error);
       });
     },
     onError: (error: Error) => {
