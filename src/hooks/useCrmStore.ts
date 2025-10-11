@@ -77,8 +77,8 @@ export const useCrmStore = () => {
   const { data: allCustomers = [], isLoading: isLoadingCustomers } = useQuery<Customer[]>({
     queryKey: ['customers'],
     queryFn: fetchCustomers,
-    staleTime: 0, // ✅ Data is always stale, refetch on invalidate
-    gcTime: 0,
+    staleTime: 30000, // 30 seconds - reasonable cache time
+    gcTime: 5 * 60 * 1000, // 5 minutes garbage collection
     refetchOnWindowFocus: false,
     refetchOnMount: true,
   });
@@ -86,8 +86,8 @@ export const useCrmStore = () => {
   const { data: allProjects = [], isLoading: isLoadingProjects } = useQuery<ProjectWithCustomerName[]>({
     queryKey: ['projects'],
     queryFn: fetchProjects,
-    staleTime: 0,
-    gcTime: 0,
+    staleTime: 30000, // 30 seconds - reasonable cache time
+    gcTime: 5 * 60 * 1000, // 5 minutes garbage collection
     refetchOnWindowFocus: false,
     refetchOnMount: true,
   });

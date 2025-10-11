@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Database } from '@/integrations/supabase/types';
 
 type ProjectTask = Database['public']['Tables']['project_tasks']['Row'];
@@ -20,6 +21,7 @@ const fetchProjectTasks = async (projectId: string): Promise<ProjectTask[]> => {
 
 export const useProjectTasks = (projectId: string) => {
   const queryClient = useQueryClient();
+  const { user, profile } = useAuth();
 
   const { data: tasks = [], isLoading } = useQuery<ProjectTask[]>({
     queryKey: ['project_tasks', projectId],
@@ -72,7 +74,10 @@ export const useProjectTasks = (projectId: string) => {
               
               // Invalidate projects query to reflect status change
               queryClient.invalidateQueries({ queryKey: ['projects'] });
-              queryClient.invalidateQueries({ queryKey: ['monteur-projects'] });
+              // Only invalidate monteur-projects if current user is a monteur
+              if (profile?.role === 'Installateur') {
+                queryClient.invalidateQueries({ queryKey: ['monteur-projects', user?.id] });
+              }
             }
           }
         }
@@ -127,7 +132,10 @@ export const useProjectTasks = (projectId: string) => {
           
           // Invalidate projects query to reflect status change
           queryClient.invalidateQueries({ queryKey: ['projects'] });
-          queryClient.invalidateQueries({ queryKey: ['monteur-projects'] });
+          // Only invalidate monteur-projects if current user is a monteur
+          if (profile?.role === 'Installateur') {
+            queryClient.invalidateQueries({ queryKey: ['monteur-projects', user?.id] });
+          }
         }
       }
       
