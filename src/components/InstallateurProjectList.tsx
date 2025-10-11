@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Eye, User, Calendar, MapPin, Plus } from "lucide-react";
+import { Eye, User, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCrmStore } from "@/hooks/useCrmStore";
@@ -12,7 +12,6 @@ import { useProjectTasks } from "@/hooks/useProjectTasks";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProjectDelivery } from "@/hooks/useProjectDelivery";
 import { ProjectDeliveryDialog } from "./dashboard/ProjectDeliveryDialog";
-import { ProjectQuickAdd } from "./ProjectQuickAdd";
 
 type ProjectStatus = "te-plannen" | "gepland" | "in-uitvoering" | "herkeuring" | "afgerond";
 
@@ -40,7 +39,6 @@ export const InstallateurProjectList: React.FC = () => {
   const { startProject, completeProject, isStarting, isCompleting } = useProjectDelivery();
   const [showDelivery, setShowDelivery] = useState(false);
   const [selectedProject, setSelectedProject] = useState<any>(null);
-  const [showProjectAdd, setShowProjectAdd] = useState(false);
   const [planningItems, setPlanningItems] = useState<any[]>([]);
 
   // Fetch planning items for current user
@@ -120,14 +118,10 @@ export const InstallateurProjectList: React.FC = () => {
         </CardHeader>
         
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span>{project.date || 'Geen datum'}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-medium">€{project.value || 0}</span>
-            </div>
+          {/* 🔒 Monteurs zien GEEN bedragen */}
+          <div className="flex items-center gap-2 text-sm">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span>{project.date || 'Geen datum'}</span>
           </div>
 
           {assignedMonteur && (
@@ -207,20 +201,12 @@ export const InstallateurProjectList: React.FC = () => {
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
+      {/* 🔒 Monteurs kunnen GEEN nieuwe projecten toevoegen */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Mijn Projecten</h2>
-        <div className="flex items-center gap-3">
-          <Button 
-            onClick={() => setShowProjectAdd(true)}
-            className="bg-primary hover:bg-primary/90"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nieuw Project
-          </Button>
-          <Badge variant="outline" className="text-sm">
-            {installateurProjects.length} project{installateurProjects.length !== 1 ? 'en' : ''}
-          </Badge>
-        </div>
+        <Badge variant="outline" className="text-sm">
+          {installateurProjects.length} project{installateurProjects.length !== 1 ? 'en' : ''}
+        </Badge>
       </div>
 
       {/* Status sections */}
@@ -260,18 +246,6 @@ export const InstallateurProjectList: React.FC = () => {
             setShowDelivery(false);
             setSelectedProject(null);
           }}
-        />
-      )}
-      
-      {/* Project Quick Add Dialog */}
-      {showProjectAdd && (
-        <ProjectQuickAdd
-          onCancel={() => setShowProjectAdd(false)}
-          onProjectAdded={() => {
-            setShowProjectAdd(false);
-          }}
-          selectedCustomerId=""
-          selectedCustomerName=""
         />
       )}
     </div>

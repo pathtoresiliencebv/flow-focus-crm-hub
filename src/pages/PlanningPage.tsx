@@ -3,9 +3,11 @@ import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { SimplifiedPlanningManagement } from "@/components/SimplifiedPlanningManagement";
 import { Button } from "@/components/ui/button";
 import { Plus, CalendarDays, CalendarRange } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function PlanningPage() {
   const { setTitle, setActions } = usePageHeader();
+  const { profile } = useAuth();
   const [viewMode, setViewMode] = useState<'month' | 'availability'>('month');
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
 
@@ -27,6 +29,7 @@ export default function PlanningPage() {
 
   // 🔥 Memoize JSX to prevent infinite re-renders
   // Note: viewMode is included in deps because it affects className styling
+  // 🔒 Installateurs (monteurs) kunnen GEEN nieuwe afspraken toevoegen!
   const headerActions = useMemo(() => (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
@@ -49,15 +52,18 @@ export default function PlanningPage() {
           Beschikbaarheid
         </Button>
       </div>
-      <Button 
-        onClick={handleNewCustomerClick} 
-        className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)]"
-      >
-        <Plus className="h-5 w-5 mr-2" />
-        Nieuwe Klant Afspraak
-      </Button>
+      {/* 🔒 Installateurs kunnen GEEN nieuwe afspraken toevoegen */}
+      {profile?.role !== 'Installateur' && (
+        <Button 
+          onClick={handleNewCustomerClick} 
+          className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)]"
+        >
+          <Plus className="h-5 w-5 mr-2" />
+          Nieuwe Klant Afspraak
+        </Button>
+      )}
     </div>
-  ), [viewMode, handleMonthViewClick, handleAvailabilityViewClick, handleNewCustomerClick]);
+  ), [viewMode, handleMonthViewClick, handleAvailabilityViewClick, handleNewCustomerClick, profile?.role]);
 
   useEffect(() => {
     console.log('📝 PlanningPage: Setting up header with viewMode:', viewMode);

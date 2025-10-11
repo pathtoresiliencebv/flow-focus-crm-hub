@@ -30,6 +30,7 @@ export default function DashboardPage() {
 
   // 🔥 Memoize JSX to prevent infinite re-renders
   // Note: viewMode is included in deps because it affects className styling
+  // 🔒 Installateurs (monteurs) kunnen GEEN nieuwe afspraken toevoegen!
   const headerActions = useMemo(() => (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
@@ -52,15 +53,18 @@ export default function DashboardPage() {
           Beschikbaarheid
         </Button>
       </div>
-      <Button 
-        onClick={handleNewCustomerClick} 
-        className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)]"
-      >
-        <Plus className="h-5 w-5 mr-2" />
-        Nieuwe Klant Afspraak
-      </Button>
+      {/* 🔒 Installateurs kunnen GEEN nieuwe afspraken toevoegen */}
+      {profile?.role !== 'Installateur' && (
+        <Button 
+          onClick={handleNewCustomerClick} 
+          className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)]"
+        >
+          <Plus className="h-5 w-5 mr-2" />
+          Nieuwe Klant Afspraak
+        </Button>
+      )}
     </div>
-  ), [viewMode, handleMonthViewClick, handleAvailabilityViewClick, handleNewCustomerClick]);
+  ), [viewMode, handleMonthViewClick, handleAvailabilityViewClick, handleNewCustomerClick, profile?.role]);
 
   useEffect(() => {
     console.log('📝 DashboardPage: Setting up header with viewMode:', viewMode);
