@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Package, Users, Calendar, Euro, Mail, Phone, User, MapPin, Clock, CheckCircle2, Circle, Edit, FileText, Camera, Receipt } from "lucide-react";
+import { ArrowLeft, Package, Users, Calendar, Euro, Mail, Phone, User, MapPin, Clock, CheckCircle2, CheckCircle, Circle, Edit, FileText, Camera, Receipt } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,7 +16,7 @@ import { ProjectMaterials } from "./ProjectMaterials";
 import { ProjectPersonnel } from "./ProjectPersonnel";
 import { ProjectActivities } from "./ProjectActivities";
 import { ProjectTasks } from "./ProjectTasks";
-import { ProjectCompletionSlider } from "./ProjectCompletionSlider";
+import { ProjectDeliveryDialog } from "./dashboard/ProjectDeliveryDialog";
 
 const ProjectDetail = () => {
   const { projectId } = useParams();
@@ -26,6 +26,7 @@ const ProjectDetail = () => {
   const [showMaterials, setShowMaterials] = useState(false);
   const [showPersonnel, setShowPersonnel] = useState(false);
   const [showReceipts, setShowReceipts] = useState(false);
+  const [showDeliveryDialog, setShowDeliveryDialog] = useState(false);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [quotes, setQuotes] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
@@ -448,17 +449,24 @@ const ProjectDetail = () => {
             {/* Activiteit - New Component with Database Integration */}
             <ProjectActivities projectId={projectId!} />
 
-            {/* Project Completion Slider */}
-            <ProjectCompletionSlider 
-              projectId={projectId!}
-              projectName={project?.name || ''}
-              customerName={customer?.name || ''}
-              isCompleted={project?.status === 'afgerond'}
-              onCompletionChange={() => {
-                // Refresh project data
-                window.location.reload();
-              }}
-            />
+            {/* Project Delivery Button */}
+            {profile?.role === 'Installateur' && project?.status !== 'afgerond' && (
+              <Card>
+                <CardContent className="pt-6">
+                  <Button
+                    onClick={() => setShowDeliveryDialog(true)}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    size="lg"
+                  >
+                    <CheckCircle className="h-5 w-5 mr-2" />
+                    Project Opleveren
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    Zorg ervoor dat alle taken zijn voltooid voor oplevering
+                  </p>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
 
@@ -856,6 +864,19 @@ const ProjectDetail = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Project Delivery Dialog */}
+      {showDeliveryDialog && project && (
+        <ProjectDeliveryDialog
+          project={project}
+          isOpen={showDeliveryDialog}
+          onClose={() => setShowDeliveryDialog(false)}
+          onComplete={() => {
+            setShowDeliveryDialog(false);
+            window.location.reload();
+          }}
+        />
+      )}
     </div>
   );
 };
