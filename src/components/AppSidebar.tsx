@@ -133,6 +133,10 @@ export function AppSidebar({ children }: AppSidebarProps) {
 
   // Filter links based on permissions and role
   const filteredMainLinks = mainLinks.filter(link => {
+    // Hide Dashboard for Installateurs (monteurs)
+    if (link.path === "/" && profile?.role === 'Installateur') {
+      return false;
+    }
     return link.permission === null || hasPermission(link.permission as Permission);
   });
 

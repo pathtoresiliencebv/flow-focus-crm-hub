@@ -122,6 +122,30 @@ export const useProjectCompletion = () => {
     mutationFn: async (completionData: ProjectCompletionData) => {
       if (!user?.id) throw new Error('User not authenticated');
       
+      // ✅ VALIDATE: Check if all tasks are completed before allowing project completion
+      console.log('🔍 Checking for incomplete tasks before project completion...');
+      const { data: incompleteTasks, error: tasksError } = await supabase
+        .from('project_tasks')
+        .select('id, block_title, is_info_block')
+        .eq('project_id', completionData.project_id)
+        .eq('is_completed', false)
+        .eq('is_info_block', false); // Don't count info blocks as tasks
+      
+      if (tasksError) {
+        console.error('❌ Error checking tasks:', tasksError);
+        throw new Error('Kon taken niet controleren. Probeer opnieuw.');
+      }
+      
+      if (incompleteTasks && incompleteTasks.length > 0) {
+        console.log('❌ Found incomplete tasks:', incompleteTasks);
+        throw new Error(
+          `Er zijn nog ${incompleteTasks.length} openstaande ${incompleteTasks.length === 1 ? 'taak' : 'taken'}. ` +
+          `Voltooi eerst alle taken voordat je het project kunt opleveren.`
+        );
+      }
+      
+      console.log('✅ All tasks completed, proceeding with project completion');
+      
       // Ensure installer_id is set
       const dataWithInstaller = {
         ...completionData,

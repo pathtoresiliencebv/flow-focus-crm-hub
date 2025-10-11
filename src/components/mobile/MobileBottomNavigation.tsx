@@ -7,10 +7,10 @@ interface MobileBottomNavigationProps {
 }
 
 export const MobileBottomNavigation = ({ activeTab, onTabChange }: MobileBottomNavigationProps) => {
+  // Monteurs don't have dashboard - they start with projects
   const navigationItems = [
-    { key: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
-    { key: "calendar", icon: Calendar, label: "Planning" },
     { key: "projects", icon: FolderKanban, label: "Projecten" },
+    { key: "calendar", icon: Calendar, label: "Planning" },
     { key: "chat", icon: MessageSquare, label: "Chat" },
     { key: "receipts", icon: Receipt, label: "Bonnetjes" },
   ];

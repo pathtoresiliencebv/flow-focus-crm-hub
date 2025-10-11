@@ -1,6 +1,6 @@
 import React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import LoginScreen from "@/components/LoginScreen";
@@ -37,6 +37,7 @@ const InvoiceDetailsPage = lazy(() => import("@/pages/InvoiceDetails").catch(() 
 const InvoiceSend = lazy(() => import("@/pages/InvoiceSend").catch(() => ({ default: () => <div>Error loading Invoice Send</div> })));
 const ProjectDelivery = lazy(() => import("@/pages/ProjectDelivery").catch(() => ({ default: () => <div>Error loading Project Delivery</div> })));
 const MobileDashboard = lazy(() => import("@/components/mobile/MobileDashboard").catch(() => ({ default: () => <div>Error loading Mobile Dashboard</div> })));
+const MobileApp = lazy(() => import("@/components/mobile/MobileApp").then(m => ({ default: m.MobileApp })).catch(() => ({ default: () => <div>Error loading Mobile App</div> })));
 import { useIsMobile } from "@/hooks/use-mobile";
 import '@/utils/buttonDiagnostics'; // Button diagnostics for debugging
 
@@ -64,6 +65,7 @@ const queryClient = new QueryClient({
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, profile, user } = useAuth();
   const isMobile = useIsMobile();
+  const location = useLocation();
 
   // Only show loading state if BOTH loading AND no cached data exists
   // This prevents the loading screen on page reload when we have cached auth
@@ -87,7 +89,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   // Show mobile interface for Installateurs (monteurs) on mobile devices
   if (isMobile && profile?.role === 'Installateur') {
-    return <MobileDashboard />;
+    return <MobileApp />;
+  }
+
+  // Redirect monteurs from Dashboard to Projects
+  // Monteurs should not see dashboard, they start directly with projects
+  if (profile?.role === 'Installateur' && location.pathname === '/') {
+    return <Navigate to="/projects" replace />;
   }
 
   return <>{children}</>;

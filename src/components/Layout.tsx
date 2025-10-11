@@ -62,7 +62,7 @@ function LayoutContent() {
     { path: "/projects", label: "Projecten", icon: <FolderKanban className="h-5 w-5" />, permission: "projects_view" as Permission },
     { path: "/planning", label: "Planning", icon: <Calendar className="h-5 w-5" />, permission: "projects_view" as Permission },
     { path: "/time", label: "Tijdregistratie", icon: <Clock className="h-5 w-5" />, permission: "projects_view" as Permission },
-    { path: "/receipts", label: "Bonnetjes", icon: <Receipt className="h-5 w-5" />, permission: "invoices_view" as Permission },
+    { path: "/receipts", label: "Bonnetjes", icon: <Receipt className="h-5 w-5" />, permission: "projects_view" as Permission },
     { path: "/quotes", label: "Offertes", icon: <FileText className="h-5 w-5" />, permission: "invoices_view" as Permission },
     { path: "/invoices", label: "Facturatie", icon: <CreditCard className="h-5 w-5" />, permission: "invoices_view" as Permission },
   ];
@@ -73,7 +73,13 @@ function LayoutContent() {
     { path: "/settings", label: "Instellingen", icon: <Settings className="h-5 w-5" />, permission: "settings_edit" as Permission },
   ];
 
-  const filteredMainLinks = mainLinks.filter(link => !link.permission || hasPermission(link.permission));
+  const filteredMainLinks = mainLinks.filter(link => {
+    // Hide Dashboard for Installateurs (monteurs)
+    if (link.path === "/" && profile?.role === 'Installateur') {
+      return false;
+    }
+    return !link.permission || hasPermission(link.permission);
+  });
   const filteredSettingsLinks = settingsLinks.filter(link => !link.permission || hasPermission(link.permission));
 
   return (

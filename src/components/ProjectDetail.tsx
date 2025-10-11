@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Package, Users, Calendar, Euro, Mail, Phone, User, MapPin, Clock, CheckCircle2, Circle, Edit, FileText, Camera } from "lucide-react";
+import { ArrowLeft, Package, Users, Calendar, Euro, Mail, Phone, User, MapPin, Clock, CheckCircle2, Circle, Edit, FileText, Camera, Receipt } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,6 +31,7 @@ const ProjectDetail = () => {
   const [activities, setActivities] = useState<any[]>([]);
   const [workOrders, setWorkOrders] = useState<any[]>([]);
   const [completionPhotos, setCompletionPhotos] = useState<any[]>([]);
+  const [receipts, setReceipts] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(false);
 
   // Find the project
@@ -46,7 +47,7 @@ const ProjectDetail = () => {
       setLoadingData(true);
       try {
         // Execute all queries in parallel for faster loading
-        const [taskResult, invoiceResult, quoteResult, activityResult, workOrderResult, photosResult] = await Promise.all([
+        const [taskResult, invoiceResult, quoteResult, activityResult, workOrderResult, photosResult, receiptsResult] = await Promise.all([
           // Fetch tasks
           supabase
             .from('project_tasks')
@@ -99,7 +100,14 @@ const ProjectDetail = () => {
               )
             `)
             .eq('completion.project_id', projectId)
-            .order('uploaded_at', { ascending: false })
+            .order('uploaded_at', { ascending: false }),
+          
+          // Fetch project receipts (bonnetjes)
+          supabase
+            .from('project_receipts')
+            .select('*')
+            .eq('project_id', projectId)
+            .order('created_at', { ascending: false })
         ]);
         
         console.log('📊 ProjectDetail: Data fetched:', {
@@ -108,6 +116,7 @@ const ProjectDetail = () => {
           quotes: quoteResult.data?.length || 0,
           workOrders: workOrderResult.data?.length || 0,
           completionPhotos: photosResult.data?.length || 0,
+          receipts: receiptsResult.data?.length || 0,
           invoices_data: invoiceResult.data,
           quotes_data: quoteResult.data
         });
@@ -115,6 +124,7 @@ const ProjectDetail = () => {
         console.log('📊 ProjectDetail: Werkbonnen/Foto\'s tab visibility:', {
           werkbonnenWillShow: workOrderResult.data && workOrderResult.data.length > 0,
           fotosWillShow: photosResult.data && photosResult.data.length > 0,
+          bonnetjesWillShow: receiptsResult.data && receiptsResult.data.length > 0,
           userRole: profile?.role,
           userId: user?.id
         });
@@ -125,6 +135,7 @@ const ProjectDetail = () => {
         setActivities(activityResult.data || []);
         setWorkOrders(workOrderResult.data || []);
         setCompletionPhotos(photosResult.data || []);
+        setReceipts(receiptsResult.data || []);
       } catch (error) {
         console.error('❌ Error fetching project data:', error);
       } finally {
@@ -413,6 +424,16 @@ const ProjectDetail = () => {
                   </TabsTrigger>
                 )}
                 
+                {/* 🧾 Bonnetjes tab - Show project receipts */}
+                {receipts.length > 0 && (
+                  <TabsTrigger value="bonnetjes" className="relative">
+                    Bonnetjes
+                    <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+                      {receipts.length}
+                    </Badge>
+                  </TabsTrigger>
+                )}
+                
                 {/* 🔒 Facturen en Offertes tabs NIET voor Installateurs */}
                 {profile?.role !== 'Installateur' && (
                   <>
@@ -606,6 +627,63 @@ const ProjectDetail = () => {
                     </div>
                   );
                 })()}
+              </TabsContent>
+
+              {/* BONNETJES TAB */}
+              <TabsContent value="bonnetjes" className="p-4">
+                {loadingData ? (
+                  <p className="text-center text-muted-foreground py-8">Laden...</p>
+                ) : receipts.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    <Receipt className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>Geen bonnetjes gevonden voor dit project</p>
+                    <p className="text-xs mt-2">Bonnetjes worden toegevoegd via de mobiele app</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {receipts.map((receipt) => (
+                      <Card key={receipt.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <Badge variant="secondary">{receipt.category || 'material'}</Badge>
+                            <span className="text-sm text-muted-foreground">
+                              {receipt.receipt_date ? format(new Date(receipt.receipt_date), 'dd MMM yyyy', { locale: nl }) : 'Geen datum'}
+                            </span>
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          {receipt.receipt_photo_url && (
+                            <img 
+                              src={receipt.receipt_photo_url} 
+                              alt="Bonnetje" 
+                              className="w-full h-48 object-cover rounded-lg mb-3 cursor-pointer hover:opacity-90 transition-opacity"
+                              onClick={() => window.open(receipt.receipt_photo_url, '_blank')}
+                            />
+                          )}
+                          <div className="space-y-2">
+                            {receipt.supplier && (
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">Leverancier:</span>
+                                <span className="font-medium">{receipt.supplier}</span>
+                              </div>
+                            )}
+                            {receipt.total_amount && (
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-muted-foreground">Bedrag:</span>
+                                <span className="font-bold text-lg">{formatCurrency(receipt.total_amount)}</span>
+                              </div>
+                            )}
+                            {receipt.description && (
+                              <div className="pt-2 border-t">
+                                <p className="text-sm text-muted-foreground">{receipt.description}</p>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </TabsContent>
 
               {/* FACTUREN TAB */}

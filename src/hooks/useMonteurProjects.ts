@@ -168,13 +168,8 @@ export const useMonteurProjects = () => {
     };
   }, [projects, getActiveProjects, getCompletedProjects, getProjectsByStatus]);
 
-  // Auto-refresh when user changes
-  useEffect(() => {
-    if (user?.id && isMonteur) {
-      console.log('🔄 useMonteurProjects: User changed, refreshing projects');
-      refreshProjects();
-    }
-  }, [user?.id, isMonteur, refreshProjects]);
+  // Removed auto-refresh on user change to prevent infinite loading
+  // The useQuery hook already handles this with refetchOnMount: true
 
   return {
     projects,

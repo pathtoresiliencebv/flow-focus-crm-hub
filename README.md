@@ -152,9 +152,9 @@ flow-focus-crm-hub/
 ├── ios/                     # iOS native configuration
 ├── android/                 # Android native configuration
 ├── docs/                    # Documentation
-│   ├── DEPLOYMENT.md        # Deployment guide
-│   ├── MOBILE_DEVELOPMENT.md # Mobile development guide
-│   └── API_DOCUMENTATION.md # API documentation
+│   ├── PRD_SMANS_CRM.md     # Product requirements
+│   ├── PRD_SMANS_CRM_PART2.md # Extended requirements
+│   └── workflow/            # Workflow documentation
 └── capacitor.config.ts      # Capacitor configuration
 ```
 
@@ -211,30 +211,92 @@ npm run build:dev             # Development build
 npm run build:staging         # Staging build  
 npm run build:production      # Production build
 
+# Translation Management
+npm run translate:extract      # Extract hardcoded texts
+npm run translate:deepl        # Translate using DeepL
+npm run translate:seed         # Seed translations to database
+npm run translate:all          # Run full translation pipeline
+
 # Mobile Development
-npm run mobile:sync           # Sync web assets to mobile
-npm run mobile:build          # Build mobile apps
-npm run mobile:run:ios        # Run on iOS simulator
-npm run mobile:run:android    # Run on Android emulator
+npm run mobile:sync            # Sync web assets to mobile
+npm run mobile:sync:android    # Sync to Android only
+npm run mobile:sync:ios        # Sync to iOS only
+npm run mobile:build           # Build mobile apps
+npm run mobile:run:ios         # Run on iOS simulator
+npm run mobile:run:android     # Run on Android emulator
 
 # Code Quality
-npm run lint                  # Run ESLint
-npm run lint:fix             # Fix ESLint issues
-npm run type-check           # TypeScript type checking
-npm run test                 # Run tests
-npm run test:ci              # Run tests with coverage
+npm run lint                   # Run ESLint
+npm run lint:fix               # Fix ESLint issues
+npm run type-check             # TypeScript type checking
+npm run test                   # Run tests
+npm run test:ci                # Run tests with coverage
 
 # Database
-supabase db push             # Push migrations
-supabase db reset            # Reset database (dev only)
-supabase functions deploy    # Deploy Edge Functions
+supabase db push               # Push migrations
+supabase db reset              # Reset database (dev only)
+supabase functions deploy      # Deploy Edge Functions
 ```
 
 ## 📚 Documentation
 
-- **[Deployment Guide](docs/DEPLOYMENT.md)**: Complete deployment instructions for web, iOS, and Android
-- **[Mobile Development](docs/MOBILE_DEVELOPMENT.md)**: Mobile-specific development patterns and best practices
-- **[API Documentation](docs/API_DOCUMENTATION.md)**: Comprehensive API reference
+### Project Documentation
+- **[PRD Part 1](docs/PRD_SMANS_CRM.md)**: Core product requirements and specifications
+- **[PRD Part 2](docs/PRD_SMANS_CRM_PART2.md)**: Extended features and requirements
+- **[Workflow Documentation](workflow/)**: Detailed workflow guides and diagrams
+
+### Implementation Guides
+- **[Translation System](TRANSLATION_SYSTEM_GUIDE.md)**: Multi-language implementation guide
+- **[Mobile Development](MOBIELE_APP_SPECIFICATIES.md)**: Mobile app specifications
+- **[Notification System](NOTIFICATION_SYSTEM_DEPLOYMENT.md)**: Push notification setup
+- **[SMTP Setup](SMANS_SMTP_DEPLOYMENT_GUIDE.md)**: Email service configuration
+- **[iOS Publishing](IOS_APP_STORE_PUBLISHING_PLAN.md)**: App Store deployment guide
+
+### Feature Guides
+- **[Werkbon System](WERKBON_QUICK_START.md)**: Work order completion quick start
+- **[Planning System](PLANNING_WORKFLOW_GUIDE.md)**: Project planning and scheduling
+- **[Monteur Availability](MONTEUR_BESCHIKBAARHEID_GUIDE.md)**: Installer availability management
+- **[User Roles](GEBRUIKERSROLLEN_TOEGANGSRECHTEN.md)**: Roles and permissions guide
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+npm run test
+
+# Run tests with coverage
+npm run test:ci
+
+# Type checking
+npm run type-check
+
+# Lint checking
+npm run lint
+```
+
+## 🚢 Deployment
+
+### Web Application
+```bash
+# Build for production
+npm run build:production
+
+# Preview build
+npm run preview
+```
+
+### Mobile Applications
+```bash
+# Build both platforms
+npm run mobile:build
+
+# Build specific platform
+npm run mobile:build:android
+npm run mobile:build:ios
+
+# Release build
+npm run mobile:build:release
+```
 
 ## 🤝 Contributing
 
@@ -250,15 +312,32 @@ supabase functions deploy    # Deploy Edge Functions
 - Conventional commits for commit messages
 - Component-driven development
 
+### Development Guidelines
+- Maximum 1600 lines per file
+- Comprehensive comments and docstrings
+- Modular, testable, and clean code
+- Follow existing patterns and structure
+
+## 🔧 Environment Variables
+
+Create a `.env.development` file with the following variables:
+
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_GOOGLE_TRANSLATE_API_KEY=your_google_translate_key
+VITE_GOOGLE_MAPS_API_KEY=your_google_maps_key
+VITE_RESEND_API_KEY=your_resend_api_key
+```
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🆘 Support
 
-- **Documentation**: Comprehensive guides in the `docs/` folder
+- **Documentation**: Comprehensive guides in the repository
 - **Issues**: Report bugs and request features via GitHub Issues
-- **Discord**: Join our development community
 - **Email**: Contact the development team
 
 ## 🎉 Acknowledgments
@@ -268,10 +347,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Google Translate** for translation services
 - **Shadcn/ui** for beautiful UI components
 - **Tailwind CSS** for utility-first styling
+- **React** and **TypeScript** for the powerful development experience
 
 ---
 
 **Built with ❤️ for the window installation industry**
 
-*Last updated: August 2024*#   B u i l d   2 0 2 5 - 1 0 - 0 1   1 4 : 1 0  
- 
+*Last updated: October 2025*
