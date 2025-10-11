@@ -141,7 +141,8 @@ export function Sidebar({ children, activeTab, setActiveTab }: SidebarProps) {
     { key: "projects", label: "Projecten", icon: <FolderKanban className="h-5 w-5" />, permission: "projects_view" },
     { key: "calendar", label: "Planning", icon: <Calendar className="h-5 w-5" />, permission: "projects_view" },
     { key: "time", label: "Tijdregistratie", icon: <Clock className="h-5 w-5" />, permission: "projects_view" },
-    { key: "receipts", label: "Bonnetjes", icon: <Receipt className="h-5 w-5" />, permission: "invoices_view" },
+    // 🔧 CRITICAL FIX: Changed from invoices_view to projects_view so Installateurs CAN upload receipts!
+    { key: "receipts", label: "Bonnetjes", icon: <Receipt className="h-5 w-5" />, permission: "projects_view" },
     { key: "quotes", label: "Offertes", icon: <FileText className="h-5 w-5" />, permission: "invoices_view" },
     { key: "invoicing", label: "Facturatie", icon: <CreditCard className="h-5 w-5" />, permission: "invoices_view" },
   ];
