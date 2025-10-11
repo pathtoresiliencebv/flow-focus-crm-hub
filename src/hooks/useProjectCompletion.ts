@@ -221,45 +221,38 @@ export const useProjectCompletion = () => {
         }
       }
 
-      // Generate work order PDF automatically
-      try {
-        console.log('📄 Generating work order PDF...');
-        const { data: workOrderData, error: workOrderError } = await supabase.functions.invoke('generate-work-order', {
-          body: { completionId: completion.id }
-        });
-        
-        if (workOrderError) {
-          console.error('Work order generation error:', workOrderError);
-          // Don't throw - completion is still saved
-          toast({
-            title: "Opmerking",
-            description: "Project opgeleverd, maar werkbon kon niet automatisch worden gegenereerd. U kunt deze later handmatig genereren.",
-            variant: "default"
+      // Generate work order PDF automatically (async - don't wait)
+      setTimeout(async () => {
+        try {
+          console.log('📄 Generating work order PDF in background...');
+          const { data: workOrderData, error: workOrderError } = await supabase.functions.invoke('generate-work-order', {
+            body: { completionId: completion.id }
           });
-        } else {
-          console.log('✅ Work order generated:', workOrderData);
           
-          // Email is sent by generate-work-order function
-          if (workOrderData?.pdfUrl) {
-            console.log('📧 Email will be sent to customer with werkbon');
+          if (workOrderError) {
+            console.error('Work order generation error:', workOrderError);
+          } else {
+            console.log('✅ Work order generated:', workOrderData);
+            // Refresh work orders after generation
+            setTimeout(() => {
+              queryClient.invalidateQueries({ queryKey: ['project_work_orders'] });
+              queryClient.invalidateQueries({ queryKey: ['project_completions'] });
+            }, 1000);
           }
+        } catch (error) {
+          console.error('Unexpected error during work order generation:', error);
         }
-      } catch (error) {
-        console.error('Unexpected error during work order generation:', error);
-      }
+      }, 100);
       
       return completion;
     },
     onSuccess: () => {
+      // Only invalidate essential queries - reduced to prevent loading loop
       queryClient.invalidateQueries({ queryKey: ['projects'] });
-      queryClient.invalidateQueries({ queryKey: ['project_completions'] });
-      queryClient.invalidateQueries({ queryKey: ['work_time_logs'] });
-      queryClient.invalidateQueries({ queryKey: ['time-registrations'] }); // ✅ Refresh time registrations
-      queryClient.invalidateQueries({ queryKey: ['project_work_orders'] }); // ✅ Refresh work orders
-      queryClient.invalidateQueries({ queryKey: ['completion_photos'] }); // ✅ Refresh completion photos
+      
       toast({
         title: "✅ Project Opgeleverd!",
-        description: "Project afgerond en tijdsregistratie automatisch aangemaakt.",
+        description: "Project afgerond. Werkbon wordt op de achtergrond gegenereerd en verstuurd.",
       });
     },
     onError: (error: Error) => {
