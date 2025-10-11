@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -63,28 +63,38 @@ export const InstallateurProjectList: React.FC = () => {
     fetchPlanning();
   }, [user?.id]);
 
+  // 🔥 CRITICAL FIX: Memoize to prevent infinite re-render loop!
+  // Without useMemo, these arrays/objects are recreated EVERY render,
+  // causing new references and triggering re-renders → INFINITE LOOP!
+  
   // Get project IDs from planning items
-  const plannedProjectIds = new Set(planningItems.map(p => p.project_id).filter(Boolean));
+  const plannedProjectIds = useMemo(() => 
+    new Set(planningItems.map(p => p.project_id).filter(Boolean)), 
+    [planningItems]
+  );
 
   // Filter projects: only show projects that are in planning_items for this user
-  const installateurProjects = projects
-    .filter(p => plannedProjectIds.has(p.id))
-    .sort((a, b) => {
-      // Sort by planning date
-      const planningA = planningItems.find(pi => pi.project_id === a.id);
-      const planningB = planningItems.find(pi => pi.project_id === b.id);
-      if (!planningA || !planningB) return 0;
-      return new Date(planningA.start_date).getTime() - new Date(planningB.start_date).getTime();
-    });
+  const installateurProjects = useMemo(() => 
+    projects
+      .filter(p => plannedProjectIds.has(p.id))
+      .sort((a, b) => {
+        // Sort by planning date
+        const planningA = planningItems.find(pi => pi.project_id === a.id);
+        const planningB = planningItems.find(pi => pi.project_id === b.id);
+        if (!planningA || !planningB) return 0;
+        return new Date(planningA.start_date).getTime() - new Date(planningB.start_date).getTime();
+      }),
+    [projects, plannedProjectIds, planningItems]
+  );
 
   // Group projects by status
-  const projectsByStatus = {
+  const projectsByStatus = useMemo(() => ({
     "gepland": installateurProjects.filter(p => p.status === "gepland"),
     "in-uitvoering": installateurProjects.filter(p => p.status === "in-uitvoering"),
     "afgerond": installateurProjects.filter(p => p.status === "afgerond"),
     "herkeuring": installateurProjects.filter(p => p.status === "herkeuring"),
     "te-plannen": installateurProjects.filter(p => p.status === "te-plannen"),
-  };
+  }), [installateurProjects]);
 
   const handleViewDetails = (projectId: string) => {
     navigate(`/projects/${projectId}`);
