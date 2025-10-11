@@ -15,6 +15,11 @@ export default function ProjectsPage() {
     setShowNewProjectDialog(true);
   }, []);
 
+  // ✅ Stable callback for closing dialog
+  const handleCloseNewProjectDialog = useCallback(() => {
+    setShowNewProjectDialog(false);
+  }, []);
+
   useEffect(() => {
     console.log('📝 ProjectsPage: Setting up header');
     setTitle("Projecten");
@@ -40,7 +45,7 @@ export default function ProjectsPage() {
     <ErrorBoundary>
       <ProjectsBoard 
         showNewProjectDialog={showNewProjectDialog}
-        onCloseNewProjectDialog={() => setShowNewProjectDialog(false)}
+        onCloseNewProjectDialog={handleCloseNewProjectDialog}
       />
     </ErrorBoundary>
   );
