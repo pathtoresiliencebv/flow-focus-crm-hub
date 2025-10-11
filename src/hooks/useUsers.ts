@@ -6,6 +6,7 @@ interface User {
   id: string;
   full_name: string | null;
   role: string | null;
+  status: string | null;
   email: string;
 }
 
@@ -13,10 +14,9 @@ const fetchUsers = async (): Promise<User[]> => {
   console.log('🔍 fetchUsers: Starting...');
   
   try {
+    // Use RPC function to fetch users with email from auth.users
     const { data, error } = await supabase
-      .from('profiles')
-      .select('id, full_name, role, email')
-      .order('updated_at', { ascending: false });
+      .rpc('get_all_user_details');
     
     console.log('📦 fetchUsers: Response -', { data: data?.length, error });
     
