@@ -330,7 +330,10 @@ export const useCrmStore = () => {
     [updateProjectMutation.mutateAsync]
   );
 
-  return {
+  // 🔥 CRITICAL: Memoize the entire return object to prevent infinite loops!
+  // Without this, every call to useCrmStore() returns a NEW object reference,
+  // which triggers re-renders in all components that destructure values from it.
+  return useMemo(() => ({
     customers,
     projects, // Components will now receive the transformed project object
     isLoading: isLoadingCustomers || isLoadingProjects,
@@ -346,5 +349,17 @@ export const useCrmStore = () => {
     
     // Debug info - memoized to prevent infinite loops
     debug
-  };
+  }), [
+    customers, 
+    projects, 
+    isLoadingCustomers, 
+    isLoadingProjects, 
+    addCustomerMutation.mutateAsync,
+    updateCustomerFn,
+    deleteCustomerMutation.mutateAsync,
+    addProjectMutation.mutateAsync,
+    updateProjectFn,
+    deleteProjectMutation.mutateAsync,
+    debug
+  ]);
 };
