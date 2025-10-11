@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { ProjectsBoard } from "@/components/ProjectsBoard";
 import { Button } from "@/components/ui/button";
@@ -15,29 +15,26 @@ export default function ProjectsPage() {
     setShowNewProjectDialog(true);
   }, []);
 
-  // ✅ Memoize the actions JSX to prevent re-creating it on every render
-  const actions = useMemo(() => (
-    <Button 
-      size="sm" 
-      className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)] text-white"
-      onClick={handleNewProject}
-    >
-      <Plus className="h-4 w-4 mr-2" />
-      Nieuw Project
-    </Button>
-  ), [handleNewProject]);
-
   useEffect(() => {
     console.log('📝 ProjectsPage: Setting up header');
     setTitle("Projecten");
-    setActions(actions);
+    setActions(
+      <Button 
+        size="sm" 
+        className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)] text-white"
+        onClick={handleNewProject}
+      >
+        <Plus className="h-4 w-4 mr-2" />
+        Nieuw Project
+      </Button>
+    );
     
     return () => {
       console.log('📝 ProjectsPage: Cleaning up header');
       setTitle("");
       setActions(null);
     };
-  }, [setTitle, setActions, actions]); // Now actions is memoized and stable
+  }, [setTitle, setActions, handleNewProject]); // Keep handlers in deps, not the JSX
 
   return (
     <ErrorBoundary>

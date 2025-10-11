@@ -23,12 +23,13 @@ export function PageHeaderProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // ✅ Memoize context value to prevent unnecessary re-renders
+  // Note: setTitle and setActions are stable (useCallback with []), so only title and actions should trigger updates
   const value = useMemo(() => ({
     title,
     setTitle,
     actions,
     setActions
-  }), [title, setTitle, actions, setActions]);
+  }), [title, actions]); // Removed setTitle and setActions - they're stable
 
   return (
     <PageHeaderContext.Provider value={value}>
