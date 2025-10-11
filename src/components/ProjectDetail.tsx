@@ -462,7 +462,7 @@ const ProjectDetail = () => {
                     Project Opleveren
                   </Button>
                   <p className="text-xs text-muted-foreground text-center mt-2">
-                    Zorg ervoor dat alle taken zijn voltooid voor oplevering
+                    Openstaande taken blijven in de planning staan
                   </p>
                 </CardContent>
               </Card>

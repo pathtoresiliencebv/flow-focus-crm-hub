@@ -67,15 +67,6 @@ export const ProjectDeliveryDialog = ({ project, isOpen, onClose, onComplete }: 
       return;
     }
 
-    if (formData.selectedTasks.size === 0) {
-      toast({
-        title: "Geen taken geselecteerd",
-        description: "Selecteer minimaal één uitgevoerde taak voor de werkbon.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     try {
       // Get selected task titles for materials_used field
       const selectedTaskTitles = Array.from(formData.selectedTasks)
@@ -157,7 +148,7 @@ export const ProjectDeliveryDialog = ({ project, isOpen, onClose, onComplete }: 
             <CardHeader>
               <CardTitle>Uitgevoerde werkzaamheden voor werkbon</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Selecteer welke taken op de werkbon moeten komen
+                Selecteer welke taken op de werkbon moeten komen. Openstaande taken blijven in de planning staan.
               </p>
             </CardHeader>
             <CardContent className="space-y-3">
