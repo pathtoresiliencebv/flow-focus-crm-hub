@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { Customers } from "@/components/Customers";
 import { Button } from "@/components/ui/button";
@@ -20,31 +20,34 @@ export default function CustomersPage() {
     setShowSearchBar(true);
   }, []);
 
+  // 🔥 Memoize JSX to prevent infinite re-renders
+  const headerActions = useMemo(() => (
+    <>
+      <Button variant="outline" size="sm" onClick={handleSearch}>
+        <Search className="h-4 w-4 mr-2" />
+        Zoeken
+      </Button>
+      <Button 
+        size="sm" 
+        className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)] text-white"
+        onClick={handleNewCustomer}
+      >
+        <Plus className="h-4 w-4 mr-2" />
+        Nieuwe Klant
+      </Button>
+    </>
+  ), [handleNewCustomer, handleSearch]);
+
   useEffect(() => {
     console.log('📝 CustomersPage: Setting up header');
     setTitle("Klanten");
-    setActions(
-      <>
-        <Button variant="outline" size="sm" onClick={handleSearch}>
-          <Search className="h-4 w-4 mr-2" />
-          Zoeken
-        </Button>
-        <Button 
-          size="sm" 
-          className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)] text-white"
-          onClick={handleNewCustomer}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Nieuwe Klant
-        </Button>
-      </>
-    );
+    setActions(headerActions);
     return () => {
       console.log('📝 CustomersPage: Cleaning up header');
       setTitle("");
       setActions(null);
     };
-  }, [setTitle, setActions, handleNewCustomer, handleSearch]);
+  }, [setTitle, setActions, headerActions]);
 
   return (
     <Customers 

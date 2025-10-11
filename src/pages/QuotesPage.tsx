@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { Quotes } from "@/components/Quotes";
@@ -15,25 +15,28 @@ export default function QuotesPage() {
     navigate('/quotes/new');
   }, [navigate]);
 
+  // 🔥 Memoize JSX to prevent infinite re-renders
+  const headerActions = useMemo(() => (
+    <Button 
+      size="sm" 
+      className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)] text-white"
+      onClick={handleNewQuote}
+    >
+      <Plus className="h-4 w-4 mr-2" />
+      Nieuwe Offerte
+    </Button>
+  ), [handleNewQuote]);
+
   useEffect(() => {
     console.log('📝 QuotesPage: Setting up header');
     setTitle("Offertes");
-    setActions(
-      <Button 
-        size="sm" 
-        className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)] text-white"
-        onClick={handleNewQuote}
-      >
-        <Plus className="h-4 w-4 mr-2" />
-        Nieuwe Offerte
-      </Button>
-    );
+    setActions(headerActions);
     return () => {
       console.log('📝 QuotesPage: Cleaning up header');
       setTitle("");
       setActions(null);
     };
-  }, [setTitle, setActions, handleNewQuote]);
+  }, [setTitle, setActions, headerActions]);
 
   return <Quotes />;
 }

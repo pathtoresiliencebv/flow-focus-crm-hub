@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { SimplifiedPlanningManagement } from "@/components/SimplifiedPlanningManagement";
 import { Button } from "@/components/ui/button";
@@ -25,46 +25,50 @@ export default function PlanningPage() {
     setShowCustomerDialog(true);
   }, []);
 
+  // 🔥 Memoize JSX to prevent infinite re-renders
+  // Note: viewMode is included in deps because it affects className styling
+  const headerActions = useMemo(() => (
+    <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleMonthViewClick}
+          className={viewMode === 'month' ? 'bg-[#fee2e2] text-[hsl(0,71%,36%)] hover:bg-[#fecaca] shadow-sm font-semibold' : 'hover:bg-gray-200'}
+        >
+          <CalendarDays className="h-4 w-4 mr-2" />
+          Maand
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleAvailabilityViewClick}
+          className={viewMode === 'availability' ? 'bg-[#fee2e2] text-[hsl(0,71%,36%)] hover:bg-[#fecaca] shadow-sm font-semibold' : 'hover:bg-gray-200'}
+        >
+          <CalendarRange className="h-4 w-4 mr-2" />
+          Beschikbaarheid
+        </Button>
+      </div>
+      <Button 
+        onClick={handleNewCustomerClick} 
+        className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)]"
+      >
+        <Plus className="h-5 w-5 mr-2" />
+        Nieuwe Klant Afspraak
+      </Button>
+    </div>
+  ), [viewMode, handleMonthViewClick, handleAvailabilityViewClick, handleNewCustomerClick]);
+
   useEffect(() => {
     console.log('📝 PlanningPage: Setting up header with viewMode:', viewMode);
     setTitle("Planning");
-    setActions(
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleMonthViewClick}
-            className={viewMode === 'month' ? 'bg-[#fee2e2] text-[hsl(0,71%,36%)] hover:bg-[#fecaca] shadow-sm font-semibold' : 'hover:bg-gray-200'}
-          >
-            <CalendarDays className="h-4 w-4 mr-2" />
-            Maand
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleAvailabilityViewClick}
-            className={viewMode === 'availability' ? 'bg-[#fee2e2] text-[hsl(0,71%,36%)] hover:bg-[#fecaca] shadow-sm font-semibold' : 'hover:bg-gray-200'}
-          >
-            <CalendarRange className="h-4 w-4 mr-2" />
-            Beschikbaarheid
-          </Button>
-        </div>
-        <Button 
-          onClick={handleNewCustomerClick} 
-          className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)]"
-        >
-          <Plus className="h-5 w-5 mr-2" />
-          Nieuwe Klant Afspraak
-        </Button>
-      </div>
-    );
+    setActions(headerActions);
     return () => {
       console.log('📝 PlanningPage: Cleaning up header');
       setTitle("");
       setActions(null);
     };
-  }, [viewMode, setTitle, setActions, handleMonthViewClick, handleAvailabilityViewClick, handleNewCustomerClick]);
+  }, [setTitle, setActions, headerActions]);
 
   return (
     <div className="h-full">

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { Invoicing } from "@/components/Invoicing";
@@ -26,35 +26,38 @@ export default function InvoicesPage() {
     console.log('🟧 State updated to detailed + true');
   }, []); // Empty dependencies - handlers are stable
 
+  // 🔥 Memoize JSX to prevent infinite re-renders
+  const headerActions = useMemo(() => (
+    <>
+      <Button 
+        size="sm" 
+        variant="outline"
+        onClick={handleNewInvoice}
+      >
+        <FileText className="h-4 w-4 mr-2" />
+        Normale Factuur
+      </Button>
+      <Button 
+        size="sm" 
+        className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)] text-white"
+        onClick={handleNewWerkbon}
+      >
+        <Wrench className="h-4 w-4 mr-2" />
+        Werkbon Factuur
+      </Button>
+    </>
+  ), [handleNewInvoice, handleNewWerkbon]);
+
   useEffect(() => {
     console.log('📝 InvoicesPage: Setting up header with handlers');
     setTitle("Facturatie");
-    setActions(
-      <>
-        <Button 
-          size="sm" 
-          variant="outline"
-          onClick={handleNewInvoice}
-        >
-          <FileText className="h-4 w-4 mr-2" />
-          Normale Factuur
-        </Button>
-        <Button 
-          size="sm" 
-          className="bg-[hsl(0,71%,36%)] hover:bg-[hsl(0,71%,30%)] text-white"
-          onClick={handleNewWerkbon}
-        >
-          <Wrench className="h-4 w-4 mr-2" />
-          Werkbon Factuur
-        </Button>
-      </>
-    );
+    setActions(headerActions);
     return () => {
       console.log('📝 InvoicesPage: Cleaning up header');
       setTitle("");
       setActions(null);
     };
-  }, [setTitle, setActions]); // Remove handlers from dependencies
+  }, [setTitle, setActions, headerActions])
 
   return (
     <Invoicing 
