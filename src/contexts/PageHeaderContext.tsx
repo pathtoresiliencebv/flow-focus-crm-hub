@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react';
 
 interface PageHeaderContextType {
   title: string;
@@ -10,11 +10,28 @@ interface PageHeaderContextType {
 const PageHeaderContext = createContext<PageHeaderContextType | undefined>(undefined);
 
 export function PageHeaderProvider({ children }: { children: ReactNode }) {
-  const [title, setTitle] = useState('');
-  const [actions, setActions] = useState<ReactNode>(null);
+  const [title, setTitleState] = useState('');
+  const [actions, setActionsState] = useState<ReactNode>(null);
+
+  // ✅ Wrap setters in useCallback for stable references
+  const setTitle = useCallback((newTitle: string) => {
+    setTitleState(newTitle);
+  }, []);
+
+  const setActions = useCallback((newActions: ReactNode) => {
+    setActionsState(newActions);
+  }, []);
+
+  // ✅ Memoize context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
+    title,
+    setTitle,
+    actions,
+    setActions
+  }), [title, setTitle, actions, setActions]);
 
   return (
-    <PageHeaderContext.Provider value={{ title, setTitle, actions, setActions }}>
+    <PageHeaderContext.Provider value={value}>
       {children}
     </PageHeaderContext.Provider>
   );
