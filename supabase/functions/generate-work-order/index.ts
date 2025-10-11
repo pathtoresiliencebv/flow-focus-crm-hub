@@ -1,5 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { Resend } from 'npm:resend@2.0.0'
+
+const resend = new Resend(Deno.env.get('RESEND_API_KEY'))
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -189,20 +192,19 @@ ${completion.recommendations ? `Aanbevelingen:\n${completion.recommendations}` :
         console.error('⚠️ Warning: Could not attach PDF:', pdfError);
       }
 
-      const { error: emailError } = await supabaseClient.functions.invoke('send-email-smans', {
-        body: {
-          to: customer.email,
-          subject: `Uw werkbon voor project ${completion.project?.title || 'ID ' + completionId.slice(0, 8)}`,
-          html: generateEmailHTML(customer, publicUrl, completion, tasks),
-          attachments: pdfBase64 ? [
-            {
-              filename: `werkbon-${completionId.slice(0, 8)}.pdf`,
-              content: pdfBase64,
-              contentType: 'application/pdf'
-            }
-          ] : undefined
-        }
+      // Send email via Resend (same as quote emails - proven to work)
+      const emailResponse = await resend.emails.send({
+        from: "Onderhoud en Service J.J.P. Smans <info@smansonderhoud.nl>",
+        to: [customer.email],
+        subject: `Uw werkbon voor project ${completion.project?.title || 'ID ' + completionId.slice(0, 8)}`,
+        html: generateEmailHTML(customer, publicUrl, completion, tasks),
+        attachments: pdfBase64 ? [{
+          filename: `werkbon-${completionId.slice(0, 8)}.pdf`,
+          content: pdfBase64
+        }] : []
       });
+
+      const emailError = emailResponse.error;
 
       if (emailError) {
         console.error('Email send error:', emailError);
