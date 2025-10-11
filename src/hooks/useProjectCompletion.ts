@@ -167,6 +167,33 @@ export const useProjectCompletion = () => {
           })
           .eq('id', completionData.work_time_log_id);
       }
+
+      // Generate work order PDF automatically
+      try {
+        console.log('📄 Generating work order PDF...');
+        const { data: workOrderData, error: workOrderError } = await supabase.functions.invoke('generate-work-order', {
+          body: { completionId: completion.id }
+        });
+        
+        if (workOrderError) {
+          console.error('Work order generation error:', workOrderError);
+          // Don't throw - completion is still saved
+          toast({
+            title: "Opmerking",
+            description: "Project opgeleverd, maar werkbon kon niet automatisch worden gegenereerd. U kunt deze later handmatig genereren.",
+            variant: "default"
+          });
+        } else {
+          console.log('✅ Work order generated:', workOrderData);
+          
+          // Email is sent by generate-work-order function
+          if (workOrderData?.pdfUrl) {
+            console.log('📧 Email will be sent to customer with werkbon');
+          }
+        }
+      } catch (error) {
+        console.error('Unexpected error during work order generation:', error);
+      }
       
       return completion;
     },

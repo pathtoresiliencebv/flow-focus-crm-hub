@@ -136,21 +136,86 @@ serve(async (req) => {
       })
       .eq('id', completionId)
 
-    // Send email to customer
+    // Save to project_work_orders table
+    const workOrderNumber = `WB-${Date.now()}-${completionId.slice(0, 8).toUpperCase()}`;
+    
+    const { data: workOrder, error: workOrderError } = await supabaseClient
+      .from('project_work_orders')
+      .insert({
+        project_id: completion.project_id,
+        work_order_number: workOrderNumber,
+        client_signature_data: completion.customer_signature,
+        client_name: customer?.name || completion.customer_name,
+        signed_at: new Date(completion.completion_date).toISOString(),
+        work_photos: photos.map((p: any) => ({
+          url: p.photo_url,
+          category: p.category,
+          description: p.description
+        })),
+        summary_text: `
+Voltooide taken: ${tasks.filter((t: any) => t.is_completed).length}/${tasks.length}
+Openstaande taken: ${tasks.filter((t: any) => !t.is_completed).length}
+
+Uitgevoerde werkzaamheden:
+${completion.work_performed}
+
+${completion.recommendations ? `Aanbevelingen:\n${completion.recommendations}` : ''}
+        `.trim(),
+        pdf_url: publicUrl
+      })
+      .select()
+      .single();
+
+    if (workOrderError) {
+      console.error('Error saving work order:', workOrderError);
+      // Don't throw - PDF is still generated
+    } else {
+      console.log('✅ Work order saved:', workOrderNumber);
+    }
+
+    // Send email to customer via SMANS SMTP
     if (customer?.email) {
-      await supabaseClient.functions.invoke('send-email', {
+      // Download PDF and convert to base64 for attachment
+      let pdfBase64 = null;
+      try {
+        console.log('📥 Downloading PDF for email attachment:', publicUrl);
+        const pdfResponse = await fetch(publicUrl);
+        if (pdfResponse.ok) {
+          const pdfBuffer = await pdfResponse.arrayBuffer();
+          pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
+          console.log('✅ PDF converted to base64');
+        }
+      } catch (pdfError) {
+        console.error('⚠️ Warning: Could not attach PDF:', pdfError);
+      }
+
+      const { error: emailError } = await supabaseClient.functions.invoke('send-email-smans', {
         body: {
           to: customer.email,
-          subject: `Werkbon - ${completion.project?.title || 'Project'}`,
-          html: generateEmailHTML(customer, publicUrl, completion),
-          attachments: [
+          subject: `Uw werkbon voor project ${completion.project?.title || 'ID ' + completionId.slice(0, 8)}`,
+          html: generateEmailHTML(customer, publicUrl, completion, tasks),
+          attachments: pdfBase64 ? [
             {
-              filename: `werkbon-${completionId}.pdf`,
-              path: publicUrl
+              filename: `werkbon-${completionId.slice(0, 8)}.pdf`,
+              content: pdfBase64,
+              contentType: 'application/pdf'
             }
-          ]
+          ] : undefined
         }
-      })
+      });
+
+      if (emailError) {
+        console.error('Email send error:', emailError);
+        // Don't throw - PDF is still generated and saved
+      } else {
+        console.log('✅ Email sent to customer:', customer.email);
+        
+        // Update email sent timestamp
+        await supabaseClient
+          .from('project_completions')
+          .update({ email_sent_at: new Date().toISOString() })
+          .eq('id', completionId);
+      }
     }
 
     console.log('Work order generated successfully:', publicUrl)
@@ -404,7 +469,7 @@ function generateWorkOrderHTML(data: any): string {
   <!-- Tasks -->
   ${tasks && tasks.length > 0 ? `
   <div class="section">
-    <div class="section-title">✓ Voltooide Taken</div>
+    <div class="section-title">✅ Voltooide Taken</div>
     <table>
       <thead>
         <tr>
@@ -413,15 +478,37 @@ function generateWorkOrderHTML(data: any): string {
         </tr>
       </thead>
       <tbody>
-        ${tasks.filter((t: any) => t.completed).map((task: any) => `
+        ${tasks.filter((t: any) => t.is_completed).map((task: any) => `
           <tr>
             <td style="text-align: center;">✅</td>
-            <td>${task.description}</td>
+            <td>${task.block_title}</td>
           </tr>
         `).join('')}
       </tbody>
     </table>
   </div>
+  
+  ${tasks.filter((t: any) => !t.is_completed).length > 0 ? `
+  <div class="section">
+    <div class="section-title">⏳ Openstaande Taken</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 50px;">Status</th>
+          <th>Taak Beschrijving</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tasks.filter((t: any) => !t.is_completed).map((task: any) => `
+          <tr>
+            <td style="text-align: center;">⏳</td>
+            <td>${task.block_title}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  </div>
+  ` : ''}
   ` : ''}
 
   <!-- Time Registration -->
@@ -451,24 +538,18 @@ function generateWorkOrderHTML(data: any): string {
       <thead>
         <tr>
           <th>Materiaal</th>
+          <th>Leverancier</th>
           <th style="text-align: right;">Hoeveelheid</th>
-          <th style="text-align: right;">Prijs per eenheid</th>
-          <th style="text-align: right;">Totaal</th>
         </tr>
       </thead>
       <tbody>
         ${materials.map((m: any) => `
           <tr>
             <td>${m.material_name}</td>
-            <td style="text-align: right;">${m.quantity_used} ${m.unit || ''}</td>
-            <td style="text-align: right;">€${(m.unit_price || 0).toFixed(2)}</td>
-            <td style="text-align: right;"><strong>€${((m.quantity_used || 0) * (m.unit_price || 0)).toFixed(2)}</strong></td>
+            <td>${m.supplier || '-'}</td>
+            <td style="text-align: right;">${m.quantity} ${m.unit || ''}</td>
           </tr>
         `).join('')}
-        <tr style="background: #f9fafb; font-weight: 600;">
-          <td colspan="3" style="text-align: right;">Totaal Materiaalkosten:</td>
-          <td style="text-align: right;">€${materialCost.toFixed(2)}</td>
-        </tr>
       </tbody>
     </table>
   </div>
@@ -582,12 +663,12 @@ function generateWorkOrderHTML(data: any): string {
       <span>${completion.total_hours?.toFixed(1) || '0'} uur</span>
     </div>
     <div class="summary-item">
-      <span>Materiaalkosten:</span>
-      <span>€${materialCost.toFixed(2)}</span>
-    </div>
-    <div class="summary-item">
       <span>Aantal Foto's:</span>
       <span>${photos.length}</span>
+    </div>
+    <div class="summary-item">
+      <span>Voltooide Taken:</span>
+      <span>${tasks.filter((t: any) => t.is_completed).length}/${tasks.length}</span>
     </div>
     <div class="summary-item">
       <span>Klant Tevredenheid:</span>
@@ -733,10 +814,13 @@ async function generatePDFFromHTML(html: string): Promise<Uint8Array> {
   return encoder.encode(printableHtml)
 }
 
-function generateEmailHTML(customer: any, pdfUrl: string, completion: any): string {
+function generateEmailHTML(customer: any, pdfUrl: string, completion: any, tasks: any[]): string {
+  const completedTasks = tasks.filter((t: any) => t.is_completed);
+  const openTasks = tasks.filter((t: any) => !t.is_completed);
+  
   return `
 <!DOCTYPE html>
-<html>
+<html lang="nl">
 <head>
   <meta charset="UTF-8">
   <style>
@@ -776,6 +860,19 @@ function generateEmailHTML(customer: any, pdfUrl: string, completion: any): stri
       margin: 20px 0;
       border-radius: 6px;
     }
+    .task-list {
+      margin: 15px 0;
+      padding: 15px;
+      background: #f8fafc;
+      border-radius: 6px;
+    }
+    .task-item {
+      padding: 8px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .task-item:last-child {
+      border-bottom: none;
+    }
   </style>
 </head>
 <body>
@@ -783,17 +880,35 @@ function generateEmailHTML(customer: any, pdfUrl: string, completion: any): stri
     <h1>✅ Werkzaamheden Afgerond</h1>
   </div>
   <div class="content">
-    <p>Beste ${customer.name},</p>
+    <p>Beste ${customer?.name || 'klant'},</p>
     
     <p>Bedankt voor uw vertrouwen! De werkzaamheden zijn succesvol afgerond.</p>
     
     <div class="info-box">
       <strong>📋 Project:</strong> ${completion.project?.title || 'N/A'}<br>
       <strong>📅 Datum:</strong> ${new Date(completion.completion_date).toLocaleDateString('nl-NL')}<br>
-        <strong>⭐ Tevredenheid:</strong> ${completion.customer_satisfaction ? `${completion.customer_satisfaction}/5 sterren` : 'N/A'}
+      <strong>⭐ Tevredenheid:</strong> ${completion.customer_satisfaction ? `${completion.customer_satisfaction}/5 sterren` : 'N/A'}
     </div>
     
-    <p>In de bijlage vindt u de werkbon met alle details van de uitgevoerde werkzaamheden.</p>
+    <h3>Overzicht van de werkzaamheden:</h3>
+    
+    <div class="task-list">
+      <h4 style="margin-top: 0;">✅ Voltooide taken (${completedTasks.length})</h4>
+      ${completedTasks.map((t: any) => `
+        <div class="task-item">✓ ${t.block_title}</div>
+      `).join('')}
+    </div>
+    
+    ${openTasks.length > 0 ? `
+    <div class="task-list">
+      <h4 style="margin-top: 0;">⏳ Openstaande taken (${openTasks.length})</h4>
+      ${openTasks.map((t: any) => `
+        <div class="task-item">○ ${t.block_title}</div>
+      `).join('')}
+    </div>
+    ` : ''}
+    
+    <p>In de bijlage vindt u de complete werkbon met alle details, foto's en handtekeningen.</p>
     
     <center>
       <a href="${pdfUrl}" class="button">📄 Download Werkbon</a>
@@ -802,7 +917,7 @@ function generateEmailHTML(customer: any, pdfUrl: string, completion: any): stri
     <p>Heeft u vragen of opmerkingen? Neem gerust contact met ons op!</p>
     
     <p>Met vriendelijke groet,<br>
-    Het Team</p>
+    Onderhoud en Service J.J.P. Smans</p>
   </div>
 </body>
 </html>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Package, Users, Calendar, Euro, Mail, Phone, User, MapPin, Clock, CheckCircle2, Circle, Edit, FileText } from "lucide-react";
+import { ArrowLeft, Package, Users, Calendar, Euro, Mail, Phone, User, MapPin, Clock, CheckCircle2, Circle, Edit, FileText, Camera } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,6 +30,7 @@ const ProjectDetail = () => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
   const [workOrders, setWorkOrders] = useState<any[]>([]);
+  const [completionPhotos, setCompletionPhotos] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(false);
 
   // Find the project
@@ -45,7 +46,7 @@ const ProjectDetail = () => {
       setLoadingData(true);
       try {
         // Execute all queries in parallel for faster loading
-        const [taskResult, invoiceResult, quoteResult, activityResult, workOrderResult] = await Promise.all([
+        const [taskResult, invoiceResult, quoteResult, activityResult, workOrderResult, photosResult] = await Promise.all([
           // Fetch tasks
           supabase
             .from('project_tasks')
@@ -85,7 +86,20 @@ const ProjectDetail = () => {
             .from('project_work_orders')
             .select('*')
             .eq('project_id', projectId)
-            .order('created_at', { ascending: false })
+            .order('created_at', { ascending: false }),
+          
+          // Fetch completion photos
+          supabase
+            .from('completion_photos')
+            .select(`
+              *,
+              completion:project_completions!inner(
+                installer_id,
+                project_id
+              )
+            `)
+            .eq('completion.project_id', projectId)
+            .order('uploaded_at', { ascending: false })
         ]);
         
         console.log('📊 ProjectDetail: Data fetched:', {
@@ -93,6 +107,7 @@ const ProjectDetail = () => {
           invoices: invoiceResult.data?.length || 0,
           quotes: quoteResult.data?.length || 0,
           workOrders: workOrderResult.data?.length || 0,
+          completionPhotos: photosResult.data?.length || 0,
           invoices_data: invoiceResult.data,
           quotes_data: quoteResult.data
         });
@@ -102,6 +117,7 @@ const ProjectDetail = () => {
         setQuotes(quoteResult.data || []);
         setActivities(activityResult.data || []);
         setWorkOrders(workOrderResult.data || []);
+        setCompletionPhotos(photosResult.data || []);
       } catch (error) {
         console.error('❌ Error fetching project data:', error);
       } finally {
@@ -365,14 +381,31 @@ const ProjectDetail = () => {
                 <TabsTrigger value="taken" className="data-[state=active]:bg-red-50 data-[state=active]:text-red-700">
                   Project taken
                 </TabsTrigger>
-                <TabsTrigger value="werkbonnen" className="relative">
-                  Werkbonnen
-                  {workOrders.length > 0 && (
+                
+                {/* 🔒 Werkbonnen tab - Monteurs see ONLY their own work orders */}
+                {workOrders.length > 0 && (
+                  <TabsTrigger value="werkbonnen" className="relative">
+                    Werkbonnen
                     <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
-                      {workOrders.length}
+                      {profile?.role === 'Installateur' 
+                        ? workOrders.filter((wo: any) => wo.created_by === user?.id).length 
+                        : workOrders.length}
                     </Badge>
-                  )}
-                </TabsTrigger>
+                  </TabsTrigger>
+                )}
+                
+                {/* 📸 Foto's tab - Monteurs see ONLY their own photos */}
+                {completionPhotos.length > 0 && (
+                  <TabsTrigger value="fotos" className="relative">
+                    Foto's
+                    <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+                      {profile?.role === 'Installateur' 
+                        ? completionPhotos.filter((p: any) => p.completion?.installer_id === user?.id).length 
+                        : completionPhotos.length}
+                    </Badge>
+                  </TabsTrigger>
+                )}
+                
                 {/* 🔒 Facturen en Offertes tabs NIET voor Installateurs */}
                 {profile?.role !== 'Installateur' && (
                   <>
@@ -389,16 +422,33 @@ const ProjectDetail = () => {
 
               {/* WERKBONNEN TAB */}
               <TabsContent value="werkbonnen" className="p-4">
-                {loadingData ? (
-                  <p className="text-center text-muted-foreground py-8">Laden...</p>
-                ) : workOrders.length === 0 ? (
-                  <div className="text-center text-muted-foreground py-8">
-                    <p>Geen werkbonnen gevonden voor dit project</p>
-                    <p className="text-xs mt-2">Werkbonnen worden aangemaakt na project oplevering</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {workOrders.map((workOrder) => (
+                {(() => {
+                  // Filter work orders for Installateurs - only show their own
+                  const filteredWorkOrders = profile?.role === 'Installateur'
+                    ? workOrders.filter((wo: any) => wo.created_by === user?.id)
+                    : workOrders;
+                  
+                  if (loadingData) {
+                    return <p className="text-center text-muted-foreground py-8">Laden...</p>;
+                  }
+                  
+                  if (filteredWorkOrders.length === 0) {
+                    return (
+                      <div className="text-center text-muted-foreground py-8">
+                        <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                        <p>
+                          {profile?.role === 'Installateur' 
+                            ? 'U heeft nog geen werkbonnen gegenereerd voor dit project.'
+                            : 'Geen werkbonnen beschikbaar voor dit project.'}
+                        </p>
+                        <p className="text-xs mt-2">Werkbonnen worden aangemaakt na project oplevering</p>
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <div className="space-y-3">
+                      {filteredWorkOrders.map((workOrder) => (
                       <div 
                         key={workOrder.id} 
                         className="border rounded-lg p-4 hover:bg-emerald-50/50 transition-colors"
@@ -463,7 +513,92 @@ const ProjectDetail = () => {
                       </div>
                     ))}
                   </div>
-                )}
+                  );
+                })()}
+              </TabsContent>
+
+              {/* FOTO'S TAB */}
+              <TabsContent value="fotos" className="p-4">
+                {(() => {
+                  // Filter photos for Installateurs - only show their own
+                  const filteredPhotos = profile?.role === 'Installateur'
+                    ? completionPhotos.filter((p: any) => p.completion?.installer_id === user?.id)
+                    : completionPhotos;
+                  
+                  if (loadingData) {
+                    return <p className="text-center text-muted-foreground py-8">Laden...</p>;
+                  }
+                  
+                  if (filteredPhotos.length === 0) {
+                    return (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Camera className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                        <p>
+                          {profile?.role === 'Installateur' 
+                            ? 'U heeft nog geen foto\'s gemaakt voor dit project.'
+                            : 'Geen foto\'s beschikbaar voor dit project.'}
+                        </p>
+                      </div>
+                    );
+                  }
+                  
+                  // Group photos by category
+                  const photosByCategory = filteredPhotos.reduce((acc: any, photo: any) => {
+                    const category = photo.category || 'other';
+                    if (!acc[category]) acc[category] = [];
+                    acc[category].push(photo);
+                    return acc;
+                  }, {});
+                  
+                  const categoryLabels: Record<string, string> = {
+                    before: '📷 Voor Foto\'s',
+                    during: '⚙️ Tijdens Werk',
+                    after: '✅ Na Foto\'s',
+                    detail: '🔍 Detail Foto\'s',
+                    overview: '🏠 Overzicht Foto\'s',
+                    other: '📸 Overige Foto\'s'
+                  };
+                  
+                  return (
+                    <div className="space-y-6">
+                      {Object.entries(photosByCategory).map(([category, photos]: [string, any]) => (
+                        <div key={category}>
+                          <h4 className="font-medium mb-3 flex items-center gap-2">
+                            {categoryLabels[category] || '📸 Foto\'s'}
+                            <Badge variant="secondary">{photos.length}</Badge>
+                          </h4>
+                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                            {photos.map((photo: any) => (
+                              <div 
+                                key={photo.id} 
+                                className="relative group cursor-pointer"
+                                onClick={() => window.open(photo.photo_url, '_blank')}
+                              >
+                                <div className="aspect-square rounded-lg overflow-hidden border border-gray-200 hover:border-blue-500 transition-colors">
+                                  <img 
+                                    src={photo.photo_url} 
+                                    alt={photo.description || category}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                  />
+                                </div>
+                                {photo.description && (
+                                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                    {photo.description}
+                                  </p>
+                                )}
+                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Badge variant="secondary" className="bg-white/90 backdrop-blur">
+                                    {format(new Date(photo.uploaded_at), 'dd MMM HH:mm', { locale: nl })}
+                                  </Badge>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </TabsContent>
 
               {/* FACTUREN TAB */}
