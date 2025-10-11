@@ -98,6 +98,12 @@ export function SimplifiedPlanningManagement({
 
   // Handle day click from calendar
   const handleDayClick = (monteurId: string, date: Date, availability: DayAvailability) => {
+    // 🔒 Installateurs kunnen GEEN planning toevoegen
+    if (profile?.role === 'Installateur') {
+      console.log('❌ Installateurs cannot add planning');
+      return;
+    }
+    
     console.log('Day clicked:', { monteurId, date, availability });
     setSelectedMonteur(monteurId);
     setSelectedDate(date);

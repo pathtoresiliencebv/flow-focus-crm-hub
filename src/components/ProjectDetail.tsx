@@ -112,6 +112,13 @@ const ProjectDetail = () => {
           quotes_data: quoteResult.data
         });
         
+        console.log('📊 ProjectDetail: Werkbonnen/Foto\'s tab visibility:', {
+          werkbonnenWillShow: workOrderResult.data && workOrderResult.data.length > 0,
+          fotosWillShow: photosResult.data && photosResult.data.length > 0,
+          userRole: profile?.role,
+          userId: user?.id
+        });
+        
         setTasks(taskResult.data || []);
         setInvoices(invoiceResult.data || []);
         setQuotes(quoteResult.data || []);

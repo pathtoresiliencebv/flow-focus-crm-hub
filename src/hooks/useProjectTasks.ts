@@ -56,12 +56,38 @@ export const useProjectTasks = (projectId: string) => {
 
   const addTaskMutation = useMutation({
     mutationFn: async (taskData: NewProjectTask) => {
+      // Insert the task
       const { data, error } = await supabase
         .from('project_tasks')
         .insert(taskData)
         .select()
         .single();
       if (error) throw error;
+      
+      // ✅ Check if project is "afgerond" - if so, reset to "in_uitvoering"
+      if (projectId) {
+        const { data: project, error: projectError } = await supabase
+          .from('projects')
+          .select('status')
+          .eq('id', projectId)
+          .single();
+        
+        if (!projectError && project?.status === 'afgerond') {
+          console.log('📝 Project is afgerond, resetting status to in_uitvoering...');
+          await supabase
+            .from('projects')
+            .update({ 
+              status: 'in_uitvoering',
+              completion_date: null, // Reset completion date
+              completion_id: null // Remove completion reference
+            })
+            .eq('id', projectId);
+          
+          // Invalidate projects query to reflect status change
+          queryClient.invalidateQueries({ queryKey: ['projects'] });
+        }
+      }
+      
       return data;
     },
     onSuccess: () => {
