@@ -285,8 +285,10 @@ export const MultiBlockInvoicePreview: React.FC<MultiBlockInvoicePreviewProps> =
                   <div className="col-span-1 text-right">Totaal</div>
                 </div>
                 
-                {/* All items */}
-                {invoice.invoice_items.map((item: any, itemIndex: number) => (
+                {/* All items - filter out block headers and subtotals */}
+                {invoice.invoice_items
+                  .filter((item: any) => item.type !== 'block_header' && item.type !== 'block_subtotal')
+                  .map((item: any, itemIndex: number) => (
                   <div key={`item-${item.id || itemIndex}`} className="grid grid-cols-12 gap-4 py-1 px-3 border-b border-gray-100 text-xs">
                     <div className="col-span-6 text-gray-800">{item.description || 'Geen beschrijving'}</div>
                     <div className="col-span-2 text-center text-gray-800">{item.quantity || 0}</div>
