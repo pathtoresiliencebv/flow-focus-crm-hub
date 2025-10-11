@@ -85,7 +85,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <LoginScreen />;
   }
 
-  // Show mobile interface for mechanics on mobile devices
+  // Show mobile interface for Installateurs (monteurs) on mobile devices
   if (isMobile && profile?.role === 'Installateur') {
     return <MobileDashboard />;
   }

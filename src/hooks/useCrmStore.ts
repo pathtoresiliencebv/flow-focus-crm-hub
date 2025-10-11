@@ -94,14 +94,16 @@ export const useCrmStore = () => {
 
   // Filter data based on user role
   const filteredProjects = useMemo(() => {
+    // Installateurs (monteurs) only see their assigned projects
     if (profile?.role === 'Installateur') {
-      // Installateurs only see projects assigned to them
-      console.log('Filtering projects for installateur:', user?.id);
-      console.log('All projects:', allProjects);
+      console.log(`🔍 Filtering projects for Installateur:`, user?.id);
+      console.log('🔍 All projects count:', allProjects.length);
+      console.log('🔍 Sample project assigned_user_id:', allProjects[0]?.assigned_user_id);
       const userProjects = allProjects.filter(p => p.assigned_user_id === user?.id);
-      console.log('Filtered projects for installateur:', userProjects);
+      console.log(`✅ Filtered Installateur projects:`, userProjects.length);
       return userProjects;
     }
+    console.log('🔍 Administrator/Other - returning all projects:', allProjects.length);
     return allProjects;
   }, [allProjects, profile?.role, user?.id]);
 
@@ -109,11 +111,11 @@ export const useCrmStore = () => {
     console.log('🔍 useCrmStore: Filtering customers. Role:', profile?.role);
     console.log('🔍 useCrmStore: All customers count:', allCustomers?.length);
     
+    // Installateurs see customers from their assigned projects
     if (profile?.role === 'Installateur') {
-      // Installateurs only see customers from their assigned projects
       const assignedProjectCustomerIds = filteredProjects.map(p => p.customer_id);
       const filtered = allCustomers.filter(c => assignedProjectCustomerIds.includes(c.id));
-      console.log('🔍 useCrmStore: Filtered for Installateur:', filtered.length);
+      console.log(`🔍 useCrmStore: Filtered for Installateur:`, filtered.length);
       return filtered;
     }
     

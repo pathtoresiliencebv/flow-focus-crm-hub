@@ -73,7 +73,7 @@ export default function DashboardPage() {
     };
   }, [setTitle, setActions]); // Don't include headerActions - it's memoized and causes loops
 
-  // Show planning for admin/administratie, regular dashboard for installateurs
+  // Show simplified dashboard for Installateurs (monteurs)
   if (profile?.role === 'Installateur') {
     return <Dashboard />;
   }

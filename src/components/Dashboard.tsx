@@ -9,7 +9,7 @@ export const Dashboard = () => {
   const { projects, customers } = useCrmStore();
   const { profile, user } = useAuth();
 
-  // Filter projects based on user role
+  // Filter projects based on user role (Installateurs only see their assigned projects)
   const filteredProjects = profile?.role === 'Installateur' 
     ? projects.filter(p => p.assigned_user_id === user?.id)
     : projects;
