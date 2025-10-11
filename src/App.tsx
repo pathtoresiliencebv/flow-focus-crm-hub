@@ -62,11 +62,12 @@ const queryClient = new QueryClient({
 
 // Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading, profile, session, user } = useAuth();
+  const { isAuthenticated, isLoading, profile, user } = useAuth();
   const isMobile = useIsMobile();
 
-  // Show loading state while checking authentication
-  if (isLoading) {
+  // Only show loading state if BOTH loading AND no cached data exists
+  // This prevents the loading screen on page reload when we have cached auth
+  if (isLoading && !user && !profile) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
@@ -77,9 +78,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // More robust auth check - check both user and session
-  if (!user || !session || !isAuthenticated) {
-    console.log('🔐 Auth check failed:', { user: !!user, session: !!session, isAuthenticated });
+  // Hard redirect only if explicitly not authenticated
+  // Note: We removed the session check to allow optimistic rendering with cached auth
+  if (!isAuthenticated || !user) {
+    console.log('🔐 Not authenticated, redirecting to login');
     return <LoginScreen />;
   }
 

@@ -12,23 +12,17 @@ import { useMonteurProjects } from "@/hooks/useMonteurProjects";
 import { MobileProjectView } from './MobileProjectView';
 
 export const MobileDashboard: React.FC = () => {
-  const { profile, user, isAuthenticated, session } = useAuth();
+  const { profile, user, isAuthenticated } = useAuth();
   const { customers } = useCrmStore();
   const { projects, isLoading: projectsLoading, refreshProjects } = useMonteurProjects();
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   const [planningItems, setPlanningItems] = useState<any[]>([]);
 
-  // Auth check to prevent logout during navigation
-  if (!isAuthenticated || !user || !session) {
-    console.log('🔐 MobileDashboard: Auth check failed, redirecting to login');
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Authenticatie controleren...</p>
-        </div>
-      </div>
-    );
+  // Auth check - removed hard session check to allow optimistic rendering with cached auth
+  if (!isAuthenticated || !user) {
+    console.log('🔐 MobileDashboard: Not authenticated');
+    // Return null to let ProtectedRoute handle the redirect
+    return null;
   }
 
   // Fetch planning items for current user

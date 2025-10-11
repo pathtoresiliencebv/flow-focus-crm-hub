@@ -58,12 +58,34 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     return null;
   };
 
+  // Check for cached session (for instant auth on page reload)
+  const getCachedSession = () => {
+    try {
+      const sessionStr = localStorage.getItem('supabase.auth.token');
+      if (sessionStr) {
+        const sessionData = JSON.parse(sessionStr);
+        // Check if session is still valid (not expired)
+        if (sessionData.expires_at && sessionData.expires_at * 1000 > Date.now()) {
+          console.log('✅ Using cached session data');
+          return {
+            user: sessionData.user,
+            session: sessionData
+          };
+        }
+      }
+    } catch (e) {
+      console.error('Error loading cached session:', e);
+    }
+    return null;
+  };
+
   const cachedProfile = getCachedProfile();
+  const cachedAuth = getCachedSession();
   
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(cachedAuth?.user || null);
   const [profile, setProfile] = useState<UserProfile | null>(cachedProfile);
-  const [session, setSession] = useState<Session | null>(null);
-  const [isLoading, setIsLoading] = useState(!cachedProfile);
+  const [session, setSession] = useState<Session | null>(cachedAuth?.session || null);
+  const [isLoading, setIsLoading] = useState(!cachedAuth && !cachedProfile);
 
   const fetchProfile = useCallback(async (user: User) => {
     const { data: profileData, error } = await supabase
@@ -139,7 +161,45 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     
     const initializeAuth = async () => {
       try {
-        // Get current session
+        // ✅ OPTIMISTIC RENDERING: If we have cached auth, render immediately and validate in background
+        if (cachedAuth || cachedProfile) {
+          console.log('✅ Using cached auth, validating in background...');
+          if (mounted) {
+            setIsLoading(false);
+          }
+          
+          // Validate session in background (non-blocking)
+          const { data: { session }, error } = await supabase.auth.getSession();
+          
+          if (!mounted) return;
+          
+          if (error || !session) {
+            console.warn('⚠️ Cached session invalid, clearing auth state');
+            setUser(null);
+            setSession(null);
+            setProfile(null);
+            localStorage.removeItem('user_profile_cache');
+            return;
+          }
+          
+          // Update state only if session changed
+          if (session.access_token !== cachedAuth?.session?.access_token) {
+            console.log('🔄 Session changed, updating state...');
+            setSession(session);
+            setUser(session.user);
+            await fetchProfile(session.user);
+          } else {
+            console.log('✅ Cached session is still valid');
+            // Ensure session state is set even if cached
+            if (!user) setUser(session.user);
+            if (!profile && session.user) {
+              await fetchProfile(session.user);
+            }
+          }
+          return;
+        }
+        
+        // ❌ NO CACHE: Normal flow - fetch session and show loading
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -160,30 +220,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setUser(currentUser);
           
           if (currentUser) {
-            // Use cached profile if available and fresh
-            const cached = localStorage.getItem('user_profile_cache');
-            let shouldRefresh = true;
-            
-            if (cached) {
-              try {
-                const parsed = JSON.parse(cached);
-                const age = Date.now() - (parsed.timestamp || 0);
-                const cacheMaxAge = 30 * 60 * 1000; // 30 minutes
-                shouldRefresh = age >= cacheMaxAge;
-                
-                if (!shouldRefresh) {
-                  console.log('✅ Using cached profile (still fresh)');
-                  setProfile(parsed.profile);
-                }
-              } catch (e) {
-                console.error('Error parsing cached profile:', e);
-              }
-            }
-            
-            if (shouldRefresh) {
-              console.log('🔄 Fetching fresh profile data...');
-              await fetchProfile(currentUser);
-            }
+            console.log('🔄 Fetching profile data...');
+            await fetchProfile(currentUser);
           }
           setIsLoading(false);
         } else {
@@ -238,7 +276,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       mounted = false;
       subscription?.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, [fetchProfile, cachedAuth, cachedProfile, user, profile]);
 
   // Add login lock to prevent multiple simultaneous calls
   const loginInProgressRef = useRef(false);
