@@ -1,17 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Eye, User, Calendar } from "lucide-react";
+import { User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useCrmStore } from "@/hooks/useCrmStore";
-import { useUsers } from "@/hooks/useUsers";
-import { useProjectTasks } from "@/hooks/useProjectTasks";
 import { useAuth } from "@/contexts/AuthContext";
-import { useProjectDelivery } from "@/hooks/useProjectDelivery";
-import { ProjectDeliveryDialog } from "./dashboard/ProjectDeliveryDialog";
+import { InstallateurProjectCard } from "./dashboard/InstallateurProjectCard";
 
 type ProjectStatus = "te-plannen" | "gepland" | "in-uitvoering" | "herkeuring" | "afgerond";
 
@@ -34,11 +28,7 @@ const statusColorMap: Record<ProjectStatus, string> = {
 export const InstallateurProjectList: React.FC = () => {
   const navigate = useNavigate();
   const { projects } = useCrmStore();
-  const { monteurs } = useUsers();
   const { user } = useAuth();
-  const { startProject, completeProject, isStarting, isCompleting } = useProjectDelivery();
-  const [showDelivery, setShowDelivery] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<any>(null);
   const [planningItems, setPlanningItems] = useState<any[]>([]);
 
   // Fetch planning items for current user
@@ -96,106 +86,7 @@ export const InstallateurProjectList: React.FC = () => {
     "te-plannen": installateurProjects.filter(p => p.status === "te-plannen"),
   }), [installateurProjects]);
 
-  const handleViewDetails = (projectId: string) => {
-    navigate(`/projects/${projectId}`);
-  };
-
-  const handleStartProject = async (projectId: string) => {
-    await startProject(projectId);
-  };
-
-  const handleCompleteProject = (project: any) => {
-    setSelectedProject(project);
-    setShowDelivery(true);
-  };
-
-  const ProjectCard = ({ project }: { project: any }) => {
-    const assignedMonteur = monteurs.find(m => m.id === project.assigned_user_id);
-    const { completionPercentage, tasks } = useProjectTasks(project.id);
-
-    return (
-      <Card className="hover:shadow-md transition-shadow">
-        <CardHeader className="pb-3">
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <CardTitle className="text-lg font-semibold">{project.title}</CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">Klant: {project.customer}</p>
-            </div>
-            <Badge className={`${statusColorMap[project.status as ProjectStatus]} border`}>
-              {statusDisplayMap[project.status as ProjectStatus]}
-            </Badge>
-          </div>
-        </CardHeader>
-        
-        <CardContent className="space-y-4">
-          {/* 🔒 Monteurs zien GEEN bedragen */}
-          <div className="flex items-center gap-2 text-sm">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span>{project.date || 'Geen datum'}</span>
-          </div>
-
-          {assignedMonteur && (
-            <div className="flex items-center gap-2">
-              <User className="h-4 w-4 text-blue-500" />
-              <span className="text-sm text-blue-600">
-                {assignedMonteur.full_name || assignedMonteur.email}
-              </span>
-            </div>
-          )}
-
-          {tasks.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Voortgang</span>
-                <Badge variant="outline" className="text-xs">
-                  {completionPercentage}%
-                </Badge>
-              </div>
-              <Progress value={completionPercentage} className="h-2" />
-            </div>
-          )}
-
-          {project.description && (
-            <p className="text-sm text-gray-600 line-clamp-2">{project.description}</p>
-          )}
-
-          <div className="flex gap-2 pt-2">
-            <Button 
-              onClick={() => handleViewDetails(project.id)} 
-              variant="outline" 
-              size="sm"
-              className="flex-1"
-            >
-              <Eye className="mr-2 h-4 w-4" />
-              Details
-            </Button>
-            
-            {project.status === 'gepland' && (
-              <Button 
-                onClick={() => handleStartProject(project.id)}
-                disabled={isStarting}
-                size="sm"
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-              >
-                {isStarting ? 'Starten...' : 'Start Project'}
-              </Button>
-            )}
-            
-            {project.status === 'in-uitvoering' && (
-              <Button 
-                onClick={() => handleCompleteProject(project)}
-                disabled={isCompleting}
-                size="sm"
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                Opleveren
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
+  // 🔥 FIXED: Use same InstallateurProjectCard as Dashboard for consistency!
 
   if (installateurProjects.length === 0) {
     return (
@@ -236,28 +127,17 @@ export const InstallateurProjectList: React.FC = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {statusProjects.map((project) => (
-                <ProjectCard key={project.id} project={project} />
+                <InstallateurProjectCard 
+                  key={project.id} 
+                  project={project}
+                  onProjectClick={(projectId) => navigate(`/projects/${projectId}`)}
+                />
               ))}
             </div>
           </div>
         );
       })}
 
-      {/* Project Delivery Dialog */}
-      {showDelivery && selectedProject && (
-        <ProjectDeliveryDialog
-          project={selectedProject}
-          isOpen={showDelivery}
-          onClose={() => {
-            setShowDelivery(false);
-            setSelectedProject(null);
-          }}
-          onComplete={() => {
-            setShowDelivery(false);
-            setSelectedProject(null);
-          }}
-        />
-      )}
     </div>
   );
 };
