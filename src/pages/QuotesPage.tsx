@@ -36,7 +36,10 @@ export default function QuotesPage() {
       setTitle("");
       setActions(null);
     };
-  }, [setTitle, setActions]); // Don't include headerActions - it's memoized and causes loops
+    // 🔥 CRITICAL: setTitle and setActions are STABLE (useCallback with [])
+    // Including them in deps causes INFINITE LOOP when context updates!
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Don't include headerActions - it's memoized and causes loops
 
   return <Quotes />;
 }

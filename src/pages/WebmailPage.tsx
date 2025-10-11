@@ -13,7 +13,10 @@ export default function WebmailPage() {
       setTitle("");
       setActions(null);
     };
-  }, [setTitle, setActions]);
+    // 🔥 CRITICAL: setTitle and setActions are STABLE (useCallback with [])
+    // Including them in deps causes INFINITE LOOP when context updates!
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="h-full">

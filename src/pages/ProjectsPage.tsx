@@ -46,7 +46,10 @@ export default function ProjectsPage() {
       setTitle("");
       setActions(null);
     };
-  }, [setTitle, setActions]); // headerActions is memoized, so we don't need it here
+    // 🔥 CRITICAL: setTitle and setActions are STABLE (useCallback with [])
+    // Including them in deps causes INFINITE LOOP when context updates!
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // headerActions is memoized, so we don't need it here
 
   return (
     <ErrorBoundary>
