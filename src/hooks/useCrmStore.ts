@@ -309,6 +309,16 @@ export const useCrmStore = () => {
     },
   });
 
+  // Memoize debug object to prevent infinite loops - only create new reference when values actually change
+  const debug = useMemo(() => ({
+    isLoadingCustomers,
+    isLoadingProjects,
+    allProjectsCount: allProjects.length,
+    filteredProjectsCount: projects.length,
+    userRole: profile?.role,
+    userId: user?.id
+  }), [isLoadingCustomers, isLoadingProjects, allProjects.length, projects.length, profile?.role, user?.id]);
+
   return {
     customers,
     projects, // Components will now receive the transformed project object
@@ -323,14 +333,7 @@ export const useCrmStore = () => {
     updateProject: (id: string, data: UpdateProject) => updateProjectMutation.mutateAsync({ id, ...data }),
     deleteProject: deleteProjectMutation.mutateAsync,
     
-    // Debug info
-    debug: {
-      isLoadingCustomers,
-      isLoadingProjects,
-      allProjectsCount: allProjects.length,
-      filteredProjectsCount: projects.length,
-      userRole: profile?.role,
-      userId: user?.id
-    }
+    // Debug info - memoized to prevent infinite loops
+    debug
   };
 };

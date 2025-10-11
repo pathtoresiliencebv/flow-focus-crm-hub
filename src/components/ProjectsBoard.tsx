@@ -222,7 +222,7 @@ export const ProjectsBoard: React.FC<ProjectsBoardProps> = memo(({ showNewProjec
       projectsCount: projects.length,
       debug
     });
-  }, [isLoading, projects.length, debug]);
+  }, [isLoading, projects.length]); // debug is only for logging, doesn't need to trigger re-runs
 
   // Show loading state while data is being fetched
   if (isLoading) {
