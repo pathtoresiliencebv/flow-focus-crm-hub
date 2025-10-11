@@ -198,7 +198,6 @@ export const ProjectsBoard: React.FC<ProjectsBoardProps> = memo(({ showNewProjec
   const { hasPermission, profile } = useAuth();
   const [newProjectPanelOpen, setNewProjectPanelOpen] = useState(showNewProjectDialog);
   const [selectedStatus, setSelectedStatus] = useState<ProjectStatus>("te-plannen");
-  const { setTitle } = usePageHeader();
 
   // Add error boundary for users loading
   const { users, monteurs, isLoading: usersLoading, error: usersError } = useUsers();
@@ -215,10 +214,6 @@ export const ProjectsBoard: React.FC<ProjectsBoardProps> = memo(({ showNewProjec
     console.log('🔄 ProjectsBoard: showNewProjectDialog changed to:', showNewProjectDialog);
     setNewProjectPanelOpen(showNewProjectDialog);
   }, [showNewProjectDialog]);
-
-  React.useEffect(() => {
-    setTitle("Projecten");
-  }, [setTitle]);
 
   // Debug logging
   React.useEffect(() => {

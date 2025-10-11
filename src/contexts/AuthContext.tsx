@@ -161,8 +161,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     
     const initializeAuth = async () => {
       try {
-        // ✅ OPTIMISTIC RENDERING: If we have cached auth, render immediately and validate in background
-        if (cachedAuth || cachedProfile) {
+        // ✅ OPTIMISTIC RENDERING: Check for cached auth inside useEffect to avoid re-render loop
+        const hasCachedAuth = cachedAuth || cachedProfile;
+        
+        if (hasCachedAuth) {
           console.log('✅ Using cached auth, validating in background...');
           if (mounted) {
             setIsLoading(false);
@@ -183,18 +185,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           }
           
           // Update state only if session changed
-          if (session.access_token !== cachedAuth?.session?.access_token) {
+          const cachedToken = cachedAuth?.session?.access_token;
+          if (session.access_token !== cachedToken) {
             console.log('🔄 Session changed, updating state...');
             setSession(session);
             setUser(session.user);
             await fetchProfile(session.user);
           } else {
             console.log('✅ Cached session is still valid');
-            // Ensure session state is set even if cached
-            if (!user) setUser(session.user);
-            if (!profile && session.user) {
-              await fetchProfile(session.user);
-            }
           }
           return;
         }
@@ -276,7 +274,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       mounted = false;
       subscription?.unsubscribe();
     };
-  }, [fetchProfile, cachedAuth, cachedProfile, user, profile]);
+  }, [fetchProfile]); // Only fetchProfile - other values checked inside effect to prevent infinite loop
 
   // Add login lock to prevent multiple simultaneous calls
   const loginInProgressRef = useRef(false);
