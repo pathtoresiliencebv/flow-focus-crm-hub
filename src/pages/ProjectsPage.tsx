@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { usePageHeader } from "@/contexts/PageHeaderContext";
 import { ProjectsBoard } from "@/components/ProjectsBoard";
 import { Button } from "@/components/ui/button";
@@ -34,10 +34,10 @@ export default function ProjectsPage() {
     </Button>
   ), [handleNewProject]);
 
-  // Use useLayoutEffect to set header synchronously before paint
-  // This prevents the re-render loop caused by useEffect timing
-  useLayoutEffect(() => {
-    console.log('📝 ProjectsPage: Setting up header (layout effect)');
+  // CRITICAL: Don't include headerActions in deps - it's already memoized
+  // Including it creates a loop: setActions → context update → page re-render → effect runs again
+  useEffect(() => {
+    console.log('📝 ProjectsPage: Setting up header');
     setTitle("Projecten");
     setActions(headerActions);
     
@@ -46,7 +46,7 @@ export default function ProjectsPage() {
       setTitle("");
       setActions(null);
     };
-  }, [setTitle, setActions, headerActions]); // Include headerActions - layout effect runs synchronously
+  }, [setTitle, setActions]); // headerActions is memoized, so we don't need it here
 
   return (
     <ErrorBoundary>

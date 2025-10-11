@@ -50,13 +50,14 @@ export function PageHeaderProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer);
   });
 
-  // ✅ Create stable context value - NEVER changes unless title/actions actually change
+  // ✅ Create stable context value - setTitle and setActions are stable (useCallback with [])
+  // Only title and actions changes should trigger context updates
   const value = React.useMemo(() => ({
     title,
     setTitle,
     actions,
     setActions
-  }), [title, actions, setTitle, setActions]);
+  }), [title, actions]); // setTitle and setActions are stable, don't include them
 
   return (
     <PageHeaderContext.Provider value={value}>
