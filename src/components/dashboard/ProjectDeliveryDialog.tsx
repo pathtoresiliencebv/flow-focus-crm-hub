@@ -10,7 +10,7 @@ import { ImageUpload } from "@/components/ImageUpload";
 import { SignatureCanvas } from "@/components/SignatureCanvas";
 import { X } from "lucide-react";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
-import { useProjectDelivery } from "@/hooks/useProjectDelivery";
+import { useProjectCompletion, ProjectCompletionData } from "@/hooks/useProjectCompletion";
 import { toast } from "@/hooks/use-toast";
 
 interface ProjectDeliveryDialogProps {
@@ -22,7 +22,7 @@ interface ProjectDeliveryDialogProps {
 
 export const ProjectDeliveryDialog = ({ project, isOpen, onClose, onComplete }: ProjectDeliveryDialogProps) => {
   const { tasksByBlock } = useProjectTasks(project.id);
-  const { completeProject, isCompleting } = useProjectDelivery();
+  const { completeProject, isCompleting } = useProjectCompletion();
   
   const [formData, setFormData] = useState({
     clientName: '',
@@ -77,25 +77,43 @@ export const ProjectDeliveryDialog = ({ project, isOpen, onClose, onComplete }: 
     }
 
     try {
-      await completeProject({
+      // Get selected task titles for materials_used field
+      const selectedTaskTitles = Array.from(formData.selectedTasks)
+        .map(taskId => {
+          const allTasks = Object.values(tasksByBlock).flat();
+          const task = allTasks.find(t => t.id === taskId);
+          return task?.task_description || '';
+        })
+        .filter(Boolean);
+
+      // Prepare completion data with correct structure for useProjectCompletion
+      const completionData: ProjectCompletionData = {
         project_id: project.id,
-        client_name: formData.clientName,
-        delivery_summary: formData.deliverySummary,
-        delivery_photos: formData.deliveryPhotos,
-        client_signature_data: formData.clientSignature,
-        monteur_signature_data: formData.monteurSignature
-      });
+        completion_date: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
+        customer_name: formData.clientName,
+        work_performed: formData.deliverySummary,
+        customer_satisfaction: 5, // Default to excellent (5 stars)
+        customer_signature: formData.clientSignature,
+        installer_signature: formData.monteurSignature,
+        // Optional fields
+        materials_used: selectedTaskTitles.length > 0 
+          ? `Uitgevoerde werkzaamheden:\n${selectedTaskTitles.map(t => `- ${t}`).join('\n')}`
+          : undefined,
+        notes: formData.deliverySummary,
+      };
+
+      await completeProject(completionData);
 
       toast({
         title: "Project opgeleverd",
-        description: "Het project is succesvol opgeleverd.",
+        description: "Het project is succesvol opgeleverd. Werkbon wordt automatisch gegenereerd en verstuurd.",
       });
 
       onComplete();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Fout bij opleveren",
-        description: "Er is een fout opgetreden bij het opleveren van het project.",
+        description: error?.message || "Er is een fout opgetreden bij het opleveren van het project.",
         variant: "destructive"
       });
     }
