@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -319,18 +319,29 @@ export const useCrmStore = () => {
     userId: user?.id
   }), [isLoadingCustomers, isLoadingProjects, allProjects.length, projects.length, profile?.role, user?.id]);
 
+  // Memoize wrapper functions to prevent infinite loops - these were being recreated every render!
+  const updateCustomerFn = useCallback((id: string, data: UpdateCustomer) => 
+    updateCustomerMutation.mutateAsync({ id, ...data }), 
+    [updateCustomerMutation.mutateAsync]
+  );
+
+  const updateProjectFn = useCallback((id: string, data: UpdateProject) => 
+    updateProjectMutation.mutateAsync({ id, ...data }), 
+    [updateProjectMutation.mutateAsync]
+  );
+
   return {
     customers,
     projects, // Components will now receive the transformed project object
     isLoading: isLoadingCustomers || isLoadingProjects,
     
-    // Provide async functions for components to call
+    // Provide async functions for components to call - now stable references
     addCustomer: addCustomerMutation.mutateAsync,
-    updateCustomer: (id: string, data: UpdateCustomer) => updateCustomerMutation.mutateAsync({ id, ...data }),
+    updateCustomer: updateCustomerFn,
     deleteCustomer: deleteCustomerMutation.mutateAsync,
     
     addProject: addProjectMutation.mutateAsync,
-    updateProject: (id: string, data: UpdateProject) => updateProjectMutation.mutateAsync({ id, ...data }),
+    updateProject: updateProjectFn,
     deleteProject: deleteProjectMutation.mutateAsync,
     
     // Debug info - memoized to prevent infinite loops
