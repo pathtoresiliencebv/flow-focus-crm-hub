@@ -47,7 +47,9 @@ export const enhancedConvertQuoteToInvoice = async ({
         invoice_number: invoiceNumber,
         customer_name: quote.customer_name,
         customer_email: quote.customer_email,
+        customer_id: quote.customer_id || null,
         project_title: quote.project_title,
+        project_id: quote.project_id || null,
         message: quote.message,
         source_quote_id: quote.id,
         subtotal: subtotal,
@@ -58,7 +60,8 @@ export const enhancedConvertQuoteToInvoice = async ({
         original_quote_total: quote.total_amount,
         status: 'concept',
         due_date: dueDate.toISOString().split('T')[0],
-        invoice_date: new Date().toISOString().split('T')[0]
+        invoice_date: new Date().toISOString().split('T')[0],
+        user_id: quote.user_id || null
       })
       .select('id')
       .single();

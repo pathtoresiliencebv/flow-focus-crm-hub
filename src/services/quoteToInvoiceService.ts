@@ -22,12 +22,14 @@ export async function convertQuoteToInvoice(quote: Quote): Promise<string> {
     const dueDate = new Date();
     dueDate.setDate(dueDate.getDate() + 30);
 
-    // Create invoice
+    // Create invoice with user_id, project_id, and customer_id
     const invoiceData = {
       invoice_number: invoiceNumber,
       customer_name: quote.customer_name,
       customer_email: quote.customer_email,
+      customer_id: quote.customer_id || null,
       project_title: quote.project_title,
+      project_id: quote.project_id || null,
       invoice_date: new Date().toISOString().split('T')[0],
       due_date: dueDate.toISOString().split('T')[0],
       message: quote.message,
@@ -35,7 +37,8 @@ export async function convertQuoteToInvoice(quote: Quote): Promise<string> {
       vat_amount: quote.total_vat_amount,
       total_amount: quote.total_amount + quote.total_vat_amount,
       status: 'concept',
-      source_quote_id: quote.id
+      source_quote_id: quote.id,
+      user_id: quote.user_id || null
     };
 
     console.log('Creating invoice with data:', invoiceData);
