@@ -164,8 +164,19 @@ export const createDirectChannel = async (
 
   try {
     // Create a unique channel ID based on sorted user IDs (ensures same channel regardless of who initiates)
+    // Stream.io requires channel IDs to be max 64 characters, so we hash the user IDs
     const sortedIds = [currentUserId, otherUserId].sort();
-    const channelId = `direct_${sortedIds[0]}_${sortedIds[1]}`;
+    const combinedIds = sortedIds.join('_');
+    
+    // Create a simple hash of the combined IDs (using built-in crypto for consistency)
+    const encoder = new TextEncoder();
+    const data = encoder.encode(combinedIds);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    // Use first 32 chars of hash (plenty unique) with dm_ prefix = 35 chars total (well under 64 limit)
+    const channelId = `dm_${hashHex.substring(0, 32)}`;
 
     console.log('📝 Creating/getting direct channel:', channelId);
 
