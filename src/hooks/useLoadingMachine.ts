@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 
 // Define all possible loading states
 export type LoadingState = 
@@ -95,23 +95,55 @@ export const useLoadingMachine = () => {
 
   const setError = useCallback((error: AppError) => {
     console.error('❌ LOADING STATE MACHINE: Error occurred', error);
-    transition({ 
-      status: 'error', 
-      error, 
-      previousState: state.status 
+    // ✅ Use functional setState to get current state without dependency
+    setState(prevState => {
+      const newState: LoadingState = { 
+        status: 'error', 
+        error, 
+        previousState: prevState.status 
+      };
+      
+      console.log('🔄 LOADING STATE MACHINE:', {
+        from: prevState.status,
+        to: 'error',
+        details: newState
+      });
+      
+      // Add to history
+      setStateHistory(prev => {
+        const newHistory = [...prev, { status: prevState.status, timestamp: Date.now() }];
+        return newHistory.slice(-20);
+      });
+      
+      return newState;
     });
-  }, [transition, state.status]);
+  }, []);
 
   const setUnauthenticated = useCallback(() => {
     console.log('🔐 LOADING STATE MACHINE: Unauthenticated');
     transition({ status: 'unauthenticated' });
   }, [transition]);
 
-  // Computed properties
-  const isLoading = state.status !== 'ready' && state.status !== 'unauthenticated' && state.status !== 'error';
-  const isError = state.status === 'error';
-  const isReady = state.status === 'ready';
-  const isAuthenticated = state.status !== 'unauthenticated' && state.status !== 'initializing';
+  // ✅ Memoize computed properties to prevent unnecessary re-computations
+  const isLoading = useMemo(() => 
+    state.status !== 'ready' && state.status !== 'unauthenticated' && state.status !== 'error',
+    [state.status]
+  );
+  
+  const isError = useMemo(() => 
+    state.status === 'error',
+    [state.status]
+  );
+  
+  const isReady = useMemo(() => 
+    state.status === 'ready',
+    [state.status]
+  );
+  
+  const isAuthenticated = useMemo(() => 
+    state.status !== 'unauthenticated' && state.status !== 'initializing',
+    [state.status]
+  );
 
   return {
     state,

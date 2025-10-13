@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, ReactNode, useMemo } from 'react';
 import { useLoadingMachine, LoadingState, DataSection, AppError, UserInfo } from '@/hooks/useLoadingMachine';
 
 interface LoadingStateContextType {
@@ -35,10 +35,65 @@ interface LoadingStateProviderProps {
 }
 
 export const LoadingStateProvider = ({ children }: LoadingStateProviderProps) => {
-  const loadingMachine = useLoadingMachine();
+  const {
+    state,
+    stateHistory,
+    isLoading,
+    isError,
+    isReady,
+    isAuthenticated,
+    startAuthenticating,
+    startValidatingCache,
+    startLoadingProfile,
+    startLoadingPermissions,
+    startInitializingData,
+    startLoadingSection,
+    setReady,
+    setError,
+    setUnauthenticated,
+  } = useLoadingMachine();
+
+  // ✅ Memoize context value with stable callbacks
+  // Since all callbacks are now stable (useCallback with stable deps),
+  // the context value only changes when state/computed properties change
+  const contextValue = useMemo(() => ({
+    state,
+    stateHistory,
+    isLoading,
+    isError,
+    isReady,
+    isAuthenticated,
+    startAuthenticating,
+    startValidatingCache,
+    startLoadingProfile,
+    startLoadingPermissions,
+    startInitializingData,
+    startLoadingSection,
+    setReady,
+    setError,
+    setUnauthenticated,
+  }), [
+    state,
+    stateHistory,
+    isLoading,
+    isError,
+    isReady,
+    isAuthenticated,
+    // Callbacks are stable, so they don't need to be in deps
+    // but we include them for TypeScript safety
+    startAuthenticating,
+    startValidatingCache,
+    startLoadingProfile,
+    startLoadingPermissions,
+    startInitializingData,
+    startLoadingSection,
+    setReady,
+    setError,
+    setUnauthenticated,
+  ]);
 
   return (
-    <LoadingStateContext.Provider value={loadingMachine}>
+    <LoadingStateContext.Provider value={contextValue}>
       {children}
     </LoadingStateContext.Provider>
   );
