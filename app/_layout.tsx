@@ -12,8 +12,11 @@ if (Platform.OS === 'web') {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      staleTime: 5 * 60 * 1000, // ✅ 5 minuten cache - sync met web
+      gcTime: 10 * 60 * 1000, // ✅ 10 minuten in memory - voorkomt herlaad
       retry: 2,
+      refetchOnWindowFocus: false,
+      refetchOnMount: true,
     },
   },
 });

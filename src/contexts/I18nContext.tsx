@@ -62,12 +62,17 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
     // Listen to auth state changes - only for SIGNED_IN and SIGNED_OUT
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'INITIAL_SESSION') return; // Skip initial session
+      // ✅ Stricter: Skip initial session to prevent duplicate initialization
+      if (event === 'INITIAL_SESSION') return;
       
       const newUserId = session?.user?.id || null;
+      
+      // ✅ Skip if same user - prevents re-initialization on refresh/tab switch
+      if (newUserId === userId) return;
+      
       setUserId(newUserId);
       
-      if (newUserId && newUserId !== userId) {
+      if (newUserId) {
         await i18n.initialize(newUserId);
         setLanguageState(i18n.getLanguage());
       }

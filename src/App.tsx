@@ -55,8 +55,8 @@ const queryClient = new QueryClient({
       retry: 1,
       refetchOnWindowFocus: false, // Voorkomt onnodige refetches en auth loops
       refetchOnMount: true,
-      staleTime: 0,
-      gcTime: 0,
+      staleTime: 5 * 60 * 1000, // ✅ 5 minuten cache - voorkomt volledige herlaad bij refresh
+      gcTime: 10 * 60 * 1000, // ✅ 10 minuten in memory - houdt data beschikbaar
     },
   },
 });

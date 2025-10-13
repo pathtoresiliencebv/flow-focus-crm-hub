@@ -167,33 +167,37 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (hasCachedAuth) {
           console.log('✅ Using cached auth, validating in background...');
           if (mounted) {
+            // ✅ CRITICAL: Set loading to FALSE immediately for instant UI render
             setIsLoading(false);
           }
           
-          // Validate session in background (non-blocking)
-          const { data: { session }, error } = await supabase.auth.getSession();
+          // ✅ Background validation (non-blocking) - moved to Promise for true async
+          supabase.auth.getSession().then(({ data: { session }, error }) => {
+            if (!mounted) return;
+            
+            // Only update if session is invalid
+            if (error || !session) {
+              console.warn('⚠️ Cached session invalid, clearing auth state');
+              setUser(null);
+              setSession(null);
+              setProfile(null);
+              localStorage.removeItem('user_profile_cache');
+              return;
+            }
+            
+            // Update state only if session changed
+            const cachedToken = cachedAuth?.session?.access_token;
+            if (session.access_token !== cachedToken) {
+              console.log('🔄 Session changed, updating state...');
+              setSession(session);
+              setUser(session.user);
+              fetchProfile(session.user);
+            } else {
+              console.log('✅ Cached session is still valid');
+            }
+          });
           
-          if (!mounted) return;
-          
-          if (error || !session) {
-            console.warn('⚠️ Cached session invalid, clearing auth state');
-            setUser(null);
-            setSession(null);
-            setProfile(null);
-            localStorage.removeItem('user_profile_cache');
-            return;
-          }
-          
-          // Update state only if session changed
-          const cachedToken = cachedAuth?.session?.access_token;
-          if (session.access_token !== cachedToken) {
-            console.log('🔄 Session changed, updating state...');
-            setSession(session);
-            setUser(session.user);
-            await fetchProfile(session.user);
-          } else {
-            console.log('✅ Cached session is still valid');
-          }
+          // ✅ Return immediately - don't wait for validation
           return;
         }
         

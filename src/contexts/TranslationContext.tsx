@@ -52,7 +52,9 @@ export const TranslationProvider = ({ children }: { children: ReactNode }) => {
     toggleTranslation,
   };
 
-  if (!isReady) {
+  // ✅ Optimistic rendering: only show loading on FIRST load (no preferences yet)
+  // On refresh, render immediately with cached/default values
+  if (loading && !userPreferences.ui_language) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -60,6 +62,7 @@ export const TranslationProvider = ({ children }: { children: ReactNode }) => {
     );
   }
 
+  // ✅ Show content immediately, even while loading (after first load)
   return (
     <TranslationContext.Provider value={contextValue}>
       {children}
