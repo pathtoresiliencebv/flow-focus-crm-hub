@@ -40,7 +40,7 @@ serve(async (req) => {
     // Get user profile with role
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, full_name, role, email')
+      .select('id, full_name, role')  // email is in auth.users, not profiles
       .eq('id', user.id)
       .single();
 
@@ -69,7 +69,7 @@ serve(async (req) => {
       id: profile.id,
       name: profile.full_name,
       role: profile.role,
-      email: profile.email,
+      email: user.email || '',  // Get email from auth.users, not profiles
     };
 
     // Upsert current user in Stream (creates if doesn't exist, updates if exists)
