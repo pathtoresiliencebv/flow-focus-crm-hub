@@ -168,15 +168,16 @@ export const createDirectChannel = async (
     const sortedIds = [currentUserId, otherUserId].sort();
     const combinedIds = sortedIds.join('_');
     
-    // Create a simple hash of the combined IDs (using built-in crypto for consistency)
-    const encoder = new TextEncoder();
-    const data = encoder.encode(combinedIds);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    // Simple hash function (FNV-1a) - consistent and fast
+    let hash = 2166136261;
+    for (let i = 0; i < combinedIds.length; i++) {
+      hash ^= combinedIds.charCodeAt(i);
+      hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+    }
+    const hashStr = (hash >>> 0).toString(36); // Convert to base36 for shorter string
     
-    // Use first 32 chars of hash (plenty unique) with dm_ prefix = 35 chars total (well under 64 limit)
-    const channelId = `dm_${hashHex.substring(0, 32)}`;
+    // Use dm_ prefix + hash + first 8 chars of each ID for readability
+    const channelId = `dm_${hashStr}_${sortedIds[0].substring(0, 8)}_${sortedIds[1].substring(0, 8)}`;
 
     console.log('📝 Creating/getting direct channel:', channelId);
 
