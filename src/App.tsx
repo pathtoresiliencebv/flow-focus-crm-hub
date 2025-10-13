@@ -48,7 +48,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AdminSectionWrapper } from "@/components/AdminSectionWrapper";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { LoadingStateProvider } from "@/contexts/LoadingStateContext";
+import { LoadingStateProvider, useLoadingState } from "@/contexts/LoadingStateContext";
 import { LoadingStateDevTools } from "@/components/LoadingStateDevTools";
 
 const queryClient = new QueryClient({
