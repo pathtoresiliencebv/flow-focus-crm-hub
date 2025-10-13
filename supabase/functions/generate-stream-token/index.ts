@@ -63,55 +63,8 @@ serve(async (req) => {
       throw new Error('Stream API credentials not configured');
     }
 
-    // Use StreamChat for upserting users (server-side operations)
-    const serverClient = StreamChat.getInstance(streamApiKey, streamApiSecret);
-
-    // Create or update user in Stream
-    const streamUser = {
-      id: profile.id,
-      name: profile.full_name,
-      role: profile.role,
-      email: user.email || '',  // Get email from auth.users, not profiles
-    };
-
-    // Upsert current user in Stream (creates if doesn't exist, updates if exists)
-    await serverClient.upsertUser(streamUser);
-
-    // Also upsert all users that this user can chat with
-    // This ensures they exist in Stream when creating channels
-    console.log('📝 Upserting all available chat users in Stream...');
-    
-    let chatUsersQuery;
-    if (profile.role === 'Installateur') {
-      // Installateurs can only chat with Administrator and Administratie
-      chatUsersQuery = supabase
-        .from('profiles')
-        .select('id, full_name, role')
-        .in('role', ['Administrator', 'Administratie']);
-    } else if (['Administrator', 'Administratie'].includes(profile.role)) {
-      // Admin/Administratie can chat with all Installateurs + other admins
-      chatUsersQuery = supabase
-        .from('profiles')
-        .select('id, full_name, role')
-        .in('role', ['Installateur', 'Administrator', 'Administratie']);
-    }
-
-    if (chatUsersQuery) {
-      const { data: chatUsers } = await chatUsersQuery;
-      
-      if (chatUsers && chatUsers.length > 0) {
-        const usersToUpsert = chatUsers.map(u => ({
-          id: u.id,
-          name: u.full_name,
-          role: u.role,
-        }));
-        
-        await serverClient.upsertUsers(usersToUpsert);
-        console.log(`✅ Upserted ${usersToUpsert.length} chat users in Stream`);
-      }
-    }
-
-    // Generate user token manually using djwt (Stream SDK has persistent null issues)
+    // FIRST: Generate user token manually using Web Crypto API
+    // This ensures we always return a token even if user upsert fails
     console.log('🔑 Generating JWT token manually...');
     const payload = {
       user_id: profile.id,
@@ -144,6 +97,64 @@ serve(async (req) => {
       .replace(/\//g, '_');
     
     const userToken = `${jwtData}.${jwtSignature}`;
+    console.log('✅ JWT token generated successfully');
+
+    // Create or update user in Stream
+    const streamUser = {
+      id: profile.id,
+      name: profile.full_name,
+      role: profile.role,
+      email: user.email || '',  // Get email from auth.users, not profiles
+    };
+
+    // SECOND: Try to upsert users in Stream (non-critical, wrapped in try-catch)
+    try {
+      console.log('📝 Attempting to upsert users in Stream...');
+      const serverClient = StreamChat.getInstance(streamApiKey, streamApiSecret);
+      
+      if (serverClient) {
+        // Upsert current user
+        await serverClient.upsertUser(streamUser);
+        console.log('✅ Current user upserted');
+
+        // Also upsert all users that this user can chat with
+        let chatUsersQuery;
+        if (profile.role === 'Installateur') {
+          // Installateurs can only chat with Administrator and Administratie
+          chatUsersQuery = supabase
+            .from('profiles')
+            .select('id, full_name, role')
+            .in('role', ['Administrator', 'Administratie']);
+        } else if (['Administrator', 'Administratie'].includes(profile.role)) {
+          // Admin/Administratie can chat with all Installateurs + other admins
+          chatUsersQuery = supabase
+            .from('profiles')
+            .select('id, full_name, role')
+            .in('role', ['Installateur', 'Administrator', 'Administratie']);
+        }
+
+        if (chatUsersQuery) {
+          const { data: chatUsers } = await chatUsersQuery;
+          
+          if (chatUsers && chatUsers.length > 0) {
+            const usersToUpsert = chatUsers.map(u => ({
+              id: u.id,
+              name: u.full_name,
+              role: u.role,
+            }));
+            
+            await serverClient.upsertUsers(usersToUpsert);
+            console.log(`✅ Upserted ${usersToUpsert.length} chat users in Stream`);
+          }
+        }
+      } else {
+        console.log('⚠️ StreamChat client is null, skipping user upsert');
+      }
+    } catch (upsertError) {
+      // User upsert failed, but we still have a valid token
+      console.error('⚠️ Failed to upsert users in Stream:', upsertError);
+      console.log('✅ Continuing with token generation anyway...');
+    }
 
     console.log('✅ Stream token generated successfully');
 
