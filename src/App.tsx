@@ -67,14 +67,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
   const location = useLocation();
 
-  // Only show loading state if BOTH loading AND no cached data exists
-  // This prevents the loading screen on page reload when we have cached auth
-  if (isLoading && !user && !profile) {
+  // Show loading state if auth is loading OR if we don't have user/profile yet
+  // This ensures we wait for authentication to complete before rendering
+  if (isLoading || (!user && !profile)) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Authenticatie controleren...</p>
+          <p className="text-gray-600">Authenticatie laden...</p>
         </div>
       </div>
     );

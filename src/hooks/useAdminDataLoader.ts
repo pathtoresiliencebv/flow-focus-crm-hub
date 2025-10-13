@@ -293,10 +293,34 @@ export const useAdminDataLoader = () => {
     }
   }, [isAdmin, isInitialized, loadCustomers, loadProjects, loadPlanning, loadReceipts, loadQuotes, loadUsers, loadPersonnel, loadTimeRegistration, loadSettings, loadEmail, loadChat]);
 
-  // Auto-initialize when admin is ready
+  // Auto-initialize when admin is ready with timeout fallback
   useEffect(() => {
     if (isAdmin && user && !isInitialized) {
+      // Set timeout to prevent infinite loading - force completion after 10 seconds
+      const timeoutId = setTimeout(() => {
+        if (!isInitialized) {
+          console.error('⚠️ Data initialization timeout after 10s, forcing completion');
+          setIsInitialized(true);
+          // Clear any stuck loading states
+          setLoadingState({
+            customers: false,
+            projects: false,
+            planning: false,
+            timeRegistration: false,
+            receipts: false,
+            quotes: false,
+            personnel: false,
+            users: false,
+            settings: false,
+            email: false,
+            chat: false,
+          });
+        }
+      }, 10000); // 10 second timeout
+      
       initializeData();
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [isAdmin, user, isInitialized, initializeData]);
 

@@ -18,7 +18,7 @@ export const AdminSectionWrapper: React.FC<AdminSectionWrapperProps> = ({
   title,
   icon
 }) => {
-  const { profile } = useAuth();
+  const { profile, isLoading: authLoading } = useAuth();
   const { 
     getErrorMessage, 
     isLoading, 
@@ -67,13 +67,16 @@ export const AdminSectionWrapper: React.FC<AdminSectionWrapperProps> = ({
     await loadFunction();
   };
 
-  // Show loading state
-  if (loading) {
+  // Show loading state - check BOTH auth loading AND section loading
+  // This prevents infinite loading when auth is still initializing
+  if (authLoading || loading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">{title} laden...</p>
+          <p className="text-gray-600">
+            {authLoading ? 'Authenticatie laden...' : `${title} laden...`}
+          </p>
         </div>
       </div>
     );
