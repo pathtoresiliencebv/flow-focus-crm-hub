@@ -261,8 +261,14 @@ export const ensureChatUsersExist = async (): Promise<void> => {
       const result = await response.json();
       console.log('✅ Chat users ensured:', result);
     } else {
-      const errorData = await response.json();
-      console.error('❌ API failed:', response.status, errorData);
+      const errorText = await response.text();
+      console.error('❌ API failed:', response.status, errorText);
+      try {
+        const errorData = JSON.parse(errorText);
+        console.error('❌ Parsed error:', errorData);
+      } catch (parseError) {
+        console.error('❌ Could not parse error response');
+      }
     }
   } catch (error) {
     console.error('❌ Failed to ensure chat users exist:', error);
