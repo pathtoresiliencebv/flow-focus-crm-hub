@@ -238,6 +238,41 @@ export const getUserChannels = async () => {
 };
 
 /**
+ * Ensure all chat users exist in Stream by calling Edge Function
+ */
+export const ensureChatUsersExist = async (): Promise<void> => {
+  try {
+    console.log('📝 Ensuring all chat users exist in Stream...');
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw new Error('No active session');
+    }
+
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-stream-token`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+      }
+    );
+
+    if (response.ok) {
+      console.log('✅ All chat users ensured in Stream');
+    } else {
+      console.warn('⚠️ Could not ensure chat users (may already exist)');
+    }
+  } catch (error) {
+    console.warn('⚠️ Failed to ensure chat users exist:', error);
+    // Non-critical, continue anyway
+  }
+};
+
+/**
  * Filter available users based on role permissions
  * Installateurs can only see Administrator/Administratie
  * Administrator/Administratie can see all Installateurs + other admins

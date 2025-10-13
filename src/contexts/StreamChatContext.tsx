@@ -9,6 +9,7 @@ import {
   connectStreamUser,
   disconnectStreamUser,
   getAvailableChatUsers,
+  ensureChatUsersExist,
 } from '@/lib/stream-chat';
 import { toast } from '@/hooks/use-toast';
 
@@ -52,6 +53,10 @@ export const StreamChatProvider: React.FC<StreamChatProviderProps> = ({ children
 
     try {
       console.log('🔍 Loading available chat users...');
+      
+      // Ensure all chat users exist in Stream before loading the list
+      await ensureChatUsersExist();
+      
       const users = await getAvailableChatUsers(profile.role);
       
       // Filter out current user
