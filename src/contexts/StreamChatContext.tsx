@@ -134,6 +134,7 @@ export const StreamChatProvider: React.FC<StreamChatProviderProps> = ({ children
     return () => {
       mounted = false;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, profile?.role]);
 
   // Disconnect on logout
