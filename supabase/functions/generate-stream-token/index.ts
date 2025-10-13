@@ -110,45 +110,41 @@ serve(async (req) => {
     // SECOND: Try to upsert users in Stream (non-critical, wrapped in try-catch)
     try {
       console.log('📝 Attempting to upsert users in Stream...');
-      const serverClient = StreamChat.getInstance(streamApiKey, streamApiSecret);
+      const serverClient = new StreamChat(streamApiKey, streamApiSecret);
       
-      if (serverClient) {
-        // Upsert current user
-        await serverClient.upsertUser(streamUser);
-        console.log('✅ Current user upserted');
+      // Upsert current user
+      await serverClient.upsertUser(streamUser);
+      console.log('✅ Current user upserted');
 
-        // Also upsert all users that this user can chat with
-        let chatUsersQuery;
-        if (profile.role === 'Installateur') {
-          // Installateurs can only chat with Administrator and Administratie
-          chatUsersQuery = supabase
-            .from('profiles')
-            .select('id, full_name, role')
-            .in('role', ['Administrator', 'Administratie']);
-        } else if (['Administrator', 'Administratie'].includes(profile.role)) {
-          // Admin/Administratie can chat with all Installateurs + other admins
-          chatUsersQuery = supabase
-            .from('profiles')
-            .select('id, full_name, role')
-            .in('role', ['Installateur', 'Administrator', 'Administratie']);
-        }
+      // Also upsert all users that this user can chat with
+      let chatUsersQuery;
+      if (profile.role === 'Installateur') {
+        // Installateurs can only chat with Administrator and Administratie
+        chatUsersQuery = supabase
+          .from('profiles')
+          .select('id, full_name, role')
+          .in('role', ['Administrator', 'Administratie']);
+      } else if (['Administrator', 'Administratie'].includes(profile.role)) {
+        // Admin/Administratie can chat with all Installateurs + other admins
+        chatUsersQuery = supabase
+          .from('profiles')
+          .select('id, full_name, role')
+          .in('role', ['Installateur', 'Administrator', 'Administratie']);
+      }
 
-        if (chatUsersQuery) {
-          const { data: chatUsers } = await chatUsersQuery;
+      if (chatUsersQuery) {
+        const { data: chatUsers } = await chatUsersQuery;
+        
+        if (chatUsers && chatUsers.length > 0) {
+          const usersToUpsert = chatUsers.map(u => ({
+            id: u.id,
+            name: u.full_name,
+            role: u.role,
+          }));
           
-          if (chatUsers && chatUsers.length > 0) {
-            const usersToUpsert = chatUsers.map(u => ({
-              id: u.id,
-              name: u.full_name,
-              role: u.role,
-            }));
-            
-            await serverClient.upsertUsers(usersToUpsert);
-            console.log(`✅ Upserted ${usersToUpsert.length} chat users in Stream`);
-          }
+          await serverClient.upsertUsers(usersToUpsert);
+          console.log(`✅ Upserted ${usersToUpsert.length} chat users in Stream`);
         }
-      } else {
-        console.log('⚠️ StreamChat client is null, skipping user upsert');
       }
     } catch (upsertError) {
       // User upsert failed, but we still have a valid token
