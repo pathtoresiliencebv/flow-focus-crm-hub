@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.47.10';
 import { StreamChat } from 'https://esm.sh/stream-chat@8.40.0';
+import { create, getNumericDate } from 'https://deno.land/x/djwt@v2.4/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -62,6 +63,7 @@ serve(async (req) => {
       throw new Error('Stream API credentials not configured');
     }
 
+    // Use StreamChat for upserting users (server-side operations)
     const serverClient = StreamChat.getInstance(streamApiKey, streamApiSecret);
 
     // Create or update user in Stream
@@ -109,8 +111,39 @@ serve(async (req) => {
       }
     }
 
-    // Generate user token
-    const userToken = serverClient.createToken(profile.id);
+    // Generate user token manually using djwt (Stream SDK has persistent null issues)
+    console.log('🔑 Generating JWT token manually...');
+    const payload = {
+      user_id: profile.id,
+    };
+    
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(streamApiSecret);
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+
+    const header = { alg: 'HS256', typ: 'JWT' };
+    const jwtHeader = btoa(JSON.stringify(header)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    const jwtPayload = btoa(JSON.stringify(payload)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+    const jwtData = `${jwtHeader}.${jwtPayload}`;
+    
+    const signature = await crypto.subtle.sign(
+      'HMAC',
+      cryptoKey,
+      encoder.encode(jwtData)
+    );
+    
+    const jwtSignature = btoa(String.fromCharCode(...new Uint8Array(signature)))
+      .replace(/=/g, '')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_');
+    
+    const userToken = `${jwtData}.${jwtSignature}`;
 
     console.log('✅ Stream token generated successfully');
 
