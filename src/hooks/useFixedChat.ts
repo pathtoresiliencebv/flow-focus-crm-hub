@@ -125,13 +125,14 @@ export const useFixedChat = () => {
     const conversationPromises = availableUsers.map(async (otherUser) => {
       try {
         // Get last message for this conversation
+        // ✅ Use maybeSingle() instead of single() to avoid 406 error when no messages exist
         const { data: lastMessageData } = await supabase
           .from('direct_messages')
           .select('*')
           .or(`and(from_user_id.eq.${user.id},to_user_id.eq.${otherUser.id}),and(from_user_id.eq.${otherUser.id},to_user_id.eq.${user.id})`)
           .order('created_at', { ascending: false })
           .limit(1)
-          .single();
+          .maybeSingle();
 
         // Count unread messages
         const { count: unreadCount } = await supabase
