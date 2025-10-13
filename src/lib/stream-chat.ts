@@ -262,12 +262,14 @@ export const ensureChatUsersExist = async (): Promise<void> => {
     );
 
     if (response.ok) {
-      console.log('✅ All chat users ensured in Stream');
+      const result = await response.json();
+      console.log('✅ Edge Function response:', result);
     } else {
-      console.warn('⚠️ Could not ensure chat users (may already exist)');
+      const errorText = await response.text();
+      console.error('❌ Edge Function failed:', response.status, errorText);
     }
   } catch (error) {
-    console.warn('⚠️ Failed to ensure chat users exist:', error);
+    console.error('❌ Failed to ensure chat users exist:', error);
     // Non-critical, continue anyway
   }
 };
