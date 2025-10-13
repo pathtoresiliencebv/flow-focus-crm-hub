@@ -155,7 +155,8 @@ export const disconnectStreamUser = async (): Promise<void> => {
  */
 export const createDirectChannel = async (
   currentUserId: string,
-  otherUserId: string
+  otherUserId: string,
+  otherUserData?: { full_name: string; role: string }
 ): Promise<Channel<DefaultGenerics>> => {
   if (!streamClient) {
     throw new Error('Stream client not initialized');
@@ -168,8 +169,21 @@ export const createDirectChannel = async (
 
     console.log('📝 Creating/getting direct channel:', channelId);
 
+    // If we have user data, include it in the channel members
+    // This allows Stream to auto-create the user if they don't exist yet
+    const members = otherUserData
+      ? [
+          currentUserId,
+          {
+            id: otherUserId,
+            name: otherUserData.full_name,
+            role: otherUserData.role,
+          },
+        ]
+      : [currentUserId, otherUserId];
+
     const channel = streamClient.channel('messaging', channelId, {
-      members: [currentUserId, otherUserId],
+      members,
     });
 
     await channel.watch();
