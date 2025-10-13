@@ -55,10 +55,23 @@ export const getStreamUserToken = async (): Promise<StreamTokenResponse> => {
 
     if (error) {
       console.error('❌ Error getting Stream token:', error);
+      console.error('❌ Error details:', JSON.stringify(error, null, 2));
       throw error;
     }
 
-    if (!data || !data.token) {
+    if (!data) {
+      console.error('❌ No data received from Edge Function');
+      throw new Error('No data received from server');
+    }
+
+    if (data.error) {
+      console.error('❌ Edge Function returned error:', data.error);
+      console.error('❌ Error details:', data.details || 'No details available');
+      throw new Error(`Edge Function error: ${data.error}`);
+    }
+
+    if (!data.token) {
+      console.error('❌ No token in response:', data);
       throw new Error('No token received from server');
     }
 
