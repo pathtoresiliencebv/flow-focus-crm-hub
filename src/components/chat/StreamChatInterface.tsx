@@ -24,14 +24,7 @@ export const StreamChatInterface: React.FC = () => {
     try {
       console.log('📝 Creating channel with user:', otherUserId);
       
-      // Find the user data
-      const otherUser = availableUsers.find(u => u.id === otherUserId);
-      
-      const channel = await createDirectChannel(
-        user.id, 
-        otherUserId,
-        otherUser ? { full_name: otherUser.full_name, role: otherUser.role } : undefined
-      );
+      const channel = await createDirectChannel(user.id, otherUserId);
       setCurrentChannel(channel);
       setSelectedUserId(otherUserId);
       

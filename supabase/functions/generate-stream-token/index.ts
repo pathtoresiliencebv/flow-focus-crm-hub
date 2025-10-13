@@ -72,8 +72,42 @@ serve(async (req) => {
       email: profile.email,
     };
 
-    // Upsert user in Stream (creates if doesn't exist, updates if exists)
+    // Upsert current user in Stream (creates if doesn't exist, updates if exists)
     await serverClient.upsertUser(streamUser);
+
+    // Also upsert all users that this user can chat with
+    // This ensures they exist in Stream when creating channels
+    console.log('📝 Upserting all available chat users in Stream...');
+    
+    let chatUsersQuery;
+    if (profile.role === 'Installateur') {
+      // Installateurs can only chat with Administrator and Administratie
+      chatUsersQuery = supabase
+        .from('profiles')
+        .select('id, full_name, role')
+        .in('role', ['Administrator', 'Administratie']);
+    } else if (['Administrator', 'Administratie'].includes(profile.role)) {
+      // Admin/Administratie can chat with all Installateurs + other admins
+      chatUsersQuery = supabase
+        .from('profiles')
+        .select('id, full_name, role')
+        .in('role', ['Installateur', 'Administrator', 'Administratie']);
+    }
+
+    if (chatUsersQuery) {
+      const { data: chatUsers } = await chatUsersQuery;
+      
+      if (chatUsers && chatUsers.length > 0) {
+        const usersToUpsert = chatUsers.map(u => ({
+          id: u.id,
+          name: u.full_name,
+          role: u.role,
+        }));
+        
+        await serverClient.upsertUsers(usersToUpsert);
+        console.log(`✅ Upserted ${usersToUpsert.length} chat users in Stream`);
+      }
+    }
 
     // Generate user token
     const userToken = serverClient.createToken(profile.id);
