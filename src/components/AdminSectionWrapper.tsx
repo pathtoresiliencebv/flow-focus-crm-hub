@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import { useAdminDataLoader } from '@/hooks/useAdminDataLoader';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLoadingState } from '@/contexts/LoadingStateContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw, Loader2 } from 'lucide-react';
@@ -18,7 +19,8 @@ export const AdminSectionWrapper: React.FC<AdminSectionWrapperProps> = ({
   title,
   icon
 }) => {
-  const { profile, isLoading: authLoading } = useAuth();
+  const { profile } = useAuth();
+  const { state, isLoading: globalLoading } = useLoadingState();
   const { 
     getErrorMessage, 
     isLoading, 
@@ -43,7 +45,7 @@ export const AdminSectionWrapper: React.FC<AdminSectionWrapperProps> = ({
   }
 
   const errorMessage = getErrorMessage(section);
-  const loading = isLoading(section);
+  const sectionLoading = isLoading(section);
 
   // Get the appropriate load function
   const getLoadFunction = () => {
@@ -68,20 +70,58 @@ export const AdminSectionWrapper: React.FC<AdminSectionWrapperProps> = ({
     await loadFunction();
   };
 
-  // Show loading state - check auth, initialization, AND section loading
-  // This prevents infinite loading and ensures proper initialization order
-  if (authLoading || !isInitialized || loading) {
+  // ✅ Use centralized loading state machine
+  if (globalLoading || !isInitialized || sectionLoading) {
+    const getMessage = () => {
+      // Prioritize global loading state first
+      if (globalLoading) {
+        switch (state.status) {
+          case 'initializing':
+            return 'Applicatie initialiseren...';
+          case 'authenticating':
+            return 'Authenticatie laden...';
+          case 'validating-cache':
+            return 'Sessie valideren...';
+          case 'loading-profile':
+            return 'Profiel laden...';
+          case 'loading-permissions':
+            return 'Rechten laden...';
+          case 'initializing-data':
+            return 'Data initialiseren...';
+          case 'loading-section':
+            return state.section === section
+              ? `${title} laden...`
+              : 'Laden...';
+          default:
+            return 'Laden...';
+        }
+      }
+      // Then check local data loader state
+      if (!isInitialized) return 'Data initialiseren...';
+      if (sectionLoading) return `${title} laden...`;
+      return 'Laden...';
+    };
+
+    console.log(`🔄 WRAPPER [${section}]:`, {
+      globalLoading,
+      globalState: state.status,
+      isInitialized,
+      sectionLoading,
+      message: getMessage()
+    });
+    
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">
-            {authLoading ? 'Authenticatie laden...' : !isInitialized ? 'Data initialiseren...' : `${title} laden...`}
-          </p>
+          <p className="text-gray-600">{getMessage()}</p>
         </div>
       </div>
     );
   }
+  
+  // Log when loading is complete
+  console.log(`✅ WRAPPER [${section}]: Ready (state: ${state.status})`);
 
   // Show error state
   if (errorMessage) {

@@ -48,6 +48,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AdminSectionWrapper } from "@/components/AdminSectionWrapper";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { LoadingStateProvider } from "@/contexts/LoadingStateContext";
+import { LoadingStateDevTools } from "@/components/LoadingStateDevTools";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,26 +65,44 @@ const queryClient = new QueryClient({
 
 // Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading, profile, user } = useAuth();
+  const { user, profile } = useAuth();
+  const { state, isLoading } = useLoadingState();
   const isMobile = useIsMobile();
   const location = useLocation();
 
-  // Show loading state ONLY while auth is actively loading
-  // Once loading is complete, proceed to auth checks below
+  // ✅ Use centralized loading state machine
   if (isLoading) {
+    const getMessage = () => {
+      switch (state.status) {
+        case 'initializing':
+          return 'Applicatie starten...';
+        case 'authenticating':
+          return state.hasCache ? 'Sessie valideren...' : 'Authenticatie laden...';
+        case 'validating-cache':
+          return 'Cache valideren...';
+        case 'loading-profile':
+          return 'Profiel laden...';
+        case 'loading-permissions':
+          return 'Rechten laden...';
+        case 'initializing-data':
+          return 'Gegevens initialiseren...';
+        default:
+          return 'Laden...';
+      }
+    };
+
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Authenticatie laden...</p>
+          <p className="text-gray-600">{getMessage()}</p>
         </div>
       </div>
     );
   }
 
-  // Hard redirect only if explicitly not authenticated
-  // Note: We removed the session check to allow optimistic rendering with cached auth
-  if (!isAuthenticated || !user) {
+  // Check unauthenticated state from loading machine
+  if (state.status === 'unauthenticated' || !user) {
     console.log('🔐 Not authenticated, redirecting to login');
     return <LoginScreen />;
   }
@@ -106,17 +126,19 @@ function App() {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <div className="min-h-screen bg-background">
-            <Routes>
-              {/* Public routes - NO AUTH REQUIRED */}
-              <Route path="/quote/:token" element={<PublicQuote />} />
-              <Route path="/404" element={<NotFound />} />
-              
-              {/* Protected routes with auth */}
-              <Route path="/*" element={
-                <AuthProvider>
-                  <I18nProvider>
-                    <TranslationProvider>
+          {/* ✅ Wrap everything in LoadingStateProvider for centralized loading state */}
+          <LoadingStateProvider>
+            <div className="min-h-screen bg-background">
+              <Routes>
+                {/* Public routes - NO AUTH REQUIRED */}
+                <Route path="/quote/:token" element={<PublicQuote />} />
+                <Route path="/404" element={<NotFound />} />
+                
+                {/* Protected routes with auth */}
+                <Route path="/*" element={
+                  <AuthProvider>
+                    <I18nProvider>
+                      <TranslationProvider>
                       <Routes>
                         {/* Protected routes with Layout */}
                         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
@@ -203,10 +225,13 @@ function App() {
                   </I18nProvider>
                 </AuthProvider>
               } />
-            </Routes>
-            <Toaster />
-            <Sonner />
-          </div>
+              </Routes>
+              <Toaster />
+              <Sonner />
+              {/* ✅ DevTools for loading state debugging (dev only) */}
+              <LoadingStateDevTools />
+            </div>
+          </LoadingStateProvider>
         </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>

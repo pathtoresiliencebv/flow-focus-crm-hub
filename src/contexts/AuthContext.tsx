@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import type { Session, User } from '@supabase/supabase-js';
 import { Permission, UserRole } from '@/types/permissions';
+import { useLoadingState } from '@/contexts/LoadingStateContext';
 
 interface UserProfile {
   full_name: string;
@@ -17,7 +18,8 @@ interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   session: Session | null;
-  isLoading: boolean;
+  // ❌ REMOVED: isLoading (now managed by LoadingStateContext)
+  // isLoading: boolean;
   login: (email: string, password: string, preferredLanguage?: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string, role?: UserRole) => Promise<void>;
   logout: () => Promise<void>;
@@ -40,20 +42,35 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
+  // ✅ Use centralized loading state machine
+  const {
+    startAuthenticating,
+    startValidatingCache,
+    startLoadingProfile,
+    startLoadingPermissions,
+    setReady,
+    setError,
+    setUnauthenticated
+  } = useLoadingState();
+
   // Check for cached profile first
   const getCachedProfile = () => {
     try {
       const cached = localStorage.getItem('user_profile_cache');
       if (cached) {
         const parsed = JSON.parse(cached);
-        // Check if cache is less than 30 minutes old (verhoogd van 5 naar 30 minuten)
-        if (parsed.timestamp && Date.now() - parsed.timestamp < 30 * 60 * 1000) {
-          console.log('✅ Using cached profile data');
+        // ✅ Cache expires after 5 minutes to ensure fresh data
+        const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+        if (parsed.timestamp && Date.now() - parsed.timestamp < CACHE_TTL) {
+          const ageSeconds = Math.round((Date.now() - parsed.timestamp) / 1000);
+          console.log(`✅ CACHE: Using cached profile (${ageSeconds}s old)`);
           return parsed.profile;
+        } else {
+          console.log('⚠️ CACHE: Profile cache expired, will fetch fresh');
         }
       }
     } catch (e) {
-      console.error('Error loading cached profile:', e);
+      console.error('❌ CACHE: Error loading cached profile:', e);
     }
     return null;
   };
@@ -66,15 +83,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const sessionData = JSON.parse(sessionStr);
         // Check if session is still valid (not expired)
         if (sessionData.expires_at && sessionData.expires_at * 1000 > Date.now()) {
-          console.log('✅ Using cached session data');
+          const expiresIn = Math.round((sessionData.expires_at * 1000 - Date.now()) / 1000 / 60);
+          console.log(`✅ CACHE: Using cached session (expires in ${expiresIn} min)`);
           return {
             user: sessionData.user,
             session: sessionData
           };
+        } else {
+          console.log('⚠️ CACHE: Session cache expired');
         }
       }
     } catch (e) {
-      console.error('Error loading cached session:', e);
+      console.error('❌ CACHE: Error loading cached session:', e);
     }
     return null;
   };
@@ -85,9 +105,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(cachedAuth?.user || null);
   const [profile, setProfile] = useState<UserProfile | null>(cachedProfile);
   const [session, setSession] = useState<Session | null>(cachedAuth?.session || null);
-  const [isLoading, setIsLoading] = useState(!cachedAuth && !cachedProfile);
+  // ❌ REMOVED: Local isLoading state (now managed by LoadingStateContext)
+  // const [isLoading, setIsLoading] = useState(true);
 
   const fetchProfile = useCallback(async (user: User) => {
+    // ✅ Notify loading machine
+    startLoadingProfile(user.id);
+    console.log('🔄 PROFILE: Fetching profile for user', user.id);
+    const startTime = Date.now();
+    
     const { data: profileData, error } = await supabase
       .from('profiles')
       .select('full_name, role, status, chat_language')
@@ -95,7 +121,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       .single();
 
     if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching profile:', error);
+      console.error('❌ PROFILE: Error fetching profile:', error);
       toast({
         title: "Fout bij profiel ophalen",
         description: error.message,
@@ -106,26 +132,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
 
     if (profileData) {
-      console.log('🔐 AuthContext: Profile loaded:', {
-        id: profileData.id,
+      const profileLoadTime = Date.now() - startTime;
+      console.log(`✅ PROFILE: Profile loaded in ${profileLoadTime}ms`, {
         role: profileData.role,
         full_name: profileData.full_name
       });
       
+      // ✅ Notify loading machine: fetching permissions
+      startLoadingPermissions(user.id);
+      const permStartTime = Date.now();
       const { data: permissionsData, error: permissionsError } = await supabase
         .from('role_permissions')
         .select('permission')
         .eq('role', profileData.role);
       
-      console.log('🔐 AuthContext: Permissions query result:', {
-        role: profileData.role,
-        permissionsData,
-        permissionsError,
-        count: permissionsData?.length || 0
-      });
+      const permLoadTime = Date.now() - permStartTime;
+      console.log(`✅ PROFILE: Permissions loaded in ${permLoadTime}ms (${permissionsData?.length || 0} permissions)`);
       
       if (permissionsError) {
-        console.error('❌ Error fetching permissions:', permissionsError);
+        console.error('❌ PROFILE: Error fetching permissions:', permissionsError);
         toast({
           title: "Fout bij rechten ophalen",
           description: permissionsError.message,
@@ -134,8 +159,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
 
       const permissions = permissionsData?.map(p => p.permission as Permission) || [];
-      console.log('✅ AuthContext: Permissions loaded:', permissions);
-      
       const fullProfile = { ...profileData, permissions };
       setProfile(fullProfile);
       
@@ -145,15 +168,27 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           profile: fullProfile,
           timestamp: Date.now()
         }));
+        console.log('✅ CACHE: Profile cached successfully');
       } catch (e) {
-        console.error('Error caching profile:', e);
+        console.error('❌ CACHE: Error caching profile:', e);
       }
+      
+      const totalTime = Date.now() - startTime;
+      console.log(`✅ PROFILE: Complete in ${totalTime}ms`);
+      
+      // ✅ Notify loading machine: auth is ready
+      setReady({
+        id: user.id,
+        email: user.email!,
+        role: profileData.role,
+        isAdmin: profileData.role === 'Administrator'
+      });
     } else {
-      console.log('⚠️ AuthContext: No profile data found');
+      console.log('⚠️ PROFILE: No profile data found for user');
       setProfile(null);
       localStorage.removeItem('user_profile_cache');
     }
-  }, []);
+  }, [startLoadingProfile, startLoadingPermissions, setReady]);
 
   useEffect(() => {
     let mounted = true;
@@ -161,78 +196,98 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     
     const initializeAuth = async () => {
       try {
-        // ✅ OPTIMISTIC RENDERING: Check for cached auth inside useEffect to avoid re-render loop
+        // Check for cached auth - but WAIT for validation before showing content
         const hasCachedAuth = cachedAuth || cachedProfile;
         
         if (hasCachedAuth) {
-          console.log('✅ Using cached auth, validating in background...');
-          if (mounted) {
-            // ✅ CRITICAL: Set loading to FALSE immediately for instant UI render
-            setIsLoading(false);
+          // ✅ Notify loading machine: authenticating with cache
+          startAuthenticating(true);
+          console.log('🔄 AUTH: Found cached auth, validating with server...');
+          
+          // ✅ Notify loading machine: validating cache
+          startValidatingCache();
+          const { data: { session }, error } = await supabase.auth.getSession();
+          
+          if (!mounted) return;
+          
+          // ✅ If session is invalid, notify loading machine: unauthenticated
+          if (error || !session) {
+            console.warn('❌ AUTH: Cached session invalid, resetting to login state');
+            setUser(null);
+            setSession(null);
+            setProfile(null);
+            setUnauthenticated(); // ✅ Notify loading machine
+            localStorage.removeItem('user_profile_cache');
+            return;
           }
           
-          // ✅ Background validation (non-blocking) - moved to Promise for true async
-          supabase.auth.getSession().then(({ data: { session }, error }) => {
-            if (!mounted) return;
-            
-            // Only update if session is invalid
-            if (error || !session) {
-              console.warn('⚠️ Cached session invalid, clearing auth state');
+          // Session is valid - update state if needed
+          const cachedToken = cachedAuth?.session?.access_token;
+          if (session.access_token !== cachedToken) {
+            console.log('🔄 AUTH: Session token changed, fetching fresh profile...');
+            setSession(session);
+            setUser(session.user);
+            await fetchProfile(session.user); // ✅ This calls setReady internally
+          } else {
+            console.log('✅ AUTH: Cached session is still valid');
+            // Ensure state is set from cache
+            setSession(session);
+            setUser(session.user);
+            // ✅ Notify loading machine: ready (using cached data)
+            if (cachedProfile) {
+              setReady({
+                id: session.user.id,
+                email: session.user.email!,
+                role: cachedProfile.role,
+                isAdmin: cachedProfile.role === 'Administrator'
+              });
+            }
+          }
+          
+          // Continue to set up listener
+        } else {
+          // NO CACHE: Normal flow - fetch session and show loading
+          // ✅ Notify loading machine: authenticating without cache
+          startAuthenticating(false);
+          console.log('🔄 AUTH: No cache found, fetching session...');
+          const { data: { session }, error } = await supabase.auth.getSession();
+        
+          if (error) {
+            console.error('❌ AUTH: Error getting session:', error);
+            if (mounted) {
               setUser(null);
               setSession(null);
               setProfile(null);
-              localStorage.removeItem('user_profile_cache');
-              return;
+              // ✅ Notify loading machine: error
+              setError({
+                code: 'SESSION_ERROR',
+                message: error.message,
+                canRetry: true,
+                timestamp: new Date()
+              });
             }
-            
-            // Update state only if session changed
-            const cachedToken = cachedAuth?.session?.access_token;
-            if (session.access_token !== cachedToken) {
-              console.log('🔄 Session changed, updating state...');
-              setSession(session);
-              setUser(session.user);
-              fetchProfile(session.user);
-            } else {
-              console.log('✅ Cached session is still valid');
+            return;
+          }
+        
+          if (mounted && session) {
+            console.log('✅ AUTH: Session restored from storage');
+            setSession(session);
+            const currentUser = session?.user ?? null;
+            setUser(currentUser);
+          
+            if (currentUser) {
+              console.log('🔄 AUTH: Fetching profile data...');
+              await fetchProfile(currentUser); // ✅ This calls setReady internally
             }
-          });
-          
-          // ✅ Return immediately - don't wait for validation
-          return;
-        }
-        
-        // ❌ NO CACHE: Normal flow - fetch session and show loading
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Error getting session:', error);
-          if (mounted) {
-            setUser(null);
-            setSession(null);
-            setProfile(null);
-            setIsLoading(false);
-          }
-          return;
-        }
-        
-        if (mounted && session) {
-          console.log('✅ Session restored from storage');
-          setSession(session);
-          const currentUser = session?.user ?? null;
-          setUser(currentUser);
-          
-          if (currentUser) {
-            console.log('🔄 Fetching profile data...');
-            await fetchProfile(currentUser);
-          }
-          setIsLoading(false);
-        } else {
-          console.log('⚠️ No session found, user needs to login');
-          if (mounted) {
-            setUser(null);
-            setSession(null);
-            setProfile(null);
-            setIsLoading(false);
+          } else {
+            console.log('⚠️ AUTH: No session found, user needs to login');
+            if (mounted) {
+              setUser(null);
+              setSession(null);
+              setProfile(null);
+              // ✅ Notify loading machine: unauthenticated
+              setUnauthenticated();
+            }
           }
         }
         
@@ -240,34 +295,39 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const { data } = supabase.auth.onAuthStateChange(async (event, session) => {
           if (!mounted || event === 'INITIAL_SESSION') return;
           
-          console.log('🔐 Auth state changed:', event, session ? 'with session' : 'no session');
+          console.log('🔐 AUTH EVENT:', event, session ? 'with session' : 'no session');
           
           setSession(session);
           const currentUser = session?.user ?? null;
           setUser(currentUser);
           
           if (currentUser && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-            console.log('🔄 User signed in or token refreshed, fetching profile...');
-            await fetchProfile(currentUser);
+            console.log('🔄 AUTH: User signed in or token refreshed, fetching profile...');
+            await fetchProfile(currentUser); // ✅ This calls setReady internally
+            console.log('✅ AUTH: Profile fetch complete');
           } else if (!currentUser && event === 'SIGNED_OUT') {
-            console.log('🚪 User signed out, clearing profile...');
+            console.log('🚪 AUTH: User signed out, clearing profile...');
             setProfile(null);
             localStorage.removeItem('user_profile_cache');
-          }
-          
-          if (mounted) {
-            setIsLoading(false);
+            // ✅ Notify loading machine: unauthenticated
+            setUnauthenticated();
           }
         });
         
         subscription = data.subscription;
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        console.error('❌ AUTH: Critical error initializing auth:', error);
         if (mounted) {
           setUser(null);
           setSession(null);
           setProfile(null);
-          setIsLoading(false);
+          // ✅ Notify loading machine: error
+          setError({
+            code: 'AUTH_INIT_ERROR',
+            message: error instanceof Error ? error.message : 'Unknown error',
+            canRetry: true,
+            timestamp: new Date()
+          });
         }
       }
     };
@@ -278,7 +338,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       mounted = false;
       subscription?.unsubscribe();
     };
-  }, [fetchProfile]); // Only fetchProfile - other values checked inside effect to prevent infinite loop
+  }, [fetchProfile, startAuthenticating, startValidatingCache, setUnauthenticated, setError, setReady]); // Loading machine dependencies
 
   // Add login lock to prevent multiple simultaneous calls
   const loginInProgressRef = useRef(false);
@@ -442,7 +502,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     user,
     profile,
     session,
-    isLoading,
+    // ❌ REMOVED: isLoading (use useLoadingState() instead)
     login,
     signUp,
     logout,

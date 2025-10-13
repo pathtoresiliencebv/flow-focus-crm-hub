@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLoadingState } from '@/contexts/LoadingStateContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -33,6 +34,7 @@ interface LoadingErrors {
 
 export const useAdminDataLoader = () => {
   const { profile, user } = useAuth();
+  const { startInitializingData } = useLoadingState();
   const { toast } = useToast();
   
   const [loadingState, setLoadingState] = useState<LoadingState>({
@@ -269,10 +271,13 @@ export const useAdminDataLoader = () => {
   const initializeData = useCallback(async () => {
     if (!profile || !isAdmin || isInitialized) return;
 
-    console.log('🔄 useAdminDataLoader: Initializing data for Administrator...');
+    // ✅ Notify loading machine: initializing data
+    startInitializingData(true);
+    console.log('🔄 DATA LOADER: Initializing data for Administrator...');
+    const startTime = Date.now();
     
     try {
-      await Promise.allSettled([
+      const results = await Promise.allSettled([
         loadCustomers(),
         loadProjects(),
         loadPlanning(),
@@ -286,43 +291,69 @@ export const useAdminDataLoader = () => {
         loadChat(),
       ]);
       
+      // Log which sections loaded successfully and which failed
+      const sections = ['customers', 'projects', 'planning', 'receipts', 'quotes', 'users', 'personnel', 'timeRegistration', 'settings', 'email', 'chat'];
+      const successCount = results.filter(r => r.status === 'fulfilled').length;
+      const failedSections = results
+        .map((r, i) => r.status === 'rejected' ? sections[i] : null)
+        .filter(Boolean);
+      
+      const elapsed = Date.now() - startTime;
+      console.log(`✅ DATA LOADER: Initialization completed in ${elapsed}ms`);
+      console.log(`📊 DATA LOADER: ${successCount}/${results.length} sections loaded successfully`);
+      if (failedSections.length > 0) {
+        console.warn(`⚠️ DATA LOADER: Failed sections:`, failedSections);
+      }
+      
       setIsInitialized(true);
-      console.log('✅ useAdminDataLoader: Data initialization completed');
     } catch (error) {
-      console.error('❌ useAdminDataLoader: Error during initialization:', error);
+      console.error('❌ DATA LOADER: Critical error during initialization:', error);
+      // Still mark as initialized to prevent infinite loop
+      setIsInitialized(true);
     }
-  }, [profile, isAdmin, isInitialized, loadCustomers, loadProjects, loadPlanning, loadReceipts, loadQuotes, loadUsers, loadPersonnel, loadTimeRegistration, loadSettings, loadEmail, loadChat]);
+  }, [profile, isAdmin, isInitialized, startInitializingData, loadCustomers, loadProjects, loadPlanning, loadReceipts, loadQuotes, loadUsers, loadPersonnel, loadTimeRegistration, loadSettings, loadEmail, loadChat]);
 
   // Auto-initialize when admin is ready with timeout fallback
   useEffect(() => {
     // Only initialize when we have profile AND user is admin
     if (!profile) {
-      console.log('⏳ Waiting for profile to load...');
+      console.log('⏳ DATA LOADER: Waiting for profile to load...');
       return;
     }
     
     if (!isAdmin) {
-      console.log('👤 Non-admin user, skipping data initialization');
+      console.log('👤 DATA LOADER: Non-admin user, skipping data initialization');
       setIsInitialized(true); // Mark as initialized for non-admins
       return;
     }
     
     if (isInitialized) {
-      console.log('✅ Already initialized');
+      console.log('✅ DATA LOADER: Already initialized');
       return;
     }
     
     if (!user) {
-      console.log('⚠️ No user session');
+      console.log('⚠️ DATA LOADER: No user session, waiting...');
       return;
     }
 
-    console.log('🚀 Starting data initialization...');
+    console.log('🚀 DATA LOADER: Starting data initialization for Administrator...');
+    console.log('📊 DATA LOADER STATE:', {
+      hasProfile: !!profile,
+      isAdmin,
+      hasUser: !!user,
+      isInitialized
+    });
     
     // Set timeout to prevent infinite loading - force completion after 10 seconds
     const timeoutId = setTimeout(() => {
       if (!isInitialized) {
-        console.error('⚠️ Data initialization timeout after 10s, forcing completion');
+        console.error('⚠️ DATA LOADER: Initialization timeout after 10s, forcing completion');
+        console.log('📊 DATA LOADER: Final state on timeout:', {
+          hasProfile: !!profile,
+          hasUser: !!user,
+          loadingState
+        });
         setIsInitialized(true);
         // Clear any stuck loading states
         setLoadingState({
