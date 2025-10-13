@@ -14,6 +14,7 @@ export interface CompanySettings {
   general_terms?: string;
   default_attachments?: any;
   user_id?: string;
+  organization_id?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -32,19 +33,39 @@ export const useCompanySettings = () => {
         throw new Error('Not authenticated');
       }
 
-      const { data, error } = await supabase
+      // First, get user's organization_id from profiles
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single();
+
+      console.log('👤 User profile organization_id:', profile?.organization_id);
+
+      // Fetch company settings for the organization
+      // Fall back to user_id for backwards compatibility
+      let query = supabase
         .from('company_settings')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
+        .select('*');
+
+      if (profile?.organization_id) {
+        // Prefer organization-based lookup
+        query = query.eq('organization_id', profile.organization_id);
+      } else {
+        // Fallback to user-based lookup
+        query = query.eq('user_id', user.id);
+      }
+
+      const { data, error } = await query.maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
         throw error;
       }
 
+      console.log('🏢 Company settings loaded:', data ? 'found' : 'not found');
       setSettings(data as CompanySettings);
     } catch (error) {
-      console.error('Error fetching company settings:', error);
+      console.error('❌ Error fetching company settings:', error);
       toast({
         title: "Fout",
         description: "Kon bedrijfsinstellingen niet laden.",
@@ -64,12 +85,28 @@ export const useCompanySettings = () => {
         throw new Error('Not authenticated');
       }
 
+      // Get user's organization_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('id', user.id)
+        .single();
+
+      console.log('💾 Saving settings for organization:', profile?.organization_id);
+
+      const settingsToSave: any = {
+        user_id: user.id,
+        ...newSettings,
+      };
+
+      // Include organization_id if available
+      if (profile?.organization_id) {
+        settingsToSave.organization_id = profile.organization_id;
+      }
+
       const { data, error } = await supabase
         .from('company_settings')
-        .upsert({
-          user_id: user.id,
-          ...newSettings,
-        })
+        .upsert(settingsToSave)
         .select()
         .single();
 
@@ -79,6 +116,7 @@ export const useCompanySettings = () => {
 
       setSettings(data as CompanySettings);
       
+      console.log('✅ Company settings saved successfully');
       toast({
         title: "Opgeslagen",
         description: "Bedrijfsinstellingen zijn succesvol opgeslagen.",
@@ -86,7 +124,7 @@ export const useCompanySettings = () => {
       
       return data;
     } catch (error) {
-      console.error('Error saving company settings:', error);
+      console.error('❌ Error saving company settings:', error);
       toast({
         title: "Fout",
         description: "Kon bedrijfsinstellingen niet opslaan.",

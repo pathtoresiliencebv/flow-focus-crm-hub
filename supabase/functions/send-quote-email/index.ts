@@ -112,12 +112,28 @@ const handler = async (req: Request): Promise<Response> => {
     const publicUrl = `${baseUrl}/quote/${publicToken}`;
     console.log('Generated public URL:', publicUrl);
     
-    // Fetch company settings for default attachments
-    const { data: companySettings } = await supabase
-      .from('company_settings')
-      .select('default_attachments')
-      .eq('user_id', quote.user_id)
+    // Fetch company settings for default attachments (organization-based)
+    // First get user's organization_id
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('organization_id')
+      .eq('id', quote.user_id)
       .maybeSingle();
+    
+    console.log('👤 User organization_id:', userProfile?.organization_id);
+    
+    // Fetch company settings - prefer organization-based, fallback to user-based
+    let companySettingsQuery = supabase
+      .from('company_settings')
+      .select('default_attachments');
+    
+    if (userProfile?.organization_id) {
+      companySettingsQuery = companySettingsQuery.eq('organization_id', userProfile.organization_id);
+    } else {
+      companySettingsQuery = companySettingsQuery.eq('user_id', quote.user_id);
+    }
+    
+    const { data: companySettings } = await companySettingsQuery.maybeSingle();
     
     const defaultAttachments = (companySettings?.default_attachments as any[]) || [];
     console.log('📎 Default attachments from settings:', defaultAttachments.length);
