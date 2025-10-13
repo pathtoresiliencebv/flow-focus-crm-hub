@@ -168,6 +168,16 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
+    // Fetch company settings for default attachments
+    const { data: companySettings } = await supabase
+      .from('company_settings')
+      .select('default_attachments')
+      .eq('user_id', invoice.user_id)
+      .maybeSingle();
+    
+    const defaultAttachments = (companySettings?.default_attachments as any[]) || [];
+    console.log('📎 Default attachments from settings:', defaultAttachments.length);
+
     // Create email HTML content
     const emailHtml = `
       <!DOCTYPE html>
@@ -358,6 +368,39 @@ const handler = async (req: Request): Promise<Response> => {
       console.error('Failed to generate PDF attachment:', pdfError);
       // Continue without attachment
     }
+
+    // Add default attachments from company settings
+    if (defaultAttachments && defaultAttachments.length > 0) {
+      console.log('📎 Adding default attachments:', defaultAttachments.length);
+      
+      for (const attachment of defaultAttachments) {
+        try {
+          console.log('⬇️ Downloading default attachment:', attachment.name);
+          
+          // Download attachment from Supabase Storage
+          const response = await fetch(attachment.url);
+          if (response.ok) {
+            const buffer = await response.arrayBuffer();
+            const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+            
+            attachments.push({
+              filename: attachment.name,
+              content: base64,
+              type: attachment.type || 'application/octet-stream'
+            });
+            
+            console.log('✅ Added default attachment:', attachment.name);
+          } else {
+            console.warn('⚠️ Failed to download default attachment:', attachment.name, response.status);
+          }
+        } catch (error) {
+          console.warn('⚠️ Could not add default attachment:', attachment.name, error);
+          // Continue without this attachment - don't fail the entire email
+        }
+      }
+    }
+    
+    console.log('📧 Total attachments to send:', attachments.length);
 
     // Send email via Resend
     const emailResponse = await resend.emails.send({
