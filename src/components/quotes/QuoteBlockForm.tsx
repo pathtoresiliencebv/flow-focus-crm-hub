@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { RichTextEditor } from './RichTextEditor';
+import { generateUUID } from '@/utils/uuid';
 
 interface QuoteBlockFormProps {
   block: QuoteBlock;
@@ -85,7 +86,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
   // Direct add items without popup form (like invoice)
   const handleAddItem = useCallback((type: 'product' | 'textblock') => {
     const newItem: QuoteItem = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       type,
       description: '',
       vat_rate: type === 'product' ? 21 : 0,

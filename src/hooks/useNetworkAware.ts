@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { generateUUID } from '@/utils/uuid';
 import { useNativeCapabilities } from './useNativeCapabilities';
 import { useToast } from '@/hooks/use-toast';
 
@@ -133,7 +134,7 @@ export const useNetworkAware = () => {
   const addToQueue = useCallback((action: Omit<QueuedAction, 'id' | 'timestamp' | 'retries'>) => {
     const queuedAction: QueuedAction = {
       ...action,
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       timestamp: Date.now(),
       retries: 0
     };

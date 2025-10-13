@@ -31,6 +31,7 @@ import { useQuoteSettings } from '@/hooks/useQuoteSettings';
 import { useAuth } from '@/contexts/AuthContext';
 import { QuoteBlock, Quote } from '@/types/quote';
 import { supabase } from '@/integrations/supabase/client';
+import { generateUUID } from '@/utils/uuid';
 import { SearchableCustomerSelect } from '@/components/ui/searchable-customer-select';
 import { SearchableProjectSelect } from '@/components/ui/searchable-project-select';
 
@@ -70,7 +71,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   const queryClient = useQueryClient();
   const [blocks, setBlocks] = useState<QuoteBlock[]>([
     {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       title: 'Hoofdwerkzaamheden',
       type: 'product',
       items: [],
@@ -87,7 +88,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   const [showProjectAdd, setShowProjectAdd] = useState(false);
   const [savedQuote, setSavedQuote] = useState<Quote | null>(null);
   const [paymentTerms, setPaymentTerms] = useState<PaymentTerm[]>([
-    { id: crypto.randomUUID(), percentage: 100, description: "Volledige betaling" }
+    { id: generateUUID(), percentage: 100, description: "Volledige betaling" }
   ]);
   const [attachments, setAttachments] = useState<QuoteAttachment[]>([]);
   
@@ -249,7 +250,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   const addBlock = useCallback(() => {
     setBlocks(prevBlocks => {
       const newBlock: QuoteBlock = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         title: `Blok ${prevBlocks.length + 1}`,
         type: 'product',
         items: [],
@@ -268,7 +269,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
   const addTextBlock = useCallback(() => {
     setBlocks(prevBlocks => {
       const newTextBlock: QuoteBlock = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         title: 'Tekstblok',
         type: 'textblock',
         items: [],

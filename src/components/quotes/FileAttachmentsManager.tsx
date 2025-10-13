@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileUpload } from "@/components/ui/file-upload";
 import { Trash2, Download, FileText } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
+import { generateUUID } from '@/utils/uuid';
 
 export interface QuoteAttachment {
   id: string;
@@ -83,7 +84,7 @@ export const FileAttachmentsManager = ({ value, onChange }: FileAttachmentsManag
           .getPublicUrl(filePath);
 
         const attachment: QuoteAttachment = {
-          id: crypto.randomUUID(),
+          id: generateUUID(),
           name: fileResult.name,
           url: urlData.publicUrl,
           size: fileResult.size,

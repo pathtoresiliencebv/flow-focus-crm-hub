@@ -202,11 +202,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         if (hasCachedAuth) {
           // ✅ Notify loading machine: authenticating with cache
           startAuthenticating(true);
-          console.log('🔄 AUTH: Found cached auth, validating with server...');
+          console.log('🔄 AUTH: Found cached auth, validating with server...', {
+            hasCachedSession: !!cachedAuth,
+            hasCachedProfile: !!cachedProfile
+          });
           
           // ✅ Notify loading machine: validating cache
           startValidatingCache();
+          const validationStart = Date.now();
           const { data: { session }, error } = await supabase.auth.getSession();
+          const validationTime = Date.now() - validationStart;
+          console.log(`⏱️ AUTH: Session validation took ${validationTime}ms`);
           
           if (!mounted) return;
           
@@ -233,14 +239,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             // Ensure state is set from cache
             setSession(session);
             setUser(session.user);
-            // ✅ Notify loading machine: ready (using cached data)
+            
+            // ✅ Check if we have a valid cached profile
             if (cachedProfile) {
+              console.log('✅ AUTH: Using cached profile, app ready');
               setReady({
                 id: session.user.id,
                 email: session.user.email!,
                 role: cachedProfile.role,
                 isAdmin: cachedProfile.role === 'Administrator'
               });
+            } else {
+              // ⚠️ Session valid but profile cache expired - fetch fresh profile
+              console.log('⚠️ AUTH: Profile cache expired, fetching fresh profile...');
+              await fetchProfile(session.user); // ✅ This calls setReady internally
             }
           }
           

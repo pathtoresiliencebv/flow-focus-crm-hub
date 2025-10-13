@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { generateUUID } from '@/utils/uuid';
 import { Preferences } from '@capacitor/preferences';
 import { useNetworkAware } from './useNetworkAware';
 import { supabase } from '@/integrations/supabase/client';
@@ -95,7 +96,7 @@ export const useOfflineStorage = <T = any>(config: OfflineStorageConfig) => {
     id?: string
   ) => {
     const newItem: OfflineItem<T> = {
-      id: id || crypto.randomUUID(),
+      id: id || generateUUID(),
       data,
       timestamp: Date.now(),
       syncStatus: 'pending',

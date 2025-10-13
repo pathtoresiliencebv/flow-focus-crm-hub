@@ -26,6 +26,7 @@ import { CustomerQuickAdd } from "./CustomerQuickAdd";
 import { useCrmStore } from "@/hooks/useCrmStore";
 import { useInvoices } from "@/hooks/useInvoices";
 import { useNavigate } from "react-router-dom";
+import { generateUUID } from "@/utils/uuid";
 import { supabase } from "@/integrations/supabase/client";
 
 interface InvoiceFormProps {
@@ -62,7 +63,7 @@ export function InvoiceForm({ onClose, customers, projects }: InvoiceFormProps) 
       dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       message: "",
       items: [
-        { id: crypto.randomUUID(), description: "", quantity: 1, price: 0, vatRate: 21, total: 0 }
+        { id: generateUUID(), description: "", quantity: 1, price: 0, vatRate: 21, total: 0 }
       ]
     }
   });
@@ -73,7 +74,7 @@ export function InvoiceForm({ onClose, customers, projects }: InvoiceFormProps) 
   const addItem = () => {
     form.setValue('items', [
       ...form.getValues('items'),
-      { id: crypto.randomUUID(), description: "", quantity: 1, price: 0, vatRate: 21, total: 0 }
+      { id: generateUUID(), description: "", quantity: 1, price: 0, vatRate: 21, total: 0 }
     ]);
   };
   

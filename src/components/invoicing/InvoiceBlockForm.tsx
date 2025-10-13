@@ -7,6 +7,7 @@ import { Trash2, GripVertical, Edit3, Plus, Save, X, Minus } from 'lucide-react'
 import { Badge } from '@/components/ui/badge';
 import { RichTextEditor } from '@/components/quotes/RichTextEditor';
 import { useToast } from '@/hooks/use-toast';
+import { generateUUID } from '@/utils/uuid';
 
 interface InvoiceItem {
   id: string;
@@ -119,7 +120,7 @@ export const InvoiceBlockForm: React.FC<InvoiceBlockFormProps> = ({
 
   const handleAddItem = useCallback((type: 'product' | 'textblock') => {
     const newItem: InvoiceItem = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       type,
       description: '',
       vat_rate: type === 'product' ? 21 : 0,

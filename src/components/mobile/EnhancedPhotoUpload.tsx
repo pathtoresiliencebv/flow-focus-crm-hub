@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { generateUUID } from '@/utils/uuid';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -220,7 +221,7 @@ export const EnhancedPhotoUpload: React.FC<EnhancedPhotoUploadProps> = ({
       const preview = URL.createObjectURL(compressedFile);
 
       const newPhoto: LocalPhoto = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         file: compressedFile,
         preview,
         description: description || `${CATEGORY_LABELS[selectedCategory]} foto`,

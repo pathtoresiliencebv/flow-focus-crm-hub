@@ -77,7 +77,7 @@ export const AdminSectionWrapper: React.FC<AdminSectionWrapperProps> = ({
       if (globalLoading) {
         switch (state.status) {
           case 'initializing':
-            return 'Applicatie initialiseren...';
+            return 'Applicatie starten...';
           case 'authenticating':
             return 'Authenticatie laden...';
           case 'validating-cache':
@@ -86,8 +86,6 @@ export const AdminSectionWrapper: React.FC<AdminSectionWrapperProps> = ({
             return 'Profiel laden...';
           case 'loading-permissions':
             return 'Rechten laden...';
-          case 'initializing-data':
-            return 'Data initialiseren...';
           case 'loading-section':
             return state.section === section
               ? `${title} laden...`

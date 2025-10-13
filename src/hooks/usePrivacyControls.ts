@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { generateUUID } from '@/utils/uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -279,7 +280,7 @@ export const usePrivacyControls = () => {
 
     try {
       const exportRequest: DataExportRequest = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         requested_at: new Date().toISOString(),
         status: 'pending',
         data_types,
@@ -324,7 +325,7 @@ export const usePrivacyControls = () => {
 
     try {
       const deletionRequest: DataDeletionRequest = {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         requested_at: new Date().toISOString(),
         status: 'pending',
         data_types,

@@ -7,7 +7,6 @@ export type LoadingState =
   | { status: 'validating-cache' }
   | { status: 'loading-profile', userId: string }
   | { status: 'loading-permissions', userId: string }
-  | { status: 'initializing-data', isAdmin: boolean }
   | { status: 'loading-section', section: DataSection, operation?: string }
   | { status: 'ready', user: UserInfo }
   | { status: 'error', error: AppError, previousState: string }
@@ -78,10 +77,6 @@ export const useLoadingMachine = () => {
 
   const startLoadingPermissions = useCallback((userId: string) => {
     transition({ status: 'loading-permissions', userId });
-  }, [transition]);
-
-  const startInitializingData = useCallback((isAdmin: boolean) => {
-    transition({ status: 'initializing-data', isAdmin });
   }, [transition]);
 
   const startLoadingSection = useCallback((section: DataSection, operation?: string) => {
@@ -157,7 +152,6 @@ export const useLoadingMachine = () => {
     startValidatingCache,
     startLoadingProfile,
     startLoadingPermissions,
-    startInitializingData,
     startLoadingSection,
     setReady,
     setError,

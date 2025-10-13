@@ -12,6 +12,7 @@ import { MultiBlockInvoicePreview } from './MultiBlockInvoicePreview';
 import { InvoiceBlockForm } from './InvoiceBlockForm';
 import { PaymentTermsSelector, PaymentTerm } from '../quotes/PaymentTermsSelector';
 import { supabase } from '@/integrations/supabase/client';
+import { generateUUID } from '@/utils/uuid';
 import { SearchableCustomerSelect } from '@/components/ui/searchable-customer-select';
 
 interface InvoiceItem {
@@ -132,7 +133,7 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
           
           if (!blockMap.has(blockTitle)) {
             blockMap.set(blockTitle, {
-              id: crypto.randomUUID(),
+              id: generateUUID(),
               title: blockTitle,
               type: item.type === 'block_header' ? 'product' : 'product',
               items: [],
@@ -177,7 +178,7 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
 
   const addBlock = (type: 'product' | 'textblock') => {
     const newBlock: InvoiceBlock = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       title: type === 'product' ? `Productblok ${blocks.filter(b => b.type === 'product').length + 1}` : `Tekstblok ${blocks.filter(b => b.type === 'textblock').length + 1}`,
       type,
       items: [],
@@ -189,7 +190,7 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
 
     if (type === 'product') {
       newBlock.items = [{
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         type: 'product',
         description: '',
         quantity: 1,
@@ -275,7 +276,7 @@ export function MultiBlockInvoiceForm({ onClose, invoiceId }: MultiBlockInvoiceF
     setBlocks(blocks.map(block => {
       if (block.id === blockId) {
         const newItem: InvoiceItem = {
-          id: crypto.randomUUID(),
+          id: generateUUID(),
           type,
           description: '',
           vat_rate: type === 'product' ? 21 : 0,

@@ -13,6 +13,7 @@ import { Check, FileText, Calendar, User, Download, Paperclip } from "lucide-rea
 import { format } from "date-fns";
 import { nl } from "date-fns/locale";
 import { Quote, QuoteBlock, QuoteItem } from '@/types/quote';
+import { generateUUID } from '@/utils/uuid';
 
 interface QuoteSettings {
   terms_and_conditions?: string;
@@ -117,7 +118,7 @@ export default function PublicQuote() {
           blocks = data.items.map((item: any, index: number) => {
             console.log(`Processing block ${index}:`, item);
             return {
-              id: item.id || crypto.randomUUID(),
+              id: item.id || generateUUID(),
               title: item.title || 'Untitled Block',
               type: item.type || 'product',
               items: item.items || [],

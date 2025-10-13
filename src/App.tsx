@@ -84,8 +84,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
           return 'Profiel laden...';
         case 'loading-permissions':
           return 'Rechten laden...';
-        case 'initializing-data':
-          return 'Gegevens initialiseren...';
         default:
           return 'Laden...';
       }

@@ -13,7 +13,6 @@ interface LoadingStateContextType {
   startValidatingCache: () => void;
   startLoadingProfile: (userId: string) => void;
   startLoadingPermissions: (userId: string) => void;
-  startInitializingData: (isAdmin: boolean) => void;
   startLoadingSection: (section: DataSection, operation?: string) => void;
   setReady: (user: UserInfo) => void;
   setError: (error: AppError) => void;
@@ -46,7 +45,6 @@ export const LoadingStateProvider = ({ children }: LoadingStateProviderProps) =>
     startValidatingCache,
     startLoadingProfile,
     startLoadingPermissions,
-    startInitializingData,
     startLoadingSection,
     setReady,
     setError,
@@ -67,7 +65,6 @@ export const LoadingStateProvider = ({ children }: LoadingStateProviderProps) =>
     startValidatingCache,
     startLoadingProfile,
     startLoadingPermissions,
-    startInitializingData,
     startLoadingSection,
     setReady,
     setError,
@@ -85,7 +82,6 @@ export const LoadingStateProvider = ({ children }: LoadingStateProviderProps) =>
     startValidatingCache,
     startLoadingProfile,
     startLoadingPermissions,
-    startInitializingData,
     startLoadingSection,
     setReady,
     setError,

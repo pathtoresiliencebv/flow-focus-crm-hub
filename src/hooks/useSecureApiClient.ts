@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { generateUUID } from '@/utils/uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { useSecurityService } from './useSecurityService';
 import { useNetworkAware } from './useNetworkAware';
@@ -63,7 +64,7 @@ export const useSecureApiClient = () => {
   const logRequest = useCallback(async (log: Omit<RequestLog, 'id' | 'timestamp'>) => {
     const newLog: RequestLog = {
       ...log,
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       timestamp: new Date()
     };
 
@@ -284,7 +285,7 @@ export const useSecureApiClient = () => {
     return {
       'X-Client-Version': '1.0.0',
       'X-Security-Level': 'high',
-      'X-Request-ID': crypto.randomUUID(),
+      'X-Request-ID': generateUUID(),
       'X-Timestamp': Date.now().toString()
     };
   }, []);

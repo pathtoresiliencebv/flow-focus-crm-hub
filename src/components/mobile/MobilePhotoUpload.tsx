@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { generateUUID } from '@/utils/uuid';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,7 +82,7 @@ export const MobilePhotoUpload: React.FC<MobilePhotoUploadProps> = ({ projectId 
     
     try {
       // For now, we'll create a mock photo entry since we don't have storage buckets configured
-      const photoId = crypto.randomUUID();
+      const photoId = generateUUID();
       const photoUrl = URL.createObjectURL(file);
       
       const newPhoto: Photo = {

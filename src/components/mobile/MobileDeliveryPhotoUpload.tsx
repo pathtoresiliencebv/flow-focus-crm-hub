@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { generateUUID } from '@/utils/uuid';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -57,7 +58,7 @@ export const MobileDeliveryPhotoUpload: React.FC<MobileDeliveryPhotoUploadProps>
         
         if (result) {
           const newPhoto: DeliveryPhoto = {
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             dataUrl: result.dataUrl,
             description: description || 'Oplevering foto',
             timestamp: new Date().toISOString(),
@@ -110,7 +111,7 @@ export const MobileDeliveryPhotoUpload: React.FC<MobileDeliveryPhotoUploadProps>
         
         if (result) {
           const newPhoto: DeliveryPhoto = {
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             dataUrl: result.dataUrl,
             description: description || 'Oplevering foto',
             timestamp: new Date().toISOString(),
@@ -159,7 +160,7 @@ export const MobileDeliveryPhotoUpload: React.FC<MobileDeliveryPhotoUploadProps>
         const dataUrl = e.target?.result as string;
         
         const newPhoto: DeliveryPhoto = {
-          id: crypto.randomUUID(),
+          id: generateUUID(),
           dataUrl,
           description: description || 'Oplevering foto',
           timestamp: new Date().toISOString(),

@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLoadingState } from '@/contexts/LoadingStateContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -34,7 +33,6 @@ interface LoadingErrors {
 
 export const useAdminDataLoader = () => {
   const { profile, user } = useAuth();
-  const { startInitializingData } = useLoadingState();
   const { toast } = useToast();
   
   const [loadingState, setLoadingState] = useState<LoadingState>({
@@ -271,9 +269,10 @@ export const useAdminDataLoader = () => {
   const initializeData = useCallback(async () => {
     if (!profile || !isAdmin || isInitialized) return;
 
-    // ✅ Notify loading machine: initializing data
-    startInitializingData(true);
-    console.log('🔄 DATA LOADER: Initializing data for Administrator...');
+    // ℹ️ NOTE: We don't notify the global loading machine here
+    // Admin data initialization is a BACKGROUND process that happens AFTER auth is ready
+    // It should NOT block the entire app with a global loading state
+    console.log('🔄 DATA LOADER: Initializing admin data in background...');
     const startTime = Date.now();
     
     try {
@@ -311,7 +310,7 @@ export const useAdminDataLoader = () => {
       // Still mark as initialized to prevent infinite loop
       setIsInitialized(true);
     }
-  }, [profile, isAdmin, isInitialized, startInitializingData, loadCustomers, loadProjects, loadPlanning, loadReceipts, loadQuotes, loadUsers, loadPersonnel, loadTimeRegistration, loadSettings, loadEmail, loadChat]);
+  }, [profile, isAdmin, isInitialized, loadCustomers, loadProjects, loadPlanning, loadReceipts, loadQuotes, loadUsers, loadPersonnel, loadTimeRegistration, loadSettings, loadEmail, loadChat]);
 
   // Auto-initialize when admin is ready with timeout fallback
   useEffect(() => {

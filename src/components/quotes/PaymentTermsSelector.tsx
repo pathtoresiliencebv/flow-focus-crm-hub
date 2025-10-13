@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Trash2 } from "lucide-react";
+import { generateUUID } from '@/utils/uuid';
 
 export interface PaymentTerm {
   id: string;
@@ -41,7 +42,7 @@ export const PaymentTermsSelector = ({ value, onChange }: PaymentTermsSelectorPr
     const preset = presetTerms.find(p => p.value === presetValue);
     if (preset && presetValue !== "custom") {
       const newTerms = preset.terms.map((term, index) => ({
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         ...term
       }));
       onChange(newTerms);
@@ -52,7 +53,7 @@ export const PaymentTermsSelector = ({ value, onChange }: PaymentTermsSelectorPr
 
   const addCustomTerm = () => {
     const newTerm: PaymentTerm = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       percentage: 0,
       description: "",
       daysAfter: 0

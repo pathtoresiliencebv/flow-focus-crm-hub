@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { generateUUID } from '@/utils/uuid';
 import { Preferences } from '@capacitor/preferences';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { useNetworkAware } from './useNetworkAware';
@@ -126,7 +127,7 @@ export const useOfflineNotifications = () => {
   const addNotification = useCallback(async (notification: Omit<OfflineNotification, 'id' | 'timestamp' | 'isRead'>) => {
     const newNotification: OfflineNotification = {
       ...notification,
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       timestamp: Date.now(),
       isRead: false,
     };

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileUpload } from "@/components/ui/file-upload";
 import { Trash2, Download, FileText } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
+import { generateUUID } from '@/utils/uuid';
 
 export interface DefaultAttachment {
   id: string;
@@ -76,7 +77,7 @@ export const DefaultAttachmentsManager = ({ value, onChange }: DefaultAttachment
         console.log('🔗 Public URL generated:', urlData.publicUrl);
 
         const attachment: DefaultAttachment = {
-          id: crypto.randomUUID(),
+          id: generateUUID(),
           name: file.name,
           url: urlData.publicUrl,
           size: file.size,
