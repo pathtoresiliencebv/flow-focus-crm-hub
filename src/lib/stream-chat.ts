@@ -238,7 +238,7 @@ export const getUserChannels = async () => {
 };
 
 /**
- * Ensure all chat users exist in Stream by calling our API endpoint
+ * Ensure all chat users exist in Stream by calling Supabase Edge Function
  */
 export const ensureChatUsersExist = async (): Promise<void> => {
   try {
@@ -249,26 +249,14 @@ export const ensureChatUsersExist = async (): Promise<void> => {
       throw new Error('No active session');
     }
 
-    const response = await fetch('/api/ensure-chat-users', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ userId: session.user.id }),
+    const { data, error } = await supabase.functions.invoke('generate-stream-token', {
+      body: { userId: session.user.id },
     });
 
-    if (response.ok) {
-      const result = await response.json();
-      console.log('✅ Chat users ensured:', result);
+    if (error) {
+      console.error('❌ Edge Function failed:', error);
     } else {
-      const errorText = await response.text();
-      console.error('❌ API failed:', response.status, errorText);
-      try {
-        const errorData = JSON.parse(errorText);
-        console.error('❌ Parsed error:', errorData);
-      } catch (parseError) {
-        console.error('❌ Could not parse error response');
-      }
+      console.log('✅ Edge Function response:', data);
     }
   } catch (error) {
     console.error('❌ Failed to ensure chat users exist:', error);
