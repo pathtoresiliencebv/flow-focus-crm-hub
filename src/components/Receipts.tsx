@@ -8,7 +8,7 @@ import { SlidePanel } from '@/components/ui/slide-panel';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ImageUpload } from '@/components/ImageUpload';
+import { FileUpload } from '@/components/FileUpload';
 import { MobileReceiptCard } from '@/components/mobile/MobileReceiptCard';
 import { IconBox } from '@/components/ui/icon-box';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -65,7 +65,9 @@ export const Receipts = () => {
     amount: '',
     description: '',
     category: '',
-    fileData: null as string | null
+    fileData: null as string | null,
+    fileType: null as string | null,
+    fileName: null as string | null
   });
   const [loading, setLoading] = useState(true); // Start with loading true
   const [initialLoad, setInitialLoad] = useState(true);
@@ -154,8 +156,13 @@ export const Receipts = () => {
     return () => supabase.removeChannel(channel);
   };
 
-  const handleFileUpload = (fileData: string | null) => {
-    setNewReceipt(prev => ({ ...prev, fileData }));
+  const handleFileUpload = (fileData: string | null, fileType?: string, fileName?: string) => {
+    setNewReceipt(prev => ({ 
+      ...prev, 
+      fileData,
+      fileType: fileType || null,
+      fileName: fileName || null
+    }));
   };
 
   const saveReceipt = async () => {
@@ -176,10 +183,18 @@ export const Receipts = () => {
       for (let i = 0; i < byteCharacters.length; i++) {
         byteArray[i] = byteCharacters.charCodeAt(i);
       }
-      const blob = new Blob([byteArray], { type: 'image/jpeg' });
 
-      const fileName = `${user.id}/${Date.now()}_receipt.jpg`;
-      const { error: uploadError } = await supabase.storage.from('receipts').upload(fileName, blob);
+      // Determine content type and file extension
+      const isPDF = newReceipt.fileType?.includes('pdf');
+      const contentType = isPDF ? 'application/pdf' : (newReceipt.fileType || 'image/jpeg');
+      const fileExtension = isPDF ? 'pdf' : 'jpg';
+      const blob = new Blob([byteArray], { type: contentType });
+
+      const fileName = `${user.id}/${Date.now()}_receipt.${fileExtension}`;
+      const { error: uploadError } = await supabase.storage.from('receipts').upload(fileName, blob, {
+        contentType: contentType,
+        upsert: false
+      });
       if (uploadError) throw uploadError;
 
       const { error: insertError } = await supabase.from('receipts').insert({
@@ -188,8 +203,8 @@ export const Receipts = () => {
         description: newReceipt.description || 'Bonnetje upload',
         category: newReceipt.category,
         receipt_file_url: fileName,
-        receipt_file_name: `receipt_${Date.now()}.jpg`,
-        receipt_file_type: 'image/jpeg',
+        receipt_file_name: newReceipt.fileName || `receipt_${Date.now()}.${fileExtension}`,
+        receipt_file_type: contentType,
         status: 'pending'
       });
 
@@ -200,7 +215,7 @@ export const Receipts = () => {
       receiptsCacheTimestamp = 0;
 
       toast({ title: "Bonnetje opgeslagen", description: "Het bonnetje is verzonden voor goedkeuring" });
-      setNewReceipt({ amount: '', description: '', category: '', fileData: null });
+      setNewReceipt({ amount: '', description: '', category: '', fileData: null, fileType: null, fileName: null });
       setShowUploadDialog(false);
     } catch (error: any) {
       toast({ title: "Fout", description: "Kon bonnetje niet opslaan: " + error.message, variant: "destructive" });
@@ -824,9 +839,14 @@ export const Receipts = () => {
         <div className="space-y-4">
           <div>
             <Label>Bestand *</Label>
-            <ImageUpload value={newReceipt.fileData} onChange={handleFileUpload} />
+            <FileUpload 
+              value={newReceipt.fileData} 
+              onChange={handleFileUpload}
+              accept="image/*,application/pdf"
+              maxSize={10}
+            />
             <p className="text-xs text-muted-foreground mt-1">
-              Upload een foto of scan van het bonnetje
+              Upload een foto, scan of PDF van het bonnetje (max 10MB)
             </p>
           </div>
           <div>

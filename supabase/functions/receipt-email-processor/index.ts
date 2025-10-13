@@ -56,19 +56,22 @@ serve(async (req) => {
     // Process each attachment
     for (const attachment of emailData.attachments) {
       try {
-        // Only process image files
-        if (!attachment.contentType?.startsWith('image/')) {
-          console.log('⏭️ Skipping non-image attachment:', attachment.filename)
+        // ✅ Process image AND PDF files
+        const isImage = attachment.contentType?.startsWith('image/')
+        const isPDF = attachment.contentType?.includes('pdf')
+        
+        if (!isImage && !isPDF) {
+          console.log('⏭️ Skipping non-image/non-PDF attachment:', attachment.filename)
           continue
         }
 
-        console.log('📎 Processing attachment:', attachment.filename)
+        console.log(`📎 Processing ${isPDF ? 'PDF' : 'image'} attachment:`, attachment.filename)
 
         // Decode base64 content
         const fileBuffer = Uint8Array.from(atob(attachment.content), c => c.charCodeAt(0))
 
         // Upload to storage
-        const fileName = `email-${Date.now()}-${attachment.filename}`
+        const fileName = `email/${Date.now()}-${attachment.filename}`
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('receipts')
           .upload(fileName, fileBuffer, {
@@ -84,21 +87,18 @@ serve(async (req) => {
 
         console.log('✅ File uploaded:', fileName)
 
-        // Get public URL
-        const { data: { publicUrl } } = supabase.storage
-          .from('receipts')
-          .getPublicUrl(fileName)
-
-        // Insert into receipts table
+        // ✅ Insert into receipts table with correct column names
         const { error: insertError } = await supabase
           .from('receipts')
           .insert({
-            photo_url: publicUrl,
-            file_name: attachment.filename,
-            file_size: attachment.size || fileBuffer.length,
+            email_from: emailData.from,
+            subject: emailData.subject || 'Bonnetje via email',
+            description: emailData.text || `Via email van ${emailData.from}`,
+            receipt_file_url: fileName,
+            receipt_file_name: attachment.filename,
+            receipt_file_type: attachment.contentType,
             status: 'pending',
-            description: `Via email van ${emailData.from}`,
-            uploaded_by: null, // Email upload (no user)
+            email_message_id: `${emailData.from}-${Date.now()}`,
             created_at: new Date().toISOString()
           })
 
