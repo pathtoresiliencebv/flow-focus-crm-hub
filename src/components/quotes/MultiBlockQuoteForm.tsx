@@ -400,6 +400,8 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         valid_until: values.validUntil,
         message: values.message || '',
         items: JSON.parse(JSON.stringify(currentBlocks)),
+        payment_terms: JSON.stringify(paymentTerms),
+        attachments: JSON.stringify(attachments),
         subtotal: currentTotalAmount,
         vat_amount: currentTotalVAT,
         total_amount: currentGrandTotal,
@@ -492,7 +494,7 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
     } finally {
       setSaving(false);
     }
-  }, [customers, projects, adminSignature, toast, onClose]); // ✅ Removed blocks - accessed via closure
+  }, [customers, projects, adminSignature, paymentTerms, attachments, toast, onClose]); // ✅ Added paymentTerms and attachments
 
   // Blur-based auto-save with debouncing
   const [autoSaveTimeout, setAutoSaveTimeout] = useState<number | null>(null);
