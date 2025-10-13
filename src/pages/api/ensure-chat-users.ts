@@ -7,6 +7,41 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const streamApiKey = process.env.STREAM_API_KEY!;
 const streamApiSecret = process.env.STREAM_API_SECRET!;
 
+// Manual JWT generation function
+const generateJWT = async (userId: string): Promise<string> => {
+  const payload = {
+    user_id: userId,
+  };
+  
+  const encoder = new TextEncoder();
+  const keyData = encoder.encode(streamApiSecret);
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    keyData,
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  const header = { alg: 'HS256', typ: 'JWT' };
+  const jwtHeader = btoa(JSON.stringify(header)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  const jwtPayload = btoa(JSON.stringify(payload)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+  const jwtData = `${jwtHeader}.${jwtPayload}`;
+  
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    cryptoKey,
+    encoder.encode(jwtData)
+  );
+  
+  const jwtSignature = btoa(String.fromCharCode(...new Uint8Array(signature)))
+    .replace(/=/g, '')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_');
+  
+  return `${jwtData}.${jwtSignature}`;
+};
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -33,8 +68,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: 'Profile not found' });
     }
 
-    // Initialize Stream server client
-    const serverClient = StreamChat.getInstance(streamApiKey, streamApiSecret);
+    // Initialize Stream server client with new instance
+    const serverClient = new StreamChat(streamApiKey, streamApiSecret);
     
     if (!serverClient) {
       return res.status(500).json({ error: 'Failed to initialize Stream client' });
@@ -58,15 +93,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const { data: chatUsers } = await chatUsersQuery;
       
       if (chatUsers && chatUsers.length > 0) {
-        // Upsert all chat users
-        const usersToUpsert = chatUsers.map(u => ({
-          id: u.id,
-          name: u.full_name,
-          role: u.role,
-        }));
-        
-        await serverClient.upsertUsers(usersToUpsert);
-        console.log(`✅ Upserted ${usersToUpsert.length} chat users in Stream`);
+        try {
+          // Upsert all chat users
+          const usersToUpsert = chatUsers.map(u => ({
+            id: u.id,
+            name: u.full_name,
+            role: u.role,
+          }));
+          
+          await serverClient.upsertUsers(usersToUpsert);
+          console.log(`✅ Upserted ${usersToUpsert.length} chat users in Stream`);
+        } catch (upsertError) {
+          console.error('⚠️ Failed to upsert users in Stream:', upsertError);
+          // Continue anyway, as this is non-critical
+        }
       }
     }
 
