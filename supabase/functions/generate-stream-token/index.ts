@@ -142,8 +142,17 @@ serve(async (req) => {
             role: u.role,
           }));
           
-          await serverClient.upsertUsers(usersToUpsert);
-          console.log(`✅ Upserted ${usersToUpsert.length} chat users in Stream`);
+          // Upsert users one by one to handle individual failures
+          for (const user of usersToUpsert) {
+            try {
+              await serverClient.upsertUser(user);
+              console.log(`✅ Upserted user: ${user.name} (${user.id})`);
+            } catch (userError) {
+              console.warn(`⚠️ Failed to upsert user ${user.name}:`, userError);
+              // Continue with other users
+            }
+          }
+          console.log(`✅ Completed upserting ${usersToUpsert.length} chat users in Stream`);
         }
       }
     } catch (upsertError) {

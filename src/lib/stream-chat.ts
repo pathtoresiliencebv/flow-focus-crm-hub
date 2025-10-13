@@ -197,14 +197,24 @@ export const createDirectChannel = async (
       }
     }
 
-    // Members array must only contain user IDs (strings), not objects
-    const channel = streamClient.channel('messaging', channelId, {
-      members: [currentUserId, otherUserId],
-    });
+    // Try to get existing channel first
+    let channel;
+    try {
+      console.log('📝 Attempting to get existing channel...');
+      channel = streamClient.channel('messaging', channelId);
+      await channel.watch();
+      console.log('✅ Existing channel found and ready');
+    } catch (existingChannelError) {
+      console.log('📝 No existing channel, creating new one...');
+      // Members array must only contain user IDs (strings), not objects
+      channel = streamClient.channel('messaging', channelId, {
+        members: [currentUserId, otherUserId],
+      });
 
-    await channel.watch();
+      await channel.watch();
+      console.log('✅ New channel created and ready');
+    }
 
-    console.log('✅ Direct channel ready');
     return channel;
   } catch (error) {
     console.error('❌ Failed to create direct channel:', error);
