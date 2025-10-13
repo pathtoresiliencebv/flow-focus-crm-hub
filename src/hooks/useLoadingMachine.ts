@@ -42,24 +42,26 @@ export const useLoadingMachine = () => {
   const [stateHistory, setStateHistory] = useState<Array<{ status: string; timestamp: number }>>([]);
 
   const transition = useCallback((newState: LoadingState) => {
-    const from = state.status;
-    const to = newState.status;
-    
-    console.log('🔄 LOADING STATE MACHINE:', {
-      from,
-      to,
-      details: newState
+    setState(prevState => {
+      const from = prevState.status;
+      const to = newState.status;
+      
+      console.log('🔄 LOADING STATE MACHINE:', {
+        from,
+        to,
+        details: newState
+      });
+      
+      // Add to history with timestamp
+      setStateHistory(prev => {
+        const newHistory = [...prev, { status: from, timestamp: Date.now() }];
+        // Keep only last 20 transitions
+        return newHistory.slice(-20);
+      });
+      
+      return newState;
     });
-    
-    // Add to history with timestamp
-    setStateHistory(prev => {
-      const newHistory = [...prev, { status: from, timestamp: Date.now() }];
-      // Keep only last 20 transitions
-      return newHistory.slice(-20);
-    });
-    
-    setState(newState);
-  }, [state.status]);
+  }, []); // ✅ No dependencies - stable reference
 
   // Helper functions for common transitions
   const startAuthenticating = useCallback((hasCache: boolean) => {
