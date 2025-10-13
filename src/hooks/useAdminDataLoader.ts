@@ -267,7 +267,7 @@ export const useAdminDataLoader = () => {
 
   // Initialize all data loading
   const initializeData = useCallback(async () => {
-    if (!isAdmin || isInitialized) return;
+    if (!profile || !isAdmin || isInitialized) return;
 
     console.log('🔄 useAdminDataLoader: Initializing data for Administrator...');
     
@@ -291,38 +291,60 @@ export const useAdminDataLoader = () => {
     } catch (error) {
       console.error('❌ useAdminDataLoader: Error during initialization:', error);
     }
-  }, [isAdmin, isInitialized, loadCustomers, loadProjects, loadPlanning, loadReceipts, loadQuotes, loadUsers, loadPersonnel, loadTimeRegistration, loadSettings, loadEmail, loadChat]);
+  }, [profile, isAdmin, isInitialized, loadCustomers, loadProjects, loadPlanning, loadReceipts, loadQuotes, loadUsers, loadPersonnel, loadTimeRegistration, loadSettings, loadEmail, loadChat]);
 
   // Auto-initialize when admin is ready with timeout fallback
   useEffect(() => {
-    if (isAdmin && user && !isInitialized) {
-      // Set timeout to prevent infinite loading - force completion after 10 seconds
-      const timeoutId = setTimeout(() => {
-        if (!isInitialized) {
-          console.error('⚠️ Data initialization timeout after 10s, forcing completion');
-          setIsInitialized(true);
-          // Clear any stuck loading states
-          setLoadingState({
-            customers: false,
-            projects: false,
-            planning: false,
-            timeRegistration: false,
-            receipts: false,
-            quotes: false,
-            personnel: false,
-            users: false,
-            settings: false,
-            email: false,
-            chat: false,
-          });
-        }
-      }, 10000); // 10 second timeout
-      
-      initializeData();
-      
-      return () => clearTimeout(timeoutId);
+    // Only initialize when we have profile AND user is admin
+    if (!profile) {
+      console.log('⏳ Waiting for profile to load...');
+      return;
     }
-  }, [isAdmin, user, isInitialized, initializeData]);
+    
+    if (!isAdmin) {
+      console.log('👤 Non-admin user, skipping data initialization');
+      setIsInitialized(true); // Mark as initialized for non-admins
+      return;
+    }
+    
+    if (isInitialized) {
+      console.log('✅ Already initialized');
+      return;
+    }
+    
+    if (!user) {
+      console.log('⚠️ No user session');
+      return;
+    }
+
+    console.log('🚀 Starting data initialization...');
+    
+    // Set timeout to prevent infinite loading - force completion after 10 seconds
+    const timeoutId = setTimeout(() => {
+      if (!isInitialized) {
+        console.error('⚠️ Data initialization timeout after 10s, forcing completion');
+        setIsInitialized(true);
+        // Clear any stuck loading states
+        setLoadingState({
+          customers: false,
+          projects: false,
+          planning: false,
+          timeRegistration: false,
+          receipts: false,
+          quotes: false,
+          personnel: false,
+          users: false,
+          settings: false,
+          email: false,
+          chat: false,
+        });
+      }
+    }, 10000); // 10 second timeout
+    
+    initializeData();
+    
+    return () => clearTimeout(timeoutId);
+  }, [profile, isAdmin, user, isInitialized, initializeData]);
 
   // Get error message for a specific section
   const getErrorMessage = (section: keyof LoadingState): string | undefined => {

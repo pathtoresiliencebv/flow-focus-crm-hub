@@ -38,7 +38,7 @@ export const AdminSectionWrapper: React.FC<AdminSectionWrapperProps> = ({
   } = useAdminDataLoader();
 
   // Check if user is Administrator
-  if (profile?.role !== 'Administrator') {
+  if (!profile || profile.role !== 'Administrator') {
     return <>{children}</>;
   }
 
