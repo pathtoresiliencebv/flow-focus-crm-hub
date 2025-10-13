@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { generateUUID } from '@/utils/uuid';
-import { useMutation, useQueryClient } from '@tantml:react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
