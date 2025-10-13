@@ -19,19 +19,27 @@ export const StreamChatInterface: React.FC = () => {
 
   // Create direct channel when user is selected
   const handleSelectUser = async (otherUserId: string) => {
-    if (!client || !user) return;
+    if (!client || !user) {
+      console.error('❌ Cannot create channel: client or user is null', { client: !!client, user: !!user });
+      return;
+    }
 
     try {
       console.log('📝 Creating channel with user:', otherUserId);
+      console.log('📝 Current user:', user.id);
+      console.log('📝 Available users:', availableUsers.length);
       
       // Find the user data to pass to createDirectChannel
       const otherUser = availableUsers.find(u => u.id === otherUserId);
+      console.log('📝 Other user found:', otherUser);
       
       const channel = await createDirectChannel(
         user.id,
         otherUserId,
         otherUser ? { full_name: otherUser.full_name, role: otherUser.role } : undefined
       );
+      
+      console.log('✅ Channel created:', channel.id);
       setCurrentChannel(channel);
       setSelectedUserId(otherUserId);
       
@@ -41,6 +49,7 @@ export const StreamChatInterface: React.FC = () => {
       }
     } catch (error) {
       console.error('❌ Error creating channel:', error);
+      alert(`Fout bij het openen van chat: ${error instanceof Error ? error.message : 'Onbekende fout'}`);
     }
   };
 
