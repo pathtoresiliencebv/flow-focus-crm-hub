@@ -238,7 +238,7 @@ export const getUserChannels = async () => {
 };
 
 /**
- * Ensure all chat users exist in Stream by calling Edge Function
+ * Ensure all chat users exist in Stream by calling our API endpoint
  */
 export const ensureChatUsersExist = async (): Promise<void> => {
   try {
@@ -249,24 +249,20 @@ export const ensureChatUsersExist = async (): Promise<void> => {
       throw new Error('No active session');
     }
 
-    const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-stream-token`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-        },
-      }
-    );
+    const response = await fetch('/api/ensure-chat-users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId: session.user.id }),
+    });
 
     if (response.ok) {
       const result = await response.json();
-      console.log('✅ Edge Function response:', result);
+      console.log('✅ Chat users ensured:', result);
     } else {
-      const errorText = await response.text();
-      console.error('❌ Edge Function failed:', response.status, errorText);
+      const errorData = await response.json();
+      console.error('❌ API failed:', response.status, errorData);
     }
   } catch (error) {
     console.error('❌ Failed to ensure chat users exist:', error);
