@@ -47,11 +47,7 @@ export const useTranslation = () => {
       // Get user's preferred language if not specified
       const userLanguage = targetLanguage || await getUserLanguage();
       
-      // Don't translate if already in user's language
-      if (userLanguage === 'nl' && /^[a-zA-Z\s.,!?]+$/.test(text)) {
-        return text; // Likely already in Dutch
-      }
-
+      // Always translate to user's language, regardless of source language
       const response = await fetch('/api/translate', {
         method: 'POST',
         headers: {

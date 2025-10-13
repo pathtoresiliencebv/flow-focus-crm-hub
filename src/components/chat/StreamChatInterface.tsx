@@ -8,6 +8,7 @@ import { Loader2, MessageSquare, Users } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { LegacyChatViewer } from './LegacyChatViewer';
 import { EnhancedMessageInput } from './EnhancedMessageInput';
+import { AutoTranslateMessage } from './AutoTranslateMessage';
 import 'stream-chat-react/dist/css/v2/index.css';
 
 export const StreamChatInterface: React.FC = () => {
@@ -185,14 +186,16 @@ export const StreamChatInterface: React.FC = () => {
             {(!isMobile || !showUserList) && (
               <div className="flex-1 flex flex-col">
                 {currentChannel ? (
-                  <Channel channel={currentChannel}>
-                    <Window>
-                      <ChannelHeader />
-                      <MessageList />
-                      <EnhancedMessageInput channel={currentChannel} />
-                    </Window>
-                    <Thread />
-                  </Channel>
+                   <Channel channel={currentChannel}>
+                     <Window>
+                       <ChannelHeader />
+                       <MessageList 
+                         Message={AutoTranslateMessage}
+                       />
+                       <EnhancedMessageInput channel={currentChannel} />
+                     </Window>
+                     <Thread />
+                   </Channel>
                 ) : (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center text-muted-foreground">
