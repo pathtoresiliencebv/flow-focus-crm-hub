@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Chat, Channel, ChannelHeader, ChannelList, MessageInput, MessageList, Thread, Window } from 'stream-chat-react';
+import { Chat, Channel, ChannelHeader, ChannelList, MessageList, Thread, Window } from 'stream-chat-react';
 import { useStreamChat } from '@/contexts/StreamChatContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { createDirectChannel } from '@/lib/stream-chat';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, MessageSquare, Users } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { LegacyChatViewer } from './LegacyChatViewer';
+import { EnhancedMessageInput } from './EnhancedMessageInput';
 import 'stream-chat-react/dist/css/v2/index.css';
 
 export const StreamChatInterface: React.FC = () => {
@@ -188,7 +189,7 @@ export const StreamChatInterface: React.FC = () => {
                     <Window>
                       <ChannelHeader />
                       <MessageList />
-                      <MessageInput />
+                      <EnhancedMessageInput channel={currentChannel} />
                     </Window>
                     <Thread />
                   </Channel>
