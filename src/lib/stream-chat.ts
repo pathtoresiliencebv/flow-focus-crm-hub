@@ -169,21 +169,25 @@ export const createDirectChannel = async (
 
     console.log('📝 Creating/getting direct channel:', channelId);
 
-    // If we have user data, include it in the channel members
-    // This allows Stream to auto-create the user if they don't exist yet
-    const members = otherUserData
-      ? [
-          currentUserId,
-          {
-            id: otherUserId,
-            name: otherUserData.full_name,
-            role: otherUserData.role,
-          },
-        ]
-      : [currentUserId, otherUserId];
+    // If we have user data, ensure the other user exists in Stream first
+    if (otherUserData) {
+      try {
+        console.log('📝 Ensuring other user exists in Stream...');
+        await streamClient.upsertUser({
+          id: otherUserId,
+          name: otherUserData.full_name,
+          role: otherUserData.role,
+        });
+        console.log('✅ Other user upserted successfully');
+      } catch (upsertError) {
+        // User upsert might fail due to permissions, but we can continue
+        console.warn('⚠️ Could not upsert other user (may already exist):', upsertError);
+      }
+    }
 
+    // Members array must only contain user IDs (strings), not objects
     const channel = streamClient.channel('messaging', channelId, {
-      members,
+      members: [currentUserId, otherUserId],
     });
 
     await channel.watch();
