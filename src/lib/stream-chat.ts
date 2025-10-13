@@ -222,17 +222,13 @@ export const getAvailableChatUsers = async (currentUserRole: string): Promise<an
       query = supabase
         .from('profiles')
         .select('id, full_name, role, avatar_url')
-        .in('role', ['Administrator', 'Administratie'])
-        .eq('status', 'Actief')
-        .order('full_name');
+        .in('role', ['Administrator', 'Administratie']);
     } else if (['Administrator', 'Administratie'].includes(currentUserRole)) {
       // Admin/Administratie can chat with all Installateurs + other admins
       query = supabase
         .from('profiles')
         .select('id, full_name, role, avatar_url')
-        .in('role', ['Installateur', 'Administrator', 'Administratie'])
-        .eq('status', 'Actief')
-        .order('full_name');
+        .in('role', ['Installateur', 'Administrator', 'Administratie']);
     } else {
       // Other roles have no chat access
       return [];
