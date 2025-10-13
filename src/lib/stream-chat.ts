@@ -48,16 +48,38 @@ export const getStreamUserToken = async (): Promise<StreamTokenResponse> => {
 
     console.log('🔐 Requesting Stream token from Supabase Edge Function...');
 
-    // Call Edge Function to generate Stream token
-    const { data, error } = await supabase.functions.invoke('generate-stream-token', {
-      body: { userId: session.user.id },
-    });
+    // Call Edge Function to generate Stream token with explicit error handling
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-stream-token`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ userId: session.user.id }),
+      }
+    );
 
-    if (error) {
-      console.error('❌ Error getting Stream token:', error);
-      console.error('❌ Error details:', JSON.stringify(error, null, 2));
-      throw error;
+    console.log('📡 Response status:', response.status);
+    console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+
+    const responseText = await response.text();
+    console.log('📡 Response body:', responseText);
+
+    if (!response.ok) {
+      let errorData;
+      try {
+        errorData = JSON.parse(responseText);
+      } catch (e) {
+        errorData = { rawError: responseText };
+      }
+      console.error('❌ Edge Function error response:', errorData);
+      throw new Error(`Edge Function error (${response.status}): ${JSON.stringify(errorData)}`);
     }
+
+    const data = JSON.parse(responseText);
 
     if (!data) {
       console.error('❌ No data received from Edge Function');
