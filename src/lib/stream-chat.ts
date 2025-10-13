@@ -21,7 +21,7 @@ export interface StreamTokenResponse {
  */
 export const initStreamClient = (apiKey: string): StreamChat => {
   if (!streamClient) {
-    streamClient = StreamChat.getInstance(apiKey);
+    streamClient = new StreamChat(apiKey);
     console.log('✅ Stream client initialized');
   }
   return streamClient;
@@ -221,7 +221,7 @@ export const getAvailableChatUsers = async (currentUserRole: string): Promise<an
       // Installateurs can only chat with Administrator and Administratie
       query = supabase
         .from('profiles')
-        .select('id, full_name, role, email, is_online')
+        .select('id, full_name, role, avatar_url')
         .in('role', ['Administrator', 'Administratie'])
         .eq('status', 'Actief')
         .order('full_name');
@@ -229,7 +229,7 @@ export const getAvailableChatUsers = async (currentUserRole: string): Promise<an
       // Admin/Administratie can chat with all Installateurs + other admins
       query = supabase
         .from('profiles')
-        .select('id, full_name, role, email, is_online')
+        .select('id, full_name, role, avatar_url')
         .or(`role.eq.Installateur,role.eq.Administrator,role.eq.Administratie`)
         .eq('status', 'Actief')
         .order('full_name');
