@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { usePageHeader } from "@/contexts/PageHeaderContext";
-import { SimpleChatPage } from "@/components/SimpleChatPage";
+import { StreamChatProvider } from "@/contexts/StreamChatContext";
+import { StreamChatInterface } from "@/components/chat/StreamChatInterface";
 
 export default function ChatPage() {
   const { setTitle, setActions } = usePageHeader();
@@ -22,6 +23,10 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return <SimpleChatPage />;
+  return (
+    <StreamChatProvider>
+      <StreamChatInterface />
+    </StreamChatProvider>
+  );
 }
 
