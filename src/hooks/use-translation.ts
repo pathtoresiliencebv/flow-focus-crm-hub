@@ -1,4 +1,6 @@
 import { useState, useCallback } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 interface TranslationResult {
   translatedText: string;
@@ -8,17 +10,48 @@ interface TranslationResult {
 
 export const useTranslation = () => {
   const [isTranslating, setIsTranslating] = useState(false);
+  const { user } = useAuth();
+
+  // Get user's preferred language from database
+  const getUserLanguage = useCallback(async (): Promise<string> => {
+    if (!user?.id) return 'nl'; // Default to Dutch
+
+    try {
+      const { data, error } = await supabase
+        .from('user_language_preferences')
+        .select('ui_language')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        console.warn('No user language preference found, using default: nl');
+        return 'nl';
+      }
+
+      return data?.ui_language || 'nl';
+    } catch (error) {
+      console.error('Error loading user language:', error);
+      return 'nl';
+    }
+  }, [user?.id]);
 
   const translateText = useCallback(async (
     text: string, 
-    targetLanguage: string = 'en'
+    targetLanguage?: string
   ): Promise<string> => {
     if (!text.trim()) return text;
 
     setIsTranslating(true);
     
     try {
-      // Use Google Translate API (you'll need to add your API key)
+      // Get user's preferred language if not specified
+      const userLanguage = targetLanguage || await getUserLanguage();
+      
+      // Don't translate if already in user's language
+      if (userLanguage === 'nl' && /^[a-zA-Z\s.,!?]+$/.test(text)) {
+        return text; // Likely already in Dutch
+      }
+
       const response = await fetch('/api/translate', {
         method: 'POST',
         headers: {
@@ -26,7 +59,7 @@ export const useTranslation = () => {
         },
         body: JSON.stringify({
           text,
-          targetLanguage,
+          targetLanguage: userLanguage,
         }),
       });
 
@@ -43,7 +76,7 @@ export const useTranslation = () => {
     } finally {
       setIsTranslating(false);
     }
-  }, []);
+  }, [getUserLanguage]);
 
   const detectLanguage = useCallback(async (text: string): Promise<string> => {
     if (!text.trim()) return 'unknown';
@@ -72,6 +105,7 @@ export const useTranslation = () => {
   return {
     translateText,
     detectLanguage,
+    getUserLanguage,
     isTranslating,
   };
 };

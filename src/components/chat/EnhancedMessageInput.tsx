@@ -141,8 +141,12 @@ export const EnhancedMessageInput: React.FC<EnhancedMessageInputProps> = ({
         <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <p className="text-xs text-blue-600 mb-1">Vertaald naar Engels:</p>
-              <p className="text-sm text-blue-800">{translatedMessage}</p>
+              <p className="text-xs text-blue-600 mb-1">Vertaald:</p>
+              <div className="text-sm">
+                <span className="font-semibold text-gray-900">{message}</span>
+                <br />
+                <span className="text-gray-600 italic">{translatedMessage}</span>
+              </div>
             </div>
             <Button
               variant="ghost"
