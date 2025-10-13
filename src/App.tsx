@@ -67,9 +67,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile();
   const location = useLocation();
 
-  // Show loading state if auth is loading OR if we don't have user/profile yet
-  // This ensures we wait for authentication to complete before rendering
-  if (isLoading || (!user && !profile)) {
+  // Show loading state ONLY while auth is actively loading
+  // Once loading is complete, proceed to auth checks below
+  if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
