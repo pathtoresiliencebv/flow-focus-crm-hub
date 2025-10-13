@@ -530,11 +530,17 @@ export const useFixedChat = () => {
       setLoading(true);
       console.log('🚀 Initializing chat for user:', user.id);
       
-      await fetchAvailableUsers();
-      
-      if (!mounted) return;
-      
-      setLoading(false);
+      try {
+        await fetchAvailableUsers();
+      } catch (error) {
+        console.error('❌ Failed to fetch available users:', error);
+      } finally {
+        // ✅ Always set loading to false, even if there's an error
+        if (mounted) {
+          setLoading(false);
+          console.log('✅ Chat initialization complete');
+        }
+      }
     };
 
     initializeChat();
