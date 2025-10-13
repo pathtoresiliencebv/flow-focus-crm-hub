@@ -230,7 +230,7 @@ export const getAvailableChatUsers = async (currentUserRole: string): Promise<an
       query = supabase
         .from('profiles')
         .select('id, full_name, role, avatar_url')
-        .or(`role.eq.Installateur,role.eq.Administrator,role.eq.Administratie`)
+        .in('role', ['Installateur', 'Administrator', 'Administratie'])
         .eq('status', 'Actief')
         .order('full_name');
     } else {
