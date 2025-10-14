@@ -286,52 +286,52 @@ export const NylasAccountSetup: React.FC<NylasAccountSetupProps> = ({
 
               {/* OAuth Tab */}
               <TabsContent value="oauth" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {providers.map((provider) => {
-                const Icon = provider.icon;
-                const isConnecting = connecting === provider.id;
-                
-                return (
-                  <div
-                    key={provider.id}
-                    className={cn(
-                      "relative p-4 border-2 rounded-lg transition-all duration-200 cursor-pointer",
-                      "hover:border-blue-300 hover:shadow-md",
-                      isConnecting ? "border-blue-400 bg-blue-50" : "border-gray-200"
-                    )}
-                    onClick={() => !isConnecting && handleConnect(provider.id)}
-                  >
-                    {provider.popular && (
-                      <Badge className="absolute -top-2 -right-2 bg-green-500">
-                        Populair
-                      </Badge>
-                    )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {providers.map((provider) => {
+                    const Icon = provider.icon;
+                    const isConnecting = connecting === provider.id;
                     
-                    <div className="flex items-center gap-3">
-                      <div className={cn(
-                        "h-10 w-10 rounded-full flex items-center justify-center text-white",
-                        provider.color
-                      )}>
-                        <Icon className="h-5 w-5" />
+                    return (
+                      <div
+                        key={provider.id}
+                        className={cn(
+                          "relative p-4 border-2 rounded-lg transition-all duration-200 cursor-pointer",
+                          "hover:border-blue-300 hover:shadow-md",
+                          isConnecting ? "border-blue-400 bg-blue-50" : "border-gray-200"
+                        )}
+                        onClick={() => !isConnecting && handleConnect(provider.id)}
+                      >
+                        {provider.popular && (
+                          <Badge className="absolute -top-2 -right-2 bg-green-500">
+                            Populair
+                          </Badge>
+                        )}
+                        
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "h-10 w-10 rounded-full flex items-center justify-center text-white",
+                            provider.color
+                          )}>
+                            <Icon className="h-5 w-5" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-gray-900">
+                              {provider.name}
+                            </h3>
+                            <p className="text-sm text-gray-500">
+                              {provider.description}
+                            </p>
+                          </div>
+                          {isConnecting ? (
+                            <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                          ) : (
+                            <Settings className="h-5 w-5 text-gray-400" />
+                          )}
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900">
-                          {provider.name}
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                          {provider.description}
-                        </p>
-                      </div>
-                      {isConnecting ? (
-                        <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
-                      ) : (
-                        <Settings className="h-5 w-5 text-gray-400" />
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                    );
+                  })}
+                </div>
 
                 {/* Info Section */}
                 <div className="mt-6 p-4 bg-blue-50 rounded-lg">
