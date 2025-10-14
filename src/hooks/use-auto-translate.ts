@@ -20,6 +20,11 @@ export const useAutoTranslate = () => {
     senderLanguage?: string
   ): Promise<string> => {
     if (!originalText.trim()) return originalText;
+    
+    // Early return if no user is available
+    if (!user) {
+      return originalText;
+    }
 
     try {
       // Get current user's language

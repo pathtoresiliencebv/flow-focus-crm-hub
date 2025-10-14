@@ -21,8 +21,8 @@ export const AutoTranslateMessage: React.FC<AutoTranslateMessageProps> = ({
   const [translatedText, setTranslatedText] = useState<string>('');
   const [isTranslating, setIsTranslating] = useState(false);
 
-  // Don't translate own messages
-  const isOwnMessage = user ? message.user?.id === user.id : false;
+  // Don't translate own messages - safe check for both user and message.user
+  const isOwnMessage = user && message.user ? message.user.id === user.id : false;
 
   useEffect(() => {
     if (isOwnMessage || !message.text) {
