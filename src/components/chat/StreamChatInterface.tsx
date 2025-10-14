@@ -8,7 +8,7 @@ import { Loader2, MessageSquare, Users } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { LegacyChatViewer } from './LegacyChatViewer';
 import { EnhancedMessageInput } from './EnhancedMessageInput';
-import { AutoTranslateMessage } from './AutoTranslateMessage';
+import { MessageSimple } from 'stream-chat-react';
 import 'stream-chat-react/dist/css/v2/index.css';
 
 export const StreamChatInterface: React.FC = () => {
@@ -22,18 +22,11 @@ export const StreamChatInterface: React.FC = () => {
   // Create direct channel when user is selected
   const handleSelectUser = async (otherUserId: string) => {
     if (!client || !user) {
-      console.error('❌ Cannot create channel: client or user is null', { client: !!client, user: !!user });
       return;
     }
 
     try {
-      console.log('📝 Creating channel with user:', otherUserId);
-      console.log('📝 Current user:', user.id);
-      console.log('📝 Available users:', availableUsers.length);
-      
-      // Find the user data to pass to createDirectChannel
       const otherUser = availableUsers.find(u => u.id === otherUserId);
-      console.log('📝 Other user found:', otherUser);
       
       const channel = await createDirectChannel(
         user.id,
@@ -41,7 +34,6 @@ export const StreamChatInterface: React.FC = () => {
         otherUser ? { full_name: otherUser.full_name, role: otherUser.role } : undefined
       );
       
-      console.log('✅ Channel created:', channel.id);
       setCurrentChannel(channel);
       setSelectedUserId(otherUserId);
       
@@ -50,7 +42,7 @@ export const StreamChatInterface: React.FC = () => {
         setShowUserList(false);
       }
     } catch (error) {
-      console.error('❌ Error creating channel:', error);
+      console.error('Error creating channel:', error);
       alert(`Fout bij het openen van chat: ${error instanceof Error ? error.message : 'Onbekende fout'}`);
     }
   };
@@ -189,9 +181,7 @@ export const StreamChatInterface: React.FC = () => {
                    <Channel channel={currentChannel}>
                      <Window>
                        <ChannelHeader />
-                       <MessageList 
-                         Message={AutoTranslateMessage}
-                       />
+                        <MessageList />
                        <EnhancedMessageInput channel={currentChannel} />
                      </Window>
                      <Thread />

@@ -181,21 +181,8 @@ export const createDirectChannel = async (
 
     console.log('📝 Creating/getting direct channel:', channelId);
 
-    // If we have user data, ensure the other user exists in Stream first
-    if (otherUserData) {
-      try {
-        console.log('📝 Ensuring other user exists in Stream...');
-        await streamClient.upsertUser({
-          id: otherUserId,
-          name: otherUserData.full_name,
-          role: otherUserData.role,
-        });
-        console.log('✅ Other user upserted successfully');
-      } catch (upsertError) {
-        // User upsert might fail due to permissions, but we can continue
-        console.warn('⚠️ Could not upsert other user (may already exist):', upsertError);
-      }
-    }
+    // Note: Users are already created via the Edge Function during token generation
+    // No need to upsert users here as it requires server-side permissions
 
     // Try to get existing channel first
     let channel;

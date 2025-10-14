@@ -19,43 +19,32 @@ import {
   Calendar,
   MoreVertical
 } from 'lucide-react';
-// import { useNylasAuth, NylasAccount } from '@/hooks/useNylasAuth';
-// import { useNylasMessages, NylasMessage } from '@/hooks/useNylasMessages';
-// import { useNylasContacts } from '@/hooks/useNylasContacts';
-
-// Temporary types for development
-interface NylasAccount {
-  id: string;
-  email_address: string;
-  provider: string;
-  sync_state: string;
-}
-
-interface NylasMessage {
-  id: string;
-  subject: string;
-  from_email: string;
-  body_text: string;
-  received_at: string;
-  is_read: boolean;
-}
+import { useNylasAuth, NylasAccount } from '@/hooks/useNylasAuth';
+import { useNylasMessages, NylasMessage } from '@/hooks/useNylasMessages';
+import { useNylasContacts } from '@/hooks/useNylasContacts';
 import { NylasAccountSetup } from '@/components/email/NylasAccountSetup';
+import { NylasMessageList } from '@/components/email/NylasMessageList';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
-export default function Email() {
-  // Temporary fallback for development
-  const [accounts] = useState([]);
-  const [accountsLoading] = useState(false);
-  const [authError] = useState(null);
-  const [messages] = useState([]);
-  const [messagesLoading] = useState(false);
-  const [contacts] = useState([]);
+export default function EmailNylas() {
+  const { 
+    accounts, 
+    loading: accountsLoading, 
+    error: authError, 
+    getPrimaryAccount,
+    hasAccounts 
+  } = useNylasAuth();
   
-  const getPrimaryAccount = () => null;
-  const hasAccounts = () => false;
-  const syncMessages = async () => {};
+  const { 
+    messages, 
+    loading: messagesLoading, 
+    syncMessages, 
+    getFolderCounts 
+  } = useNylasMessages();
+  
+  const { contacts, fetchContacts } = useNylasContacts();
   
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -71,18 +60,16 @@ export default function Email() {
   // Load folder counts when account changes
   useEffect(() => {
     if (primaryAccount) {
-      // TODO: Implement folder counts
-      setFolderCounts({});
+      getFolderCounts(primaryAccount.id).then(setFolderCounts);
     }
-  }, [primaryAccount]);
+  }, [primaryAccount, getFolderCounts]);
 
   // Load contacts when account changes
   useEffect(() => {
     if (primaryAccount) {
-      // TODO: Implement contact fetching
-      console.log('Loading contacts for account:', primaryAccount.id);
+      fetchContacts(primaryAccount.id);
     }
-  }, [primaryAccount]);
+  }, [primaryAccount, fetchContacts]);
 
   const handleSync = async () => {
     if (!primaryAccount) return;
@@ -162,15 +149,17 @@ export default function Email() {
   // Show account setup if no accounts
   if (!accountsLoading && !hasAccounts()) {
     return (
-      <NylasAccountSetup 
-        onSuccess={() => {
-          setShowAccountSetup(false);
-          toast({
-            title: "Account verbonden! ✅",
-            description: "Je email account is succesvol gekoppeld",
-          });
-        }}
-      />
+      <div className="h-full overflow-auto bg-gradient-to-br from-gray-50 to-gray-100">
+        <NylasAccountSetup 
+          onSuccess={() => {
+            setShowAccountSetup(false);
+            toast({
+              title: "Account verbonden! ✅",
+              description: "Je email account is succesvol gekoppeld",
+            });
+          }}
+        />
+      </div>
     );
   }
 
@@ -318,13 +307,12 @@ export default function Email() {
             "border-r bg-white flex flex-col",
             isMobile ? "flex-1" : "w-96"
           )}>
-            <div className="p-4 text-center text-gray-500">
-              <Mail className="h-12 w-12 mx-auto mb-3" />
-              <p>Message list component wordt nog geïmplementeerd</p>
-              <p className="text-sm text-gray-400 mt-1">
-                Account: {primaryAccount.email_address}
-              </p>
-            </div>
+            <NylasMessageList
+              accountId={primaryAccount.id}
+              folder={selectedFolder}
+              onMessageSelect={handleMessageSelect}
+              selectedMessageId={selectedMessage?.id}
+            />
           </div>
         )}
 
@@ -464,13 +452,7 @@ export default function Email() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <NylasAccountSetup 
-              onSuccess={() => {
-                setShowAccountSetup(false);
-                toast({
-                  title: "Account verbonden! ✅",
-                  description: "Je email account is succesvol gekoppeld",
-                });
-              }}
+              onSuccess={() => setShowAccountSetup(false)}
               onCancel={() => setShowAccountSetup(false)}
             />
           </div>

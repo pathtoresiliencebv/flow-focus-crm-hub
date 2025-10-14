@@ -1,8 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { MessageInput } from 'stream-chat-react';
 import { Button } from '@/components/ui/button';
-import { Mic, MicOff, Camera, Smile, Send, X } from 'lucide-react';
-import { useTranslation } from '@/hooks/use-translation';
+import { Mic, MicOff, Camera, Smile } from 'lucide-react';
 
 interface EnhancedMessageInputProps {
   channel: any;
@@ -15,13 +14,9 @@ export const EnhancedMessageInput: React.FC<EnhancedMessageInputProps> = ({
 }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [message, setMessage] = useState('');
-  const [translatedMessage, setTranslatedMessage] = useState('');
-  const [showTranslation, setShowTranslation] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { translateText } = useTranslation();
 
   // Emoji picker data
   const emojis = [
@@ -86,79 +81,12 @@ export const EnhancedMessageInput: React.FC<EnhancedMessageInputProps> = ({
 
   // Handle emoji selection
   const handleEmojiSelect = useCallback((emoji: string) => {
-    setMessage(prev => prev + emoji);
+    // This will be handled by the Stream Chat MessageInput
     setShowEmojiPicker(false);
   }, []);
 
-  // Auto-translate message
-  const handleMessageChange = useCallback(async (value: string) => {
-    setMessage(value);
-    
-    if (value.trim() && translateText) {
-      try {
-        const translation = await translateText(value, 'en'); // Translate to English
-        setTranslatedMessage(translation);
-        setShowTranslation(true);
-      } catch (error) {
-        console.warn('Translation failed:', error);
-      }
-    } else {
-      setShowTranslation(false);
-    }
-  }, [translateText]);
-
-  // Send message
-  const handleSendMessage = useCallback(async () => {
-    if (message.trim() && channel) {
-      await channel.sendMessage({
-        text: message,
-        // Include translation if available
-        ...(showTranslation && translatedMessage && {
-          custom: {
-            translated_text: translatedMessage,
-            original_language: 'nl'
-          }
-        })
-      });
-      setMessage('');
-      setTranslatedMessage('');
-      setShowTranslation(false);
-    }
-  }, [message, channel, showTranslation, translatedMessage]);
-
-  // Handle key press
-  const handleKeyPress = useCallback((event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      handleSendMessage();
-    }
-  }, [handleSendMessage]);
-
   return (
     <div className="p-4 border-t bg-background">
-      {/* Translation preview */}
-      {showTranslation && translatedMessage && (
-        <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-xs text-blue-600 mb-1">Vertaald:</p>
-              <div className="text-sm">
-                <span className="font-semibold text-gray-900">{message}</span>
-                <br />
-                <span className="text-gray-600 italic">{translatedMessage}</span>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowTranslation(false)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
-
       {/* Emoji picker */}
       {showEmojiPicker && (
         <div className="mb-4 p-4 bg-background border rounded-lg shadow-lg max-h-48 overflow-y-auto">
@@ -210,28 +138,10 @@ export const EnhancedMessageInput: React.FC<EnhancedMessageInputProps> = ({
           <Smile className="h-4 w-4" />
         </Button>
 
-        {/* Message input */}
-        <div className="flex-1 relative">
-          <textarea
-            value={message}
-            onChange={(e) => handleMessageChange(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Type je bericht..."
-            className="w-full p-3 border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary"
-            rows={1}
-            style={{ minHeight: '44px', maxHeight: '120px' }}
-          />
+        {/* Stream Chat MessageInput */}
+        <div className="flex-1">
+          <MessageInput />
         </div>
-
-        {/* Send button */}
-        <Button
-          onClick={handleSendMessage}
-          disabled={!message.trim()}
-          size="sm"
-          className="flex-shrink-0"
-        >
-          <Send className="h-4 w-4" />
-        </Button>
       </div>
 
       {/* Hidden file input */}
