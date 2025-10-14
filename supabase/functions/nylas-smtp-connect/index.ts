@@ -60,12 +60,10 @@ serve(async (req) => {
           imap_port: imap_port || 993,
           imap_username: email,
           imap_password: password,
-          imap_ssl_enabled: ssl !== false,
           smtp_host: smtp_host,
           smtp_port: smtp_port || 587,
           smtp_username: email,
           smtp_password: password,
-          smtp_ssl_enabled: ssl !== false,
         },
         scopes: [
           'https://api.nylas.com/v3/grants.email.read',
