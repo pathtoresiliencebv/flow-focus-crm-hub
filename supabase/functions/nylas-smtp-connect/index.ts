@@ -46,8 +46,8 @@ serve(async (req) => {
       );
     }
 
-    // Create Nylas IMAP/SMTP connection
-    const nylasResponse = await fetch('https://api.nylas.com/v3/grants', {
+    // Create Nylas IMAP/SMTP connection using the correct API endpoint
+    const nylasResponse = await fetch('https://api.us.nylas.com/v3/grants', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${Deno.env.get('NYLAS_API_KEY')}`,
