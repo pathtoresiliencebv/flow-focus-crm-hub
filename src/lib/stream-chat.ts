@@ -1,6 +1,6 @@
 import { StreamChat } from 'stream-chat';
 import type { Channel, DefaultGenerics } from 'stream-chat';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from '@/integrations/supabase/client';
 
 let streamClient: StreamChat | null = null;
 
@@ -50,13 +50,13 @@ export const getStreamUserToken = async (): Promise<StreamTokenResponse> => {
 
     // Call Edge Function to generate Stream token with explicit error handling
     const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-stream-token`,
+      `${SUPABASE_URL}/functions/v1/generate-stream-token`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'apikey': SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({ userId: session.user.id }),
       }
