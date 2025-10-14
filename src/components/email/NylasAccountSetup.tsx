@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNylasAuth } from '@/hooks/useNylasAuth';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Mail, 
   Loader2, 
@@ -83,11 +84,18 @@ export const NylasAccountSetup: React.FC<NylasAccountSetupProps> = ({
         return;
       }
 
+      // Get Supabase session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Je moet ingelogd zijn om een email account te verbinden');
+      }
+
       // Call Nylas API to create IMAP/SMTP connection
-      const response = await fetch('/api/supabase/functions/v1/nylas-smtp-connect', {
+      const response = await fetch('https://pvesgvkyiaqmsudmmtkc.supabase.co/functions/v1/nylas-smtp-connect', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           type: 'smtp',
