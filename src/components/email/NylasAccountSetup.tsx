@@ -98,7 +98,6 @@ export const NylasAccountSetup: React.FC<NylasAccountSetupProps> = ({
           'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          type: 'smtp',
           email: smtpConfig.email,
           password: smtpConfig.password,
           smtp_host: smtpConfig.smtpHost,
@@ -110,7 +109,9 @@ export const NylasAccountSetup: React.FC<NylasAccountSetupProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error('SMTP verbinding mislukt');
+        const errorData = await response.text();
+        console.error('SMTP connection error:', errorData);
+        throw new Error(`SMTP verbinding mislukt: ${errorData}`);
       }
 
       const result = await response.json();
