@@ -69,7 +69,7 @@ export function NylasMessageList({
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedFolder, setSelectedFolder] = useState<string>('inbox');
   const [showUnreadOnly, setShowUnreadOnly] = useState<boolean>(false);
-  const [showStarredOnly, setShowStarredOnly] = useState<boolean<parameter name="showStarredOnly">>(false);
+  const [showStarredOnly, setShowStarredOnly] = useState<boolean>(false);
   const [groupByThread, setGroupByThread] = useState<boolean>(true);
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
