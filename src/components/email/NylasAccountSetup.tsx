@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNylasAuth } from '@/hooks/useNylasAuth';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -11,7 +14,11 @@ import {
   AlertCircle,
   X,
   Plus,
-  Settings
+  Settings,
+  Server,
+  Key,
+  User,
+  Lock
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -35,6 +42,15 @@ export const NylasAccountSetup: React.FC<NylasAccountSetupProps> = ({
   } = useNylasAuth();
 
   const [connecting, setConnecting] = useState<string | null>(null);
+  const [smtpConfig, setSmtpConfig] = useState({
+    email: '',
+    password: '',
+    smtpHost: '',
+    smtpPort: '587',
+    imapHost: '',
+    imapPort: '993',
+    useSSL: true
+  });
   const { toast } = useToast();
 
   const handleConnect = async (provider: string) => {
@@ -45,6 +61,39 @@ export const NylasAccountSetup: React.FC<NylasAccountSetupProps> = ({
       console.error('OAuth initiation failed:', err);
       toast({
         title: "Verbinding mislukt",
+        description: err.message || "Er is een fout opgetreden tijdens het verbinden",
+        variant: "destructive",
+      });
+    } finally {
+      setConnecting(null);
+    }
+  };
+
+  const handleSMTPConnect = async () => {
+    try {
+      setConnecting('smtp');
+      
+      // Validate required fields
+      if (!smtpConfig.email || !smtpConfig.password || !smtpConfig.smtpHost) {
+        toast({
+          title: "Configuratie onvolledig",
+          description: "Vul alle verplichte velden in",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // TODO: Implement SMTP connection via Nylas API
+      // This would use Nylas's IMAP/SMTP connection API
+      toast({
+        title: "SMTP Verbinding",
+        description: "SMTP verbinding wordt nog geïmplementeerd",
+      });
+      
+    } catch (err: any) {
+      console.error('SMTP connection failed:', err);
+      toast({
+        title: "SMTP Verbinding mislukt",
         description: err.message || "Er is een fout opgetreden tijdens het verbinden",
         variant: "destructive",
       });
@@ -205,6 +254,14 @@ export const NylasAccountSetup: React.FC<NylasAccountSetupProps> = ({
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <Tabs defaultValue="oauth" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="oauth">OAuth (Aanbevolen)</TabsTrigger>
+                <TabsTrigger value="smtp">SMTP/IMAP</TabsTrigger>
+              </TabsList>
+
+              {/* OAuth Tab */}
+              <TabsContent value="oauth" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {providers.map((provider) => {
                 const Icon = provider.icon;
@@ -252,25 +309,131 @@ export const NylasAccountSetup: React.FC<NylasAccountSetupProps> = ({
               })}
             </div>
 
-            {/* Info Section */}
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-              <div className="flex items-start gap-3">
-                <div className="h-5 w-5 text-blue-500 mt-0.5">
-                  <svg viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                  </svg>
+                {/* Info Section */}
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <div className="h-5 w-5 text-blue-500 mt-0.5">
+                      <svg viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-blue-900 mb-1">
+                        Veilige OAuth Verbinding
+                      </h4>
+                      <p className="text-sm text-blue-700">
+                        Je wordt doorgestuurd naar de officiële login pagina van je email provider. 
+                        Je wachtwoord wordt nooit opgeslagen in onze systemen.
+                      </p>
+                    </div>
+                  </div>
                 </div>
+              </TabsContent>
+
+              {/* SMTP Tab */}
+              <TabsContent value="smtp" className="space-y-6">
                 <div>
-                  <h4 className="font-medium text-blue-900 mb-1">
-                    Veilige OAuth Verbinding
-                  </h4>
-                  <p className="text-sm text-blue-700">
-                    Je wordt doorgestuurd naar de officiële login pagina van je email provider. 
-                    Je wachtwoord wordt nooit opgeslagen in onze systemen.
-                  </p>
+                  <h3 className="text-lg font-semibold mb-4">SMTP/IMAP Configuratie</h3>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="email">Email Adres *</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={smtpConfig.email}
+                          onChange={(e) => setSmtpConfig(prev => ({ ...prev, email: e.target.value }))}
+                          placeholder="jouw@email.com"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="password">Wachtwoord *</Label>
+                        <Input
+                          id="password"
+                          type="password"
+                          value={smtpConfig.password}
+                          onChange={(e) => setSmtpConfig(prev => ({ ...prev, password: e.target.value }))}
+                          placeholder="Je email wachtwoord"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="smtpHost">SMTP Server *</Label>
+                        <Input
+                          id="smtpHost"
+                          value={smtpConfig.smtpHost}
+                          onChange={(e) => setSmtpConfig(prev => ({ ...prev, smtpHost: e.target.value }))}
+                          placeholder="smtp.gmail.com"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="smtpPort">SMTP Poort</Label>
+                        <Input
+                          id="smtpPort"
+                          type="number"
+                          value={smtpConfig.smtpPort}
+                          onChange={(e) => setSmtpConfig(prev => ({ ...prev, smtpPort: e.target.value }))}
+                          placeholder="587"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="imapHost">IMAP Server</Label>
+                        <Input
+                          id="imapHost"
+                          value={smtpConfig.imapHost}
+                          onChange={(e) => setSmtpConfig(prev => ({ ...prev, imapHost: e.target.value }))}
+                          placeholder="imap.gmail.com"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="imapPort">IMAP Poort</Label>
+                        <Input
+                          id="imapPort"
+                          type="number"
+                          value={smtpConfig.imapPort}
+                          onChange={(e) => setSmtpConfig(prev => ({ ...prev, imapPort: e.target.value }))}
+                          placeholder="993"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="useSSL"
+                        checked={smtpConfig.useSSL}
+                        onChange={(e) => setSmtpConfig(prev => ({ ...prev, useSSL: e.target.checked }))}
+                        className="rounded"
+                      />
+                      <Label htmlFor="useSSL">SSL/TLS gebruiken</Label>
+                    </div>
+
+                    <Button
+                      onClick={handleSMTPConnect}
+                      disabled={connecting !== null}
+                      className="w-full"
+                    >
+                      {connecting === 'smtp' ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Verbinden...
+                        </>
+                      ) : (
+                        <>
+                          <Server className="h-4 w-4 mr-2" />
+                          SMTP Account Verbinden
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 
