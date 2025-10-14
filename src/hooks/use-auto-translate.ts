@@ -64,7 +64,9 @@ export const useAutoTranslate = () => {
 
   // Clear translations when user changes
   useEffect(() => {
-    setTranslatedMessages(new Map());
+    if (user?.id) {
+      setTranslatedMessages(new Map());
+    }
   }, [user?.id]);
 
   return {
