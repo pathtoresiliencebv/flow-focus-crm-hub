@@ -55,18 +55,6 @@ export const StreamChatInterface: React.FC = () => {
     }
   };
 
-  // Loading state
-  if (isConnecting) {
-    return (
-      <div className="flex items-center justify-center h-full min-h-[500px]">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Verbinden met chat...</p>
-        </div>
-      </div>
-    );
-  }
-
   // Error state
   if (error) {
     return (
@@ -83,8 +71,8 @@ export const StreamChatInterface: React.FC = () => {
     );
   }
 
-  // Not connected yet
-  if (!isConnected || !client) {
+  // Loading state - combine both connecting and not connected states
+  if (isConnecting || !isConnected || !client) {
     return (
       <div className="flex items-center justify-center h-full min-h-[500px]">
         <div className="text-center">
