@@ -5,8 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface AutoTranslateMessageProps {
   message: any;
-  channel: any;
-  readBy: any[];
+  channel?: any;
+  readBy?: any[];
   renderText?: (text: string) => React.ReactNode;
 }
 
@@ -23,8 +23,16 @@ export const AutoTranslateMessage: React.FC<AutoTranslateMessageProps> = ({
 
   // Early return if message is not available
   if (!message) {
+    console.log('AutoTranslateMessage: No message provided');
     return null;
   }
+
+  console.log('AutoTranslateMessage: Rendering message', { 
+    messageId: message.id, 
+    text: message.text, 
+    translatedText,
+    isOwnMessage 
+  });
 
   // Don't translate own messages - safe check for both user and message.user (cache bust)
   const isOwnMessage = user && message.user ? message.user.id === user.id : false;
