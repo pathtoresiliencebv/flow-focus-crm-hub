@@ -83,12 +83,36 @@ export const NylasAccountSetup: React.FC<NylasAccountSetupProps> = ({
         return;
       }
 
-      // TODO: Implement SMTP connection via Nylas API
-      // This would use Nylas's IMAP/SMTP connection API
-      toast({
-        title: "SMTP Verbinding",
-        description: "SMTP verbinding wordt nog geïmplementeerd",
+      // Call Nylas API to create IMAP/SMTP connection
+      const response = await fetch('/api/supabase/functions/v1/nylas-smtp-connect', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'smtp',
+          email: smtpConfig.email,
+          password: smtpConfig.password,
+          smtp_host: smtpConfig.smtpHost,
+          smtp_port: parseInt(smtpConfig.smtpPort),
+          imap_host: smtpConfig.imapHost,
+          imap_port: parseInt(smtpConfig.imapPort),
+          ssl: smtpConfig.useSSL
+        })
       });
+
+      if (!response.ok) {
+        throw new Error('SMTP verbinding mislukt');
+      }
+
+      const result = await response.json();
+      
+      toast({
+        title: "SMTP Account Verbonden! ✅",
+        description: `Email account ${smtpConfig.email} is succesvol verbonden`,
+      });
+      
+      onSuccess?.();
       
     } catch (err: any) {
       console.error('SMTP connection failed:', err);
