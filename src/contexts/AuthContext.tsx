@@ -53,58 +53,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setUnauthenticated
   } = useLoadingState();
 
-  // Check for cached profile first
-  const getCachedProfile = () => {
-    try {
-      const cached = localStorage.getItem('user_profile_cache');
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        // ✅ Cache expires after 5 minutes to ensure fresh data
-        const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-        if (parsed.timestamp && Date.now() - parsed.timestamp < CACHE_TTL) {
-          const ageSeconds = Math.round((Date.now() - parsed.timestamp) / 1000);
-          console.log(`✅ CACHE: Using cached profile (${ageSeconds}s old)`);
-          return parsed.profile;
-        } else {
-          console.log('⚠️ CACHE: Profile cache expired, will fetch fresh');
-        }
-      }
-    } catch (e) {
-      console.error('❌ CACHE: Error loading cached profile:', e);
-    }
-    return null;
-  };
-
-  // Check for cached session (for instant auth on page reload)
-  const getCachedSession = () => {
-    try {
-      const sessionStr = localStorage.getItem('supabase.auth.token');
-      if (sessionStr) {
-        const sessionData = JSON.parse(sessionStr);
-        // Check if session is still valid (not expired)
-        if (sessionData.expires_at && sessionData.expires_at * 1000 > Date.now()) {
-          const expiresIn = Math.round((sessionData.expires_at * 1000 - Date.now()) / 1000 / 60);
-          console.log(`✅ CACHE: Using cached session (expires in ${expiresIn} min)`);
-          return {
-            user: sessionData.user,
-            session: sessionData
-          };
-        } else {
-          console.log('⚠️ CACHE: Session cache expired');
-        }
-      }
-    } catch (e) {
-      console.error('❌ CACHE: Error loading cached session:', e);
-    }
-    return null;
-  };
-
-  const cachedProfile = getCachedProfile();
-  const cachedAuth = getCachedSession();
-  
-  const [user, setUser] = useState<User | null>(cachedAuth?.user || null);
-  const [profile, setProfile] = useState<UserProfile | null>(cachedProfile);
-  const [session, setSession] = useState<Session | null>(cachedAuth?.session || null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   // ❌ REMOVED: Local isLoading state (now managed by LoadingStateContext)
   // const [isLoading, setIsLoading] = useState(true);
 
@@ -162,17 +113,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const fullProfile = { ...profileData, permissions };
       setProfile(fullProfile);
       
-      // Cache profile data in localStorage
-      try {
-        localStorage.setItem('user_profile_cache', JSON.stringify({
-          profile: fullProfile,
-          timestamp: Date.now()
-        }));
-        console.log('✅ CACHE: Profile cached successfully');
-      } catch (e) {
-        console.error('❌ CACHE: Error caching profile:', e);
-      }
-      
       const totalTime = Date.now() - startTime;
       console.log(`✅ PROFILE: Complete in ${totalTime}ms`);
       
@@ -186,7 +126,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } else {
       console.log('⚠️ PROFILE: No profile data found for user');
       setProfile(null);
-      localStorage.removeItem('user_profile_cache');
     }
   }, [startLoadingProfile, startLoadingPermissions, setReady]);
 
@@ -196,110 +135,47 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     
     const initializeAuth = async () => {
       try {
-        // Check for cached auth - but WAIT for validation before showing content
-        const hasCachedAuth = cachedAuth || cachedProfile;
+        // ✅ Notify loading machine: authenticating
+        startAuthenticating(false);
+        console.log('🔄 AUTH: Fetching session...');
         
-        if (hasCachedAuth) {
-          // ✅ Notify loading machine: authenticating with cache
-          startAuthenticating(true);
-          console.log('🔄 AUTH: Found cached auth, validating with server...', {
-            hasCachedSession: !!cachedAuth,
-            hasCachedProfile: !!cachedProfile
-          });
-          
-          // ✅ Notify loading machine: validating cache
-          startValidatingCache();
-          const validationStart = Date.now();
-          const { data: { session }, error } = await supabase.auth.getSession();
-          const validationTime = Date.now() - validationStart;
-          console.log(`⏱️ AUTH: Session validation took ${validationTime}ms`);
-          
-          if (!mounted) return;
-          
-          // ✅ If session is invalid, notify loading machine: unauthenticated
-          if (error || !session) {
-            console.warn('❌ AUTH: Cached session invalid, resetting to login state');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('❌ AUTH: Error getting session:', error);
+          if (mounted) {
             setUser(null);
             setSession(null);
             setProfile(null);
-            setUnauthenticated(); // ✅ Notify loading machine
-            localStorage.removeItem('user_profile_cache');
-            return;
+            // ✅ Notify loading machine: error
+            setError({
+              code: 'SESSION_ERROR',
+              message: error.message,
+              canRetry: true,
+              timestamp: new Date()
+            });
           }
-          
-          // Session is valid - update state if needed
-          const cachedToken = cachedAuth?.session?.access_token;
-          if (session.access_token !== cachedToken) {
-            console.log('🔄 AUTH: Session token changed, fetching fresh profile...');
-            setSession(session);
-            setUser(session.user);
-            await fetchProfile(session.user); // ✅ This calls setReady internally
-          } else {
-            console.log('✅ AUTH: Cached session is still valid');
-            // Ensure state is set from cache
-            setSession(session);
-            setUser(session.user);
-            
-            // ✅ Check if we have a valid cached profile
-            if (cachedProfile) {
-              console.log('✅ AUTH: Using cached profile, app ready');
-              setReady({
-                id: session.user.id,
-                email: session.user.email!,
-                role: cachedProfile.role,
-                isAdmin: cachedProfile.role === 'Administrator'
-              });
-            } else {
-              // ⚠️ Session valid but profile cache expired - fetch fresh profile
-              console.log('⚠️ AUTH: Profile cache expired, fetching fresh profile...');
-              await fetchProfile(session.user); // ✅ This calls setReady internally
-            }
+          return;
+        }
+        
+        if (mounted && session) {
+          console.log('✅ AUTH: Session found, fetching profile...');
+          setSession(session);
+          const currentUser = session?.user ?? null;
+          setUser(currentUser);
+        
+          if (currentUser) {
+            console.log('🔄 AUTH: Fetching profile data...');
+            await fetchProfile(currentUser); // ✅ This calls setReady internally
           }
-          
-          // Continue to set up listener
         } else {
-          // NO CACHE: Normal flow - fetch session and show loading
-          // ✅ Notify loading machine: authenticating without cache
-          startAuthenticating(false);
-          console.log('🔄 AUTH: No cache found, fetching session...');
-          const { data: { session }, error } = await supabase.auth.getSession();
-        
-          if (error) {
-            console.error('❌ AUTH: Error getting session:', error);
-            if (mounted) {
-              setUser(null);
-              setSession(null);
-              setProfile(null);
-              // ✅ Notify loading machine: error
-              setError({
-                code: 'SESSION_ERROR',
-                message: error.message,
-                canRetry: true,
-                timestamp: new Date()
-              });
-            }
-            return;
-          }
-        
-          if (mounted && session) {
-            console.log('✅ AUTH: Session restored from storage');
-            setSession(session);
-            const currentUser = session?.user ?? null;
-            setUser(currentUser);
-          
-            if (currentUser) {
-              console.log('🔄 AUTH: Fetching profile data...');
-              await fetchProfile(currentUser); // ✅ This calls setReady internally
-            }
-          } else {
-            console.log('⚠️ AUTH: No session found, user needs to login');
-            if (mounted) {
-              setUser(null);
-              setSession(null);
-              setProfile(null);
-              // ✅ Notify loading machine: unauthenticated
-              setUnauthenticated();
-            }
+          console.log('⚠️ AUTH: No session found, user needs to login');
+          if (mounted) {
+            setUser(null);
+            setSession(null);
+            setProfile(null);
+            // ✅ Notify loading machine: unauthenticated
+            setUnauthenticated();
           }
         }
         
@@ -320,7 +196,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           } else if (!currentUser && event === 'SIGNED_OUT') {
             console.log('🚪 AUTH: User signed out, clearing profile...');
             setProfile(null);
-            localStorage.removeItem('user_profile_cache');
             // ✅ Notify loading machine: unauthenticated
             setUnauthenticated();
           }
@@ -350,7 +225,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       mounted = false;
       subscription?.unsubscribe();
     };
-  }, [fetchProfile, startAuthenticating, startValidatingCache, setUnauthenticated, setError, setReady]); // Loading machine dependencies
+  }, [fetchProfile, startAuthenticating, setUnauthenticated, setError, setReady]); // Loading machine dependencies
 
   // Add login lock to prevent multiple simultaneous calls
   const loginInProgressRef = useRef(false);
@@ -492,13 +367,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setUser(null);
     setSession(null);
     setProfile(null);
-    
-    // Clear cached profile data
-    try {
-      localStorage.removeItem('user_profile_cache');
-    } catch (e) {
-      console.error('Error clearing cached profile:', e);
-    }
     
     toast({
       title: "Uitgelogd",
