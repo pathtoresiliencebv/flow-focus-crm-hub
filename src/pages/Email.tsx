@@ -17,12 +17,19 @@ import {
   MailOpen,
   Users,
   Calendar,
-  MoreVertical
+  MoreVertical,
+  MessageSquare,
+  UserPlus,
+  MailPlus
 } from 'lucide-react';
 import { useNylasAuth, NylasAccount } from '@/hooks/useNylasAuth';
 import { useNylasMessages, NylasMessage } from '@/hooks/useNylasMessages';
 import { useNylasContacts } from '@/hooks/useNylasContacts';
 import { NylasAccountSetup } from '@/components/email/NylasAccountSetup';
+import { NylasMessageList } from '@/components/email/NylasMessageList';
+import { NylasMessageDetail } from '@/components/email/NylasMessageDetail';
+import { NylasMessageComposer } from '@/components/email/NylasMessageComposer';
+import { NylasContactManager } from '@/components/email/NylasContactManager';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
@@ -60,12 +67,15 @@ export default function Email() {
   
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  
+
   const [selectedFolder, setSelectedFolder] = useState('inbox');
   const [selectedMessage, setSelectedMessage] = useState<NylasMessage | null>(null);
   const [showAccountSetup, setShowAccountSetup] = useState(false);
   const [folderCounts, setFolderCounts] = useState<Record<string, { total: number; unread: number }>>({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeView, setActiveView] = useState<'messages' | 'compose' | 'contacts'>('messages');
+  const [showComposer, setShowComposer] = useState(false);
+  const [replyTo, setReplyTo] = useState<any>(null);
 
   const primaryAccount = getPrimaryAccount();
 
@@ -108,10 +118,55 @@ export default function Email() {
   };
 
   const handleCompose = () => {
-    // TODO: Open composer
-    toast({
-      title: "Composer",
-      description: "Email composer wordt nog geïmplementeerd",
+    setActiveView('compose');
+    setShowComposer(true);
+    setReplyTo(null);
+  };
+
+  const handleReply = (message: any) => {
+    setActiveView('compose');
+    setShowComposer(true);
+    setReplyTo({
+      messageId: message.id,
+      subject: message.subject,
+      from: message.from_email
+    });
+  };
+
+  const handleReplyAll = (message: any) => {
+    setActiveView('compose');
+    setShowComposer(true);
+    setReplyTo({
+      messageId: message.id,
+      subject: message.subject,
+      from: message.from_email,
+      cc: message.cc_emails
+    });
+  };
+
+  const handleForward = (message: any) => {
+    setActiveView('compose');
+    setShowComposer(true);
+    setReplyTo({
+      messageId: message.id,
+      subject: `Fwd: ${message.subject}`,
+      forward: true
+    });
+  };
+
+  const handleComposerClose = () => {
+    setShowComposer(false);
+    setReplyTo(null);
+    setActiveView('messages');
+  };
+
+  const handleComposerSend = () => {
+    setShowComposer(false);
+    setReplyTo(null);
+    setActiveView('messages');
+      toast({
+      title: "Email verzonden! ✅",
+      description: "Je bericht is succesvol verzonden",
     });
   };
 
@@ -164,14 +219,14 @@ export default function Email() {
   if (!accountsLoading && !hasAccounts()) {
     return (
       <NylasAccountSetup 
-        onSuccess={() => {
-          setShowAccountSetup(false);
-          toast({
+            onSuccess={() => {
+              setShowAccountSetup(false);
+              toast({
             title: "Account verbonden! ✅",
             description: "Je email account is succesvol gekoppeld",
-          });
-        }}
-      />
+              });
+            }}
+          />
     );
   }
 
@@ -200,6 +255,28 @@ export default function Email() {
         </div>
         
         <div className="flex items-center gap-2">
+          {/* View Toggle */}
+          <div className="flex items-center gap-1 mr-4">
+            <Button
+              variant={activeView === 'messages' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveView('messages')}
+              disabled={!primaryAccount}
+            >
+              <MessageSquare className="h-4 w-4 mr-1" />
+              Berichten
+            </Button>
+            <Button
+              variant={activeView === 'contacts' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveView('contacts')}
+              disabled={!primaryAccount}
+            >
+              <Users className="h-4 w-4 mr-1" />
+              Contacten
+            </Button>
+          </div>
+
           <Button
             variant="outline"
             size="sm"
@@ -223,7 +300,7 @@ export default function Email() {
             onClick={handleCompose}
             disabled={!primaryAccount}
           >
-            <Plus className="h-4 w-4 mr-1" />
+            <MailPlus className="h-4 w-4 mr-1" />
             <span className="hidden sm:inline">Nieuw bericht</span>
           </Button>
         </div>
@@ -231,8 +308,8 @@ export default function Email() {
 
       {/* Main Content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar - Folders */}
-        {(!isMobile || !selectedMessage) && (
+        {/* Sidebar - Folders (only for messages view) */}
+        {(!isMobile || !selectedMessage) && activeView === 'messages' && (
           <div className={cn(
             "border-r bg-white",
             isMobile ? "w-full" : "w-56"
@@ -314,148 +391,57 @@ export default function Email() {
         )}
 
         {/* Message List */}
-        {(!isMobile || (isMobile && !selectedMessage)) && primaryAccount && (
+        {(!isMobile || (isMobile && !selectedMessage)) && primaryAccount && activeView === 'messages' && (
           <div className={cn(
             "border-r bg-white flex flex-col",
             isMobile ? "flex-1" : "w-96"
           )}>
-            <div className="p-4 text-center text-gray-500">
-              <Mail className="h-12 w-12 mx-auto mb-3" />
-              <p>Message list component wordt nog geïmplementeerd</p>
-              <p className="text-sm text-gray-400 mt-1">
-                Account: {primaryAccount.email_address}
-              </p>
-            </div>
+            <NylasMessageList
+              onMessageSelect={handleMessageSelect}
+              selectedMessageId={selectedMessage?.id}
+              className="h-full"
+                />
+              </div>
+        )}
+
+        {/* Contact Manager */}
+        {(!isMobile || (isMobile && !selectedMessage)) && primaryAccount && activeView === 'contacts' && (
+          <div className={cn(
+            "border-r bg-white flex flex-col",
+            isMobile ? "flex-1" : "w-96"
+          )}>
+            <NylasContactManager className="h-full" />
           </div>
         )}
 
-        {/* Message Detail View */}
+        {/* Message Detail View / Composer */}
         <div className={cn(
           "flex-1 bg-white flex flex-col",
-          isMobile && !selectedMessage && "hidden"
+          isMobile && !selectedMessage && !showComposer && "hidden"
         )}>
-          {selectedMessage ? (
-            <>
-              <div className="border-b p-4 flex items-center justify-between">
-                {isMobile && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedMessage(null)}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                )}
-                <div className="flex-1">
-                  <h2 className="font-semibold text-lg truncate">
-                    {selectedMessage.subject || '(Geen onderwerp)'}
-                  </h2>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon">
-                    <Star className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon">
-                    <Archive className="h-4 w-4" />
-                  </Button>
-                  <Button variant="ghost" size="icon">
-                    <Trash2 className="h-4 w-4 text-red-600" />
-                  </Button>
+          {showComposer ? (
+            <NylasMessageComposer
+              replyTo={replyTo}
+              onSend={handleComposerSend}
+              onCancel={handleComposerClose}
+              className="h-full"
+            />
+          ) : selectedMessage ? (
+            <NylasMessageDetail
+              messageId={selectedMessage.id}
+              onReply={handleReply}
+              onReplyAll={handleReplyAll}
+              onForward={handleForward}
+              onClose={() => setSelectedMessage(null)}
+              className="h-full"
+            />
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-gray-400">
+                <div className="text-center">
+                  <Mail className="h-16 w-16 mx-auto mb-4 opacity-20" />
+                  <p>Selecteer een email om te lezen</p>
                 </div>
               </div>
-              
-              <div className="flex-1 overflow-y-auto p-6">
-                <div className="max-w-3xl mx-auto">
-                  {/* Email Header */}
-                  <div className="mb-6 pb-6 border-b">
-                    <div className="flex items-start gap-3">
-                      <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold flex-shrink-0">
-                        {selectedMessage.from_email?.[0]?.toUpperCase() || '?'}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900">
-                          {selectedMessage.from_email || 'Onbekend'}
-                        </div>
-                        <div className="text-sm text-gray-500 mt-1">
-                          Aan: {selectedMessage.to_emails?.map(t => t.email).join(', ') || primaryAccount?.email_address}
-                        </div>
-                        <div className="text-xs text-gray-400 mt-1">
-                          {new Date(selectedMessage.received_at).toLocaleString('nl-NL', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Email Body */}
-                  <div className="prose prose-sm max-w-none">
-                    <div 
-                      className="text-gray-700 whitespace-pre-wrap break-words"
-                      style={{ wordBreak: 'break-word' }}
-                    >
-                      {selectedMessage.body_text || selectedMessage.body_html || '(Geen inhoud)'}
-                    </div>
-                  </div>
-
-                  {/* Attachments */}
-                  {selectedMessage.has_attachments && selectedMessage.attachments && selectedMessage.attachments.length > 0 && (
-                    <div className="mt-6 border-t pt-4">
-                      <h3 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
-                        <MailOpen className="h-4 w-4" />
-                        Bijlagen ({selectedMessage.attachments.length})
-                      </h3>
-                      <div className="space-y-2">
-                        {selectedMessage.attachments.map((attachment, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                          >
-                            <MailOpen className="h-5 w-5 text-gray-400 flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">
-                                {attachment.filename || `Bijlage ${idx + 1}`}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {attachment.content_type} • {(attachment.size / 1024).toFixed(1)} KB
-                              </p>
-                            </div>
-                            <Button variant="outline" size="sm">
-                              Download
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="border-t p-4 flex gap-2 flex-wrap">
-                <Button className="bg-red-600 hover:bg-red-700">
-                  Beantwoorden
-                </Button>
-                <Button variant="outline">
-                  Allen beantwoorden
-                </Button>
-                <Button variant="outline">
-                  Doorsturen
-                </Button>
-              </div>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-400">
-              <div className="text-center">
-                <Mail className="h-16 w-16 mx-auto mb-4 opacity-20" />
-                <p>Selecteer een email om te lezen</p>
-              </div>
-            </div>
           )}
         </div>
       </div>

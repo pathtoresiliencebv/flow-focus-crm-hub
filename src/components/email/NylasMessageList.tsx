@@ -1,424 +1,666 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
-  Mail, 
+  Search, 
+  Filter, 
+  RefreshCw, 
   Star, 
-  StarOff, 
   Archive, 
   Trash2, 
-  Reply, 
-  Forward, 
-  Paperclip,
-  Search,
-  Filter,
-  MoreVertical,
-  ChevronDown,
-  ChevronRight,
-  Loader2,
-  RefreshCw,
+  Mail, 
   MailOpen,
-  MailCheck
+  Paperclip,
+  Clock,
+  User,
+  AlertCircle,
+  Loader2,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
-import { useNylasMessages, NylasMessage } from '@/hooks/useNylasMessages';
-import { useNylasAuth } from '@/hooks/useNylasAuth';
-import { cn } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
-import { nl } from 'date-fns/locale';
+import { useNylasMessages } from '@/hooks/useNylasMessages';
+import { toast } from 'sonner';
 
 interface NylasMessageListProps {
-  accountId: string;
-  folder?: string;
-  onMessageSelect?: (message: NylasMessage) => void;
+  onMessageSelect?: (message: any) => void;
   selectedMessageId?: string;
   className?: string;
 }
 
-interface ThreadGroup {
-  threadId: string | null;
-  messages: NylasMessage[];
+interface Message {
+  id: string;
+  nylas_message_id: string;
+  from_email: string;
+  from_name: string;
+  to_emails: string[];
   subject: string;
-  participants: string[];
-  lastMessage: NylasMessage;
-  isRead: boolean;
-  isStarred: boolean;
-  hasAttachments: boolean;
+  body_text: string;
+  received_at: string;
+  sent_at: string;
+  is_read: boolean;
+  is_starred: boolean;
+  labels: string[];
+  folder: string;
+  has_attachments: boolean;
+  attachments: any[];
+  thread_id: string;
 }
 
-export const NylasMessageList: React.FC<NylasMessageListProps> = ({
-  accountId,
-  folder = 'inbox',
-  onMessageSelect,
+interface Thread {
+  id: string;
+  nylas_thread_id: string;
+  subject: string;
+  participants: any[];
+  message_count: number;
+  last_message_at: string;
+  is_read: boolean;
+  is_starred: boolean;
+  labels: string[];
+  messages: Message[];
+}
+
+export function NylasMessageList({ 
+  onMessageSelect, 
   selectedMessageId,
-  className,
-}) => {
+  className = '' 
+}: NylasMessageListProps) {
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [selectedFolder, setSelectedFolder] = useState<string>('inbox');
+  const [showUnreadOnly, setShowUnreadOnly] = useState<boolean>(false);
+  const [showStarredOnly, setShowStarredOnly] = useState<boolean<parameter name="showStarredOnly">>(false);
+  const [groupByThread, setGroupByThread] = useState<boolean>(true);
+  const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+
   const { 
     messages, 
     loading, 
     error, 
     fetchMessages, 
-    syncMessages, 
+    syncMessages,
     markAsRead, 
+    markAsUnread, 
     starMessage, 
+    unstarMessage,
+    archiveMessage,
     deleteMessage,
-    searchMessages 
+    getFolderCounts
   } = useNylasMessages();
-  
-  const { getPrimaryAccount } = useNylasAuth();
-  
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
 
-  // Load messages when account or folder changes
+  // Load messages on mount
   useEffect(() => {
-    if (accountId) {
-      if (searchQuery.trim()) {
-        searchMessages(accountId, searchQuery, folder);
-      } else {
-        fetchMessages(accountId, folder);
-      }
-    }
-  }, [accountId, folder, searchQuery, fetchMessages, searchMessages]);
+    fetchMessages(selectedFolder);
+  }, [fetchMessages, selectedFolder]);
 
-  // Group messages by thread
-  const threadGroups = useMemo((): ThreadGroup[] => {
-    const groups = new Map<string | null, NylasMessage[]>();
-    
-    messages.forEach(message => {
-      const threadId = message.thread_id;
-      if (!groups.has(threadId)) {
-        groups.set(threadId, []);
+  // Filter and group messages
+  const { filteredMessages, threads } = useMemo(() => {
+    if (!messages) return { filteredMessages: [], threads: [] };
+
+    let filtered = messages.filter(message => {
+      // Folder filter
+      if (message.folder !== selectedFolder) return false;
+
+      // Search filter
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        return (
+          message.subject.toLowerCase().includes(searchLower) ||
+          message.from_name?.toLowerCase().includes(searchLower) ||
+          message.from_email.toLowerCase().includes(searchLower) ||
+          message.body_text?.toLowerCase().includes(searchLower)
+        );
       }
-      groups.get(threadId)!.push(message);
+
+      // Unread filter
+      if (showUnreadOnly && message.is_read) return false;
+
+      // Starred filter
+      if (showStarredOnly && !message.is_starred) return false;
+
+      return true;
     });
 
-    return Array.from(groups.entries()).map(([threadId, messages]) => {
-      // Sort messages by date
-      const sortedMessages = messages.sort((a, b) => 
-        new Date(a.received_at).getTime() - new Date(b.received_at).getTime()
-      );
-      
-      const lastMessage = sortedMessages[sortedMessages.length - 1];
-      const participants = Array.from(new Set(
-        sortedMessages.flatMap(m => [
-          m.from_email,
-          ...m.to_emails.map(t => t.email),
-          ...m.cc_emails.map(c => c.email)
-        ])
-      ));
-
-      return {
-        threadId,
-        messages: sortedMessages,
-        subject: lastMessage.subject || '(Geen onderwerp)',
-        participants,
-        lastMessage,
-        isRead: sortedMessages.every(m => m.is_read),
-        isStarred: sortedMessages.some(m => m.is_starred),
-        hasAttachments: sortedMessages.some(m => m.has_attachments),
-      };
-    }).sort((a, b) => 
-      new Date(b.lastMessage.received_at).getTime() - new Date(a.lastMessage.received_at).getTime()
+    // Sort by date (newest first)
+    filtered.sort((a, b) => 
+      new Date(b.received_at || b.sent_at).getTime() - 
+      new Date(a.received_at || a.sent_at).getTime()
     );
-  }, [messages]);
 
-  const handleMessageClick = async (message: NylasMessage) => {
+    if (!groupByThread) {
+      return { filteredMessages: filtered, threads: [] };
+    }
+
+    // Group by thread
+    const threadMap = new Map<string, Thread>();
+    
+    filtered.forEach(message => {
+      const threadId = message.thread_id || message.id;
+      
+      if (!threadMap.has(threadId)) {
+        threadMap.set(threadId, {
+          id: threadId,
+          nylas_thread_id: message.thread_id || message.nylas_message_id,
+          subject: message.subject,
+          participants: [],
+          message_count: 0,
+          last_message_at: message.received_at || message.sent_at,
+          is_read: message.is_read,
+          is_starred: message.is_starred,
+          labels: message.labels,
+          messages: []
+        });
+      }
+
+      const thread = threadMap.get(threadId)!;
+      thread.messages.push(message);
+      thread.message_count++;
+      
+      // Update thread metadata
+      if (new Date(message.received_at || message.sent_at) > new Date(thread.last_message_at)) {
+        thread.last_message_at = message.received_at || message.sent_at;
+        thread.subject = message.subject;
+        thread.is_read = message.is_read;
+        thread.is_starred = message.is_starred;
+      }
+
+      // Add participants
+      if (!thread.participants.some(p => p.email === message.from_email)) {
+        thread.participants.push({
+          email: message.from_email,
+          name: message.from_name
+        });
+      }
+    });
+
+    const threads = Array.from(threadMap.values())
+      .sort((a, b) => 
+        new Date(b.last_message_at).getTime() - 
+        new Date(a.last_message_at).getTime()
+      );
+
+    return { filteredMessages: [], threads };
+  }, [messages, selectedFolder, searchTerm, showUnreadOnly, showStarredOnly, groupByThread]);
+
+  // Handle search
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+  };
+
+  // Handle folder change
+  const handleFolderChange = (folder: string) => {
+    setSelectedFolder(folder);
+    setSearchTerm('');
+  };
+
+  // Handle sync
+  const handleSync = async () => {
+    setIsProcessing(true);
+    try {
+      await syncMessages();
+      toast.success('Berichten gesynchroniseerd');
+    } catch (err) {
+      console.error('Error syncing messages:', err);
+      toast.error('Fout bij synchroniseren');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Handle message selection
+  const handleMessageSelect = (message: Message) => {
     onMessageSelect?.(message);
     
-    // Mark as read if unread
+    // Mark as read if not already
     if (!message.is_read) {
-      await markAsRead(message.id, true);
+      markAsRead(message.id);
     }
   };
 
-  const handleStarToggle = async (message: NylasMessage) => {
-    await starMessage(message.id, !message.is_starred);
-  };
-
-  const handleDelete = async (message: NylasMessage) => {
-    await deleteMessage(message.id);
-  };
-
-  const handleSync = async () => {
-    if (accountId) {
-      await syncMessages(accountId, { fullSync: false, maxMessages: 100 });
-    }
-  };
-
-  const toggleThreadExpansion = (threadId: string | null) => {
+  // Handle thread toggle
+  const handleThreadToggle = (threadId: string) => {
     const newExpanded = new Set(expandedThreads);
-    if (newExpanded.has(threadId || '')) {
-      newExpanded.delete(threadId || '');
+    if (newExpanded.has(threadId)) {
+      newExpanded.delete(threadId);
     } else {
-      newExpanded.add(threadId || '');
+      newExpanded.add(threadId);
     }
     setExpandedThreads(newExpanded);
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-    
-    if (diffInHours < 24) {
-      return date.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
-    } else if (diffInHours < 24 * 7) {
-      return date.toLocaleDateString('nl-NL', { weekday: 'short' });
-    } else {
-      return date.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
+  // Handle star toggle
+  const handleStarToggle = async (messageId: string, isStarred: boolean) => {
+    setIsProcessing(true);
+    try {
+      if (isStarred) {
+        await unstarMessage(messageId);
+      } else {
+        await starMessage(messageId);
+      }
+    } catch (err) {
+      console.error('Error toggling star:', err);
+      toast.error('Fout bij bijwerken van ster');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const getSenderInitials = (email: string) => {
-    return email.split('@')[0].substring(0, 2).toUpperCase();
+  // Handle archive
+  const handleArchive = async (messageId: string) => {
+    setIsProcessing(true);
+    try {
+      await archiveMessage(messageId);
+      toast.success('Bericht gearchiveerd');
+    } catch (err) {
+      console.error('Error archiving message:', err);
+      toast.error('Fout bij archiveren');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  const getSenderColor = (email: string) => {
-    const colors = [
-      'bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500',
-      'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-orange-500'
-    ];
-    const hash = email.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
-    return colors[hash % colors.length];
+  // Handle delete
+  const handleDelete = async (messageId: string) => {
+    if (!confirm('Weet je zeker dat je dit bericht wilt verwijderen?')) {
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      await deleteMessage(messageId);
+      toast.success('Bericht verwijderd');
+    } catch (err) {
+      console.error('Error deleting message:', err);
+      toast.error('Fout bij verwijderen');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  if (loading && messages.length === 0) {
+  // Format date
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
+    if (diffInHours < 24) {
+      return date.toLocaleTimeString('nl-NL', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } else if (diffInHours < 168) { // 7 days
+      return date.toLocaleDateString('nl-NL', {
+        weekday: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } else {
+      return date.toLocaleDateString('nl-NL', {
+        month: 'short',
+        day: 'numeric'
+      });
+    }
+  };
+
+  // Get folder counts
+  const folderCounts = getFolderCounts();
+
+  if (loading) {
     return (
-      <div className={cn("flex items-center justify-center h-64", className)}>
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-gray-400" />
-          <p className="text-gray-500">Emails laden...</p>
-        </div>
-      </div>
+      <Card className={`w-full ${className}`}>
+        <CardContent className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin mr-2" />
+          <span>Berichten laden...</span>
+        </CardContent>
+      </Card>
     );
   }
 
   if (error) {
     return (
-      <div className={cn("flex items-center justify-center h-64", className)}>
-        <div className="text-center">
-          <Mail className="h-8 w-8 mx-auto mb-2 text-red-400" />
-          <p className="text-red-500 mb-2">Fout bij laden emails</p>
-          <p className="text-sm text-gray-500">{error}</p>
-          <Button onClick={handleSync} variant="outline" className="mt-2">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Opnieuw proberen
-          </Button>
-        </div>
-      </div>
+      <Card className={`w-full ${className}`}>
+        <CardContent className="flex items-center justify-center py-8">
+          <div className="text-center">
+            <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+            <p className="text-red-600">{error}</p>
+            <Button 
+              variant="outline" 
+              onClick={() => fetchMessages(selectedFolder)} 
+              className="mt-4"
+            >
+              Opnieuw proberen
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className={cn("flex flex-col h-full", className)}>
+    <div className={`w-full ${className}`}>
       {/* Header */}
-      <div className="p-4 border-b bg-white">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {folder === 'inbox' ? 'Postvak IN' : 
-               folder === 'sent' ? 'Verzonden' :
-               folder === 'drafts' ? 'Concepten' :
-               folder === 'starred' ? 'Met ster' :
-               folder === 'archive' ? 'Archief' :
-               folder === 'trash' ? 'Prullenbak' : folder}
-            </h2>
-            <Badge variant="secondary">{messages.length}</Badge>
+      <Card className="mb-4">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Berichten
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSync}
+              disabled={isProcessing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-1 ${isProcessing ? 'animate-spin' : ''}`} />
+              Synchroniseren
+            </Button>
           </div>
-          <Button onClick={handleSync} variant="outline" size="sm" disabled={loading}>
-            <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-          </Button>
-        </div>
+        </CardHeader>
 
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Zoek in emails..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-      </div>
-
-      {/* Message List */}
-      <div className="flex-1 overflow-y-auto">
-        {threadGroups.length === 0 ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <Mail className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-              <p className="text-gray-500">Geen emails in deze map</p>
-              <p className="text-sm text-gray-400 mt-1">
-                {searchQuery ? 'Geen resultaten gevonden' : 'Klik op Synchroniseren om emails op te halen'}
-              </p>
-            </div>
+        <CardContent className="space-y-4">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Zoek berichten..."
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+              className="pl-10"
+            />
           </div>
-        ) : (
-          <div className="divide-y">
-            {threadGroups.map((group) => {
-              const isExpanded = expandedThreads.has(group.threadId || '');
-              const isSelected = selectedMessageId && group.messages.some(m => m.id === selectedMessageId);
-              
-              return (
-                <div
-                  key={group.threadId || group.lastMessage.id}
-                  className={cn(
-                    "p-4 hover:bg-gray-50 cursor-pointer transition-colors",
-                    isSelected && "bg-blue-50 border-l-4 border-blue-500"
-                  )}
-                >
-                  {/* Thread Header */}
-                  <div 
-                    className="flex items-start gap-3"
-                    onClick={() => handleMessageClick(group.lastMessage)}
+
+          {/* Filters */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant={selectedFolder === 'inbox' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleFolderChange('inbox')}
+            >
+              Inbox
+            </Button>
+            <Button
+              variant={selectedFolder === 'sent' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleFolderChange('sent')}
+            >
+              Verzonden
+            </Button>
+            <Button
+              variant={selectedFolder === 'drafts' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleFolderChange('drafts')}
+            >
+              Concepten
+            </Button>
+            <Button
+              variant={selectedFolder === 'archive' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleFolderChange('archive')}
+            >
+              Gearchiveerd
+            </Button>
+            <Button
+              variant={selectedFolder === 'trash' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleFolderChange('trash')}
+            >
+              Prullenbak
+            </Button>
+
+            <div className="flex-1" />
+
+            <Button
+              variant={showUnreadOnly ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setShowUnreadOnly(!showUnreadOnly)}
+            >
+              <MailOpen className="h-4 w-4 mr-1" />
+              Ongelezen
+            </Button>
+            <Button
+              variant={showStarredOnly ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setShowStarredOnly(!showStarredOnly)}
+            >
+              <Star className="h-4 w-4 mr-1" />
+              Sterren
+            </Button>
+            <Button
+              variant={groupByThread ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setGroupByThread(!groupByThread)}
+            >
+              <Filter className="h-4 w-4 mr-1" />
+              Threads
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Messages List */}
+      <Card>
+        <CardContent className="p-0">
+          {groupByThread ? (
+            // Thread view
+            threads.length === 0 ? (
+              <div className="text-center py-8">
+                <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">Geen berichten gevonden</p>
+              </div>
+            ) : (
+              <div className="divide-y">
+                {threads.map((thread) => (
+                  <div key={thread.id}>
+                    <div
+                      className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
+                        selectedMessageId && thread.messages.some(m => m.id === selectedMessageId) 
+                          ? 'bg-blue-50 border-l-4 border-blue-500' 
+                          : ''
+                      }`}
+                      onClick={() => handleMessageSelect(thread.messages[0])}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className={`font-medium ${!thread.is_read ? 'font-bold' : ''}`}>
+                              {thread.subject}
+                            </h3>
+                            {thread.is_starred && (
+                              <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                            )}
+                            {!thread.is_read && (
+                              <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                            <div className="flex items-center gap-1">
+                              <User className="h-4 w-4" />
+                              <span>
+                                {thread.participants.map(p => p.name || p.email).join(', ')}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-4 w-4" />
+                              <span>{formatDate(thread.last_message_at)}</span>
+                            </div>
+                            <Badge variant="secondary" className="text-xs">
+                              {thread.message_count} bericht{thread.message_count !== 1 ? 'en' : ''}
+                            </Badge>
+                          </div>
+
+                          {thread.labels.length > 0 && (
+                            <div className="flex gap-1">
+                              {thread.labels.map((label) => (
+                                <Badge key={label} variant="outline" className="text-xs">
+                                  {label}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleStarToggle(thread.messages[0].id, thread.is_starred);
+                            }}
+                            disabled={isProcessing}
+                            className={thread.is_starred ? 'text-yellow-500' : 'text-gray-400'}
+                          >
+                            <Star className={`h-4 w-4 ${thread.is_starred ? 'fill-current' : ''}`} />
+                          </Button>
+                          
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleArchive(thread.messages[0].id);
+                            }}
+                            disabled={isProcessing}
+                            className="text-orange-600"
+                          >
+                            <Archive className="h-4 w-4" />
+                          </Button>
+                          
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(thread.messages[0].id);
+                            }}
+                            disabled={isProcessing}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          ) : (
+            // List view
+            filteredMessages.length === 0 ? (
+              <div className="text-center py-8">
+                <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">Geen berichten gevonden</p>
+              </div>
+            ) : (
+              <div className="divide-y">
+                {filteredMessages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
+                      selectedMessageId === message.id 
+                        ? 'bg-blue-50 border-l-4 border-blue-500' 
+                        : ''
+                    }`}
+                    onClick={() => handleMessageSelect(message)}
                   >
-                    {/* Avatar */}
-                    <Avatar className="h-10 w-10 flex-shrink-0">
-                      <AvatarFallback className={getSenderColor(group.lastMessage.from_email)}>
-                        {getSenderInitials(group.lastMessage.from_email)}
-                      </AvatarFallback>
-                    </Avatar>
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className={`font-medium ${!message.is_read ? 'font-bold' : ''}`}>
+                            {message.subject}
+                          </h3>
+                          {message.is_starred && (
+                            <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                          )}
+                          {!message.is_read && (
+                            <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                          )}
+                          {message.has_attachments && (
+                            <Paperclip className="h-4 w-4 text-gray-500" />
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                          <div className="flex items-center gap-1">
+                            <User className="h-4 w-4" />
+                            <span>{message.from_name || message.from_email}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            <span>{formatDate(message.received_at || message.sent_at)}</span>
+                          </div>
+                        </div>
 
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={cn(
-                          "font-medium text-sm",
-                          !group.isRead && "font-semibold text-gray-900"
-                        )}>
-                          {group.lastMessage.from_email}
-                        </span>
-                        {!group.isRead && (
-                          <div className="h-2 w-2 rounded-full bg-blue-600 flex-shrink-0" />
+                        {message.body_text && (
+                          <p className="text-sm text-gray-600 line-clamp-2">
+                            {message.body_text.substring(0, 100)}
+                            {message.body_text.length > 100 && '...'}
+                          </p>
                         )}
-                        {group.isStarred && (
-                          <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500 flex-shrink-0" />
-                        )}
-                        {group.hasAttachments && (
-                          <Paperclip className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+
+                        {message.labels.length > 0 && (
+                          <div className="flex gap-1 mt-2">
+                            {message.labels.map((label) => (
+                              <Badge key={label} variant="outline" className="text-xs">
+                                {label}
+                              </Badge>
+                            ))}
+                          </div>
                         )}
                       </div>
-                      
-                      <h3 className={cn(
-                        "text-sm truncate mb-1",
-                        !group.isRead && "font-semibold text-gray-900"
-                      )}>
-                        {group.subject}
-                      </h3>
-                      
-                      <p className="text-xs text-gray-500 truncate">
-                        {group.lastMessage.body_text?.substring(0, 100) || 'Geen preview beschikbaar'}
-                      </p>
-                    </div>
 
-                    {/* Actions */}
-                    <div className="flex items-center gap-1">
-                      <span className="text-xs text-gray-500">
-                        {formatDate(group.lastMessage.received_at)}
-                      </span>
-                      
-                      {group.threadId && group.messages.length > 1 && (
+                      <div className="flex items-center gap-1">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
-                            toggleThreadExpansion(group.threadId);
+                            handleStarToggle(message.id, message.is_starred);
                           }}
+                          disabled={isProcessing}
+                          className={message.is_starred ? 'text-yellow-500' : 'text-gray-400'}
                         >
-                          {isExpanded ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )}
+                          <Star className={`h-4 w-4 ${message.is_starred ? 'fill-current' : ''}`} />
                         </Button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Thread Messages (if expanded) */}
-                  {isExpanded && group.threadId && group.messages.length > 1 && (
-                    <div className="ml-13 mt-2 space-y-2">
-                      {group.messages.slice(0, -1).map((message) => (
-                        <div
-                          key={message.id}
-                          className={cn(
-                            "p-2 rounded border-l-2 hover:bg-gray-50 cursor-pointer",
-                            selectedMessageId === message.id && "bg-blue-50 border-blue-500"
-                          )}
-                          onClick={() => handleMessageClick(message)}
+                        
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleArchive(message.id);
+                          }}
+                          disabled={isProcessing}
+                          className="text-orange-600"
                         >
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-medium text-gray-600">
-                              {message.from_email}
-                            </span>
-                            <span className="text-xs text-gray-400">
-                              {formatDate(message.received_at)}
-                            </span>
-                            {message.is_starred && (
-                              <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-600 truncate">
-                            {message.body_text?.substring(0, 80) || 'Geen preview'}
-                          </p>
-                        </div>
-                      ))}
+                          <Archive className="h-4 w-4" />
+                        </Button>
+                        
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(message.id);
+                          }}
+                          disabled={isProcessing}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                  )}
-
-                  {/* Quick Actions */}
-                  <div className="flex items-center gap-1 mt-2 ml-13">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleStarToggle(group.lastMessage);
-                      }}
-                      className="text-gray-400 hover:text-yellow-500"
-                    >
-                      {group.isStarred ? (
-                        <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
-                      ) : (
-                        <StarOff className="h-4 w-4" />
-                      )}
-                    </Button>
-                    
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        // TODO: Implement reply
-                      }}
-                      className="text-gray-400 hover:text-blue-500"
-                    >
-                      <Reply className="h-4 w-4" />
-                    </Button>
-                    
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(group.lastMessage);
-                      }}
-                      className="text-gray-400 hover:text-red-500"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                ))}
+              </div>
+            )
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
-};
+}

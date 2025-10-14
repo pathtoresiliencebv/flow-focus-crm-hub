@@ -300,3 +300,4 @@ GRANT ALL ON public.nylas_threads TO anon, authenticated;
 GRANT ALL ON public.nylas_contacts TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.get_primary_nylas_account(uuid) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.get_nylas_folder_counts(uuid) TO anon, authenticated;
+

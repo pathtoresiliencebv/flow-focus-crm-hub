@@ -471,3 +471,4 @@ AND last_error_at > NOW() - INTERVAL '1 hour';
 **🎉 Gefeliciteerd! Je Nylas email integratie is nu volledig operationeel.**
 
 Voor vragen of ondersteuning, neem contact op met het development team.
+
