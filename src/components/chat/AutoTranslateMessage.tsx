@@ -18,7 +18,7 @@ export const AutoTranslateMessage: React.FC<AutoTranslateMessageProps> = ({
 }) => {
   const { autoTranslateMessage, getTranslatedMessage } = useAutoTranslate();
   const { user } = useAuth();
-  const [translatedText, setTranslatedText] = useState<string>('');
+  const [translatedText, setTranslatedText] = useState<string>(message?.text || '');
   const [isTranslating, setIsTranslating] = useState(false);
 
   // Early return if message is not available
@@ -55,10 +55,10 @@ export const AutoTranslateMessage: React.FC<AutoTranslateMessageProps> = ({
     translateMessage();
   }, [message.id, message.text, message.user?.id, isOwnMessage, autoTranslateMessage]);
 
-  // Create modified message with translated text
+  // Create modified message with translated text (fallback to original if empty)
   const modifiedMessage = {
     ...message,
-    text: translatedText
+    text: translatedText || message.text || ''
   };
 
   return (
