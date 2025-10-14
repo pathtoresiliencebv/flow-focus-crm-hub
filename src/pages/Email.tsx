@@ -19,43 +19,44 @@ import {
   Calendar,
   MoreVertical
 } from 'lucide-react';
-// import { useNylasAuth, NylasAccount } from '@/hooks/useNylasAuth';
-// import { useNylasMessages, NylasMessage } from '@/hooks/useNylasMessages';
-// import { useNylasContacts } from '@/hooks/useNylasContacts';
-
-// Temporary types for development
-interface NylasAccount {
-  id: string;
-  email_address: string;
-  provider: string;
-  sync_state: string;
-}
-
-interface NylasMessage {
-  id: string;
-  subject: string;
-  from_email: string;
-  body_text: string;
-  received_at: string;
-  is_read: boolean;
-}
+import { useNylasAuth, NylasAccount } from '@/hooks/useNylasAuth';
+import { useNylasMessages, NylasMessage } from '@/hooks/useNylasMessages';
+import { useNylasContacts } from '@/hooks/useNylasContacts';
 import { NylasAccountSetup } from '@/components/email/NylasAccountSetup';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 export default function Email() {
-  // Temporary fallback for development
-  const [accounts] = useState([]);
-  const [accountsLoading] = useState(false);
-  const [authError] = useState(null);
-  const [messages] = useState([]);
-  const [messagesLoading] = useState(false);
-  const [contacts] = useState([]);
-  
-  const getPrimaryAccount = () => null;
-  const hasAccounts = () => false;
-  const syncMessages = async () => {};
+  // Use real Nylas hooks
+  const { 
+    accounts, 
+    accountsLoading, 
+    authError, 
+    getPrimaryAccount, 
+    hasAccounts,
+    initiateNylasOAuth,
+    disconnectAccount,
+    fetchAccounts
+  } = useNylasAuth();
+
+  const { 
+    messages, 
+    messagesLoading, 
+    syncMessages, 
+    sendMessage,
+    markAsRead,
+    deleteMessage
+  } = useNylasMessages();
+
+  const { 
+    contacts, 
+    contactsLoading, 
+    fetchContacts, 
+    createContact,
+    updateContact,
+    deleteContact
+  } = useNylasContacts();
   
   const { toast } = useToast();
   const isMobile = useIsMobile();

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-// import { useNylasAuth } from '@/hooks/useNylasAuth';
+import { useNylasAuth } from '@/hooks/useNylasAuth';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Mail, 
@@ -24,39 +24,23 @@ export const NylasAccountSetup: React.FC<NylasAccountSetupProps> = ({
   onSuccess, 
   onCancel 
 }) => {
-  // Temporary fallback for development
-  const [accounts] = useState([]);
-  const [loading] = useState(false);
-  const [error] = useState(null);
+  // Use real Nylas auth hook
+  const { 
+    accounts, 
+    accountsLoading: loading, 
+    authError: error, 
+    initiateNylasOAuth,
+    disconnectAccount,
+    fetchAccounts
+  } = useNylasAuth();
+
   const [connecting, setConnecting] = useState<string | null>(null);
-  
   const { toast } = useToast();
-  
-  const initiateOAuth = async (provider: string) => {
-    console.log('OAuth initiated for:', provider);
-  };
-  
-  const disconnectAccount = async (accountId: string) => {
-    console.log('Disconnect account:', accountId);
-  };
-  
-  const fetchAccounts = async () => {
-    console.log('Fetch accounts');
-  };
 
   const handleConnect = async (provider: string) => {
     try {
       setConnecting(provider);
-      
-      // For now, show a message that OAuth is not yet configured
-      toast({
-        title: "OAuth nog niet geconfigureerd",
-        description: "De Nylas OAuth flow moet nog worden geconfigureerd. Edge Functions moeten worden gedeployed.",
-        variant: "destructive",
-      });
-      
-      // TODO: Uncomment when Edge Functions are deployed
-      // await initiateOAuth(provider);
+      await initiateNylasOAuth(provider);
     } catch (err: any) {
       console.error('OAuth initiation failed:', err);
       toast({
