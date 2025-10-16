@@ -48,6 +48,7 @@ export interface Quote {
   archived_at?: string;
   archived_by?: string;
   attachments?: any;
+  pdf_url?: string; // Public URL of the generated PDF from completed-quotes bucket
   invoices?: Array<{
     id: string;
     invoice_number: string;

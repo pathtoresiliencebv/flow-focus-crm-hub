@@ -289,6 +289,26 @@ export default function PublicQuote() {
 
       console.log('📄 Downloading PDF for quote:', quote.id);
       
+      // First try: Direct download from storage bucket if PDF was already generated
+      if (quote.pdf_url) {
+        console.log('✅ Using pre-generated PDF from bucket:', quote.pdf_url);
+        const link = document.createElement('a');
+        link.href = quote.pdf_url;
+        link.download = `Offerte-${quote.quote_number || 'onbekend'}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast({
+          title: "PDF gedownload",
+          description: "De offerte PDF is succesvol gedownload.",
+        });
+        return;
+      }
+
+      // Fallback: Generate PDF via Edge Function if not pre-generated
+      console.log('📄 Generating PDF via Edge Function (no pre-generated PDF found)...');
+      
       // Invoke the generate-quote-pdf function
       try {
         console.log('🔄 Invoking generate-quote-pdf...');
