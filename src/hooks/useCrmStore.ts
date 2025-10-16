@@ -130,6 +130,27 @@ export const useCrmStore = () => {
   // --- MUTATIONS ---
   const addCustomerMutation = useMutation({
     mutationFn: async (customerData: NewCustomer) => {
+      // Check if customer with same email already exists
+      if (customerData.email) {
+        const { data: existingCustomer, error: checkError } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('email', customerData.email)
+          .single();
+        
+        if (existingCustomer) {
+          // Customer with this email already exists - return existing customer
+          console.log('ℹ️ Customer with email already exists:', customerData.email);
+          const error: any = new Error('CUSTOMER_EXISTS');
+          error.existingCustomer = existingCustomer;
+          throw error;
+        }
+        // If error is "row not found" (PGRST116), that's OK - email is unique
+        if (checkError && checkError.code !== 'PGRST116') {
+          throw checkError;
+        }
+      }
+
       const { data, error } = await supabase.from('customers').insert(customerData).select().single();
       if (error) throw error;
       return data;

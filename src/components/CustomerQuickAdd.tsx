@@ -121,12 +121,39 @@ export const CustomerQuickAdd = ({ onCustomerAdded, onCancel }: CustomerQuickAdd
       }
     } catch (error: any) {
       console.error('Error adding customer:', error);
-      // Single error toast
-      toast({
-        title: "Fout bij toevoegen klant",
-        description: error?.message || "Er is een fout opgetreden bij het toevoegen van de klant.",
-        variant: "destructive"
-      });
+      
+      // Handle duplicate email case - return existing customer instead
+      if (error.message === 'CUSTOMER_EXISTS' && error.existingCustomer) {
+        toast({
+          title: "ℹ️ Klant bestaat al",
+          description: `Klant "${error.existingCustomer.name}" met email "${formData.email}" bestaat al en is geselecteerd.`,
+        });
+
+        // Call parent callback with existing customer
+        if (onCustomerAdded) {
+          onCustomerAdded(error.existingCustomer);
+        }
+
+        // Reset form
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          address: "",
+          city: "",
+          company_name: "",
+          kvk_number: "",
+          btw_number: "",
+        });
+        setEmailAddresses([{ email: "", type: "primary" }]);
+      } else {
+        // Single error toast for other errors
+        toast({
+          title: "Fout bij toevoegen klant",
+          description: error?.message || "Er is een fout opgetreden bij het toevoegen van de klant.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }

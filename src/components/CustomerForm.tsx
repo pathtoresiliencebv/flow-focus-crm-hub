@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { X, Plus } from "lucide-react";
 import { useCrmStore, Customer } from "@/hooks/useCrmStore";
 import { LocationSearch } from "./LocationSearch";
+import { useToast } from "@/hooks/use-toast";
 
 interface CustomerFormProps {
   onClose: () => void;
@@ -19,6 +20,7 @@ interface CustomerFormProps {
 
 export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) => {
   const { addCustomer, updateCustomer } = useCrmStore();
+  const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     name: existingCustomer?.name || "",
@@ -94,10 +96,20 @@ export const CustomerForm = ({ onClose, existingCustomer }: CustomerFormProps) =
       
       // ✅ Close only AFTER successful save and query invalidation
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving customer:', error);
-      // Toast is already shown by useCrmStore mutation
-      setIsSaving(false); // Re-enable button on error
+      
+      // Handle duplicate email case
+      if (error.message === 'CUSTOMER_EXISTS' && error.existingCustomer) {
+        toast({
+          title: "ℹ️ Klant bestaat al",
+          description: `Een klant met email "${formData.email}" bestaat al: ${error.existingCustomer.name}. Dit email adres is al in gebruik.`,
+          variant: "default"
+        });
+      } else {
+        // Toast is already shown by useCrmStore mutation for other errors
+        setIsSaving(false); // Re-enable button on error
+      }
     }
   };
 
