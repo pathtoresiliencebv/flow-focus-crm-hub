@@ -213,7 +213,7 @@ function generateApprovalEmail(quote: any): string {
       
       <p>Hartelijk dank voor het goedkeuren van offerte <strong>${quote.quote_number}</strong>!</p>
       
-      <p>We zijn blij dat u voor SMANS Onderhoud heeft gekozen. Wij gaan direct aan de slag met de voorbereidingen.</p>
+      <p>We zijn blij dat u voor Onderhoud en Service J.J.P. Smans heeft gekozen. Wij gaan direct aan de slag met de voorbereidingen.</p>
       
       <div class="quote-details">
         <p><strong>Offertenummer:</strong> ${quote.quote_number}</p>
@@ -237,11 +237,11 @@ function generateApprovalEmail(quote: any): string {
       <p style="margin-top: 30px;">Bij vragen kunt u altijd contact met ons opnemen!</p>
       
       <p>Met vriendelijke groet,<br>
-      <strong>Het team van SMANS Onderhoud</strong></p>
+      <strong>Het team van Onderhoud en Service J.J.P. Smans</strong></p>
     </div>
     
     <div class="footer">
-      <p>SMANS Onderhoud | info@smansonderhoud.nl | ${new Date().getFullYear()}</p>
+      <p>Onderhoud en Service J.J.P. Smans | info@smansonderhoud.nl | ${new Date().getFullYear()}</p>
     </div>
   </div>
 </body>
