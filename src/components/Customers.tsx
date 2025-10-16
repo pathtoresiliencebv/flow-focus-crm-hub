@@ -156,29 +156,45 @@ export const Customers: React.FC<CustomersProps> = ({
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Bedrijf</TableHead>
                     <TableHead>Naam</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Telefoon</TableHead>
+                    <TableHead>Adres</TableHead>
+                    <TableHead>Postcode</TableHead>
                     <TableHead>Stad</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Aangemaakt</TableHead>
                     <TableHead className="text-right">Acties</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredCustomers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={9} className="text-center py-8 text-gray-500">
                         {searchTerm ? 'Geen klanten gevonden die voldoen aan je zoekopdracht.' : 'Nog geen klanten toegevoegd.'}
                       </TableCell>
                     </TableRow>
                   ) : (
                     filteredCustomers.map((customer) => (
                       <TableRow key={customer.id} className="hover:bg-gray-50">
+                        <TableCell className="text-sm text-gray-600">
+                          {(customer as any)?.company_name ? (
+                            <div>
+                              <div className="font-medium">{(customer as any).company_name}</div>
+                              {(customer as any)?.contact_person && (
+                                <div className="text-xs text-gray-500">t.a.v. {(customer as any).contact_person}</div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </TableCell>
                         <TableCell className="font-medium">{customer.name}</TableCell>
-                        <TableCell>{customer.email}</TableCell>
-                        <TableCell>{customer.phone}</TableCell>
-                        <TableCell>{customer.city}</TableCell>
+                        <TableCell>{customer.email || '-'}</TableCell>
+                        <TableCell>{customer.phone || '-'}</TableCell>
+                        <TableCell className="text-sm">{(customer as any)?.address || '-'}</TableCell>
+                        <TableCell className="text-sm">{(customer as any)?.postal_code || '-'}</TableCell>
+                        <TableCell>{customer.city || '-'}</TableCell>
                         <TableCell>
                           <Badge 
                             variant="secondary" 
@@ -187,7 +203,6 @@ export const Customers: React.FC<CustomersProps> = ({
                             {customer.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>{new Date(customer.created_at).toLocaleDateString('nl-NL')}</TableCell>
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
