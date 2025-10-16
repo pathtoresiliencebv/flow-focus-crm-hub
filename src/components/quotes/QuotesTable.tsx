@@ -211,11 +211,11 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
 
   const handleUpdateProject = async (quoteId: string, projectId: string) => {
     try {
-      // Find the selected project to get its customer_id
-      const selectedProject = allProjects?.find(p => p.id === projectId);
+      // Find the selected project to get its customer_id (use unique array)
+      const selectedProject = uniqueDropdownProjects?.find(p => p.id === projectId);
       const customerIdToSet = projectId === '' ? null : selectedProject?.customer_id || null;
 
-      console.log('💾 Updating quote:', { quoteId, projectId, customerId: customerIdToSet });
+      console.log('💾 Updating quote project:', { quoteId, projectId, customerId: customerIdToSet, projectName: selectedProject?.name });
 
       const { error } = await supabase
         .from('quotes')
@@ -227,13 +227,20 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
       
       if (error) throw error;
       
-      console.log('✅ Quote updated successfully');
+      console.log('✅ Quote project updated successfully');
+      
+      // Close the editing cell immediately
+      setEditingCell(null);
       
       toast({
-        title: "Project en klant gewijzigd",
-        description: `Project en klant zijn bijgewerkt voor deze offerte.`,
+        title: "Project gewijzigd",
+        description: `Project is bijgewerkt voor deze offerte.`,
       });
-      setEditingCell(null);
+      
+      // Trigger parent refresh to see the change
+      if (onQuotesUpdated) {
+        onQuotesUpdated();
+      }
     } catch (error: any) {
       console.error('Error updating project:', error);
       toast({
@@ -510,40 +517,43 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
             {/* Project - Editable Dropdown (FILTERED BY CUSTOMER) - ONLY IF CONCEPT */}
             <TableCell>
               {editingCell?.quoteId === quote.id && editingCell?.field === 'project' && quote.status === 'concept' ? (
-                <Select
-                  value={quote.project_id || ''}
-                  onValueChange={(value) => {
-                    if (value === 'none') {
-                      handleUpdateProject(quote.id, '');
-                    } else if (value === 'new') {
-                      setEditingQuoteId(quote.id);
-                      setNewProjectSheetOpen(true);
-                    } else {
-                      handleUpdateProject(quote.id, value);
-                    }
-                  }}
-                  disabled={!quote.customer_id}
-                >
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder={!quote.customer_id ? "Kies eerst klant" : "Selecteer project"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none" className="text-gray-500">
-                      Geen project
-                    </SelectItem>
-                    {getFilteredProjectsForQuote(quote).map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name}
+                <>
+                  {console.log('📋 Rendering project dropdown for quote:', quote.id, 'Customer:', quote.customer_id, 'Filtered projects:', getFilteredProjectsForQuote(quote).length)}
+                  <Select
+                    value={quote.project_id || ''}
+                    onValueChange={(value) => {
+                      if (value === 'none') {
+                        handleUpdateProject(quote.id, '');
+                      } else if (value === 'new') {
+                        setEditingQuoteId(quote.id);
+                        setNewProjectSheetOpen(true);
+                      } else {
+                        handleUpdateProject(quote.id, value);
+                      }
+                    }}
+                    disabled={!quote.customer_id}
+                  >
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder={!quote.customer_id ? "Kies eerst klant" : "Selecteer project"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none" className="text-gray-500">
+                        Geen project
                       </SelectItem>
-                    ))}
-                    {quote.customer_id && (
-                      <SelectItem value="new" className="text-blue-600 font-medium">
-                        <Plus className="h-4 w-4 inline mr-2" />
-                        Nieuw project...
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
+                      {getFilteredProjectsForQuote(quote).map((project) => (
+                        <SelectItem key={project.id} value={project.id}>
+                          {project.name}
+                        </SelectItem>
+                      ))}
+                      {quote.customer_id && (
+                        <SelectItem value="new" className="text-blue-600 font-medium">
+                          <Plus className="h-4 w-4 inline mr-2" />
+                          Nieuw project...
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </>
               ) : (
                 <div 
                   onClick={() => {
@@ -567,7 +577,7 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                   }}
                   className={`${quote.status !== 'concept' || !quote.customer_id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-muted'} p-2 rounded flex items-center gap-2 group`}
                 >
-                  {quote.project_title || '-'}
+                  {!quote.project_id ? '-' : quote.project_title || quote.project_id}
                   {quote.status === 'concept' && quote.customer_id && <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100" />}
                 </div>
               )}
