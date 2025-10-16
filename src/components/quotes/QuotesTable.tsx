@@ -87,6 +87,26 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
     }
   }, [newProjectSheetOpen, projects]);
 
+  // ✅ Add Supabase realtime listener to refresh quotes when updated
+  useEffect(() => {
+    const channel = supabase
+      .channel('quotes-updates')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'quotes' },
+        (payload) => {
+          console.log('📡 Quote updated in realtime:', payload);
+          // Trigger a parent refresh by emitting a custom event
+          window.dispatchEvent(new CustomEvent('quotesUpdated'));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const handleUpdateProject = async (quoteId: string, projectId: string) => {
     try {
       // Find the selected project to get its customer_id

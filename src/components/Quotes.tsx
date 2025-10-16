@@ -37,6 +37,17 @@ export function Quotes() {
     setShowNewQuoteForm(location.pathname === "/quotes/new");
   }, [location.pathname]);
 
+  // ✅ Listen for quotes updates from QuotesTable realtime changes
+  useEffect(() => {
+    const handleQuotesUpdated = () => {
+      console.log('🔄 Quotes updated event received, refreshing quotes...');
+      fetchQuotes(true);
+    };
+
+    window.addEventListener('quotesUpdated', handleQuotesUpdated);
+    return () => window.removeEventListener('quotesUpdated', handleQuotesUpdated);
+  }, [fetchQuotes]);
+
   // Timeout fallback to prevent infinite loading
   useEffect(() => {
     if (quotesLoading || crmLoading) {
