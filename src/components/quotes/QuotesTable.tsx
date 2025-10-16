@@ -27,6 +27,7 @@ import { useCrmStore } from "@/hooks/useCrmStore";
 // import html2pdf from 'html2pdf.js'; // Temporarily disabled for build
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
 import { ProjectForm } from '../ProjectForm';
+import { CustomerForm } from '../CustomerForm';
 import {
   Dialog,
   DialogContent,
@@ -68,21 +69,30 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { customers, projects, allProjects } = useCrmStore();
+  const { customers, projects, allProjects, allCustomers } = useCrmStore();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [quoteToDelete, setQuoteToDelete] = useState<Quote | null>(null);
   const [editingCell, setEditingCell] = useState<{ quoteId: string; field: string } | null>(null);
   const [newProjectSheetOpen, setNewProjectSheetOpen] = useState(false);
+  const [newCustomerSheetOpen, setNewCustomerSheetOpen] = useState(false);
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
   const [previousProjectCount, setPreviousProjectCount] = useState(0);
+  const [previousCustomerCount, setPreviousCustomerCount] = useState(0);
 
-  // ✅ Use allProjects for dropdown so ALL projects are always visible
+  // ✅ Use allCustomers and allProjects for dropdowns so ALL are always visible
+  const dropdownCustomers = allCustomers || customers || [];
   const dropdownProjects = allProjects || projects || [];
+
+  // ✅ Filter projects by the selected customer
+  const getFilteredProjectsForQuote = (quote: Quote): typeof dropdownProjects => {
+    if (!quote.customer_id) return [];
+    return dropdownProjects.filter(p => p.customer_id === quote.customer_id);
+  };
 
   // Watch for new projects created
   useEffect(() => {
     if (newProjectSheetOpen) {
-      setPreviousProjectCount(projects?.length || 0);
+      setPreviousProjectCount(allProjects?.length || 0);
     } else if (!newProjectSheetOpen && editingQuoteId && allProjects && allProjects.length > previousProjectCount) {
       // A new project was created - find it and assign it
       const newProject = allProjects[allProjects.length - 1];
@@ -91,6 +101,19 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
       }
     }
   }, [newProjectSheetOpen, allProjects, previousProjectCount, editingQuoteId]);
+
+  // Watch for new customers created
+  useEffect(() => {
+    if (newCustomerSheetOpen) {
+      setPreviousCustomerCount(allCustomers?.length || 0);
+    } else if (!newCustomerSheetOpen && editingQuoteId && allCustomers && allCustomers.length > previousCustomerCount) {
+      // A new customer was created - find it and assign it
+      const newCustomer = allCustomers[allCustomers.length - 1];
+      if (newCustomer?.id) {
+        handleUpdateCustomer(editingQuoteId, newCustomer.id);
+      }
+    }
+  }, [newCustomerSheetOpen, allCustomers, previousCustomerCount, editingQuoteId]);
 
   // ✅ Add Supabase realtime listener to refresh quotes when updated
   useEffect(() => {
@@ -113,6 +136,37 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
       supabase.removeChannel(channel);
     };
   }, [onQuotesUpdated]);
+
+  const handleUpdateCustomer = async (quoteId: string, customerId: string) => {
+    try {
+      console.log('💾 Updating quote customer:', { quoteId, customerId });
+
+      const { error } = await supabase
+        .from('quotes')
+        .update({ 
+          customer_id: customerId || null,
+          project_id: null // Reset project when customer changes
+        })
+        .eq('id', quoteId);
+      
+      if (error) throw error;
+      
+      console.log('✅ Quote customer updated successfully');
+      
+      toast({
+        title: "Klant gewijzigd",
+        description: `Klant is bijgewerkt voor deze offerte.`,
+      });
+      setEditingCell(null);
+    } catch (error: any) {
+      console.error('Error updating customer:', error);
+      toast({
+        title: "Fout",
+        description: "Kon klant niet bijwerken.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleUpdateProject = async (quoteId: string, projectId: string) => {
     try {
@@ -356,14 +410,50 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                 )}
               </div>
             </TableCell>
-            {/* Klant - Display customer name from project */}
+            {/* Klant - Editable Dropdown (FIRST STEP) */}
             <TableCell>
-              {(() => {
-                const project = allProjects?.find(p => p.id === quote.project_id);
-                return project?.customer ? project.customer : quote.customer_name || '-';
-              })()
+              {editingCell?.quoteId === quote.id && editingCell?.field === 'customer' ? (
+                <Select
+                  value={quote.customer_id || ''}
+                  onValueChange={(value) => {
+                    if (value === 'new') {
+                      setEditingQuoteId(quote.id);
+                      setNewCustomerSheetOpen(true);
+                    } else {
+                      handleUpdateCustomer(quote.id, value);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Selecteer klant" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {dropdownCustomers.map((customer) => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.name}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="new" className="text-blue-600 font-medium">
+                      <Plus className="h-4 w-4 inline mr-2" />
+                      Nieuwe klant...
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div 
+                  onClick={() => setEditingCell({ quoteId: quote.id, field: 'customer' })}
+                  className="cursor-pointer hover:bg-muted p-2 rounded flex items-center gap-2 group"
+                >
+                  {(() => {
+                    const customer = dropdownCustomers?.find(c => c.id === quote.customer_id);
+                    return customer?.name || '-';
+                  })()}
+                  <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100" />
+                </div>
+              )}
             </TableCell>
-            {/* Project - Editable Dropdown */}
+
+            {/* Project - Editable Dropdown (FILTERED BY CUSTOMER) */}
             <TableCell>
               {editingCell?.quoteId === quote.id && editingCell?.field === 'project' ? (
                 <Select
@@ -378,32 +468,45 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                       handleUpdateProject(quote.id, value);
                     }
                   }}
+                  disabled={!quote.customer_id}
                 >
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Selecteer project" />
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder={!quote.customer_id ? "Kies eerst klant" : "Selecteer project"} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none" className="text-gray-500">
                       Geen project
                     </SelectItem>
-                    {dropdownProjects.map((project) => (
+                    {getFilteredProjectsForQuote(quote).map((project) => (
                       <SelectItem key={project.id} value={project.id}>
                         {project.name}
                       </SelectItem>
                     ))}
-                    <SelectItem value="new" className="text-blue-600 font-medium">
-                      <Plus className="h-4 w-4 inline mr-2" />
-                      Nieuw project...
-                    </SelectItem>
+                    {quote.customer_id && (
+                      <SelectItem value="new" className="text-blue-600 font-medium">
+                        <Plus className="h-4 w-4 inline mr-2" />
+                        Nieuw project...
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               ) : (
                 <div 
-                  onClick={() => setEditingCell({ quoteId: quote.id, field: 'project' })}
-                  className="cursor-pointer hover:bg-muted p-2 rounded flex items-center gap-2 group"
+                  onClick={() => {
+                    if (!quote.customer_id) {
+                      toast({
+                        title: "Kies eerst een klant",
+                        description: "U moet eerst een klant selecteren voordat u een project kunt toewijzen.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    setEditingCell({ quoteId: quote.id, field: 'project' });
+                  }}
+                  className={`${!quote.customer_id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-muted'} p-2 rounded flex items-center gap-2 group`}
                 >
                   {quote.project_title || '-'}
-                  <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100" />
+                  {quote.customer_id && <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100" />}
                 </div>
               )}
             </TableCell>
@@ -543,6 +646,23 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
       quote={quoteToDelete}
       isArchiving={!isArchived}
     />
+
+    {/* New Customer Sheet */}
+    <Sheet open={newCustomerSheetOpen} onOpenChange={setNewCustomerSheetOpen}>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>Nieuwe klant toevoegen</SheetTitle>
+        </SheetHeader>
+        <CustomerForm
+          onClose={() => {
+            setNewCustomerSheetOpen(false);
+            // The newly created customer will be in the useCrmStore
+            setEditingCell(null);
+            setEditingQuoteId(null);
+          }}
+        />
+      </SheetContent>
+    </Sheet>
 
     {/* New Project Sheet */}
     <Sheet open={newProjectSheetOpen} onOpenChange={setNewProjectSheetOpen}>
