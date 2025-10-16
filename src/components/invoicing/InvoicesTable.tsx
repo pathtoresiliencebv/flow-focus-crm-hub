@@ -151,6 +151,17 @@ export const InvoicesTable = ({
               <TableCell>€{invoice.total_amount.toFixed(2)}</TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-2">
+                  {invoice.status === 'concept' && onEditInvoice && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onEditInvoice(invoice)}
+                      title="Factuur bewerken"
+                    >
+                      <Pencil className="h-4 w-4 mr-1" />
+                      Wijzigen
+                    </Button>
+                  )}
                   {onSendInvoice && invoice.status === 'concept' && (
                     <Button
                       variant="ghost"
