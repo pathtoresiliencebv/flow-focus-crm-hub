@@ -51,6 +51,7 @@ interface QuotesTableProps {
   onDuplicate?: (quoteId: string) => void;
   onRestore?: (quoteId: string) => void;
   isArchived?: boolean;
+  onQuotesUpdated?: () => void; // ✅ Add callback for parent to refresh
 }
 
 export const QuotesTable: React.FC<QuotesTableProps> = ({
@@ -62,7 +63,8 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
   onSendEmail,
   onDuplicate,
   onRestore,
-  isArchived = false
+  isArchived = false,
+  onQuotesUpdated
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -96,8 +98,10 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
         { event: 'UPDATE', schema: 'public', table: 'quotes' },
         (payload) => {
           console.log('📡 Quote updated in realtime:', payload);
-          // Trigger a parent refresh by emitting a custom event
-          window.dispatchEvent(new CustomEvent('quotesUpdated'));
+          // Trigger parent refresh
+          if (onQuotesUpdated) {
+            onQuotesUpdated();
+          }
         }
       )
       .subscribe();
@@ -105,13 +109,15 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [onQuotesUpdated]);
 
   const handleUpdateProject = async (quoteId: string, projectId: string) => {
     try {
       // Find the selected project to get its customer_id
       const selectedProject = projects?.find(p => p.id === projectId);
       const customerIdToSet = projectId === '' ? null : selectedProject?.customer_id || null;
+
+      console.log('💾 Updating quote:', { quoteId, projectId, customerId: customerIdToSet });
 
       const { error } = await supabase
         .from('quotes')
@@ -122,6 +128,8 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
         .eq('id', quoteId);
       
       if (error) throw error;
+      
+      console.log('✅ Quote updated successfully');
       
       toast({
         title: "Project en klant gewijzigd",

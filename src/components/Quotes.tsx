@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useCrmStore } from "@/hooks/useCrmStore";
@@ -37,16 +37,18 @@ export function Quotes() {
     setShowNewQuoteForm(location.pathname === "/quotes/new");
   }, [location.pathname]);
 
+  // ✅ Create callback for quotes updates from QuotesTable
+  const handleQuotesUpdated = useCallback(() => {
+    console.log('🔄 Quotes and projects updated, refreshing both...');
+    fetchQuotes(true); // Refresh quotes
+    // Projects will auto-refresh through react-query cache invalidation
+  }, [fetchQuotes]);
+
   // ✅ Listen for quotes updates from QuotesTable realtime changes
   useEffect(() => {
-    const handleQuotesUpdated = () => {
-      console.log('🔄 Quotes updated event received, refreshing quotes...');
-      fetchQuotes(true);
-    };
-
     window.addEventListener('quotesUpdated', handleQuotesUpdated);
     return () => window.removeEventListener('quotesUpdated', handleQuotesUpdated);
-  }, [fetchQuotes]);
+  }, [handleQuotesUpdated]);
 
   // Timeout fallback to prevent infinite loading
   useEffect(() => {
@@ -233,6 +235,7 @@ export function Quotes() {
             onApprove={handleApprove}
             onSendEmail={handleSendEmail}
             onDuplicate={duplicateQuote}
+            onQuotesUpdated={handleQuotesUpdated}
           />
         </div>
       )}
@@ -246,6 +249,7 @@ export function Quotes() {
             onDelete={permanentDeleteQuote}
             onRestore={restoreQuote}
             isArchived={true}
+            onQuotesUpdated={handleQuotesUpdated}
           />
         </div>
       )}
