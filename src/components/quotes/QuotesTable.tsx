@@ -89,6 +89,19 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
     return dropdownProjects.filter(p => p.customer_id === quote.customer_id);
   };
 
+  // 🔍 DEBUG: Log dropdown data
+  React.useEffect(() => {
+    console.log('🔍 QuotesTable - Dropdown data:', {
+      allCustomers: allCustomers?.length,
+      customers: customers?.length,
+      dropdownCustomers: dropdownCustomers?.length,
+      allProjects: allProjects?.length,
+      projects: projects?.length,
+      dropdownProjects: dropdownProjects?.length,
+      sampleCustomers: dropdownCustomers?.slice(0, 3),
+    });
+  }, [allCustomers, customers, allProjects, projects, dropdownCustomers, dropdownProjects]);
+
   // Watch for new projects created
   useEffect(() => {
     if (newProjectSheetOpen) {
@@ -413,32 +426,35 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
             {/* Klant - Editable Dropdown (FIRST STEP) */}
             <TableCell>
               {editingCell?.quoteId === quote.id && editingCell?.field === 'customer' ? (
-                <Select
-                  value={quote.customer_id || ''}
-                  onValueChange={(value) => {
-                    if (value === 'new') {
-                      setEditingQuoteId(quote.id);
-                      setNewCustomerSheetOpen(true);
-                    } else {
-                      handleUpdateCustomer(quote.id, value);
-                    }
-                  }}
-                >
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Selecteer klant" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {dropdownCustomers.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.name}
+                <>
+                  {console.log('📋 Rendering customer dropdown for quote:', quote.id, 'Available customers:', dropdownCustomers?.length)}
+                  <Select
+                    value={quote.customer_id || ''}
+                    onValueChange={(value) => {
+                      if (value === 'new') {
+                        setEditingQuoteId(quote.id);
+                        setNewCustomerSheetOpen(true);
+                      } else {
+                        handleUpdateCustomer(quote.id, value);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="Selecteer klant" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {dropdownCustomers.map((customer) => (
+                        <SelectItem key={customer.id} value={customer.id}>
+                          {customer.name}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="new" className="text-blue-600 font-medium">
+                        <Plus className="h-4 w-4 inline mr-2" />
+                        Nieuwe klant...
                       </SelectItem>
-                    ))}
-                    <SelectItem value="new" className="text-blue-600 font-medium">
-                      <Plus className="h-4 w-4 inline mr-2" />
-                      Nieuwe klant...
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                    </SelectContent>
+                  </Select>
+                </>
               ) : (
                 <div 
                   onClick={() => setEditingCell({ quoteId: quote.id, field: 'customer' })}
