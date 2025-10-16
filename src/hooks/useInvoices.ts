@@ -269,8 +269,6 @@ export function useInvoices() {
         invoice_date: new Date().toISOString().split('T')[0],
         due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // +30 days
         // Reset payment/sending data
-        sent_at: null,
-        paid_at: null,
         payment_date: null,
         payment_status: 'pending',
       };
