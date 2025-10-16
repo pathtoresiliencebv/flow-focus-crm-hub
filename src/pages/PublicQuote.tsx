@@ -165,6 +165,22 @@ export default function PublicQuote() {
         } catch (e) {
           console.warn('Could not fetch customer data:', e);
         }
+      } else if (data.customer_email) {
+        // Fallback: try to find customer by email if no customer_id
+        try {
+          const { data: customerInfo, error: customerError } = await publicSupabase
+            .from('customers')
+            .select('*')
+            .eq('email', data.customer_email)
+            .maybeSingle();
+          
+          if (customerInfo && !customerError) {
+            console.log('Fetched customer data by email fallback:', customerInfo);
+            setCustomerData(customerInfo);
+          }
+        } catch (e) {
+          console.warn('Could not fetch customer data by email fallback:', e);
+        }
       }
       
       // Parse attachments if available
