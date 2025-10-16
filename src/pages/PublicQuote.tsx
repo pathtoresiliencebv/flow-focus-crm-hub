@@ -601,9 +601,6 @@ export default function PublicQuote() {
                 {quote.customer_email && <p>{quote.customer_email}</p>}
                 {customerData?.phone && <p>{customerData.phone}</p>}
                 {customerData?.address && <p>{customerData.address}</p>}
-                {(customerData?.postal_code || customerData?.city) && (
-                  <p>{customerData.postal_code || ''} {customerData.city || ''}</p>
-                )}
                 {customerData?.country && <p>{customerData.country}</p>}
                 {customerData?.kvk_number && <p className="mt-2 text-xs">KvK: {customerData.kvk_number}</p>}
                 {customerData?.vat_number && <p className="text-xs">BTW: {customerData.vat_number}</p>}
@@ -839,10 +836,10 @@ export default function PublicQuote() {
           </div>
         )}
 
-        {/* Client Signature Section - Hide if quote is approved */}
-        {quote.status !== 'approved' && (
-          <div className="bg-white rounded-lg shadow-sm p-8">
-            {isSigned ? (
+        {/* Client Signature Section */}
+        {quote.status === 'approved' || isSigned || quote.client_signature_data ? (
+          <div className="bg-white rounded-lg shadow-sm p-8 mb-6">
+            {quote.client_signature_data ? (
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <Check className="h-5 w-5 text-green-600" />
@@ -915,6 +912,52 @@ export default function PublicQuote() {
               )}
             </div>
           )}
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-sm p-8">
+            {isExpired ? (
+                <div className="text-center py-8">
+                  <h3 className="text-lg font-semibold text-red-800 mb-2">Offerte Verlopen</h3>
+                  <p className="text-gray-600">Deze offerte is verlopen en kan niet meer worden ondertekend.</p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Neem contact op met {settings.company_name || 'SMANS BV'} voor een nieuwe offerte.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Offerte Goedkeuren</h3>
+                  <p className="text-gray-600 mb-6">
+                    Door deze offerte digitaal te ondertekenen gaat u akkoord met de voorwaarden en prijzen zoals vermeld.
+                  </p>
+                  
+                  <div className="space-y-6">
+                    <div>
+                      <Label htmlFor="clientName">Naam ondertekenaar *</Label>
+                      <Input
+                        id="clientName"
+                        value={clientName}
+                        onChange={(e) => setClientName(e.target.value)}
+                        placeholder="Vul uw volledige naam in"
+                        className="mt-1"
+                      />
+                    </div>
+
+                    <SignatureCanvas
+                      title="Uw handtekening"
+                      onSignature={setClientSignature}
+                    />
+
+                    <Button 
+                      onClick={handleSignQuote}
+                      disabled={!clientName.trim() || !clientSignature || signing}
+                      className="w-full"
+                      size="lg"
+                    >
+                      {signing ? "Bezig met ondertekenen..." : "Offerte Goedkeuren"}
+                    </Button>
+                  </div>
+                </div>
+              )}
           </div>
         )}
 
