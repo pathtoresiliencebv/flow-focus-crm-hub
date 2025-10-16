@@ -273,10 +273,6 @@ export function useInvoices() {
         paid_at: null,
         payment_date: null,
         payment_status: 'pending',
-        // Reset signatures
-        admin_signature_data: null,
-        client_signature_data: null,
-        client_signed_at: null,
       };
 
       console.log('📝 Inserting duplicate invoice:', {
