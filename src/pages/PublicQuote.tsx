@@ -44,6 +44,7 @@ export default function PublicQuote() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isApproved, setIsApproved] = useState(false);
   const [attachments, setAttachments] = useState<QuoteAttachment[]>([]);
+  const [customerData, setCustomerData] = useState<any>(null);
 
   useEffect(() => {
     if (token) {
@@ -148,6 +149,24 @@ export default function PublicQuote() {
       console.log('Final typed quote:', typedQuote);
       setQuote(typedQuote);
       
+      // Fetch customer data if customer_id exists
+      if (data.customer_id) {
+        try {
+          const { data: customerInfo, error: customerError } = await publicSupabase
+            .from('customers')
+            .select('street, postal_code, city, country')
+            .eq('id', data.customer_id)
+            .maybeSingle();
+          
+          if (customerInfo && !customerError) {
+            console.log('Fetched customer data:', customerInfo);
+            setCustomerData(customerInfo);
+          }
+        } catch (e) {
+          console.warn('Could not fetch customer data:', e);
+        }
+      }
+
       // Parse attachments if available
       if (data.attachments) {
         try {
@@ -377,6 +396,11 @@ export default function PublicQuote() {
               <h3>Klant</h3>
               <p><strong>${quote.customer_name}</strong></p>
               <p>${quote.customer_email || ''}</p>
+              ${customerData ? `
+                <p>${customerData.street || ''}</p>
+                <p>${customerData.postal_code || ''} ${customerData.city || ''}</p>
+                <p>${customerData.country || ''}</p>
+              ` : ''}
             </div>
           </div>
 
@@ -555,6 +579,13 @@ export default function PublicQuote() {
               <div className="text-sm text-gray-600">
                 <p className="font-medium">{quote.customer_name}</p>
                 {quote.customer_email && <p>{quote.customer_email}</p>}
+                {customerData && (
+                  <>
+                    {customerData.street && <p>{customerData.street}</p>}
+                    <p>{customerData.postal_code || ''} {customerData.city || ''}</p>
+                    {customerData.country && <p>{customerData.country}</p>}
+                  </>
+                )}
                 {quote.project_title && (
                   <p className="mt-2 text-smans-primary">Project: {quote.project_title}</p>
                 )}
