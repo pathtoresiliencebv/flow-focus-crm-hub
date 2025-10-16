@@ -470,6 +470,18 @@ export const Receipts = () => {
         />
       </div>
 
+      {/* Header with Upload Button */}
+      <div className="flex justify-between items-center mb-4">
+        <div></div>
+        <Button 
+          onClick={() => setShowUploadDialog(true)}
+          className="bg-primary hover:bg-primary/90 text-white"
+        >
+          <Upload className="h-4 w-4 mr-2" />
+          Bonnetje uploaden
+        </Button>
+      </div>
+
       {/* Bulk Actions Bar (only for all tab with pending receipts) */}
       {activeTab === "all" && ['Administrator', 'Administratie'].includes(profile?.role || '') && pendingReceipts.length > 0 && (
         <Card className="bg-gray-50 border-gray-200">
