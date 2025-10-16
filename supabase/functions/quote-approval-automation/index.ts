@@ -344,6 +344,29 @@ const handler = async (req: Request): Promise<Response> => {
       console.error('Failed to send customer confirmation email:', confirmationEmailError);
     }
 
+    // 7.5. Generate and store quote PDF in completed-quotes bucket
+    try {
+      console.log('📄 Saving completed quote PDF to storage...');
+      
+      // Invoke a dedicated function to handle PDF generation and storage
+      const { error: savePdfError } = await supabase.functions.invoke('save-quote-pdf', {
+        body: { 
+          quoteId: quote_id,
+          quoteNumber: quote.quote_number
+        }
+      });
+
+      if (savePdfError) {
+        console.error('Error saving quote PDF:', savePdfError);
+        // Non-critical - don't fail the entire flow
+      } else {
+        console.log('✅ Quote PDF saved to storage');
+      }
+    } catch (pdfStorageError) {
+      console.error('Failed to save quote PDF:', pdfStorageError);
+      // Don't fail the entire flow if PDF storage fails
+    }
+
     // 8. Send notification email to admin with PDF attachment
     try {
       const { error: emailError } = await supabase.functions.invoke('send-quote-email', {
