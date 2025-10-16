@@ -10,10 +10,12 @@ const corsHeaders = {
 };
 
 interface ApprovalRequest {
-  receiptId: string;
+  receiptId?: string;
+  receipt_id?: string;
   action: 'approve' | 'reject';
   reason?: string;
   userId?: string;
+  user_id?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -52,7 +54,7 @@ const handler = async (req: Request): Promise<Response> => {
       .from('receipts')
       .select('*')
       .eq('id', receiptId)
-      .single();
+      .maybeSingle();
 
     if (receiptError || !receipt) {
       throw new Error('Receipt not found');
