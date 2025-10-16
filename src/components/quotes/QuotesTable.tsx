@@ -771,23 +771,36 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
       </SheetContent>
     </Sheet>
 
-    {/* Edit Quote Sheet */}
-    <Sheet open={editQuoteSheetOpen} onOpenChange={setEditQuoteSheetOpen}>
-      <SheetContent className="inset-0 w-full max-w-none">
-        <SheetHeader>
-          <SheetTitle>Offerte bewerken</SheetTitle>
-        </SheetHeader>
-        {editingQuote && (
-          <MultiBlockQuoteForm
-            existingQuote={editingQuote}
-            onClose={() => {
+    {/* Edit Quote Dialog - Fullscreen */}
+    <Dialog open={editQuoteSheetOpen} onOpenChange={setEditQuoteSheetOpen}>
+      <DialogContent className="max-w-full w-screen h-screen p-0 gap-0 rounded-none border-0">
+        <div className="absolute top-0 right-0 p-4">
+          <button
+            onClick={() => {
               setEditQuoteSheetOpen(false);
               setEditingQuote(null);
             }}
-          />
-        )}
-      </SheetContent>
-    </Sheet>
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 w-10"
+          >
+            ✕
+          </button>
+        </div>
+        <div className="w-full h-full overflow-auto p-8">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold">Offerte bewerken</h2>
+          </div>
+          {editingQuote && (
+            <MultiBlockQuoteForm
+              existingQuote={editingQuote}
+              onClose={() => {
+                setEditQuoteSheetOpen(false);
+                setEditingQuote(null);
+              }}
+            />
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   </>
   );
 };
