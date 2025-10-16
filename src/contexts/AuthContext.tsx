@@ -79,6 +79,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         variant: "destructive",
       });
       setProfile(null);
+      // ✅ Exit loading by reporting error to loading state machine
+      setError({
+        code: 'PROFILE_FETCH_ERROR',
+        message: error.message,
+        canRetry: true,
+        timestamp: new Date()
+      });
       return;
     }
 
@@ -124,8 +131,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         isAdmin: profileData.role === 'Administrator'
       });
     } else {
-      console.log('⚠️ PROFILE: No profile data found for user');
+      console.log('⚠️ PROFILE: No profile data found for user, proceeding with minimal profile');
       setProfile(null);
+      // ✅ Proceed to ready to avoid infinite loading when profile row is missing
+      setReady({
+        id: user.id,
+        email: user.email!,
+        role: 'Bekijker',
+        isAdmin: false
+      });
     }
   }, [startLoadingProfile, startLoadingPermissions, setReady]);
 
