@@ -293,10 +293,10 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
           const localItem = localItemStates[item.id] || item;
           
           return (
-            <div key={item.id} className="grid grid-cols-[1fr,180px,150px,120px,140px,50px] gap-3 items-center py-2 border-b border-border/50 last:border-b-0">
+            <div key={item.id} className="grid grid-cols-[1fr,0.4fr,0.4fr,0.2fr,50px] gap-3 items-center py-2 border-b border-border/50 last:border-b-0">
               {item.type === 'product' ? (
                 <>
-                  {/* Beschrijving - Flexibele breedte */}
+                  {/* Beschrijving - 50% */}
                   <div>
                     <Input
                       value={localItem.description}
@@ -307,7 +307,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                     />
                   </div>
                   
-                  {/* Aantal - 180px breed */}
+                  {/* Aantal - 20% */}
                   <div>
                     <div className="flex items-center gap-1">
                       <Button
@@ -315,7 +315,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                         size="sm"
                         variant="outline"
                         onClick={() => updateQuantity(item.id, (localItem.quantity || 1) - 1)}
-                        className="h-10 w-10 p-0 shrink-0"
+                        className="h-10 w-8 p-0 shrink-0"
                       >
                         <Minus className="h-4 w-4" />
                       </Button>
@@ -324,7 +324,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                         value={localItem.quantity || ''}
                         onChange={(e) => handleLocalInputChange(item.id, 'quantity', Number(e.target.value) || 0)}
                         onBlur={() => handleInputBlur(item.id)}
-                        className="h-10 text-center text-base"
+                        className="h-10 text-center text-base flex-1"
                         min="0"
                       />
                       <Button
@@ -332,14 +332,14 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                         size="sm"
                         variant="outline"
                         onClick={() => updateQuantity(item.id, (localItem.quantity || 1) + 1)}
-                        className="h-10 w-10 p-0 shrink-0"
+                        className="h-10 w-8 p-0 shrink-0"
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
                   
-                  {/* Prijs - 150px breed */}
+                  {/* Prijs - 20% */}
                   <div>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-base">€</span>
@@ -356,7 +356,7 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                     </div>
                   </div>
                   
-                  {/* BTW% - 120px breed */}
+                  {/* BTW% - 10% */}
                   <div>
                     <Select
                       value={localItem.vat_rate?.toString() || '21'}
@@ -376,11 +376,6 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                     </Select>
                   </div>
                   
-                  {/* Totaal - 140px breed */}
-                  <div className="text-right text-base font-medium">
-                    €{(localItem.total || 0).toFixed(2)}
-                  </div>
-                  
                   {/* Delete button - 50px */}
                   <div className="flex justify-end">
                     <Button
@@ -395,28 +390,31 @@ export const QuoteBlockForm: React.FC<QuoteBlockFormProps> = ({
                   </div>
                 </>
               ) : (
-                <div className="col-span-full">
-                  <RichTextEditor
-                    value={localItem.description}
-                    onChange={(value) => {
-                      handleLocalInputChange(item.id, 'description', value);
-                      handleInputBlur(item.id);
-                    }}
-                    placeholder="Tekst invoeren..."
-                  />
-                </div>
+                <>
+                  <div className="col-span-4">
+                    <RichTextEditor
+                      value={localItem.description}
+                      onChange={(value) => {
+                        handleLocalInputChange(item.id, 'description', value);
+                        handleInputBlur(item.id);
+                      }}
+                      placeholder="Tekst invoeren..."
+                    />
+                  </div>
+                  
+                  {/* Delete button for textblock */}
+                  <div className="flex justify-end">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleDeleteItem(item.id)}
+                      className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </>
               )}
-              
-              <div className="col-span-1 text-right">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleDeleteItem(item.id)}
-                  className="h-7 w-7 p-0 text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
             </div>
           );
         })}

@@ -236,10 +236,10 @@ export const InvoiceBlockForm: React.FC<InvoiceBlockFormProps> = ({
       <CardContent className="space-y-4">
         {/* Items List - Ruimere Grid Layout voor betere zichtbaarheid */}
         {block.items.map((item) => (
-          <div key={item.id} className="grid grid-cols-12 gap-3 items-center py-2 border-b border-border/50 last:border-b-0">
+          <div key={item.id} className="grid grid-cols-[1fr,0.4fr,0.4fr,0.2fr,50px] gap-3 items-center py-2 border-b border-border/50 last:border-b-0">
             {item.type === 'product' ? (
               <>
-                <div className="col-span-4">
+                <div>
                   <Input
                     value={item.description}
                     onChange={(e) => handleItemUpdate(item.id, { description: e.target.value })}
@@ -248,14 +248,14 @@ export const InvoiceBlockForm: React.FC<InvoiceBlockFormProps> = ({
                     className="h-10 text-base"
                   />
                 </div>
-                <div className="col-span-2">
+                <div>
                   <div className="flex items-center gap-1">
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
                       onClick={() => handleItemUpdate(item.id, { quantity: Math.max(0, (item.quantity || 1) - 1) })}
-                      className="h-10 w-10 p-0 shrink-0"
+                      className="h-10 w-8 p-0 shrink-0"
                     >
                       <Minus className="h-4 w-4" />
                     </Button>
@@ -265,7 +265,7 @@ export const InvoiceBlockForm: React.FC<InvoiceBlockFormProps> = ({
                       onChange={(e) => handleItemUpdate(item.id, { quantity: Number(e.target.value) || 0 })}
                       onBlur={() => {}}
                       placeholder="Aantal"
-                      className="h-10 text-base text-center"
+                      className="h-10 text-base text-center flex-1"
                       min="0"
                       step="0.01"
                     />
@@ -274,13 +274,13 @@ export const InvoiceBlockForm: React.FC<InvoiceBlockFormProps> = ({
                       size="sm"
                       variant="outline"
                       onClick={() => handleItemUpdate(item.id, { quantity: (item.quantity || 1) + 1 })}
-                      className="h-10 w-10 p-0 shrink-0"
+                      className="h-10 w-8 p-0 shrink-0"
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
-                <div className="col-span-2">
+                <div>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-base">€</span>
                     <Input
@@ -295,7 +295,7 @@ export const InvoiceBlockForm: React.FC<InvoiceBlockFormProps> = ({
                     />
                   </div>
                 </div>
-                <div className="col-span-2">
+                <div>
                   <div className="relative">
                     <Select
                       value={item.vat_rate?.toString() || '21'}
@@ -312,23 +312,20 @@ export const InvoiceBlockForm: React.FC<InvoiceBlockFormProps> = ({
                     </Select>
                   </div>
                 </div>
-                <div className="col-span-1 text-right">
-                  <span className="text-base font-medium">€{(item.total || 0).toFixed(2)}</span>
-                </div>
-                <div className="col-span-1 text-right">
+                <div className="flex justify-end">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDeleteItem(item.id)}
-                    className="text-destructive hover:text-destructive h-7 w-7 p-0"
+                    className="text-destructive hover:text-destructive h-8 w-8 p-0"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
               </>
             ) : (
               <>
-                <div className="col-span-10">
+                <div className="col-span-4">
                   <RichTextEditor
                     value={item.description}
                     onChange={(value, formatting) => handleItemUpdate(item.id, { description: value, formatting })}
@@ -337,14 +334,14 @@ export const InvoiceBlockForm: React.FC<InvoiceBlockFormProps> = ({
                     onFormattingChange={(formatting) => handleItemUpdate(item.id, { formatting })}
                   />
                 </div>
-                <div className="col-span-2 text-right">
+                <div className="flex justify-end">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDeleteItem(item.id)}
-                    className="text-destructive hover:text-destructive h-6 w-6 p-0"
+                    className="text-destructive hover:text-destructive h-7 w-7 p-0"
                   >
-                    <Trash2 className="h-3 w-3" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </>
