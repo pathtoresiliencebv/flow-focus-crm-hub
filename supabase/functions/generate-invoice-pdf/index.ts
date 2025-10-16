@@ -13,7 +13,7 @@ interface GenerateInvoicePDFRequest {
   qrCodeDataUrl?: string;
 }
 
-const generateInvoiceHTML = (invoice: any, settings: any, paymentData?: { paymentUrl: string; qrCodeDataUrl: string }) => {
+const generateInvoiceHTML = (invoice: any, settings: any, paymentData?: { paymentUrl: string; qrCodeDataUrl: string }, customer?: any) => {
   const blocks = invoice.items || [];
   let blocksHTML = '';
   
@@ -214,6 +214,11 @@ const generateInvoiceHTML = (invoice: any, settings: any, paymentData?: { paymen
               <strong>${invoice.customer_name}</strong><br>
               ${invoice.customer_email}
             </p>
+            ${customer ? `
+              <p>${customer.street || ''}</p>
+              <p>${customer.postal_code || ''} ${customer.city || ''}</p>
+              <p>${customer.country || ''}</p>
+            ` : ''}
           </div>
         </div>
       </div>
@@ -320,10 +325,21 @@ const handler = async (req: Request): Promise<Response> => {
       .limit(1)
       .single();
 
+    // Fetch customer if id present for address block
+    let customer: any = null;
+    if (invoice.customer_id) {
+      const { data: customerData } = await supabase
+        .from('customers')
+        .select('street, postal_code, city, country')
+        .eq('id', invoice.customer_id)
+        .maybeSingle();
+      customer = customerData;
+    }
+
     // Include payment data if requested
     const paymentData = includePayment && paymentUrl ? { paymentUrl, qrCodeDataUrl: qrCodeDataUrl || '' } : undefined;
     
-    const htmlContent = generateInvoiceHTML(invoice, settings, paymentData);
+    const htmlContent = generateInvoiceHTML(invoice, settings, paymentData, customer);
     const dataUrl = `data:text/html;base64,${btoa(htmlContent)}`;
 
     return new Response(

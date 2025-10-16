@@ -263,25 +263,28 @@ export default function PublicQuote() {
         return;
       }
 
-      if (data?.success && data?.pdfData) {
-        // Create download link
-        const pdfData = data.pdfData;
-        const byteCharacters = atob(pdfData);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'application/pdf' });
-        
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = data.filename || `offerte-${quote?.quote_number}-ondertekend.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+      if (data?.success && data?.htmlContent) {
+        // Render returned HTML and generate PDF client-side (consistent with platform)
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = data.htmlContent;
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        tempDiv.style.top = '-9999px';
+        document.body.appendChild(tempDiv);
+
+        const html2pdf = (await import('html2pdf.js')).default;
+        const filename = `Offerte-${quote?.quote_number || 'onbekend'}-ondertekend.pdf`;
+        const opt = {
+          margin: [10, 10, 10, 10],
+          filename,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0, windowHeight: tempDiv.scrollHeight, logging: false },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compressPDF: true },
+          pagebreak: { mode: ['css', 'legacy'], avoid: ['img', 'table', '.avoid-break'] },
+        } as any;
+
+        await (html2pdf() as any).set(opt).from(tempDiv).save();
+        document.body.removeChild(tempDiv);
 
         toast({
           title: "PDF gedownload",

@@ -492,3 +492,4 @@ export function NylasContactManager({ className = '' }: NylasContactManagerProps
     </div>
   );
 }
+

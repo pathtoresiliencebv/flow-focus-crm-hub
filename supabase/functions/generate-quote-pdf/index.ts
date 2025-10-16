@@ -11,7 +11,7 @@ interface GenerateQuotePDFRequest {
   includeSigned?: boolean;
 }
 
-const generateQuoteHTML = (quote: any, settings: any) => {
+const generateQuoteHTML = (quote: any, settings: any, customer?: any) => {
   const blocks = quote.items || [];
   let blocksHTML = '';
   
@@ -208,6 +208,11 @@ const generateQuoteHTML = (quote: any, settings: any) => {
           <h3>Klant</h3>
           <p><strong>${quote.customer_name}</strong></p>
           <p>${quote.customer_email || ''}</p>
+          ${customer ? `
+            <p>${customer.street || ''}</p>
+            <p>${customer.postal_code || ''} ${customer.city || ''}</p>
+            <p>${customer.country || ''}</p>
+          ` : ''}
         </div>
       </div>
 
@@ -318,7 +323,18 @@ const handler = async (req: Request): Promise<Response> => {
       .limit(1)
       .single();
 
-    const htmlContent = generateQuoteHTML(quote, settings);
+    // Fetch customer if id present for address block
+    let customer: any = null;
+    if (quote.customer_id) {
+      const { data: customerData } = await supabase
+        .from('customers')
+        .select('street, postal_code, city, country')
+        .eq('id', quote.customer_id)
+        .maybeSingle();
+      customer = customerData;
+    }
+
+    const htmlContent = generateQuoteHTML(quote, settings, customer);
     const dataUrl = `data:text/html;base64,${btoa(htmlContent)}`;
 
     return new Response(
