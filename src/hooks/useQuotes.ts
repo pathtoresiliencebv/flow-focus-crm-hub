@@ -361,9 +361,9 @@ export const useQuotes = () => {
         valid_until: validUntil.toISOString().split('T')[0],
         status: 'concept',
         items: duplicatedItems, // ✅ Include cloned items
-        // Reset all signature and approval data
+        // Keep bedrijf signature (admin_signature_data)
+        // Reset client signature and approval data only
         public_token: null,
-        admin_signature_data: null,
         client_signature_data: null,
         client_name: null,
         client_signed_at: null,
