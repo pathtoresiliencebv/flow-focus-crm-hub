@@ -65,83 +65,108 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     console.log('🔄 PROFILE: Fetching profile for user', user.id);
     const startTime = Date.now();
     
-    const { data: profileData, error } = await supabase
-      .from('profiles')
-      .select('full_name, role, status, chat_language')
-      .eq('id', user.id)
-      .single();
-
-    if (error && error.code !== 'PGRST116') {
-      console.error('❌ PROFILE: Error fetching profile:', error);
-      toast({
-        title: "Fout bij profiel ophalen",
-        description: error.message,
-        variant: "destructive",
-      });
-      setProfile(null);
-      // ✅ Exit loading by reporting error to loading state machine
+    // ✅ Safety timeout: if profile fetch takes longer than 10 seconds, abort
+    const timeoutId = setTimeout(() => {
+      console.error('⏱️ PROFILE: Timeout fetching profile (>10s) - forcing error state');
       setError({
-        code: 'PROFILE_FETCH_ERROR',
-        message: error.message,
+        code: 'PROFILE_TIMEOUT',
+        message: 'Profiel ophalen duurt te lang, probeer het later opnieuw',
         canRetry: true,
         timestamp: new Date()
       });
-      return;
-    }
+    }, 10000);
+    
+    try {
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('full_name, role, status, chat_language')
+        .eq('id', user.id)
+        .single();
 
-    if (profileData) {
-      const profileLoadTime = Date.now() - startTime;
-      console.log(`✅ PROFILE: Profile loaded in ${profileLoadTime}ms`, {
-        role: profileData.role,
-        full_name: profileData.full_name
-      });
-      
-      // ✅ Notify loading machine: fetching permissions
-      startLoadingPermissions(user.id);
-      const permStartTime = Date.now();
-      const { data: permissionsData, error: permissionsError } = await supabase
-        .from('role_permissions')
-        .select('permission')
-        .eq('role', profileData.role);
-      
-      const permLoadTime = Date.now() - permStartTime;
-      console.log(`✅ PROFILE: Permissions loaded in ${permLoadTime}ms (${permissionsData?.length || 0} permissions)`);
-      
-      if (permissionsError) {
-        console.error('❌ PROFILE: Error fetching permissions:', permissionsError);
+      // Clear the timeout if we got a response
+      clearTimeout(timeoutId);
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('❌ PROFILE: Error fetching profile:', error);
         toast({
-          title: "Fout bij rechten ophalen",
-          description: permissionsError.message,
+          title: "Fout bij profiel ophalen",
+          description: error.message,
           variant: "destructive",
         });
+        setProfile(null);
+        // ✅ Exit loading by reporting error to loading state machine
+        setError({
+          code: 'PROFILE_FETCH_ERROR',
+          message: error.message,
+          canRetry: true,
+          timestamp: new Date()
+        });
+        return;
       }
 
-      const permissions = permissionsData?.map(p => p.permission as Permission) || [];
-      const fullProfile = { ...profileData, permissions };
-      setProfile(fullProfile);
-      
-      const totalTime = Date.now() - startTime;
-      console.log(`✅ PROFILE: Complete in ${totalTime}ms`);
-      
-      // ✅ Notify loading machine: auth is ready
-      setReady({
-        id: user.id,
-        email: user.email!,
-        role: profileData.role,
-        isAdmin: profileData.role === 'Administrator'
-      });
-    } else {
-      console.log('⚠️ PROFILE: No profile data found for user, proceeding with minimal profile');
-      setProfile(null);
-      // ✅ Proceed to ready to avoid infinite loading when profile row is missing
-      setReady({
-        id: user.id,
-        email: user.email!,
-        role: 'Bekijker',
-        isAdmin: false
+      if (profileData) {
+        const profileLoadTime = Date.now() - startTime;
+        console.log(`✅ PROFILE: Profile loaded in ${profileLoadTime}ms`, {
+          role: profileData.role,
+          full_name: profileData.full_name
+        });
+        
+        // ✅ Notify loading machine: fetching permissions
+        startLoadingPermissions(user.id);
+        const permStartTime = Date.now();
+        const { data: permissionsData, error: permissionsError } = await supabase
+          .from('role_permissions')
+          .select('permission')
+          .eq('role', profileData.role);
+        
+        const permLoadTime = Date.now() - permStartTime;
+        console.log(`✅ PROFILE: Permissions loaded in ${permLoadTime}ms (${permissionsData?.length || 0} permissions)`);
+        
+        if (permissionsError) {
+          console.error('❌ PROFILE: Error fetching permissions:', permissionsError);
+          toast({
+            title: "Fout bij rechten ophalen",
+            description: permissionsError.message,
+            variant: "destructive",
+          });
+        }
+
+        const permissions = permissionsData?.map(p => p.permission as Permission) || [];
+        const fullProfile = { ...profileData, permissions };
+        setProfile(fullProfile);
+        
+        const totalTime = Date.now() - startTime;
+        console.log(`✅ PROFILE: Complete in ${totalTime}ms`);
+        
+        // ✅ Notify loading machine: auth is ready
+        setReady({
+          id: user.id,
+          email: user.email!,
+          role: profileData.role,
+          isAdmin: profileData.role === 'Administrator'
+        });
+      } else {
+        console.log('⚠️ PROFILE: No profile data found for user, proceeding with minimal profile');
+        setProfile(null);
+        // ✅ Proceed to ready to avoid infinite loading when profile row is missing
+        setReady({
+          id: user.id,
+          email: user.email!,
+          role: 'Bekijker',
+          isAdmin: false
+        });
+      }
+    } catch (error) {
+      clearTimeout(timeoutId);
+      console.error('❌ PROFILE: Exception fetching profile:', error);
+      setError({
+        code: 'PROFILE_EXCEPTION',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        canRetry: true,
+        timestamp: new Date()
       });
     }
-  }, [startLoadingProfile, startLoadingPermissions, setReady]);
+  }, [startLoadingProfile, startLoadingPermissions, setReady, setError]);
 
   useEffect(() => {
     let mounted = true;
