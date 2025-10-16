@@ -84,7 +84,7 @@ export const SendQuoteSheet: React.FC<SendQuoteSheetProps> = ({
         setFormData({
           recipientEmail: customerEmail,
           recipientName: customerName,
-          subject: `Offerte ${quote.quote_number} - SMANS BV`,
+          subject: `Offerte ${quote.quote_number} - Onderhoud en Service J.J.P. Smans`,
           message: `Beste ${customerName || 'klant'},
 
 Hierbij ontvangt u onze offerte voor het project "${quote.project_title || 'uw project'}".
@@ -94,7 +94,7 @@ U kunt de offerte bekijken en digitaal goedkeuren via de link in deze email. De 
 Voor vragen kunt u altijd contact met ons opnemen.
 
 Met vriendelijke groet,
-SMANS BV`
+Onderhoud en Service J.J.P. Smans`
         });
       }
     };

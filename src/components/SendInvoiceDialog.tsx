@@ -34,10 +34,10 @@ export function SendInvoiceDialog({
 }: SendInvoiceDialogProps) {
   const [emailTo, setEmailTo] = useState(customerEmail);
   const [subject, setSubject] = useState(
-    `${type === 'invoice' ? 'Factuur' : 'Offerte'} ${invoiceNumber} - SMANS BV`
+    `${type === 'invoice' ? 'Factuur' : 'Offerte'} ${invoiceNumber} - Onderhoud en Service J.J.P. Smans`
   );
   const [message, setMessage] = useState(
-    `Beste ${customerName},\n\nHierbij ontvangt u ${type === 'invoice' ? 'factuur' : 'offerte'} ${invoiceNumber}.\n\nMet vriendelijke groet,\nSMANS BV`
+    `Beste ${customerName},\n\nHierbij ontvangt u ${type === 'invoice' ? 'factuur' : 'offerte'} ${invoiceNumber}.\n\nMet vriendelijke groet,\nOnderhoud en Service J.J.P. Smans`
   );
 
   const handleSend = () => {

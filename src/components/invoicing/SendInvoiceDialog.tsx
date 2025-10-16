@@ -69,7 +69,7 @@ export const SendInvoiceDialog: React.FC<SendInvoiceDialogProps> = ({
         setFormData({
           recipientEmail: customerEmail,
           recipientName: customerName,
-          subject: `Factuur ${invoice.invoice_number} - SMANS BV`,
+          subject: `Factuur ${invoice.invoice_number} - Onderhoud en Service J.J.P. Smans`,
           message: `Beste ${customerName || 'klant'},
 
 Hierbij ontvangt u onze factuur voor het project "${invoice.project_title || 'uw project'}".
@@ -82,7 +82,7 @@ U kunt deze factuur eenvoudig online betalen via de betaalknop in deze email.
 Voor vragen kunt u altijd contact met ons opnemen.
 
 Met vriendelijke groet,
-SMANS BV`
+Onderhoud en Service J.J.P. Smans`
         });
       }
     };

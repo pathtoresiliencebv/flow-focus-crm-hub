@@ -71,7 +71,7 @@ serve(async (req) => {
 <body>
   <div class="container">
     <div class="header">
-      <h1>SMANS Onderhoud - Werkbon</h1>
+      <h1>Onderhoud en Service J.J.P. Smans - Werkbon</h1>
     </div>
     
     <div class="content">
@@ -109,15 +109,15 @@ serve(async (req) => {
         <p><strong>Klanttevredenheid:</strong> ${completion.customer_satisfaction}/5 ⭐</p>
       </div>
 
-      <p>Hartelijk dank voor het vertrouwen in SMANS Onderhoud.</p>
+      <p>Hartelijk dank voor het vertrouwen in Onderhoud en Service J.J.P. Smans.</p>
       
       <p>Met vriendelijke groet,<br>
       ${completion.installer.full_name}<br>
-      SMANS Onderhoud</p>
+      Onderhoud en Service J.J.P. Smans</p>
     </div>
     
     <div class="footer">
-      <p>SMANS BV | ${systemSettings?.smtp_from_email || 'info@smansonderhoud.nl'}</p>
+      <p>Onderhoud en Service J.J.P. Smans | ${systemSettings?.smtp_from_email || 'info@smansonderhoud.nl'}</p>
     </div>
   </div>
 </body>
@@ -130,7 +130,7 @@ serve(async (req) => {
         to: customerEmail,
         subject: `Werkbon - ${completion.project.title}`,
         html: emailHtml,
-        from_name: 'SMANS Onderhoud',
+        from_name: 'Onderhoud en Service J.J.P. Smans',
       },
     });
 
