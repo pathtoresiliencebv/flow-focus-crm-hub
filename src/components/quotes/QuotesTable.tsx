@@ -304,6 +304,7 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
       <TableHeader>
         <TableRow>
           <TableHead>Offertenummer</TableHead>
+          <TableHead>Klant</TableHead>
           <TableHead>Project</TableHead>
           <TableHead>Gefactureerd</TableHead>
           <TableHead>Datum</TableHead>
@@ -323,6 +324,13 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                   <FileSignature className="h-4 w-4 text-green-600" />
                 )}
               </div>
+            </TableCell>
+            {/* Klant - Display customer name from project */}
+            <TableCell>
+              {(() => {
+                const project = projects?.find(p => p.id === quote.project_id);
+                return project?.customer ? project.customer : quote.customer_name || '-';
+              })()}
             </TableCell>
             {/* Project - Editable Dropdown */}
             <TableCell>
