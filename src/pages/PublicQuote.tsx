@@ -154,7 +154,7 @@ export default function PublicQuote() {
         try {
           const { data: customerInfo, error: customerError } = await publicSupabase
             .from('customers')
-            .select('street, postal_code, city, country')
+            .select('*')
             .eq('id', data.customer_id)
             .maybeSingle();
           
@@ -166,7 +166,7 @@ export default function PublicQuote() {
           console.warn('Could not fetch customer data:', e);
         }
       }
-
+      
       // Parse attachments if available
       if (data.attachments) {
         try {
@@ -394,13 +394,16 @@ export default function PublicQuote() {
             </div>
             <div>
               <h3>Klant</h3>
+              ${customerData?.company_name ? `<p><strong>${customerData.company_name}</strong></p>` : ''}
               <p><strong>${quote.customer_name}</strong></p>
-              <p>${quote.customer_email || ''}</p>
-              ${customerData ? `
-                <p>${customerData.street || ''}</p>
-                <p>${customerData.postal_code || ''} ${customerData.city || ''}</p>
-                <p>${customerData.country || ''}</p>
-              ` : ''}
+              ${customerData?.contact_person ? `<p style="font-size: 0.9em; color: #666;">t.a.v. ${customerData.contact_person}</p>` : ''}
+              ${quote.customer_email ? `<p>${quote.customer_email}</p>` : ''}
+              ${customerData?.phone ? `<p>${customerData.phone}</p>` : ''}
+              ${customerData?.address ? `<p>${customerData.address}</p>` : ''}
+              ${customerData?.postal_code || customerData?.city ? `<p>${customerData?.postal_code || ''} ${customerData?.city || ''}</p>` : ''}
+              ${customerData?.country ? `<p>${customerData.country}</p>` : ''}
+              ${customerData?.kvk_number ? `<p style="font-size: 0.85em; color: #666;">KvK: ${customerData.kvk_number}</p>` : ''}
+              ${customerData?.vat_number ? `<p style="font-size: 0.85em; color: #666;">BTW: ${customerData.vat_number}</p>` : ''}
             </div>
           </div>
 
@@ -455,10 +458,10 @@ export default function PublicQuote() {
       await (html2pdf() as any).set(opt).from(tempDiv).save();
       document.body.removeChild(tempDiv);
 
-      toast({
-        title: "PDF gedownload",
-        description: "De offerte PDF is succesvol gedownload.",
-      });
+        toast({
+          title: "PDF gedownload",
+          description: "De offerte PDF is succesvol gedownload.",
+        });
     } catch (error) {
       console.error('Error downloading PDF:', error);
       toast({
@@ -577,17 +580,22 @@ export default function PublicQuote() {
             <div>
               <h3 className="font-semibold text-gray-900 mb-3">Aan:</h3>
               <div className="text-sm text-gray-600">
-                <p className="font-medium">{quote.customer_name}</p>
-                {quote.customer_email && <p>{quote.customer_email}</p>}
-                {customerData && (
-                  <>
-                    {customerData.street && <p>{customerData.street}</p>}
-                    <p>{customerData.postal_code || ''} {customerData.city || ''}</p>
-                    {customerData.country && <p>{customerData.country}</p>}
-                  </>
+                {customerData?.company_name && (
+                  <p className="font-medium text-gray-900">{customerData.company_name}</p>
                 )}
+                <p className="font-medium">{quote.customer_name}</p>
+                {customerData?.contact_person && <p className="text-xs text-gray-500">t.a.v. {customerData.contact_person}</p>}
+                {quote.customer_email && <p>{quote.customer_email}</p>}
+                {customerData?.phone && <p>{customerData.phone}</p>}
+                {customerData?.address && <p>{customerData.address}</p>}
+                {(customerData?.postal_code || customerData?.city) && (
+                  <p>{customerData.postal_code || ''} {customerData.city || ''}</p>
+                )}
+                {customerData?.country && <p>{customerData.country}</p>}
+                {customerData?.kvk_number && <p className="mt-2 text-xs">KvK: {customerData.kvk_number}</p>}
+                {customerData?.vat_number && <p className="text-xs">BTW: {customerData.vat_number}</p>}
                 {quote.project_title && (
-                  <p className="mt-2 text-smans-primary">Project: {quote.project_title}</p>
+                  <p className="mt-2 text-smans-primary font-medium">Project: {quote.project_title}</p>
                 )}
               </div>
             </div>
