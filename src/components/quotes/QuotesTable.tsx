@@ -68,26 +68,29 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { customers, projects } = useCrmStore();
+  const { customers, projects, allProjects } = useCrmStore();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [quoteToDelete, setQuoteToDelete] = useState<Quote | null>(null);
-  const [editingCell, setEditingCell] = useState<{ quoteId: string; field: 'project' } | null>(null);
+  const [editingCell, setEditingCell] = useState<{ quoteId: string; field: string } | null>(null);
   const [newProjectSheetOpen, setNewProjectSheetOpen] = useState(false);
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
-  const [previousProjectCount, setPreviousProjectCount] = useState(projects?.length || 0);
+  const [previousProjectCount, setPreviousProjectCount] = useState(0);
+
+  // ✅ Use allProjects for dropdown so ALL projects are always visible
+  const dropdownProjects = allProjects || projects || [];
 
   // Watch for new projects created
   useEffect(() => {
     if (newProjectSheetOpen) {
       setPreviousProjectCount(projects?.length || 0);
-    } else if (!newProjectSheetOpen && editingQuoteId && projects && projects.length > previousProjectCount) {
+    } else if (!newProjectSheetOpen && editingQuoteId && allProjects && allProjects.length > previousProjectCount) {
       // A new project was created - find it and assign it
-      const newProject = projects[projects.length - 1];
+      const newProject = allProjects[allProjects.length - 1];
       if (newProject?.id) {
         handleUpdateProject(editingQuoteId, newProject.id);
       }
     }
-  }, [newProjectSheetOpen, projects]);
+  }, [newProjectSheetOpen, allProjects, previousProjectCount, editingQuoteId]);
 
   // ✅ Add Supabase realtime listener to refresh quotes when updated
   useEffect(() => {
@@ -114,7 +117,7 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
   const handleUpdateProject = async (quoteId: string, projectId: string) => {
     try {
       // Find the selected project to get its customer_id
-      const selectedProject = projects?.find(p => p.id === projectId);
+      const selectedProject = allProjects?.find(p => p.id === projectId);
       const customerIdToSet = projectId === '' ? null : selectedProject?.customer_id || null;
 
       console.log('💾 Updating quote:', { quoteId, projectId, customerId: customerIdToSet });
@@ -356,9 +359,9 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
             {/* Klant - Display customer name from project */}
             <TableCell>
               {(() => {
-                const project = projects?.find(p => p.id === quote.project_id);
+                const project = allProjects?.find(p => p.id === quote.project_id);
                 return project?.customer ? project.customer : quote.customer_name || '-';
-              })()}
+              })()
             </TableCell>
             {/* Project - Editable Dropdown */}
             <TableCell>
@@ -383,7 +386,7 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                     <SelectItem value="none" className="text-gray-500">
                       Geen project
                     </SelectItem>
-                    {projects?.map((project) => (
+                    {dropdownProjects.map((project) => (
                       <SelectItem key={project.id} value={project.id}>
                         {project.name}
                       </SelectItem>

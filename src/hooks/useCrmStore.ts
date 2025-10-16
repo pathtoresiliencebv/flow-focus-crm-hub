@@ -364,6 +364,8 @@ export const useCrmStore = () => {
   return useMemo(() => ({
     customers,
     projects, // Components will now receive the transformed project object
+    allProjects, // ✅ Export allProjects so QuotesTable can show ALL projects in dropdown
+    allCustomers,
     isLoading: isLoadingCustomers || isLoadingProjects,
     
     // Provide async functions for components to call
@@ -380,6 +382,8 @@ export const useCrmStore = () => {
   }), [
     customers, 
     projects, 
+    allProjects, // ✅ Export allProjects so QuotesTable can show ALL projects in dropdown
+    allCustomers,
     isLoadingCustomers, 
     isLoadingProjects, 
     debug
