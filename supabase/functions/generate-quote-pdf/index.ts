@@ -335,12 +335,10 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const htmlContent = generateQuoteHTML(quote, settings, customer);
-    const dataUrl = `data:text/html;base64,${btoa(htmlContent)}`;
 
     return new Response(
       JSON.stringify({ 
         success: true,
-        pdfUrl: dataUrl,
         htmlContent: htmlContent
       }),
       { 
