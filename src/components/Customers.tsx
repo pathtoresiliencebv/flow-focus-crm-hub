@@ -161,8 +161,6 @@ export const Customers: React.FC<CustomersProps> = ({
                     <TableHead>Email</TableHead>
                     <TableHead>Telefoon</TableHead>
                     <TableHead>Adres</TableHead>
-                    <TableHead>Postcode</TableHead>
-                    <TableHead>Stad</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Acties</TableHead>
                   </TableRow>
@@ -170,7 +168,7 @@ export const Customers: React.FC<CustomersProps> = ({
                 <TableBody>
                   {filteredCustomers.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                      <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                         {searchTerm ? 'Geen klanten gevonden die voldoen aan je zoekopdracht.' : 'Nog geen klanten toegevoegd.'}
                       </TableCell>
                     </TableRow>
@@ -193,8 +191,6 @@ export const Customers: React.FC<CustomersProps> = ({
                         <TableCell>{customer.email || '-'}</TableCell>
                         <TableCell>{customer.phone || '-'}</TableCell>
                         <TableCell className="text-sm">{(customer as any)?.address || '-'}</TableCell>
-                        <TableCell className="text-sm">{(customer as any)?.postal_code || '-'}</TableCell>
-                        <TableCell>{customer.city || '-'}</TableCell>
                         <TableCell>
                           <Badge 
                             variant="secondary" 
