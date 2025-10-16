@@ -28,6 +28,7 @@ import { useCrmStore } from "@/hooks/useCrmStore";
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
 import { ProjectForm } from '../ProjectForm';
 import { CustomerForm } from '../CustomerForm';
+import { MultiBlockQuoteForm } from './MultiBlockQuoteForm';
 import {
   Dialog,
   DialogContent,
@@ -78,6 +79,8 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
   const [previousProjectCount, setPreviousProjectCount] = useState(0);
   const [previousCustomerCount, setPreviousCustomerCount] = useState(0);
+  const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
+  const [editQuoteSheetOpen, setEditQuoteSheetOpen] = useState(false);
 
   // ✅ Use allCustomers and allProjects for dropdowns so ALL are always visible
   const dropdownCustomers = allCustomers || customers || [];
@@ -602,6 +605,21 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
             <TableCell>{getStatusBadge(quote.status)}</TableCell>
             <TableCell className="text-right">
               <div className="flex items-center justify-end gap-2">
+                {quote.status === 'concept' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Set up edit mode with existing quote
+                      setEditingQuote(quote);
+                      setEditQuoteSheetOpen(true);
+                    }}
+                    title="Offerte bewerken"
+                  >
+                    <Pencil className="h-4 w-4 mr-1" />
+                    Wijzigen
+                  </Button>
+                )}
                 {onSendEmail && quote.status === 'concept' && (
                   <Button
                     variant="ghost"
@@ -750,6 +768,24 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
             setEditingQuoteId(null);
           }}
         />
+      </SheetContent>
+    </Sheet>
+
+    {/* Edit Quote Sheet */}
+    <Sheet open={editQuoteSheetOpen} onOpenChange={setEditQuoteSheetOpen}>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>Offerte bewerken</SheetTitle>
+        </SheetHeader>
+        {editingQuote && (
+          <MultiBlockQuoteForm
+            existingQuote={editingQuote}
+            onClose={() => {
+              setEditQuoteSheetOpen(false);
+              setEditingQuote(null);
+            }}
+          />
+        )}
       </SheetContent>
     </Sheet>
   </>
