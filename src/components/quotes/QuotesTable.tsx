@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,7 +26,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCrmStore } from "@/hooks/useCrmStore";
 // import html2pdf from 'html2pdf.js'; // Temporarily disabled for build
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
-import { CustomerQuickAdd } from '../CustomerQuickAdd';
+import { CustomerForm } from '../CustomerForm';
+import { ProjectForm } from '../ProjectForm';
 import {
   Dialog,
   DialogContent,
@@ -34,6 +35,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 interface QuotesTableProps {
   quotes: Quote[];
@@ -65,7 +72,36 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
   const [quoteToDelete, setQuoteToDelete] = useState<Quote | null>(null);
   const [editingCell, setEditingCell] = useState<{ quoteId: string; field: 'customer' | 'project' } | null>(null);
   const [newCustomerDialogOpen, setNewCustomerDialogOpen] = useState(false);
+  const [newProjectSheetOpen, setNewProjectSheetOpen] = useState(false);
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
+  const [previousCustomerCount, setPreviousCustomerCount] = useState(customers?.length || 0);
+  const [previousProjectCount, setPreviousProjectCount] = useState(projects?.length || 0);
+
+  // Watch for new customers created
+  useEffect(() => {
+    if (newCustomerDialogOpen) {
+      setPreviousCustomerCount(customers?.length || 0);
+    } else if (!newCustomerDialogOpen && editingQuoteId && customers && customers.length > previousCustomerCount) {
+      // A new customer was created - find it and assign it
+      const newCustomer = customers[customers.length - 1];
+      if (newCustomer?.id) {
+        handleUpdateCustomer(editingQuoteId, newCustomer.id);
+      }
+    }
+  }, [newCustomerDialogOpen, customers]);
+
+  // Watch for new projects created
+  useEffect(() => {
+    if (newProjectSheetOpen) {
+      setPreviousProjectCount(projects?.length || 0);
+    } else if (!newProjectSheetOpen && editingQuoteId && projects && projects.length > previousProjectCount) {
+      // A new project was created - find it and assign it
+      const newProject = projects[projects.length - 1];
+      if (newProject?.id) {
+        handleUpdateProject(editingQuoteId, newProject.id);
+      }
+    }
+  }, [newProjectSheetOpen, projects]);
 
   const handleUpdateCustomer = async (quoteId: string, customerId: string) => {
     try {
@@ -369,6 +405,9 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                   onValueChange={(value) => {
                     if (value === 'none') {
                       handleUpdateProject(quote.id, '');
+                    } else if (value === 'new') {
+                      setEditingQuoteId(quote.id);
+                      setNewProjectSheetOpen(true);
                     } else {
                       handleUpdateProject(quote.id, value);
                     }
@@ -386,6 +425,10 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                         {project.name}
                       </SelectItem>
                     ))}
+                    <SelectItem value="new" className="text-blue-600 font-medium">
+                      <Plus className="h-4 w-4 inline mr-2" />
+                      Nieuw project...
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               ) : (
@@ -535,27 +578,40 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
       isArchiving={!isArchived}
     />
 
-    {/* New Customer Dialog */}
-    <Dialog open={newCustomerDialogOpen} onOpenChange={setNewCustomerDialogOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Nieuwe klant toevoegen</DialogTitle>
-        </DialogHeader>
-        <CustomerQuickAdd
-          onCustomerAdded={(customer) => {
-            if (editingQuoteId && customer?.id) {
-              handleUpdateCustomer(editingQuoteId, customer.id);
-              setNewCustomerDialogOpen(false);
-              setEditingQuoteId(null);
-            }
-          }}
-          onCancel={() => {
+    {/* New Customer Sheet */}
+    <Sheet open={newCustomerDialogOpen} onOpenChange={setNewCustomerDialogOpen}>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>Nieuwe klant toevoegen</SheetTitle>
+        </SheetHeader>
+        <CustomerForm
+          onClose={() => {
             setNewCustomerDialogOpen(false);
+            // Refetch customers - the newly created customer will be in the list
+            // We can check if customers list has changed or just wait for it
+            setEditingCell(null);
             setEditingQuoteId(null);
           }}
         />
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
+
+    {/* New Project Sheet */}
+    <Sheet open={newProjectSheetOpen} onOpenChange={setNewProjectSheetOpen}>
+      <SheetContent>
+        <SheetHeader>
+          <SheetTitle>Nieuw project toevoegen</SheetTitle>
+        </SheetHeader>
+        <ProjectForm
+          onClose={() => {
+            setNewProjectSheetOpen(false);
+            // The newly created project will be in the useCrmStore
+            setEditingCell(null);
+            setEditingQuoteId(null);
+          }}
+        />
+      </SheetContent>
+    </Sheet>
   </>
   );
 };
