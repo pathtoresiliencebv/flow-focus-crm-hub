@@ -423,9 +423,9 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                 )}
               </div>
             </TableCell>
-            {/* Klant - Editable Dropdown (FIRST STEP) */}
+            {/* Klant - Editable Dropdown (FIRST STEP) - ONLY IF CONCEPT */}
             <TableCell>
-              {editingCell?.quoteId === quote.id && editingCell?.field === 'customer' ? (
+              {editingCell?.quoteId === quote.id && editingCell?.field === 'customer' && quote.status === 'concept' ? (
                 <>
                   {console.log('📋 Rendering customer dropdown for quote:', quote.id, 'Available customers:', dropdownCustomers?.length)}
                   <Select
@@ -457,21 +457,31 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                 </>
               ) : (
                 <div 
-                  onClick={() => setEditingCell({ quoteId: quote.id, field: 'customer' })}
-                  className="cursor-pointer hover:bg-muted p-2 rounded flex items-center gap-2 group"
+                  onClick={() => {
+                    if (quote.status !== 'concept') {
+                      toast({
+                        title: "Kan niet wijzigen",
+                        description: "Alleen offertes in concept kunnen worden aangepast.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    setEditingCell({ quoteId: quote.id, field: 'customer' });
+                  }}
+                  className={`${quote.status !== 'concept' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-muted'} p-2 rounded flex items-center gap-2 group`}
                 >
                   {(() => {
                     const customer = dropdownCustomers?.find(c => c.id === quote.customer_id);
                     return customer?.name || '-';
                   })()}
-                  <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100" />
+                  {quote.status === 'concept' && <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100" />}
                 </div>
               )}
             </TableCell>
 
-            {/* Project - Editable Dropdown (FILTERED BY CUSTOMER) */}
+            {/* Project - Editable Dropdown (FILTERED BY CUSTOMER) - ONLY IF CONCEPT */}
             <TableCell>
-              {editingCell?.quoteId === quote.id && editingCell?.field === 'project' ? (
+              {editingCell?.quoteId === quote.id && editingCell?.field === 'project' && quote.status === 'concept' ? (
                 <Select
                   value={quote.project_id || ''}
                   onValueChange={(value) => {
@@ -509,6 +519,14 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
               ) : (
                 <div 
                   onClick={() => {
+                    if (quote.status !== 'concept') {
+                      toast({
+                        title: "Kan niet wijzigen",
+                        description: "Alleen offertes in concept kunnen worden aangepast.",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
                     if (!quote.customer_id) {
                       toast({
                         title: "Kies eerst een klant",
@@ -519,10 +537,10 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                     }
                     setEditingCell({ quoteId: quote.id, field: 'project' });
                   }}
-                  className={`${!quote.customer_id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-muted'} p-2 rounded flex items-center gap-2 group`}
+                  className={`${quote.status !== 'concept' || !quote.customer_id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-muted'} p-2 rounded flex items-center gap-2 group`}
                 >
                   {quote.project_title || '-'}
-                  {quote.customer_id && <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100" />}
+                  {quote.status === 'concept' && quote.customer_id && <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100" />}
                 </div>
               )}
             </TableCell>
