@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useCrmStore } from '@/hooks/useCrmStore';
 import { ApprovalRulesManager } from './receipts/ApprovalRulesManager';
 import { EmailSettingsTab } from './receipts/EmailSettingsTab';
 import { bulkApproveReceipts, bulkRejectReceipts } from '@/utils/receiptApprovalService';
@@ -52,6 +53,7 @@ interface Receipt {
 export const Receipts = () => {
   const isMobile = useIsMobile();
   const { profile } = useAuth();
+  const { projects } = useCrmStore();
   const [activeTab, setActiveTab] = useState('pending'); // Start with "Inkomend" tab
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -60,14 +62,15 @@ export const Receipts = () => {
   const [pendingAction, setPendingAction] = useState<{ id: string; action: 'approve' | 'reject' } | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
-  const [selectedReceipts, setSelectedReceipts] = useState<Set<string>>(new Set());
+  const [selectedReceipts, setSelectedReceipts] = new Set<string>());
   const [newReceipt, setNewReceipt] = useState({
     amount: '',
     description: '',
     category: '',
     fileData: null as string | null,
     fileType: null as string | null,
-    fileName: null as string | null
+    fileName: null as string | null,
+    projectId: null as string | null
   });
   const [loading, setLoading] = useState(true); // Start with loading true
   const [initialLoad, setInitialLoad] = useState(true);
@@ -205,7 +208,8 @@ export const Receipts = () => {
         receipt_file_url: fileName,
         receipt_file_name: newReceipt.fileName || `receipt_${Date.now()}.${fileExtension}`,
         receipt_file_type: contentType,
-        status: 'pending'
+        status: 'pending',
+        project_id: newReceipt.projectId || null
       });
 
       if (insertError) throw insertError;
@@ -215,7 +219,7 @@ export const Receipts = () => {
       receiptsCacheTimestamp = 0;
 
       toast({ title: "Bonnetje opgeslagen", description: "Het bonnetje is verzonden voor goedkeuring" });
-      setNewReceipt({ amount: '', description: '', category: '', fileData: null, fileType: null, fileName: null });
+      setNewReceipt({ amount: '', description: '', category: '', fileData: null, fileType: null, fileName: null, projectId: null });
       setShowUploadDialog(false);
     } catch (error: any) {
       toast({ title: "Fout", description: "Kon bonnetje niet opslaan: " + error.message, variant: "destructive" });
@@ -889,6 +893,22 @@ export const Receipts = () => {
               value={newReceipt.category}
               onChange={(e) => setNewReceipt(prev => ({ ...prev, category: e.target.value }))}
             />
+          </div>
+          <div>
+            <Label htmlFor="project">Project (optioneel)</Label>
+            <Select value={newReceipt.projectId || ''} onValueChange={(value) => setNewReceipt(prev => ({ ...prev, projectId: value }))} placeholder="Selecteer een project...">
+              <SelectTrigger>
+                <SelectValue placeholder="Selecteer een project..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Geen project</SelectItem>
+                {projects.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="flex gap-2 pt-4">
