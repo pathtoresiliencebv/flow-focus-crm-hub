@@ -289,49 +289,70 @@ export default function PublicQuote() {
 
       console.log('📄 Downloading PDF for quote:', quote.id);
       
-      // Use the same PDF generation as the admin
-      // Call the Edge Function to get HTML content
-      const { data, error: invokeError } = await publicSupabase.functions.invoke('generate-quote-pdf', {
-        body: { quoteId: quote.id }
-      });
+      // Invoke the generate-quote-pdf function
+      try {
+        console.log('🔄 Invoking generate-quote-pdf...');
+        const { data, error } = await publicSupabase.functions.invoke('generate-quote-pdf', {
+          body: { quoteId: quote.id }
+        });
 
-      if (invokeError || !data?.htmlContent) {
-        console.error('Error invoking generate-quote-pdf:', invokeError);
+        console.log('Response:', { data, error });
+
+        if (error) {
+          console.error('Error from function:', error);
+          toast({
+            title: "Fout bij PDF generatie",
+            description: error.message || "Kon PDF niet genereren.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (!data?.htmlContent) {
+          console.error('No HTML content in response:', data);
+          toast({
+            title: "Fout",
+            description: "PDF-inhoud kon niet gegenereerd worden.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Convert HTML to PDF using html2pdf.js
+        const html2pdf = (await import('html2pdf.js')).default;
+        const filename = `Offerte-${quote.quote_number || 'onbekend'}.pdf`;
+        const opt = {
+          margin: [10, 10, 10, 10],
+          filename,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0, logging: false },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compressPDF: true },
+          pagebreak: { mode: ['css', 'legacy'], avoid: ['img', 'table', '.avoid-break'] },
+        } as any;
+
+        // Create element from HTML string
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = data.htmlContent;
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        tempDiv.style.top = '-9999px';
+        document.body.appendChild(tempDiv);
+
+        await (html2pdf() as any).set(opt).from(tempDiv).save();
+        document.body.removeChild(tempDiv);
+
+        toast({
+          title: "PDF gedownload",
+          description: "De offerte PDF is succesvol gedownload.",
+        });
+      } catch (invokeError: any) {
+        console.error('Invoke error:', invokeError);
         toast({
           title: "Fout",
-          description: "Kon PDF niet genereren. Probeer het later opnieuw.",
+          description: invokeError?.message || "Kon PDF niet downloaden.",
           variant: "destructive",
         });
-        return;
       }
-
-      // Convert HTML to PDF using html2pdf.js
-      const html2pdf = (await import('html2pdf.js')).default;
-      const filename = `Offerte-${quote.quote_number || 'onbekend'}.pdf`;
-      const opt = {
-        margin: [10, 10, 10, 10],
-        filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compressPDF: true },
-        pagebreak: { mode: ['css', 'legacy'], avoid: ['img', 'table', '.avoid-break'] },
-      } as any;
-
-      // Create element from HTML string
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = data.htmlContent;
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.left = '-9999px';
-      tempDiv.style.top = '-9999px';
-      document.body.appendChild(tempDiv);
-
-      await (html2pdf() as any).set(opt).from(tempDiv).save();
-      document.body.removeChild(tempDiv);
-
-      toast({
-        title: "PDF gedownload",
-        description: "De offerte PDF is succesvol gedownload.",
-      });
     } catch (error) {
       console.error('Error downloading PDF:', error);
       toast({

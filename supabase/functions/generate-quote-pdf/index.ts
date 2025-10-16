@@ -297,6 +297,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    // Always use service role for database access (works for both public and authenticated)
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Fetch quote details
@@ -307,6 +309,7 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (quoteError || !quote) {
+      console.error('Quote not found:', quoteError);
       return new Response(
         JSON.stringify({ error: 'Quote not found' }),
         { 
@@ -328,7 +331,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (quote.customer_id) {
       const { data: customerData } = await supabase
         .from('customers')
-        .select('street, postal_code, city, country')
+        .select('*')
         .eq('id', quote.customer_id)
         .maybeSingle();
       customer = customerData;
