@@ -98,8 +98,8 @@ const handler = async (req: Request): Promise<Response> => {
       <body>
         <div class="container">
           <div class="header">
-            <img src="https://smanscrm.nl/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="SMANS" style="max-height: 60px; margin-bottom: 10px;">
-            <h1>SMANS BV</h1>
+            <img src="https://smanscrm.nl/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="Onderhoud en Service J.J.P. Smans" style="max-height: 60px; margin-bottom: 10px;">
+            <h1>Onderhoud en Service J.J.P. Smans</h1>
             <div class="success-badge">✓ OFFERTE GOEDGEKEURD</div>
           </div>
           
@@ -133,10 +133,10 @@ const handler = async (req: Request): Promise<Response> => {
             
             <p>Voor vragen over uw project kunt u contact met ons opnemen.</p>
             
-            <p>Hartelijk dank voor uw vertrouwen in SMANS BV!</p>
+            <p>Hartelijk dank voor uw vertrouwen in Onderhoud en Service J.J.P. Smans!</p>
             
             <p>Met vriendelijke groet,<br>
-            <strong>SMANS BV</strong><br>
+            <strong>Onderhoud en Service J.J.P. Smans</strong><br>
             Team Verkoop & Projectbeheer</p>
           </div>
         </div>
@@ -146,9 +146,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send confirmation email via Resend
     const emailResponse = await resend.emails.send({
-      from: "SMANS BV <offerte@smanscrm.nl>",
+      from: "Onderhoud en Service J.J.P. Smans <info@smansonderhoud.nl>",
       to: [quote.customer_email],
-      subject: `Bevestiging: Offerte ${quote.quote_number} goedgekeurd - SMANS BV`,
+      subject: `Bevestiging: Offerte ${quote.quote_number} goedgekeurd - Onderhoud en Service J.J.P. Smans`,
       html: emailHtml
     });
 
