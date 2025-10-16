@@ -83,10 +83,29 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
   const dropdownCustomers = allCustomers || customers || [];
   const dropdownProjects = allProjects || projects || [];
 
+  // ✅ De-duplicate customers and projects
+  const uniqueDropdownCustomers = React.useMemo(() => {
+    const seen = new Set<string>();
+    return dropdownCustomers.filter((customer) => {
+      if (seen.has(customer.id)) return false;
+      seen.add(customer.id);
+      return true;
+    });
+  }, [dropdownCustomers]);
+
+  const uniqueDropdownProjects = React.useMemo(() => {
+    const seen = new Set<string>();
+    return dropdownProjects.filter((project) => {
+      if (seen.has(project.id)) return false;
+      seen.add(project.id);
+      return true;
+    });
+  }, [dropdownProjects]);
+
   // ✅ Filter projects by the selected customer
-  const getFilteredProjectsForQuote = (quote: Quote): typeof dropdownProjects => {
+  const getFilteredProjectsForQuote = (quote: Quote): typeof uniqueDropdownProjects => {
     if (!quote.customer_id) return [];
-    return dropdownProjects.filter(p => p.customer_id === quote.customer_id);
+    return uniqueDropdownProjects.filter(p => p.customer_id === quote.customer_id);
   };
 
   // 🔍 DEBUG: Log dropdown data
@@ -95,12 +114,14 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
       allCustomers: allCustomers?.length,
       customers: customers?.length,
       dropdownCustomers: dropdownCustomers?.length,
+      uniqueDropdownCustomers: uniqueDropdownCustomers?.length,
       allProjects: allProjects?.length,
       projects: projects?.length,
       dropdownProjects: dropdownProjects?.length,
-      sampleCustomers: dropdownCustomers?.slice(0, 3),
+      uniqueDropdownProjects: uniqueDropdownProjects?.length,
+      sampleCustomers: uniqueDropdownCustomers?.slice(0, 3),
     });
-  }, [allCustomers, customers, allProjects, projects, dropdownCustomers, dropdownProjects]);
+  }, [allCustomers, customers, allProjects, projects, dropdownCustomers, dropdownProjects, uniqueDropdownCustomers, uniqueDropdownProjects]);
 
   // Watch for new projects created
   useEffect(() => {
@@ -166,11 +187,18 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
       
       console.log('✅ Quote customer updated successfully');
       
+      // Close the editing cell immediately
+      setEditingCell(null);
+      
       toast({
         title: "Klant gewijzigd",
         description: `Klant is bijgewerkt voor deze offerte.`,
       });
-      setEditingCell(null);
+      
+      // Trigger parent refresh to see the change
+      if (onQuotesUpdated) {
+        onQuotesUpdated();
+      }
     } catch (error: any) {
       console.error('Error updating customer:', error);
       toast({
@@ -443,7 +471,7 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                       <SelectValue placeholder="Selecteer klant" />
                     </SelectTrigger>
                     <SelectContent>
-                      {dropdownCustomers.map((customer) => (
+                      {uniqueDropdownCustomers.map((customer) => (
                         <SelectItem key={customer.id} value={customer.id}>
                           {customer.name}
                         </SelectItem>
@@ -471,7 +499,7 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                   className={`${quote.status !== 'concept' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-muted'} p-2 rounded flex items-center gap-2 group`}
                 >
                   {(() => {
-                    const customer = dropdownCustomers?.find(c => c.id === quote.customer_id);
+                    const customer = uniqueDropdownCustomers?.find(c => c.id === quote.customer_id);
                     return customer?.name || '-';
                   })()}
                   {quote.status === 'concept' && <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100" />}
