@@ -47,15 +47,14 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const { receiptId, action, reason, userId }: ApprovalRequest = await req.json();
-    console.log('Processing receipt approval:', { receiptId, action, userId });
-
-    if (!receiptId) {
-      throw new Error('receiptId is required');
+    
+    // Validate required parameters
+    if (!receiptId || !action) {
+      console.error('Missing required parameters:', { receiptId, action });
+      throw new Error('receiptId and action are required');
     }
-
-    if (!action) {
-      throw new Error('action is required');
-    }
+    
+    console.log('✅ Processing receipt approval:', { receiptId, action, userId });
 
     // Get receipt details
     const { data: receipt, error: receiptError } = await supabase
@@ -64,9 +63,17 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('id', receiptId)
       .maybeSingle();
 
+    if (receiptError) {
+      console.error('❌ Database error fetching receipt:', receiptError);
+      throw new Error(`Database error: ${receiptError.message}`);
+    }
+
     if (!receipt) {
+      console.error('❌ Receipt not found:', receiptId);
       throw new Error('Receipt not found');
     }
+
+    console.log('✅ Receipt found:', receipt.id);
 
     // Update receipt status
     const updateData: any = {
@@ -90,6 +97,7 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('id', receiptId);
 
     if (updateError) {
+      console.error('❌ Database error updating receipt:', updateError);
       throw new Error(`Failed to update receipt: ${updateError.message}`);
     }
 
