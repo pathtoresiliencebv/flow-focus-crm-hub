@@ -1,0 +1,4 @@
+name = "generate-quote-pdf"
+verify_jwt = false
+
+

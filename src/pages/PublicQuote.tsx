@@ -593,7 +593,20 @@ export default function PublicQuote() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => window.open(attachment.url, '_blank')}
+                    onClick={async () => {
+                      try {
+                        // Prefer direct download via anchor with download attribute
+                        const link = document.createElement('a');
+                        link.href = attachment.url;
+                        link.download = attachment.name || 'bijlage';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      } catch (e) {
+                        // Fallback: open in new tab
+                        window.open(attachment.url, '_blank');
+                      }
+                    }}
                     className="flex items-center gap-2"
                   >
                     <Download className="h-4 w-4" />
