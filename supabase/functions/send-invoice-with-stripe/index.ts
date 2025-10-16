@@ -61,7 +61,7 @@ serve(async (req) => {
             currency: 'eur',
             product_data: {
               name: `Factuur ${invoice.invoice_number}`,
-              description: invoice.project_title || 'SMANS Onderhoud Factuur'
+              description: invoice.project_title || 'Onderhoud en Service J.J.P. Smans Factuur'
             },
             unit_amount: Math.round(invoice.total_amount * 100) // Convert to cents
           },
@@ -109,11 +109,11 @@ serve(async (req) => {
     // For now, we'll just send the email with the payment link
     const emailHtml = generateInvoiceEmail(invoice, paymentUrl, qrCodeDataUrl)
 
-    // Send email via SMANS SMTP
+    // Send email via SMTP
     const { error: emailError } = await supabase.functions.invoke('send-email-smans', {
       body: {
         to: invoice.customer.email,
-        subject: `Factuur ${invoice.invoice_number} - SMANS Onderhoud`,
+        subject: `Factuur ${invoice.invoice_number} - Onderhoud en Service J.J.P. Smans`,
         html: emailHtml
       }
     })
@@ -265,13 +265,13 @@ function generateInvoiceEmail(invoice: any, paymentUrl: string, qrCodeDataUrl: s
   <div class="container">
     <div class="header">
       <h1>📧 Nieuwe Factuur</h1>
-      <p>SMANS Onderhoud</p>
+      <p>Onderhoud en Service J.J.P. Smans</p>
     </div>
     
     <div class="content">
       <p>Beste ${customer.name || 'Klant'},</p>
       
-      <p>Hierbij ontvangt u factuur <strong>${invoice.invoice_number}</strong> van SMANS Onderhoud.</p>
+      <p>Hierbij ontvangt u factuur <strong>${invoice.invoice_number}</strong> van Onderhoud en Service J.J.P. Smans.</p>
       
       <div class="invoice-details">
         <p><strong>Factuurnummer:</strong> ${invoice.invoice_number}</p>
@@ -308,12 +308,12 @@ function generateInvoiceEmail(invoice: any, paymentUrl: string, qrCodeDataUrl: s
       <p style="margin-top: 30px;">Heeft u vragen over deze factuur? Neem dan gerust contact met ons op.</p>
       
       <p>Met vriendelijke groet,<br>
-      <strong>SMANS Onderhoud</strong></p>
+      <strong>Onderhoud en Service J.J.P. Smans</strong></p>
     </div>
     
     <div class="footer">
-      <p>SMANS Onderhoud | info@smansonderhoud.nl</p>
-      <p>&copy; ${new Date().getFullYear()} SMANS Onderhoud. Alle rechten voorbehouden.</p>
+      <p>Onderhoud en Service J.J.P. Smans | info@smansonderhoud.nl</p>
+      <p>&copy; ${new Date().getFullYear()} Onderhoud en Service J.J.P. Smans. Alle rechten voorbehouden.</p>
     </div>
   </div>
 </body>

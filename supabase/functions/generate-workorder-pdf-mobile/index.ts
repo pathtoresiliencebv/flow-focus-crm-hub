@@ -61,7 +61,7 @@ serve(async (req) => {
 </head>
 <body>
   <div class="header">
-    <h1>SMANS Onderhoud - Werkbon</h1>
+    <h1>Onderhoud en Service J.J.P. Smans - Werkbon</h1>
     <p>Project: ${completion.project.title}</p>
     <p>Klant: ${completion.project.customer.name}</p>
     <p>Datum: ${new Date(completion.completion_date).toLocaleDateString('nl-NL')}</p>
