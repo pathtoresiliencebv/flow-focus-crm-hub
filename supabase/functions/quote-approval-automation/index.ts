@@ -123,6 +123,19 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
+    // Delete existing tasks from this project (for reapproval scenarios)
+    const { error: deleteTasksError } = await supabase
+      .from('project_tasks')
+      .delete()
+      .eq('project_id', project.id);
+
+    if (deleteTasksError) {
+      console.error('Warning: Error deleting old project tasks:', deleteTasksError);
+      // Don't fail - continue with adding new tasks
+    } else {
+      console.log('Cleared old project tasks for fresh task list');
+    }
+
     const taskInserts: any[] = [];
     let orderIndex = 0;
 
@@ -167,7 +180,7 @@ const handler = async (req: Request): Promise<Response> => {
       if (tasksError) {
         console.error('Error creating project tasks:', tasksError);
       } else {
-        console.log('Created', taskInserts.length, 'project tasks');
+        console.log('Created', taskInserts.length, 'project tasks from latest quote approval');
       }
     }
 
