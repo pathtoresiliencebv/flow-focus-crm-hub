@@ -773,7 +773,7 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
 
     {/* Edit Quote Sheet */}
     <Sheet open={editQuoteSheetOpen} onOpenChange={setEditQuoteSheetOpen}>
-      <SheetContent className="w-full max-w-6xl">
+      <SheetContent className="inset-0 w-full max-w-none">
         <SheetHeader>
           <SheetTitle>Offerte bewerken</SheetTitle>
         </SheetHeader>
