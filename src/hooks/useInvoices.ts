@@ -258,25 +258,22 @@ export function useInvoices() {
         console.warn('⚠️ Using fallback invoice number:', newNumber);
       }
 
-      // Prepare duplicate data (exclude invoice_items from spread)
-      const { invoice_items, ...invoiceDataWithoutItems } = original;
+      // Prepare duplicate data (exclude invoice_items, pdf_url, timestamps and id from spread)
+      const { invoice_items, pdf_url, id, created_at, updated_at, ...invoiceDataWithoutItems } = original;
 
       // Create duplicate invoice
       const duplicateData = {
         ...invoiceDataWithoutItems,
-        id: undefined,
         invoice_number: newNumber,
         status: 'concept',
         invoice_date: new Date().toISOString().split('T')[0],
         due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // +30 days
-        created_at: undefined, // Let database handle
-        updated_at: undefined, // Let database handle
         // Reset payment/sending data
         sent_at: null,
         paid_at: null,
         payment_date: null,
         payment_status: 'pending',
-        // Reset signatures (pdf_url removed - column doesn't exist in schema)
+        // Reset signatures
         admin_signature_data: null,
         client_signature_data: null,
         client_signed_at: null,
