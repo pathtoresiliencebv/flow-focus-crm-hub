@@ -252,192 +252,57 @@ export default function PublicQuote() {
     try {
       if (!quote) return;
 
-      // Generate HTML content from quote data on client-side
-      const generateQuoteHTML = () => {
-        const blocks = quote.blocks || [];
-        let blocksHTML = '';
-        
-        if (Array.isArray(blocks)) {
-          blocks.forEach((block: any) => {
-            if (block.type === 'textblock') {
-              blocksHTML += `
-                <div style="margin-bottom: 20px;">
-                  <div style="font-style: italic; background-color: #f9f9f9; padding: 15px; border-radius: 5px;">
-                    ${block.content || 'Geen tekst ingevoerd'}
-                  </div>
-                </div>
-              `;
-            } else if (block.items && Array.isArray(block.items)) {
-              blocksHTML += `
-                <div style="margin-bottom: 30px; border: 1px solid #ddd; border-radius: 5px; padding: 15px;">
-                  <h3 style="margin: 0 0 15px 0; color: #0066cc; font-size: 16px; font-weight: bold;">${block.title || 'Blok'}</h3>
-                  <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
-                    <thead>
-                      <tr>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left; background-color: #f5f5f5; font-weight: bold;">Omschrijving</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: #f5f5f5; font-weight: bold;">Aantal</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: right; background-color: #f5f5f5; font-weight: bold;">Prijs</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center; background-color: #f5f5f5; font-weight: bold;">BTW%</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; text-align: right; background-color: #f5f5f5; font-weight: bold;">Totaal</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${block.items.map((item: any) => {
-                        if (item.type === 'product') {
-                          return `
-                            <tr>
-                              <td style="border: 1px solid #ddd; padding: 8px;">${item.description || ''}</td>
-                              <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.quantity || 1}</td>
-                              <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">€${(item.unit_price || 0).toFixed(2)}</td>
-                              <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.vat_rate || 21}%</td>
-                              <td style="border: 1px solid #ddd; padding: 8px; text-align: right; font-weight: 500;">€${(item.total || 0).toFixed(2)}</td>
-                            </tr>
-                          `;
-                        } else if (item.type === 'textblock') {
-                          return `
-                            <tr>
-                              <td style="border: 1px solid #ddd; padding: 8px; font-style: italic; background-color: #f9f9f9;" colspan="5">${item.description || ''}</td>
-                            </tr>
-                          `;
-                        }
-                        return '';
-                      }).join('')}
-                    </tbody>
-                  </table>
-                  <div style="text-align: right; margin-top: 10px; padding: 10px; background-color: #f0f8ff; border-radius: 3px;">
-                    <strong>Blok totaal: €${(block.subtotal || 0).toFixed(2)}</strong>
-                  </div>
-                </div>
-              `;
-            }
-          });
+      console.log('📄 Downloading PDF for quote:', quote.id);
+      
+      // Use authenticated supabase client to invoke the Edge Function
+      // The RLS policy allows authenticated users to view quotes via public_token
+      const { supabase } = await import("@/integrations/supabase/client");
+      
+      const { data, error } = await supabase.functions.invoke('generate-quote-pdf', {
+        body: { 
+          quoteId: quote.id,
+          includeSigned: quote.status === 'approved' || quote.status === 'goedgekeurd'
         }
-
-        return `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <style>
-              body { 
-                font-family: Arial, sans-serif; 
-                line-height: 1.4; 
-                margin: 0; 
-                padding: 20px; 
-                color: #333;
-              }
-              .header { 
-                margin-bottom: 30px; 
-                border-bottom: 2px solid #0066cc; 
-                padding-bottom: 20px;
-              }
-              .company-info { 
-                text-align: right; 
-                margin-bottom: 20px;
-              }
-              .quote-details { 
-                display: flex; 
-                justify-content: space-between; 
-                margin-bottom: 30px;
-              }
-              .totals { 
-                text-align: right; 
-                margin-top: 30px;
-              }
-              .totals table { 
-                margin-left: auto; 
-                border-collapse: collapse;
-              }
-              .totals td { 
-                padding: 5px 15px; 
-                border-bottom: 1px solid #ddd;
-              }
-              .total-final { 
-                font-weight: bold; 
-                font-size: 18px; 
-                border-top: 2px solid #0066cc !important;
-              }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <div class="company-info">
-                <h1>Onderhoud en Service J.J.P. Smans</h1>
-              </div>
-            </div>
-
-            <div class="quote-details">
-              <div>
-                <h2>Offerte</h2>
-                <p><strong>Nummer:</strong> ${quote.quote_number}</p>
-                <p><strong>Datum:</strong> ${new Date(quote.quote_date).toLocaleDateString('nl-NL')}</p>
-                <p><strong>Geldig tot:</strong> ${new Date(quote.valid_until).toLocaleDateString('nl-NL')}</p>
-              </div>
-              <div>
-                <h3>Klant</h3>
-                <p><strong>${quote.customer_name}</strong></p>
-                <p>${quote.customer_email || ''}</p>
-              </div>
-            </div>
-
-            ${quote.project_title ? `<p><strong>Project:</strong> ${quote.project_title}</p>` : ''}
-            ${quote.message ? `<p><strong>Bericht:</strong> ${quote.message}</p>` : ''}
-
-            ${blocksHTML}
-
-            <div class="totals">
-              <table>
-                <tr>
-                  <td>Subtotaal:</td>
-                  <td>€${(quote.total_amount || 0).toFixed(2)}</td>
-                </tr>
-                <tr>
-                  <td>BTW:</td>
-                  <td>€${(quote.total_vat_amount || 0).toFixed(2)}</td>
-                </tr>
-                <tr class="total-final">
-                  <td>Totaal:</td>
-                  <td>€${((quote.total_amount || 0) + (quote.total_vat_amount || 0)).toFixed(2)}</td>
-                </tr>
-              </table>
-            </div>
-
-            ${quote.status === 'approved' || quote.status === 'goedgekeurd' ? `
-            <div style="margin-top: 50px; padding: 15px; background-color: #dcfce7; border-radius: 4px; text-align: center;">
-              <p style="color: #166534; font-weight: 600; margin: 0;">✅ Deze offerte is goedgekeurd op ${new Date(quote.client_signed_at || new Date()).toLocaleDateString('nl-NL')}</p>
-            </div>
-            ` : ''}
-          </body>
-          </html>
-        `;
-      };
-
-      const htmlContent = generateQuoteHTML();
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = htmlContent;
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.left = '-9999px';
-      tempDiv.style.top = '-9999px';
-      document.body.appendChild(tempDiv);
-
-      const html2pdf = (await import('html2pdf.js')).default;
-      const filename = `Offerte-${quote.quote_number || 'onbekend'}.pdf`;
-      const opt = {
-        margin: [10, 10, 10, 10],
-        filename,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0, windowHeight: tempDiv.scrollHeight, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compressPDF: true },
-        pagebreak: { mode: ['css', 'legacy'], avoid: ['img', 'table', '.avoid-break'] },
-      } as any;
-
-      await (html2pdf() as any).set(opt).from(tempDiv).save();
-      document.body.removeChild(tempDiv);
-
-      toast({
-        title: "PDF gedownload",
-        description: "De offerte PDF is succesvol gedownload.",
       });
+
+      if (error) {
+        console.error('❌ PDF Generation Error:', error);
+        toast({
+          title: "Fout bij PDF genereren",
+          description: `Kon PDF niet genereren: ${error.message}`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data?.success && data?.htmlContent) {
+        // Render returned HTML and generate PDF client-side (same as admin)
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = data.htmlContent;
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        tempDiv.style.top = '-9999px';
+        document.body.appendChild(tempDiv);
+
+        const html2pdf = (await import('html2pdf.js')).default;
+        const filename = `Offerte-${quote.quote_number || 'onbekend'}.pdf`;
+        const opt = {
+          margin: [10, 10, 10, 10],
+          filename,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0, windowHeight: tempDiv.scrollHeight, logging: false },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compressPDF: true },
+          pagebreak: { mode: ['css', 'legacy'], avoid: ['img', 'table', '.avoid-break'] },
+        } as any;
+
+        await (html2pdf() as any).set(opt).from(tempDiv).save();
+        document.body.removeChild(tempDiv);
+
+        toast({
+          title: "PDF gedownload",
+          description: "De offerte PDF is succesvol gedownload.",
+        });
+      }
     } catch (error) {
       console.error('Error downloading PDF:', error);
       toast({
