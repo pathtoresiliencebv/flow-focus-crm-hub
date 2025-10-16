@@ -367,6 +367,9 @@ export const useQuotes = () => {
         client_signature_data: null,
         client_name: null,
         client_signed_at: null,
+        // Reset project and customer - user must select them again
+        project_id: null,
+        customer_id: null,
         // pdf_url removed - column doesn't exist in schema
         // Let database generate id, created_at, updated_at
       };

@@ -11,12 +11,29 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Eye, ExternalLink, Trash2, CheckCircle, Mail, Copy, Pencil, FileSignature, RotateCcw, MoreHorizontal, Download, Archive } from "lucide-react";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Eye, ExternalLink, Trash2, CheckCircle, Mail, Copy, Pencil, FileSignature, RotateCcw, MoreHorizontal, Download, Archive, Plus } from "lucide-react";
 import { Quote } from '@/types/quote';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCrmStore } from "@/hooks/useCrmStore";
 // import html2pdf from 'html2pdf.js'; // Temporarily disabled for build
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
+import { CustomerQuickAdd } from '../CustomerQuickAdd';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface QuotesTableProps {
   quotes: Quote[];
@@ -42,8 +59,61 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
   isArchived = false
 }) => {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { customers, projects } = useCrmStore();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [quoteToDelete, setQuoteToDelete] = useState<Quote | null>(null);
+  const [editingCell, setEditingCell] = useState<{ quoteId: string; field: 'customer' | 'project' } | null>(null);
+  const [newCustomerDialogOpen, setNewCustomerDialogOpen] = useState(false);
+  const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
+
+  const handleUpdateCustomer = async (quoteId: string, customerId: string) => {
+    try {
+      const { error } = await supabase
+        .from('quotes')
+        .update({ customer_id: customerId })
+        .eq('id', quoteId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Klant gewijzigd",
+        description: "De klant voor deze offerte is bijgewerkt.",
+      });
+      setEditingCell(null);
+    } catch (error: any) {
+      console.error('Error updating customer:', error);
+      toast({
+        title: "Fout",
+        description: "Kon klant niet bijwerken.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateProject = async (quoteId: string, projectId: string) => {
+    try {
+      const { error } = await supabase
+        .from('quotes')
+        .update({ project_id: projectId })
+        .eq('id', quoteId);
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Project gewijzigd",
+        description: "Het project voor deze offerte is bijgewerkt.",
+      });
+      setEditingCell(null);
+    } catch (error: any) {
+      console.error('Error updating project:', error);
+      toast({
+        title: "Fout",
+        description: "Kon project niet bijwerken.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handlePDFDownload = async (quote: Quote) => {
     try {
@@ -252,8 +322,82 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                 )}
               </div>
             </TableCell>
-            <TableCell>{quote.customer_name}</TableCell>
-            <TableCell>{quote.project_title || '-'}</TableCell>
+            {/* Klant - Editable Dropdown */}
+            <TableCell>
+              {editingCell?.quoteId === quote.id && editingCell?.field === 'customer' ? (
+                <Select
+                  value={quote.customer_id || ''}
+                  onValueChange={(value) => {
+                    if (value === 'new') {
+                      setEditingQuoteId(quote.id);
+                      setNewCustomerDialogOpen(true);
+                    } else {
+                      handleUpdateCustomer(quote.id, value);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="Selecteer klant" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customers?.map((customer) => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.name}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="new" className="text-blue-600 font-medium">
+                      <Plus className="h-4 w-4 inline mr-2" />
+                      Nieuwe klant...
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div 
+                  onClick={() => setEditingCell({ quoteId: quote.id, field: 'customer' })}
+                  className="cursor-pointer hover:bg-muted p-2 rounded flex items-center gap-2 group"
+                >
+                  {quote.customer_name}
+                  <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100" />
+                </div>
+              )}
+            </TableCell>
+            {/* Project - Editable Dropdown */}
+            <TableCell>
+              {editingCell?.quoteId === quote.id && editingCell?.field === 'project' ? (
+                <Select
+                  value={quote.project_id || ''}
+                  onValueChange={(value) => {
+                    if (value === 'none') {
+                      handleUpdateProject(quote.id, '');
+                    } else {
+                      handleUpdateProject(quote.id, value);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder="Selecteer project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none" className="text-gray-500">
+                      Geen project
+                    </SelectItem>
+                    {projects?.map((project) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div 
+                  onClick={() => setEditingCell({ quoteId: quote.id, field: 'project' })}
+                  className="cursor-pointer hover:bg-muted p-2 rounded flex items-center gap-2 group"
+                >
+                  {quote.project_title || '-'}
+                  <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100" />
+                </div>
+              )}
+            </TableCell>
             <TableCell>
               {quote.invoices && quote.invoices.length > 0 ? (
                 <div className="flex items-center gap-2">
@@ -390,6 +534,28 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
       quote={quoteToDelete}
       isArchiving={!isArchived}
     />
+
+    {/* New Customer Dialog */}
+    <Dialog open={newCustomerDialogOpen} onOpenChange={setNewCustomerDialogOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Nieuwe klant toevoegen</DialogTitle>
+        </DialogHeader>
+        <CustomerQuickAdd
+          onCustomerAdded={(customer) => {
+            if (editingQuoteId && customer?.id) {
+              handleUpdateCustomer(editingQuoteId, customer.id);
+              setNewCustomerDialogOpen(false);
+              setEditingQuoteId(null);
+            }
+          }}
+          onCancel={() => {
+            setNewCustomerDialogOpen(false);
+            setEditingQuoteId(null);
+          }}
+        />
+      </DialogContent>
+    </Dialog>
   </>
   );
 };
