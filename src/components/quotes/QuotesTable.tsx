@@ -461,129 +461,17 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                 )}
               </div>
             </TableCell>
-            {/* Klant - Editable Dropdown (FIRST STEP) - ONLY IF CONCEPT */}
+            {/* Klant - Read-only display */}
             <TableCell>
-              {editingCell?.quoteId === quote.id && editingCell?.field === 'customer' && quote.status === 'concept' ? (
-                <>
-                  {console.log('📋 Rendering customer dropdown for quote:', quote.id, 'Available customers:', dropdownCustomers?.length)}
-                  <Select
-                    value={quote.customer_id || ''}
-                    onValueChange={(value) => {
-                      if (value === 'new') {
-                        setEditingQuoteId(quote.id);
-                        setNewCustomerSheetOpen(true);
-                      } else {
-                        handleUpdateCustomer(quote.id, value);
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Selecteer klant" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {uniqueDropdownCustomers.map((customer) => (
-                        <SelectItem key={customer.id} value={customer.id}>
-                          {customer.name}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="new" className="text-blue-600 font-medium">
-                        <Plus className="h-4 w-4 inline mr-2" />
-                        Nieuwe klant...
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </>
-              ) : (
-                <div 
-                  onClick={() => {
-                    if (quote.status !== 'concept') {
-                      toast({
-                        title: "Kan niet wijzigen",
-                        description: "Alleen offertes in concept kunnen worden aangepast.",
-                        variant: "destructive",
-                      });
-                      return;
-                    }
-                    setEditingCell({ quoteId: quote.id, field: 'customer' });
-                  }}
-                  className={`${quote.status !== 'concept' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-muted'} p-2 rounded flex items-center gap-2 group`}
-                >
-                  {(() => {
-                    const customer = uniqueDropdownCustomers?.find(c => c.id === quote.customer_id);
-                    return customer?.name || '-';
-                  })()}
-                  {quote.status === 'concept' && <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100" />}
-                </div>
-              )}
+              {(() => {
+                const customer = uniqueDropdownCustomers?.find(c => c.id === quote.customer_id);
+                return customer?.name || '-';
+              })()}
             </TableCell>
 
-            {/* Project - Editable Dropdown (FILTERED BY CUSTOMER) - ONLY IF CONCEPT */}
+            {/* Project - Read-only display */}
             <TableCell>
-              {editingCell?.quoteId === quote.id && editingCell?.field === 'project' && quote.status === 'concept' ? (
-                <>
-                  {console.log('📋 Rendering project dropdown for quote:', quote.id, 'Customer:', quote.customer_id, 'Filtered projects:', getFilteredProjectsForQuote(quote).length)}
-                  <Select
-                    value={quote.project_id || ''}
-                    onValueChange={(value) => {
-                      if (value === 'none') {
-                        handleUpdateProject(quote.id, '');
-                      } else if (value === 'new') {
-                        setEditingQuoteId(quote.id);
-                        setNewProjectSheetOpen(true);
-                      } else {
-                        handleUpdateProject(quote.id, value);
-                      }
-                    }}
-                    disabled={!quote.customer_id}
-                  >
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder={!quote.customer_id ? "Kies eerst klant" : "Selecteer project"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none" className="text-gray-500">
-                        Geen project
-                      </SelectItem>
-                      {getFilteredProjectsForQuote(quote).map((project) => (
-                        <SelectItem key={project.id} value={project.id}>
-                          {project.name}
-                        </SelectItem>
-                      ))}
-                      {quote.customer_id && (
-                        <SelectItem value="new" className="text-blue-600 font-medium">
-                          <Plus className="h-4 w-4 inline mr-2" />
-                          Nieuw project...
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </>
-              ) : (
-                <div 
-                  onClick={() => {
-                    if (quote.status !== 'concept') {
-                      toast({
-                        title: "Kan niet wijzigen",
-                        description: "Alleen offertes in concept kunnen worden aangepast.",
-                        variant: "destructive",
-                      });
-                      return;
-                    }
-                    if (!quote.customer_id) {
-                      toast({
-                        title: "Kies eerst een klant",
-                        description: "U moet eerst een klant selecteren voordat u een project kunt toewijzen.",
-                        variant: "destructive",
-                      });
-                      return;
-                    }
-                    setEditingCell({ quoteId: quote.id, field: 'project' });
-                  }}
-                  className={`${quote.status !== 'concept' || !quote.customer_id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-muted'} p-2 rounded flex items-center gap-2 group`}
-                >
-                  {!quote.project_id ? '-' : quote.project_title || quote.project_id}
-                  {quote.status === 'concept' && quote.customer_id && <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100" />}
-                </div>
-              )}
+              {!quote.project_id ? '-' : quote.project_title || quote.project_id}
             </TableCell>
             <TableCell>
               {quote.invoices && quote.invoices.length > 0 ? (
