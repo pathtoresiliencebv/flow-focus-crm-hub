@@ -35,12 +35,14 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
   const [downloadLoading, setDownloadLoading] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [customerData, setCustomerData] = useState<any>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchSettings();
-  }, []);
+    fetchCustomerData();
+  }, [quote.customer_id]);
 
   // Track quote changes
   useEffect(() => {
@@ -59,6 +61,23 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
+    }
+  };
+
+  const fetchCustomerData = async () => {
+    if (!quote.customer_id) return;
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('id', quote.customer_id)
+        .single();
+      
+      if (data) {
+        setCustomerData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching customer data:', error);
     }
   };
 
@@ -291,8 +310,20 @@ export const MultiBlockQuotePreview: React.FC<MultiBlockQuotePreviewProps> = ({ 
         </div>
         <div>
           <h3 className="font-semibold text-gray-900 mb-1 text-xs">Aan:</h3>
-          <div className="text-xs text-gray-600">
+          <div className="text-xs text-gray-600 space-y-0.5">
+            {customerData?.company_name && (
+              <p className="font-medium text-gray-900">{customerData.company_name}</p>
+            )}
             <p className="font-medium">{quote.customer_name}</p>
+            {customerData?.contact_person && (
+              <p className="text-xs text-gray-500">t.a.v. {customerData.contact_person}</p>
+            )}
+            {quote.customer_email && <p>{quote.customer_email}</p>}
+            {customerData?.phone && <p>{customerData.phone}</p>}
+            {customerData?.address && <p>{customerData.address}</p>}
+            {customerData?.country && <p>{customerData.country}</p>}
+            {customerData?.kvk_number && <p className="mt-1 text-xs">KvK: {customerData.kvk_number}</p>}
+            {customerData?.vat_number && <p className="text-xs">BTW: {customerData.vat_number}</p>}
             {quote.project_title && (
               <p className="mt-1 text-smans-primary">Project: {quote.project_title}</p>
             )}
