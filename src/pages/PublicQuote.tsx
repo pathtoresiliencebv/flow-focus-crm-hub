@@ -400,7 +400,6 @@ export default function PublicQuote() {
               ${quote.customer_email ? `<p>${quote.customer_email}</p>` : ''}
               ${customerData?.phone ? `<p>${customerData.phone}</p>` : ''}
               ${customerData?.address ? `<p>${customerData.address}</p>` : ''}
-              ${customerData?.postal_code || customerData?.city ? `<p>${customerData?.postal_code || ''} ${customerData?.city || ''}</p>` : ''}
               ${customerData?.country ? `<p>${customerData.country}</p>` : ''}
               ${customerData?.kvk_number ? `<p style="font-size: 0.85em; color: #666;">KvK: ${customerData.kvk_number}</p>` : ''}
               ${customerData?.vat_number ? `<p style="font-size: 0.85em; color: #666;">BTW: ${customerData.vat_number}</p>` : ''}
@@ -432,6 +431,20 @@ export default function PublicQuote() {
           ${quote.status === 'approved' || quote.status === 'goedgekeurd' ? `
           <div style="margin-top: 50px; padding: 15px; background-color: #dcfce7; border-radius: 4px; text-align: center;">
             <p style="color: #166534; font-weight: 600; margin: 0;">✅ Deze offerte is goedgekeurd op ${quote.client_signed_at ? new Date(quote.client_signed_at).toLocaleDateString('nl-NL') : ''}</p>
+          </div>
+          
+          <div style="margin-top: 50px; display: flex; justify-content: space-between; gap: 30px;">
+            <div style="flex: 1; border: 1px solid #ddd; padding: 20px; border-radius: 4px;">
+              <p style="font-weight: 600; margin-bottom: 10px;">Klant Handtekening</p>
+              ${quote.client_signature_data ? `<img src="${quote.client_signature_data}" style="max-width: 100%; height: 80px; border: 1px solid #ddd; border-radius: 2px;">` : '<p style="color: #ccc; margin: 20px 0;">Geen handtekening</p>'}
+              <p style="margin-top: 10px; font-size: 0.9em;">${quote.client_name || ''}</p>
+              <p style="margin: 0; font-size: 0.85em; color: #666;">${quote.client_signed_at ? new Date(quote.client_signed_at).toLocaleDateString('nl-NL') : ''}</p>
+            </div>
+            <div style="flex: 1; border: 1px solid #ddd; padding: 20px; border-radius: 4px;">
+              <p style="font-weight: 600; margin-bottom: 10px;">Onderhoud en Service J.J.P. Smans</p>
+              <p style="color: #ccc; margin: 20px 0; text-align: center;">Namens bedrijf</p>
+              <p style="margin-top: 10px; font-size: 0.85em; color: #666;">${new Date().toLocaleDateString('nl-NL')}</p>
+            </div>
           </div>
           ` : ''}
         </body>
