@@ -47,7 +47,7 @@ serve(async (req) => {
     const { error: emailError } = await supabase.functions.invoke('send-email-smans', {
       body: {
         to: quote.customer.email,
-        subject: `✅ Offerte ${quote.quote_number} Goedgekeurd - SMANS Onderhoud`,
+        subject: `✅ Offerte ${quote.quote_number} Goedgekeurd - Onderhoud en Service J.J.P. Smans`,
         html: emailHtml
       }
     })
