@@ -250,47 +250,56 @@ export default function PublicQuote() {
 
   const handleDownloadPdf = async () => {
     try {
-      const { data, error } = await publicSupabase.functions.invoke('generate-quote-pdf', {
-        body: { quoteId: quote?.id, includeSigned: true }
+      // Use direct fetch instead of publicSupabase.functions.invoke to avoid JWT header requirements
+      const response = await fetch('https://pvesgvkyiaqmsudmmtkc.supabase.co/functions/v1/generate-quote-pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ quoteId: quote?.id, includeSigned: true })
       });
 
-      if (error) {
+      if (!response.ok) {
+        throw new Error(`Failed to generate PDF: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+
+      if (!data?.htmlContent) {
         toast({
           title: "Fout bij PDF genereren",
-          description: "Er is een fout opgetreden bij het genereren van de PDF.",
+          description: "Kon PDF content niet genereren.",
           variant: "destructive",
         });
         return;
       }
 
-      if (data?.success && data?.htmlContent) {
-        // Render returned HTML and generate PDF client-side (consistent with platform)
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = data.htmlContent;
-        tempDiv.style.position = 'absolute';
-        tempDiv.style.left = '-9999px';
-        tempDiv.style.top = '-9999px';
-        document.body.appendChild(tempDiv);
+      // Render returned HTML and generate PDF client-side
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = data.htmlContent;
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.top = '-9999px';
+      document.body.appendChild(tempDiv);
 
-        const html2pdf = (await import('html2pdf.js')).default;
-        const filename = `Offerte-${quote?.quote_number || 'onbekend'}-ondertekend.pdf`;
-        const opt = {
-          margin: [10, 10, 10, 10],
-          filename,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0, windowHeight: tempDiv.scrollHeight, logging: false },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compressPDF: true },
-          pagebreak: { mode: ['css', 'legacy'], avoid: ['img', 'table', '.avoid-break'] },
-        } as any;
+      const html2pdf = (await import('html2pdf.js')).default;
+      const filename = `Offerte-${quote?.quote_number || 'onbekend'}-ondertekend.pdf`;
+      const opt = {
+        margin: [10, 10, 10, 10],
+        filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0, windowHeight: tempDiv.scrollHeight, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compressPDF: true },
+        pagebreak: { mode: ['css', 'legacy'], avoid: ['img', 'table', '.avoid-break'] },
+      } as any;
 
-        await (html2pdf() as any).set(opt).from(tempDiv).save();
-        document.body.removeChild(tempDiv);
+      await (html2pdf() as any).set(opt).from(tempDiv).save();
+      document.body.removeChild(tempDiv);
 
-        toast({
-          title: "PDF gedownload",
-          description: "De offerte PDF is succesvol gedownload.",
-        });
-      }
+      toast({
+        title: "PDF gedownload",
+        description: "De offerte PDF is succesvol gedownload.",
+      });
     } catch (error) {
       console.error('Error downloading PDF:', error);
       toast({
