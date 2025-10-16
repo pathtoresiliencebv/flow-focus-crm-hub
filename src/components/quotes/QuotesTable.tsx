@@ -26,7 +26,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCrmStore } from "@/hooks/useCrmStore";
 // import html2pdf from 'html2pdf.js'; // Temporarily disabled for build
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
-import { CustomerForm } from '../CustomerForm';
 import { ProjectForm } from '../ProjectForm';
 import {
   Dialog,
@@ -70,25 +69,10 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
   const { customers, projects } = useCrmStore();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [quoteToDelete, setQuoteToDelete] = useState<Quote | null>(null);
-  const [editingCell, setEditingCell] = useState<{ quoteId: string; field: 'customer' | 'project' } | null>(null);
-  const [newCustomerDialogOpen, setNewCustomerDialogOpen] = useState(false);
+  const [editingCell, setEditingCell] = useState<{ quoteId: string; field: 'project' } | null>(null);
   const [newProjectSheetOpen, setNewProjectSheetOpen] = useState(false);
   const [editingQuoteId, setEditingQuoteId] = useState<string | null>(null);
-  const [previousCustomerCount, setPreviousCustomerCount] = useState(customers?.length || 0);
   const [previousProjectCount, setPreviousProjectCount] = useState(projects?.length || 0);
-
-  // Watch for new customers created
-  useEffect(() => {
-    if (newCustomerDialogOpen) {
-      setPreviousCustomerCount(customers?.length || 0);
-    } else if (!newCustomerDialogOpen && editingQuoteId && customers && customers.length > previousCustomerCount) {
-      // A new customer was created - find it and assign it
-      const newCustomer = customers[customers.length - 1];
-      if (newCustomer?.id) {
-        handleUpdateCustomer(editingQuoteId, newCustomer.id);
-      }
-    }
-  }, [newCustomerDialogOpen, customers]);
 
   // Watch for new projects created
   useEffect(() => {
@@ -103,42 +87,25 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
     }
   }, [newProjectSheetOpen, projects]);
 
-  const handleUpdateCustomer = async (quoteId: string, customerId: string) => {
-    try {
-      const { error } = await supabase
-        .from('quotes')
-        .update({ customer_id: customerId })
-        .eq('id', quoteId);
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Klant gewijzigd",
-        description: "De klant voor deze offerte is bijgewerkt.",
-      });
-      setEditingCell(null);
-    } catch (error: any) {
-      console.error('Error updating customer:', error);
-      toast({
-        title: "Fout",
-        description: "Kon klant niet bijwerken.",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleUpdateProject = async (quoteId: string, projectId: string) => {
     try {
+      // Find the selected project to get its customer_id
+      const selectedProject = projects?.find(p => p.id === projectId);
+      const customerIdToSet = projectId === '' ? null : selectedProject?.customer_id || null;
+
       const { error } = await supabase
         .from('quotes')
-        .update({ project_id: projectId })
+        .update({ 
+          project_id: projectId || null,
+          customer_id: customerIdToSet 
+        })
         .eq('id', quoteId);
       
       if (error) throw error;
       
       toast({
-        title: "Project gewijzigd",
-        description: "Het project voor deze offerte is bijgewerkt.",
+        title: "Project en klant gewijzigd",
+        description: `Project en klant zijn bijgewerkt voor deze offerte.`,
       });
       setEditingCell(null);
     } catch (error: any) {
@@ -337,7 +304,6 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
       <TableHeader>
         <TableRow>
           <TableHead>Offertenummer</TableHead>
-          <TableHead>Klant</TableHead>
           <TableHead>Project</TableHead>
           <TableHead>Gefactureerd</TableHead>
           <TableHead>Datum</TableHead>
@@ -357,45 +323,6 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
                   <FileSignature className="h-4 w-4 text-green-600" />
                 )}
               </div>
-            </TableCell>
-            {/* Klant - Editable Dropdown */}
-            <TableCell>
-              {editingCell?.quoteId === quote.id && editingCell?.field === 'customer' ? (
-                <Select
-                  value={quote.customer_id || ''}
-                  onValueChange={(value) => {
-                    if (value === 'new') {
-                      setEditingQuoteId(quote.id);
-                      setNewCustomerDialogOpen(true);
-                    } else {
-                      handleUpdateCustomer(quote.id, value);
-                    }
-                  }}
-                >
-                  <SelectTrigger className="w-32">
-                    <SelectValue placeholder="Selecteer klant" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers?.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.name}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="new" className="text-blue-600 font-medium">
-                      <Plus className="h-4 w-4 inline mr-2" />
-                      Nieuwe klant...
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : (
-                <div 
-                  onClick={() => setEditingCell({ quoteId: quote.id, field: 'customer' })}
-                  className="cursor-pointer hover:bg-muted p-2 rounded flex items-center gap-2 group"
-                >
-                  {quote.customer_name}
-                  <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100" />
-                </div>
-              )}
             </TableCell>
             {/* Project - Editable Dropdown */}
             <TableCell>
@@ -577,24 +504,6 @@ export const QuotesTable: React.FC<QuotesTableProps> = ({
       quote={quoteToDelete}
       isArchiving={!isArchived}
     />
-
-    {/* New Customer Sheet */}
-    <Sheet open={newCustomerDialogOpen} onOpenChange={setNewCustomerDialogOpen}>
-      <SheetContent>
-        <SheetHeader>
-          <SheetTitle>Nieuwe klant toevoegen</SheetTitle>
-        </SheetHeader>
-        <CustomerForm
-          onClose={() => {
-            setNewCustomerDialogOpen(false);
-            // Refetch customers - the newly created customer will be in the list
-            // We can check if customers list has changed or just wait for it
-            setEditingCell(null);
-            setEditingQuoteId(null);
-          }}
-        />
-      </SheetContent>
-    </Sheet>
 
     {/* New Project Sheet */}
     <Sheet open={newProjectSheetOpen} onOpenChange={setNewProjectSheetOpen}>
