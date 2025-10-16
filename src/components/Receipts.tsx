@@ -62,7 +62,7 @@ export const Receipts = () => {
   const [pendingAction, setPendingAction] = useState<{ id: string; action: 'approve' | 'reject' } | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [selectedUserId, setSelectedUserId] = useState('');
-  const [selectedReceipts, setSelectedReceipts] = new Set<string>());
+  const [selectedReceipts, setSelectedReceipts] = useState<Set<string>>(new Set());
   const [newReceipt, setNewReceipt] = useState({
     amount: '',
     description: '',
