@@ -49,6 +49,14 @@ const handler = async (req: Request): Promise<Response> => {
     const { receiptId, action, reason, userId }: ApprovalRequest = await req.json();
     console.log('Processing receipt approval:', { receiptId, action, userId });
 
+    if (!receiptId) {
+      throw new Error('receiptId is required');
+    }
+
+    if (!action) {
+      throw new Error('action is required');
+    }
+
     // Get receipt details
     const { data: receipt, error: receiptError } = await supabase
       .from('receipts')
@@ -56,7 +64,7 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('id', receiptId)
       .maybeSingle();
 
-    if (receiptError || !receipt) {
+    if (!receipt) {
       throw new Error('Receipt not found');
     }
 
