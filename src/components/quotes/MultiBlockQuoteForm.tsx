@@ -154,6 +154,9 @@ export const MultiBlockQuoteForm: React.FC<MultiBlockQuoteFormProps> = ({
         setAttachments(Array.isArray(existingQuote.attachments) ? existingQuote.attachments : []);
       }
       
+      // ✅ Force preview update after loading existing quote data
+      setPreviewKey(prev => prev + 1);
+      
       isInitialized.current = true;
     } else {
         // Generate unique quote number for new quotes
