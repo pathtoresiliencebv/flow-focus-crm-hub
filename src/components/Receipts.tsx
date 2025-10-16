@@ -904,7 +904,7 @@ export const Receipts = () => {
                 <SelectItem value="">Geen project</SelectItem>
                 {projects.map((project) => (
                   <SelectItem key={project.id} value={project.id}>
-                    {project.name}
+                    {project.name || project.title}
                   </SelectItem>
                 ))}
               </SelectContent>
