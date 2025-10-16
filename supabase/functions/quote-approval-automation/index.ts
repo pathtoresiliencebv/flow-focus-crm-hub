@@ -48,75 +48,70 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('quote_id', quote_id)
       .single();
 
-    if (existingProject) {
-      console.log('Project already exists for this quote');
-      return new Response(JSON.stringify({ 
-        success: true, 
-        project_id: existingProject.id,
-        message: 'Project already exists' 
-      }), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    // 3. Find or create customer
+    let project = existingProject;
     let customerId = null;
-    const { data: existingCustomer } = await supabase
-      .from('customers')
-      .select('id')
-      .eq('name', quote.customer_name)
-      .eq('email', quote.customer_email || '')
-      .single();
 
-    if (existingCustomer) {
-      customerId = existingCustomer.id;
-    } else {
-      const { data: newCustomer, error: customerError } = await supabase
+    if (!project) {
+      // 3. Find or create customer
+      const { data: existingCustomer } = await supabase
         .from('customers')
+        .select('id')
+        .eq('name', quote.customer_name)
+        .eq('email', quote.customer_email || '')
+        .single();
+
+      if (existingCustomer) {
+        customerId = existingCustomer.id;
+      } else {
+        const { data: newCustomer, error: customerError } = await supabase
+          .from('customers')
+          .insert({
+            name: quote.customer_name,
+            email: quote.customer_email,
+            status: 'Actief'
+          })
+          .select('id')
+          .single();
+
+        if (customerError) {
+          console.error('Error creating customer:', customerError);
+          return new Response(JSON.stringify({ error: 'Failed to create customer' }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        customerId = newCustomer.id;
+      }
+
+      // 4. Create project
+      const { data: newProject, error: projectError } = await supabase
+        .from('projects')
         .insert({
-          name: quote.customer_name,
-          email: quote.customer_email,
-          status: 'Actief'
+          title: quote.project_title || `Project voor ${quote.customer_name}`,
+          description: quote.message,
+          customer_id: customerId,
+          quote_id: quote_id,
+          project_status: 'te-plannen',
+          status: 'te-plannen',
+          value: quote.total_amount,
+          date: new Date().toISOString().split('T')[0]
         })
         .select('id')
         .single();
 
-      if (customerError) {
-        console.error('Error creating customer:', customerError);
-        return new Response(JSON.stringify({ error: 'Failed to create customer' }), {
+      if (projectError) {
+        console.error('Error creating project:', projectError);
+        return new Response(JSON.stringify({ error: 'Failed to create project' }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
-      customerId = newCustomer.id;
+
+      project = newProject;
+      console.log('Created project:', project.id);
+    } else {
+      console.log('Project already exists for this quote:', project.id);
     }
-
-    // 4. Create project
-    const { data: project, error: projectError } = await supabase
-      .from('projects')
-      .insert({
-        title: quote.project_title || `Project voor ${quote.customer_name}`,
-        description: quote.message,
-        customer_id: customerId,
-        quote_id: quote_id,
-        project_status: 'te-plannen',
-        status: 'te-plannen',
-        value: quote.total_amount,
-        date: new Date().toISOString().split('T')[0]
-      })
-      .select('id')
-      .single();
-
-    if (projectError) {
-      console.error('Error creating project:', projectError);
-      return new Response(JSON.stringify({ error: 'Failed to create project' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
-    }
-
-    console.log('Created project:', project.id);
 
     // 5. Convert quote blocks to project tasks
     let parsedItems: any[] = [];
