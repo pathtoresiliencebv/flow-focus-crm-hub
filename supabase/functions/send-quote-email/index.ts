@@ -216,9 +216,18 @@ const handler = async (req: Request): Promise<Response> => {
             
             <p>Voor vragen over deze offerte kunt u contact met ons opnemen.</p>
             
-            <p>Met vriendelijke groet,<br>
-            <strong>Onderhoud en Service J.J.P. Smans</strong><br>
-            Team Verkoop</p>
+            <div style="border-top: 3px solid #dc2626; margin-top: 30px; padding-top: 20px;">
+              <p style="margin: 0 0 10px 0;">Met vriendelijke groet,</p>
+              <p style="margin: 0 0 20px 0;">
+                <strong style="font-size: 16px; color: #dc2626;">Onderhoud en Service J.J.P. Smans</strong><br>
+                <span style="color: #666; font-size: 14px;">Team Verkoop</span>
+              </p>
+              <p style="margin: 0; font-size: 13px; color: #888; line-height: 1.8;">
+                📧 info@smansonderhoud.nl<br>
+                📞 +31 (0)6 12345678<br>
+                🌐 www.smansonderhoud.nl
+              </p>
+            </div>
           </div>
         </div>
       </body>
