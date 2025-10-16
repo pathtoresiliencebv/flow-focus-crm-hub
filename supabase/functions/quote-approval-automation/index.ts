@@ -123,21 +123,17 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Delete existing tasks from this project (for reapproval scenarios)
-    const { error: deleteTasksError } = await supabase
+    // Get the highest order_index from existing tasks to append new tasks
+    const { data: existingTasks } = await supabase
       .from('project_tasks')
-      .delete()
-      .eq('project_id', project.id);
+      .select('order_index')
+      .eq('project_id', project.id)
+      .order('order_index', { ascending: false })
+      .limit(1);
 
-    if (deleteTasksError) {
-      console.error('Warning: Error deleting old project tasks:', deleteTasksError);
-      // Don't fail - continue with adding new tasks
-    } else {
-      console.log('Cleared old project tasks for fresh task list');
-    }
+    let orderIndex = (existingTasks && existingTasks.length > 0) ? (existingTasks[0].order_index + 1) : 0;
 
     const taskInserts: any[] = [];
-    let orderIndex = 0;
 
     // Check if items contain blocks structure
     if (parsedItems.length > 0 && parsedItems[0] && typeof parsedItems[0] === 'object' && parsedItems[0].items) {
@@ -180,7 +176,7 @@ const handler = async (req: Request): Promise<Response> => {
       if (tasksError) {
         console.error('Error creating project tasks:', tasksError);
       } else {
-        console.log('Created', taskInserts.length, 'project tasks from latest quote approval');
+        console.log('Added', taskInserts.length, 'new project tasks from quote approval');
       }
     }
 
