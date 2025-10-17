@@ -257,6 +257,16 @@ export const useProjectCompletion = () => {
           // Refresh work orders after generation
           queryClient.invalidateQueries({ queryKey: ['project_work_orders'] })
           queryClient.invalidateQueries({ queryKey: ['project_completions'] })
+          
+          // Dispatch custom event to trigger ProjectDetail refresh
+          window.dispatchEvent(new CustomEvent('workorder-generated', { 
+            detail: { project_id: completion.project_id }
+          }))
+          
+          // Also refresh page after a short delay to ensure database writes are complete
+          setTimeout(() => {
+            window.location.reload()
+          }, 2000)
         }
       }).catch((error) => {
         console.error('❌ [useProjectCompletion] Unexpected error during work order generation:', error)
