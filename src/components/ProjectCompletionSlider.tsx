@@ -25,6 +25,7 @@ import { useProjectCompletion } from "@/hooks/useProjectCompletion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { SignatureCanvas } from "@/components/SignatureCanvas";
+import { useProjectTasks } from "@/hooks/useProjectTasks";
 
 interface ProjectCompletionSliderProps {
   projectId: string;
@@ -44,9 +45,11 @@ export const ProjectCompletionSlider: React.FC<ProjectCompletionSliderProps> = (
   const { user } = useAuth();
   const { toast } = useToast();
   const { completeProject, isCompleting } = useProjectCompletion();
+  const { tasksByBlock } = useProjectTasks(projectId);
   
   const [isOpen, setIsOpen] = useState(false);
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
   
   // Completion form state
   const [completionData, setCompletionData] = useState({
@@ -61,6 +64,21 @@ export const ProjectCompletionSlider: React.FC<ProjectCompletionSliderProps> = (
     followUpRequired: false,
     followUpNotes: ''
   });
+
+  // Get all completed tasks
+  const completedTasks = Object.values(tasksByBlock)
+    .flat()
+    .filter(task => !task.is_info_block && task.is_completed);
+
+  const handleTaskSelection = (taskId: string, checked: boolean) => {
+    const newSelected = new Set(selectedTaskIds);
+    if (checked) {
+      newSelected.add(taskId);
+    } else {
+      newSelected.delete(taskId);
+    }
+    setSelectedTaskIds(newSelected);
+  };
 
   const handleCompleteProject = async () => {
     if (!completionData.workPerformed.trim() || !completionData.customerSignature || !completionData.installerSignature) {
@@ -86,6 +104,7 @@ export const ProjectCompletionSlider: React.FC<ProjectCompletionSliderProps> = (
         customer_name: completionData.customerName,
         follow_up_required: completionData.followUpRequired,
         follow_up_notes: completionData.followUpRequired ? completionData.followUpNotes : undefined,
+        selectedTaskIds: Array.from(selectedTaskIds),
       });
 
       toast({
@@ -95,6 +114,7 @@ export const ProjectCompletionSlider: React.FC<ProjectCompletionSliderProps> = (
 
       setShowCompletionDialog(false);
       setIsOpen(false);
+      setSelectedTaskIds(new Set());
       onCompletionChange?.();
     } catch (error) {
       console.error('Completion error:', error);
@@ -119,6 +139,7 @@ export const ProjectCompletionSlider: React.FC<ProjectCompletionSliderProps> = (
       followUpRequired: false,
       followUpNotes: ''
     });
+    setSelectedTaskIds(new Set());
   };
 
   if (isCompleted) {
@@ -252,6 +273,45 @@ export const ProjectCompletionSlider: React.FC<ProjectCompletionSliderProps> = (
                 className="mt-1"
               />
             </div>
+
+            {/* Task Selection */}
+            {completedTasks.length > 0 && (
+              <div>
+                <Label>Uitgevoerde werkzaamheden voor werkbon</Label>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Selecteer welke taken op de werkbon moeten komen.
+                </p>
+                <Card className="border-dashed">
+                  <CardContent className="pt-4 space-y-3 max-h-64 overflow-y-auto">
+                    {Object.entries(tasksByBlock).map(([blockTitle, tasks]) => {
+                      const blockCompletedTasks = tasks.filter(task => !task.is_info_block && task.is_completed);
+                      if (blockCompletedTasks.length === 0) return null;
+
+                      return (
+                        <div key={blockTitle} className="space-y-2">
+                          <h4 className="font-medium text-sm text-muted-foreground">{blockTitle}</h4>
+                          {blockCompletedTasks.map((task) => (
+                            <div key={task.id} className="flex items-start gap-3 ml-2">
+                              <Checkbox
+                                id={`task-${task.id}`}
+                                checked={selectedTaskIds.has(task.id)}
+                                onCheckedChange={(checked) => handleTaskSelection(task.id, !!checked)}
+                              />
+                              <Label 
+                                htmlFor={`task-${task.id}`} 
+                                className="text-sm cursor-pointer flex-1"
+                              >
+                                {task.task_description}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
             {/* Follow-up */}
             <div className="space-y-3">

@@ -111,6 +111,8 @@
     "sonner": "^1.5.0",
     "stream-chat": "^9.22.1",
     "stream-chat-react": "^13.9.0",
+    "supabase": "^2.51.0",
+    "supabase-cli": "^0.0.21",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^0.9.3",

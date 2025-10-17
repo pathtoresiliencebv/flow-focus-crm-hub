@@ -33,6 +33,9 @@ export interface ProjectCompletionData {
   labor_cost?: number;
   follow_up_required?: boolean;
   follow_up_notes?: string;
+  
+  // Selected tasks for work order
+  selectedTaskIds?: string[]; // Only these tasks will appear in the work order
 }
 
 /**

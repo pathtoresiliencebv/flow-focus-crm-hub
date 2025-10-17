@@ -114,6 +114,16 @@ serve(async (req) => {
       .eq('project_id', completion.project_id)
       .order('created_at')
 
+    // Filter tasks by selected_task_ids if available
+    let tasksForWorkOrder = tasks || []
+    if (completion.selected_task_ids && completion.selected_task_ids.length > 0) {
+      console.log('📋 Filtering tasks by selected_task_ids:', completion.selected_task_ids)
+      tasksForWorkOrder = tasksForWorkOrder.filter((t: any) => 
+        completion.selected_task_ids.includes(t.id)
+      )
+      console.log(`✅ Filtered ${tasksForWorkOrder.length} tasks for work order out of ${tasks?.length || 0} total`)
+    }
+
     // Fetch monteur data
     const { data: monteur } = await supabaseClient
       .from('profiles')
@@ -137,7 +147,7 @@ serve(async (req) => {
       monteur,
       photos: photos || [],
       materials: materials || [],
-      tasks: tasks || []
+      tasks: tasksForWorkOrder
     })
 
     // Generate PDF using Puppeteer (via Deno Deploy's browser API)
@@ -186,8 +196,8 @@ serve(async (req) => {
           description: p.description
         })),
         summary_text: `
-Voltooide taken: ${tasks.filter((t: any) => t.is_completed).length}/${tasks.length}
-Openstaande taken: ${tasks.filter((t: any) => !t.is_completed).length}
+Voltooide taken: ${tasksForWorkOrder.filter((t: any) => t.is_completed).length}/${tasksForWorkOrder.length}
+Openstaande taken: ${tasksForWorkOrder.filter((t: any) => !t.is_completed).length}
 
 Uitgevoerde werkzaamheden:
 ${completion.work_performed}
