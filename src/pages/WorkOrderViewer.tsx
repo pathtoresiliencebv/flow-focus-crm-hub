@@ -130,19 +130,36 @@ export default function WorkOrderViewer() {
         .select(`
           *,
           project:projects(*, customer:customers(*)),
-          completion:project_completions(installer_signature, installer:profiles(full_name))
+          completion:project_completions(*)
         `)
         .eq('id', workOrderId)
-        .single()
+        .single();
 
-      if (workOrderError) throw workOrderError
+      if (workOrderError) throw workOrderError;
+      
+      let finalWorkOrderData = { ...workOrderData };
 
-      setWorkOrder(workOrderData)
+      // Manual join to get installer profile if completion exists
+      if (workOrderData.completion && workOrderData.completion.installer_id) {
+        const { data: installerProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', workOrderData.completion.installer_id)
+          .single();
+        
+        if (profileError) {
+          console.error("Error fetching installer profile manually:", profileError);
+        } else if (installerProfile) {
+          finalWorkOrderData.completion.installer = installerProfile;
+        }
+      }
+
+      setWorkOrder(finalWorkOrderData);
 
       // Generate PDF content
-      if (workOrderData.completion_id) {
+      if (finalWorkOrderData.completion_id) {
         const { data: pdfData, error: pdfError } = await supabase.functions.invoke('generate-pdf-simple', {
-          body: { completionId: workOrderData.completion_id }
+          body: { completionId: finalWorkOrderData.completion_id }
         })
 
         if (pdfError) {
@@ -158,7 +175,7 @@ export default function WorkOrderViewer() {
         const { data: completions } = await supabase
           .from('project_completions')
           .select('*, installer:profiles(full_name)')
-          .eq('project_id', workOrderData.project_id)
+          .eq('project_id', finalWorkOrderData.project_id)
           .order('created_at', { ascending: false })
           .limit(1);
 
@@ -168,11 +185,11 @@ export default function WorkOrderViewer() {
         const { data: tasksData } = await supabase
           .from('project_tasks')
           .select('*')
-          .eq('project_id', workOrderData.project_id);
+          .eq('project_id', finalWorkOrderData.project_id);
         
         // Add installer info to workOrder object for the template
         const enhancedWorkOrderData = {
-          ...workOrderData,
+          ...finalWorkOrderData,
           monteur_signature_data: completionData?.installer_signature,
           monteur_naam: completionData?.installer?.full_name,
         };
