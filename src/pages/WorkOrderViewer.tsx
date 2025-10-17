@@ -6,6 +6,98 @@ import { ArrowLeft, Download, Eye, Mail, FileText } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client'
 
+function generateBasicWorkOrderHTML(workOrder: any): string {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Werkbon - ${workOrder.work_order_number}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; font-size: 12px; line-height: 1.4; color: #333; padding: 20px; max-width: 800px; margin: 0 auto; }
+    .header { text-align: center; border-bottom: 3px solid #d32f2f; padding-bottom: 20px; margin-bottom: 30px; }
+    .header h1 { color: #d32f2f; font-size: 28px; margin-bottom: 10px; }
+    .header .company { font-size: 16px; color: #666; }
+    .info-section { margin-bottom: 25px; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    .info-box { background: #f5f5f5; padding: 15px; border-left: 4px solid #d32f2f; }
+    .info-box h3 { color: #d32f2f; margin-bottom: 10px; font-size: 14px; }
+    .section-title { background: #d32f2f; color: white; padding: 8px 15px; font-size: 14px; font-weight: bold; margin-bottom: 15px; }
+    .work-summary { background: #f9f9f9; padding: 15px; margin-bottom: 20px; border: 1px solid #ddd; }
+    .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px; }
+    .signature-box { border: 1px solid #ddd; padding: 15px; text-align: center; }
+    .signature-box h4 { margin-bottom: 10px; color: #d32f2f; }
+    .summary-box { background: #e8f5e8; padding: 15px; border: 1px solid #4caf50; margin-top: 20px; }
+    .summary-box h3 { color: #2e7d32; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>SMANS ONDERHOUD</h1>
+    <div class="company">Onderhoud en Service J.J.P. Smans</div>
+    <div style="margin-top: 10px; font-size: 14px;">Werkbon</div>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-box">
+      <h3>Project Informatie</h3>
+      <p><strong>Werkbon:</strong> ${workOrder.work_order_number}</p>
+      <p><strong>Datum:</strong> ${workOrder.signed_at ? new Date(workOrder.signed_at).toLocaleDateString('nl-NL') : 'N/A'}</p>
+      <p><strong>Status:</strong> Afgerond</p>
+    </div>
+    <div class="info-box">
+      <h3>Klant Informatie</h3>
+      <p><strong>Naam:</strong> ${workOrder.client_name || 'N/A'}</p>
+      <p><strong>Project:</strong> ${workOrder.project?.title || 'N/A'}</p>
+    </div>
+  </div>
+
+  <div class="section-title">Werk Samenvatting</div>
+  <div class="work-summary">
+    <p><strong>Werkzaamheden:</strong></p>
+    <p>${workOrder.summary_text || 'Geen details beschikbaar'}</p>
+  </div>
+
+  <div class="signatures">
+    <div class="signature-box">
+      <h4>Handtekening Klant</h4>
+      <p><strong>Naam:</strong> ${workOrder.client_name || 'N/A'}</p>
+      <p><strong>Datum:</strong> ${workOrder.signed_at ? new Date(workOrder.signed_at).toLocaleDateString('nl-NL') : 'N/A'}</p>
+      ${workOrder.client_signature_data ? `
+      <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #f9f9f9;">
+        <img src="${workOrder.client_signature_data}" alt="Klant handtekening" style="max-width: 200px; max-height: 100px; display: block; margin: 0 auto;" />
+      </div>
+      ` : '<p style="color: #999; text-align: center; padding: 20px; border: 1px dashed #ccc;">Geen handtekening beschikbaar</p>'}
+    </div>
+    
+    <div class="signature-box">
+      <h4>Handtekening Monteur</h4>
+      <p><strong>Naam:</strong> N/A</p>
+      <p><strong>Datum:</strong> ${workOrder.signed_at ? new Date(workOrder.signed_at).toLocaleDateString('nl-NL') : 'N/A'}</p>
+      ${workOrder.monteur_signature_data ? `
+      <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #f9f9f9;">
+        <img src="${workOrder.monteur_signature_data}" alt="Monteur handtekening" style="max-width: 200px; max-height: 100px; display: block; margin: 0 auto;" />
+      </div>
+      ` : '<p style="color: #999; text-align: center; padding: 20px; border: 1px dashed #ccc;">Geen handtekening beschikbaar</p>'}
+    </div>
+  </div>
+
+  <div class="summary-box">
+    <h3>Samenvatting</h3>
+    <p><strong>Werkbon Nummer:</strong> ${workOrder.work_order_number}</p>
+    <p><strong>Ondertekend op:</strong> ${workOrder.signed_at ? new Date(workOrder.signed_at).toLocaleDateString('nl-NL') : 'N/A'}</p>
+  </div>
+
+  <div style="text-align: center; margin-top: 30px; color: #666; font-size: 10px;">
+    <p>Dit werkbon is gegenereerd door het SMANS CRM systeem</p>
+    <p>Datum: ${new Date().toLocaleDateString('nl-NL')} - Werkbon ID: ${workOrder.id.slice(0, 8).toUpperCase()}</p>
+  </div>
+</body>
+</html>
+  `.trim()
+}
+
 export default function WorkOrderViewer() {
   const { projectId, workOrderId } = useParams<{ projectId: string; workOrderId: string }>()
   const navigate = useNavigate()
@@ -39,19 +131,30 @@ export default function WorkOrderViewer() {
       setWorkOrder(workOrderData)
 
       // Generate PDF content
-      const { data: pdfData, error: pdfError } = await supabase.functions.invoke('generate-pdf-simple', {
-        body: { completionId: workOrderData.completion_id }
-      })
+      if (workOrderData.completion_id) {
+        const { data: pdfData, error: pdfError } = await supabase.functions.invoke('generate-pdf-simple', {
+          body: { completionId: workOrderData.completion_id }
+        })
 
-      if (pdfError) throw pdfError
-
-      setHtmlContent(pdfData.html)
-    } catch (err) {
+        if (pdfError) {
+          console.error('PDF generation error:', pdfError)
+          // Continue without PDF content
+        } else {
+          setHtmlContent(pdfData.html)
+        }
+      } else {
+        console.warn('No completion_id found for work order')
+        // Generate basic HTML without completion data
+        const basicHtml = generateBasicWorkOrderHTML(workOrderData)
+        setHtmlContent(basicHtml)
+      }
+    } catch (err: any) {
       console.error('Error loading work order:', err)
-      setError('Kon werkbon niet laden')
+      const errorMessage = err?.message || 'Kon werkbon niet laden'
+      setError(errorMessage)
       toast({
         title: "Fout",
-        description: "Kon werkbon niet laden",
+        description: errorMessage,
         variant: "destructive"
       })
     } finally {
