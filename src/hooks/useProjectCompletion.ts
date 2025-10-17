@@ -266,6 +266,11 @@ export const useProjectCompletion = () => {
         if (error) {
           console.error('❌ [useProjectCompletion] Work order generation ERROR:', error)
           console.error('   Error details:', JSON.stringify(error, null, 2))
+          
+          // Still refresh after error so user can see what happened
+          setTimeout(() => {
+            window.location.reload()
+          }, 3000)
         } else {
           console.log('✅ [useProjectCompletion] Work order generated:', data)
           // Refresh work orders after generation
@@ -277,15 +282,40 @@ export const useProjectCompletion = () => {
             detail: { project_id: completion.project_id }
           }))
           
-          // Also refresh page after a short delay to ensure database writes are complete
-          setTimeout(() => {
-            window.location.reload()
-          }, 2000)
+          // Poll for work order to appear in database before reloading
+          let pollAttempts = 0
+          const maxAttempts = 10
+          const pollInterval = setInterval(async () => {
+            pollAttempts++
+            console.log(`🔄 [useProjectCompletion] Polling for work order... attempt ${pollAttempts}/${maxAttempts}`)
+            
+            const { data: workOrders } = await supabase
+              .from('project_work_orders')
+              .select('id')
+              .eq('project_id', completion.project_id)
+              .order('created_at', { ascending: false })
+              .limit(1)
+            
+            if (workOrders && workOrders.length > 0) {
+              console.log('✅ [useProjectCompletion] Work order found in database, reloading page')
+              clearInterval(pollInterval)
+              window.location.reload()
+            } else if (pollAttempts >= maxAttempts) {
+              console.warn('⚠️ [useProjectCompletion] Max poll attempts reached, reloading anyway')
+              clearInterval(pollInterval)
+              window.location.reload()
+            }
+          }, 1000) // Poll every second
         }
       }).catch((error) => {
         console.error('❌ [useProjectCompletion] Unexpected error during work order generation:', error)
         console.error('   Error type:', error?.constructor?.name)
         console.error('   Full error:', JSON.stringify(error, null, 2))
+        
+        // Still refresh so user can try again
+        setTimeout(() => {
+          window.location.reload()
+        }, 3000)
       })
     },
     onError: (error: Error) => {
