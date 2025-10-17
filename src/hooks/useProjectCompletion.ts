@@ -61,14 +61,12 @@ interface CompletionPayload {
  * This is the unified hook that replaces useProjectDelivery
  */
 export const useProjectCompletion = () => {
-  const queryClient = useQueryClient();
   const { profile } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { mutateAsync: completeProject, isLoading: isCompleting } = useMutation<any, Error, CompletionPayload>({
     mutationFn: async ({ completionData, photos }) => {
-      if (!profile?.id) throw new Error("Gebruiker is niet ingelogd.");
-    
       // Explicitly get the current session to ensure the auth token is fresh
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError || !session) {
