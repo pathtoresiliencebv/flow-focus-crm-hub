@@ -503,12 +503,16 @@ const ProjectDetail = () => {
                   </>
                 )}
               </TabsList>
-              <div className="absolute top-0 right-0 p-4">
-                <Button onClick={() => setShowDeliveryDialog(true)}>
-                  Project Opleveren
-                </Button>
-              </div>
               
+              {profile?.role === 'Installateur' && project?.status !== 'afgerond' && (
+                <div className="absolute top-0 right-0 p-2">
+                  <Button onClick={() => setShowDeliveryDialog(true)} size="sm">
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Project Opleveren
+                  </Button>
+                </div>
+              )}
+
               <TabsContent value="taken" className="p-4">
                 <ProjectTasks projectId={projectId || ''} />
               </TabsContent>
