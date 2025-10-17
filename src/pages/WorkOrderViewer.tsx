@@ -2,12 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft, Download, Eye, Mail, FileText } from 'lucide-react'
+import { FileText, ArrowLeft, Download, Eye, Mail, Printer } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client'
 import { format } from 'date-fns'
 import { nl } from 'date-fns/locale'
-import { ArrowLeft, Check, Download, Mail, Printer } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 
 // Define interfaces for the data structures
@@ -38,10 +37,12 @@ interface WorkOrderData {
     id: string;
     client_name: string;
     client_signature_timestamp: string;
-    client_signature: string;
+    customer_signature?: string; // allow mapping
+    client_signature?: string;   // legacy mapping
     installer_signature: string;
     work_performed: string;
     installer_id: string;
+    created_at?: string;
     installer?: {
       full_name: string;
     }
@@ -153,7 +154,7 @@ const generateWorkOrderHTML = (workOrder: WorkOrderData, tasks: Task[], photos: 
           <div class="signature-grid">
             <div class="signature-box">
               <h4>Handtekening Klant</h4>
-              ${(workOrder.completion as any)?.customer_signature ? `<img src="${(workOrder.completion as any).customer_signature}" alt="Handtekening Klant"/>` : '<p>Geen handtekening beschikbaar</p>'}
+              ${(workOrder.completion as any)?.customer_signature || workOrder.completion?.client_signature ? `<img src="${(workOrder.completion as any)?.customer_signature || workOrder.completion?.client_signature}" alt="Handtekening Klant"/>` : '<p>Geen handtekening beschikbaar</p>'}
               <p><strong>Naam:</strong> ${customerName}</p>
               <p><strong>Datum:</strong> ${signedAt ? format(new Date(signedAt), 'dd-MM-yyyy', { locale: nl }) : 'N/A'}</p>
             </div>
@@ -193,67 +194,98 @@ export default function WorkOrderViewer() {
       setIsLoading(true);
       setError('');
 
-      // 1. Fetch the main work order data, including the completion record
-      const { data: workOrderData, error: workOrderError } = await supabase
+      // 1) Load plain work order first
+      const { data: baseWO, error: woErr } = await supabase
         .from('project_work_orders')
-        .select('*, project:projects(*, customer:customers(*)), completion:project_completions(*)')
+        .select('*')
         .eq('id', workOrderId)
         .single();
+      if (woErr) throw new Error(`Fout bij laden werkbon: ${woErr.message}`);
+      if (!baseWO) throw new Error('Werkbon niet gevonden.');
 
-      if (workOrderError) throw new Error(`Fout bij laden werkbon: ${workOrderError.message}`);
-      if (!workOrderData) throw new Error('Werkbon niet gevonden.');
-      
-      let finalWorkOrderData: WorkOrderData = workOrderData as WorkOrderData;
+      // 2) Load project + customer
+      const { data: projectData, error: projErr } = await supabase
+        .from('projects')
+        .select('*, customer:customers(*)')
+        .eq('id', baseWO.project_id)
+        .single();
+      if (projErr) throw new Error(`Fout bij laden project: ${projErr.message}`);
 
-      // 2. If completion exists, fetch the installer's profile manually for robustness
-      if (finalWorkOrderData.completion?.installer_id) {
-        const { data: installerProfile, error: profileError } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', finalWorkOrderData.completion.installer_id)
+      // 3) Load completion if available
+      let completionData: any = null;
+      if (baseWO.completion_id) {
+        const { data: comp, error: compErr } = await supabase
+          .from('project_completions')
+          .select('*')
+          .eq('id', baseWO.completion_id)
           .single();
-        
-        if (profileError) console.warn("Kon monteur profiel niet laden:", profileError.message);
-        else if (installerProfile) {
-          finalWorkOrderData.completion.installer = installerProfile;
-        }
+        if (!compErr) completionData = comp;
       }
 
-      setWorkOrder(finalWorkOrderData);
+      // 3b) Installer profile
+      let installerProfile: any = null;
+      if (completionData?.installer_id) {
+        const { data: installer, error: profErr } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', completionData.installer_id)
+          .single();
+        if (!profErr) installerProfile = installer;
+      }
 
-      // 3. Fetch all tasks associated with this work order
+      const signedAt = baseWO.signed_at || completionData?.created_at || '';
+
+      const finalWO: WorkOrderData = {
+        id: baseWO.id,
+        work_order_number: baseWO.work_order_number,
+        signed_at: signedAt,
+        project: { id: projectData.id, name: projectData.name || projectData.title, customer: { name: projectData.customer?.name || '' } },
+        completion: {
+          id: completionData?.id || '',
+          client_name: completionData?.customer_name || completionData?.client_name || '',
+          client_signature_timestamp: completionData?.created_at || '',
+          customer_signature: completionData?.customer_signature,
+          client_signature: completionData?.client_signature,
+          installer_signature: completionData?.installer_signature || '',
+          work_performed: completionData?.work_performed || '',
+          installer_id: completionData?.installer_id || '',
+          created_at: completionData?.created_at || '',
+          installer: installerProfile || undefined,
+        }
+      } as WorkOrderData;
+
+      setWorkOrder(finalWO);
+
+      // 4) Fetch tasks associated with this work order
       const { data: taskData, error: taskError } = await supabase
         .from('project_tasks')
         .select('id, task_description, block_title')
         .eq('work_order_id', workOrderId);
-
       if (taskError) throw new Error(`Fout bij laden taken: ${taskError.message}`);
       setTasks(taskData || []);
 
-      // 4. Fetch photos associated with the completion AND legacy project_photos linked to this work order
+      // 5) Fetch photos: completion_photos + project_photos for this work order
       let combinedPhotos: Photo[] = [];
-      if (finalWorkOrderData.completion?.id) {
-        const { data: cPhotos, error: cErr } = await supabase
+      if (completionData?.id) {
+        const { data: cPhotos } = await supabase
           .from('completion_photos')
           .select('id, photo_url, description')
-          .eq('completion_id', finalWorkOrderData.completion.id);
-        if (cErr) console.warn("Kon completion foto's niet laden:", cErr.message);
+          .eq('completion_id', completionData.id);
         combinedPhotos = combinedPhotos.concat((cPhotos as any) || []);
       }
-      const { data: pPhotos, error: pErr } = await supabase
+      const { data: pPhotos } = await supabase
         .from('project_photos')
-        .select('id, photo_url:photo_url, description')
+        .select('id, photo_url, description')
         .eq('work_order_id', workOrderId);
-      if (pErr) console.warn('Kon project foto's niet laden:', pErr.message);
       combinedPhotos = combinedPhotos.concat((pPhotos as any) || []);
       setPhotos(combinedPhotos);
 
     } catch (err: any) {
       setError(err.message);
       toast({
-        title: "Fout bij laden",
+        title: 'Fout bij laden',
         description: err.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
