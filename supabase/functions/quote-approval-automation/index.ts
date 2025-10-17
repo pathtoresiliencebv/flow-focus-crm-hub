@@ -23,9 +23,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { quote_id }: QuoteApprovalRequest = await req.json();
 
-    console.log('Starting quote approval automation for quote:', quote_id);
+    console.log('🚀 Starting quote approval automation for quote:', quote_id);
 
     // 1. Get the approved quote
+    console.log('📋 Step 1: Fetching quote...');
     const { data: quote, error: quoteError } = await supabase
       .from('quotes')
       .select('*')
@@ -33,15 +34,24 @@ const handler = async (req: Request): Promise<Response> => {
       .in('status', ['approved', 'goedgekeurd'])
       .single();
 
-    if (quoteError || !quote) {
-      console.error('Quote not found or not approved:', quoteError);
-      return new Response(JSON.stringify({ error: 'Quote not found or not approved' }), {
+    if (quoteError) {
+      console.error('❌ STEP 1 FAILED - Quote not found:', quoteError);
+      return new Response(JSON.stringify({ error: 'Quote not found or not approved', details: quoteError }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+    if (!quote) {
+      console.error('❌ STEP 1 FAILED - Quote is null');
+      return new Response(JSON.stringify({ error: 'Quote not found' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    console.log('✅ Quote fetched:', { id: quote.id, number: quote.quote_number, items_type: typeof quote.items });
 
     // 2. Check if project already exists for this quote
+    console.log('📋 Step 2: Checking for existing project...');
     const { data: existingProject } = await supabase
       .from('projects')
       .select('id')
@@ -68,6 +78,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     if (!project) {
+      console.log('📋 Step 3: No project found, creating new one...');
       // 3. Find or create customer
       const { data: existingCustomer } = await supabase
         .from('customers')
@@ -78,7 +89,9 @@ const handler = async (req: Request): Promise<Response> => {
 
       if (existingCustomer) {
         customerId = existingCustomer.id;
+        console.log('✅ Found existing customer:', customerId);
       } else {
+        console.log('Creating new customer...');
         const { data: newCustomer, error: customerError } = await supabase
           .from('customers')
           .insert({
@@ -90,16 +103,18 @@ const handler = async (req: Request): Promise<Response> => {
           .single();
 
         if (customerError) {
-          console.error('Error creating customer:', customerError);
-          return new Response(JSON.stringify({ error: 'Failed to create customer' }), {
+          console.error('❌ STEP 3 FAILED - Error creating customer:', customerError);
+          return new Response(JSON.stringify({ error: 'Failed to create customer', details: customerError }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           });
         }
         customerId = newCustomer.id;
+        console.log('✅ Created new customer:', customerId);
       }
 
       // 4. Create project
+      console.log('📋 Step 4: Creating project...');
       const { data: newProject, error: projectError } = await supabase
         .from('projects')
         .insert({
@@ -116,8 +131,8 @@ const handler = async (req: Request): Promise<Response> => {
         .single();
 
       if (projectError) {
-        console.error('Error creating project:', projectError);
-        return new Response(JSON.stringify({ error: 'Failed to create project' }), {
+        console.error('❌ STEP 4 FAILED - Error creating project:', projectError);
+        return new Response(JSON.stringify({ error: 'Failed to create project', details: projectError }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
@@ -145,6 +160,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // 5. Convert quote blocks to project tasks
+    console.log('📋 Step 5: Creating project tasks...');
     let parsedItems: any[] = [];
     if (quote.items) {
       if (typeof quote.items === 'string') {
