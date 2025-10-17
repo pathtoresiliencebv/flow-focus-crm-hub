@@ -18,6 +18,7 @@ import { ProjectActivities } from "./ProjectActivities";
 import { ProjectTasks } from "./ProjectTasks";
 import { ProjectDeliveryDialog } from "./dashboard/ProjectDeliveryDialog";
 import { WorkOrderPreviewDialog } from "./workorders/WorkOrderPreviewDialog";
+import { ProjectReceiptUpload } from "./ProjectReceiptUpload";
 
 const ProjectDetail = () => {
   const { projectId } = useParams();
@@ -713,13 +714,29 @@ const ProjectDetail = () => {
 
               {/* BONNETJES TAB */}
               <TabsContent value="bonnetjes" className="p-4">
+                {/* Upload Button */}
+                <div className="mb-4 flex justify-end">
+                  <ProjectReceiptUpload 
+                    projectId={projectId!}
+                    onUploadComplete={async () => {
+                      // Refresh receipts data
+                      const { data: receiptsData } = await supabase
+                        .from('project_receipts')
+                        .select('*')
+                        .eq('project_id', projectId)
+                        .order('created_at', { ascending: false });
+                      setReceipts(receiptsData || []);
+                    }}
+                  />
+                </div>
+
                 {loadingData ? (
                   <p className="text-center text-muted-foreground py-8">Laden...</p>
                 ) : receipts.length === 0 ? (
                   <div className="text-center text-muted-foreground py-8">
                     <Receipt className="h-12 w-12 mx-auto mb-3 opacity-50" />
                     <p>Geen bonnetjes gevonden voor dit project</p>
-                    <p className="text-xs mt-2">Bonnetjes worden toegevoegd via de mobiele app</p>
+                    <p className="text-xs mt-2">Klik op "Bonnetje Uploaden" om een bonnetje toe te voegen</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
