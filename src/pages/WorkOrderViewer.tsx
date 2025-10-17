@@ -100,6 +100,10 @@ const generateWorkOrderHTML = (workOrder: WorkOrderData, tasks: Task[], photos: 
         <style>
           body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: #333; margin: 0; padding: 20px; background-color: #f9fafb; }
           .container { max-width: 800px; margin: auto; background: white; border: 1px solid #e5e7eb; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+          @media print {
+            body { margin: 0; padding: 0; background: white; }
+            .container { max-width: 100%; margin: 0; padding: 20px; border: none; border-radius: 0; box-shadow: none; }
+          }
           .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #ef4444; padding-bottom: 20px; margin-bottom: 20px; }
           .header img { max-width: 150px; }
           .header h1 { color: #ef4444; font-size: 28px; margin: 0; }
