@@ -260,53 +260,76 @@ export const useProjectCompletion = () => {
       console.log('🔄 [useProjectCompletion] Invoking generate-work-order edge function...')
       console.log('   Completion ID:', completion.id)
       
-      supabase.functions.invoke('generate-work-order', {
+      // Generate PDF and send email
+      supabase.functions.invoke('generate-pdf-simple', {
         body: { completionId: completion.id }
-      }).then(({ data, error }) => {
-        if (error) {
-          console.error('❌ [useProjectCompletion] Work order generation ERROR:', error)
-          console.error('   Error details:', JSON.stringify(error, null, 2))
-          
-          // Still refresh after error so user can see what happened
-          setTimeout(() => {
-            window.location.reload()
-          }, 3000)
-        } else {
-          console.log('✅ [useProjectCompletion] Work order generated:', data)
-          // Refresh work orders after generation
-          queryClient.invalidateQueries({ queryKey: ['project_work_orders'] })
-          queryClient.invalidateQueries({ queryKey: ['project_completions'] })
-          
-          // Dispatch custom event to trigger ProjectDetail refresh
-          window.dispatchEvent(new CustomEvent('workorder-generated', { 
-            detail: { project_id: completion.project_id }
-          }))
-          
-          // Poll for work order to appear in database before reloading
-          let pollAttempts = 0
-          const maxAttempts = 10
-          const pollInterval = setInterval(async () => {
-            pollAttempts++
-            console.log(`🔄 [useProjectCompletion] Polling for work order... attempt ${pollAttempts}/${maxAttempts}`)
-            
-            const { data: workOrders } = await supabase
-              .from('project_work_orders')
-              .select('id')
-              .eq('project_id', completion.project_id)
-              .order('created_at', { ascending: false })
-              .limit(1)
-            
-            if (workOrders && workOrders.length > 0) {
-              console.log('✅ [useProjectCompletion] Work order found in database, reloading page')
-              clearInterval(pollInterval)
-              window.location.reload()
-            } else if (pollAttempts >= maxAttempts) {
-              console.warn('⚠️ [useProjectCompletion] Max poll attempts reached, reloading anyway')
-              clearInterval(pollInterval)
-              window.location.reload()
-            }
-          }, 1000) // Poll every second
+      }).then(async ({ data: pdfData, error: pdfError }) => {
+        if (pdfError) {
+          console.error('❌ [useProjectCompletion] PDF generation ERROR:', pdfError)
+          return
         }
+        
+        console.log('✅ [useProjectCompletion] PDF generated successfully')
+        
+        // Now send email with PDF
+        const { data: emailData, error: emailError } = await supabase.functions.invoke('send-workorder-email', {
+          body: { 
+            completionId: completion.id,
+            customerEmail: completion.project?.customer?.email
+          }
+        })
+        
+        if (emailError) {
+          console.error('❌ [useProjectCompletion] Email sending ERROR:', emailError)
+          toast({
+            title: "📄 Werkbon Gegenereerd",
+            description: "PDF is gegenereerd, maar email kon niet worden verzonden.",
+            variant: "default"
+          })
+        } else {
+          console.log('✅ [useProjectCompletion] Email sent successfully')
+          toast({
+            title: "📧 Werkbon Verzonden!",
+            description: "Werkbon PDF is gegenereerd en per email verzonden naar de klant.",
+            variant: "default"
+          })
+        }
+        
+        // Continue with existing logic
+        console.log('✅ [useProjectCompletion] Work order generated:', { pdfData, emailData })
+        // Refresh work orders after generation
+        queryClient.invalidateQueries({ queryKey: ['project_work_orders'] })
+        queryClient.invalidateQueries({ queryKey: ['project_completions'] })
+        
+        // Dispatch custom event to trigger ProjectDetail refresh
+        window.dispatchEvent(new CustomEvent('workorder-generated', { 
+          detail: { project_id: completion.project_id }
+        }))
+        
+        // Poll for work order to appear in database before reloading
+        let pollAttempts = 0
+        const maxAttempts = 10
+        const pollInterval = setInterval(async () => {
+          pollAttempts++
+          console.log(`🔄 [useProjectCompletion] Polling for work order... attempt ${pollAttempts}/${maxAttempts}`)
+          
+          const { data: workOrders } = await supabase
+            .from('project_work_orders')
+            .select('id')
+            .eq('project_id', completion.project_id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+          
+          if (workOrders && workOrders.length > 0) {
+            console.log('✅ [useProjectCompletion] Work order found in database, reloading page')
+            clearInterval(pollInterval)
+            window.location.reload()
+          } else if (pollAttempts >= maxAttempts) {
+            console.warn('⚠️ [useProjectCompletion] Max poll attempts reached, reloading anyway')
+            clearInterval(pollInterval)
+            window.location.reload()
+          }
+        }, 1000) // Poll every second
       }).catch((error) => {
         console.error('❌ [useProjectCompletion] Unexpected error during work order generation:', error)
         console.error('   Error type:', error?.constructor?.name)
