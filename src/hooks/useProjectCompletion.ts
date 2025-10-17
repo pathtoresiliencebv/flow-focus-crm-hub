@@ -146,11 +146,19 @@ export const useProjectCompletion = () => {
         ...completionData,
         installer_id: user.id,
         status: 'draft', // Initial status, will be updated to 'completed' after PDF generation
-        // Ensure selectedTaskIds is always an array (convert empty Set to empty array)
-        selected_task_ids: completionData.selectedTaskIds && completionData.selectedTaskIds.length > 0 
-          ? completionData.selectedTaskIds 
+        // Store selected_task_ids as JSON string to avoid serialization issues
+        selected_task_ids: (completionData.selectedTaskIds && completionData.selectedTaskIds.length > 0)
+          ? JSON.stringify(completionData.selectedTaskIds)
           : null
       };
+      
+      console.log('🔍 [useProjectCompletion] Data to insert:', {
+        project_id: dataWithInstaller.project_id,
+        installer_id: dataWithInstaller.installer_id,
+        selected_task_ids: dataWithInstaller.selected_task_ids,
+        selected_task_ids_type: typeof dataWithInstaller.selected_task_ids,
+        completionData_selectedTaskIds: completionData.selectedTaskIds
+      });
 
       // Insert completion record
       const { data: completion, error: completionError } = await supabase
