@@ -24,19 +24,14 @@ serve(async (req) => {
 
     console.log(`[generate-pdf-simple] Received request for completionId: ${completionId}`);
 
-    // Initialize Supabase client
-    const supabaseClient = createClient(
+    // Initialize a separate, privileged Supabase client for server-side operations
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    )
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
-    // Fetch completion data with related information
-    const { data: completion, error: completionError } = await supabaseClient
+    // Fetch completion data with related information using the admin client
+    const { data: completion, error: completionError } = await supabaseAdmin
       .from('project_completions')
       .select(`
         *,
@@ -52,13 +47,13 @@ serve(async (req) => {
     }
     console.log('[generate-pdf-simple] Successfully fetched completion data.');
 
-    // Fetch photos from multiple sources
-    const { data: completionPhotos } = await supabaseClient
+    // Fetch photos from multiple sources using the admin client
+    const { data: completionPhotos } = await supabaseAdmin
       .from('completion_photos')
       .select('*')
       .eq('completion_id', completionId)
 
-    const { data: projectPhotos } = await supabaseClient
+    const { data: projectPhotos } = await supabaseAdmin
       .from('project_photos')
       .select('*')
       .eq('project_id', completion.project_id)
@@ -66,14 +61,14 @@ serve(async (req) => {
     // Combine all photos
     const photos = [...(completionPhotos || []), ...(projectPhotos || [])]
 
-    // Fetch materials
-    const { data: materials } = await supabaseClient
+    // Fetch materials using the admin client
+    const { data: materials } = await supabaseAdmin
       .from('material_usage')
       .select('*')
       .eq('completion_id', completionId)
 
-    // Fetch tasks
-    const { data: tasks } = await supabaseClient
+    // Fetch tasks using the admin client
+    const { data: tasks } = await supabaseAdmin
       .from('project_tasks')
       .select('*')
       .eq('project_id', completion.project_id)
@@ -95,9 +90,9 @@ serve(async (req) => {
     const pdfBuffer = await generatePDFFromHTML(html);
     console.log(`[generate-pdf-simple] PDF buffer generated. Size: ${pdfBuffer.byteLength} bytes.`);
 
-    // Upload PDF to Supabase Storage
+    // Upload PDF to Supabase Storage using the admin client
     const fileName = `werkbon-${completionId}-${Date.now()}.pdf`
-    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
       .from('completion-reports')
       .upload(fileName, pdfBuffer, {
         contentType: 'application/pdf',
@@ -120,13 +115,13 @@ serve(async (req) => {
       )
     }
 
-    // Get public URL
-    const { data: { publicUrl } } = supabaseClient.storage
+    // Get public URL using the admin client
+    const { data: { publicUrl } } = supabaseAdmin.storage
       .from('completion-reports')
       .getPublicUrl(fileName)
 
-    // Update completion record with PDF URL
-    await supabaseClient
+    // Update completion record with PDF URL using the admin client
+    await supabaseAdmin
       .from('project_completions')
       .update({ 
         pdf_url: publicUrl,
@@ -134,8 +129,8 @@ serve(async (req) => {
       })
       .eq('id', completionId)
 
-    // Also update the work order record with PDF URL
-    await supabaseClient
+    // Also update the work order record with PDF URL using the admin client
+    await supabaseAdmin
       .from('project_work_orders')
       .update({ 
         pdf_url: publicUrl

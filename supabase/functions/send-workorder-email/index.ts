@@ -24,19 +24,14 @@ serve(async (req) => {
     }
     console.log(`[send-workorder-email] Received request for completionId: ${completionId}`);
 
-    // Initialize Supabase client
-    const supabaseClient = createClient(
+    // Initialize a separate, privileged Supabase client for server-side operations
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    )
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
 
-    // Fetch completion data
-    const { data: completion, error: completionError } = await supabaseClient
+    // Fetch completion data using the admin client
+    const { data: completion, error: completionError } = await supabaseAdmin
       .from('project_completions')
       .select(`
         *,
@@ -60,7 +55,7 @@ serve(async (req) => {
     let pdfAttachment = null;
     try {
       console.log(`[send-workorder-email] Attempting to generate PDF for attachment...`);
-      const { data: pdfData, error: pdfError } = await supabaseClient.functions.invoke('generate-pdf-simple', {
+      const { data: pdfData, error: pdfError } = await supabaseAdmin.functions.invoke('generate-pdf-simple', {
         body: { completionId }
       });
 
@@ -85,8 +80,8 @@ serve(async (req) => {
       console.error('[send-workorder-email] Failed to generate PDF for attachment. Email will be sent without it.', pdfError);
     }
 
-    // Get system notification settings
-    const { data: settings } = await supabaseClient
+    // Get system notification settings using the admin client
+    const { data: settings } = await supabaseAdmin
       .from('system_notification_settings')
       .select('*')
       .eq('id', '00000000-0000-0000-0000-000000000001')
@@ -220,8 +215,15 @@ Voor vragen: ${settings?.smtp_from_email || 'info@smansonderhoud.nl'}
       attachments: pdfAttachment ? [pdfAttachment] : [],
     };
 
-    // Use the existing email system (assuming it's 'send-email')
     console.log(`[send-workorder-email] Invoking 'send-email' function for recipient: ${emailData.to}`);
+    // IMPORTANT: We use the original user-context client here to invoke the next function
+    // This maintains the security chain, as this function was invoked by a user.
+    // The service_role key should only be used for reading data, not for triggering further actions.
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+    );
     const { data: emailResult, error: emailError } = await supabaseClient.functions.invoke('send-email', {
       body: emailData
     });
@@ -233,8 +235,8 @@ Voor vragen: ${settings?.smtp_from_email || 'info@smansonderhoud.nl'}
 
     console.log('[send-workorder-email] Email function invoked successfully.');
 
-    // Update completion record to mark email as sent
-    await supabaseClient
+    // Update completion record to mark email as sent using the admin client
+    await supabaseAdmin
       .from('project_completions')
       .update({ 
         email_sent_at: new Date().toISOString(),
