@@ -21,6 +21,12 @@ import { WorkOrderPreviewDialog } from "./workorders/WorkOrderPreviewDialog";
 import { ProjectReceiptUpload } from "./ProjectReceiptUpload";
 import { ProjectPhotoUpload } from "./ProjectPhotoUpload";
 
+interface PhotoGroup {
+  id: string;
+  title: string;
+  photos: any[];
+}
+
 const ProjectDetail = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
@@ -30,128 +36,110 @@ const ProjectDetail = () => {
   const [showPersonnel, setShowPersonnel] = useState(false);
   const [showReceipts, setShowReceipts] = useState(false);
   const [showDeliveryDialog, setShowDeliveryDialog] = useState(false);
+  const [project, setProject] = useState<any>(null);
+  const [customer, setCustomer] = useState<any>(null);
+  const [tasks, setTasks] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [quotes, setQuotes] = useState<any[]>([]);
-  const [tasks, setTasks] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
   const [workOrders, setWorkOrders] = useState<any[]>([]);
-  const [completionPhotos, setCompletionPhotos] = useState<any[]>([]);
+  const [photoGroups, setPhotoGroups] = useState<PhotoGroup[]>([]);
   const [receipts, setReceipts] = useState<any[]>([]);
-  const [loadingData, setLoadingData] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
   const [selectedWorkOrder, setSelectedWorkOrder] = useState<any | null>(null);
   const [workOrderPreviewOpen, setWorkOrderPreviewOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Find the project
   const project = projects.find(p => p.id === projectId);
   const customer = customers.find(c => c.id === project?.customer_id);
 
-  // Fetch data with parallel queries for better performance
   useEffect(() => {
-    const fetchData = async () => {
-      if (!projectId || !project) return;
-      
-      console.log('📊 ProjectDetail: Fetching data for project:', projectId);
+    const fetchProjectDetails = async () => {
+      if (!projectId) return;
       setLoadingData(true);
       try {
-        // Execute all queries in parallel for faster loading
-        const [taskResult, invoiceResult, quoteResult, activityResult, workOrderResult, photosResult, receiptsResult] = await Promise.all([
-          // Fetch tasks
-          supabase
-            .from('project_tasks')
-            .select('*')
-            .eq('project_id', projectId)
-            .order('created_at', { ascending: false }),
-          
-          // Fetch invoices - check both project_id and customer_id
-          supabase
-            .from('invoices')
-            .select('*')
-            .or(`project_id.eq.${projectId},customer_id.eq.${project.customer_id}`)
-            .order('created_at', { ascending: false }),
-          
-          // Fetch quotes - check both project_id and customer_id
-          supabase
-            .from('quotes')
-            .select('*')
-            .or(`project_id.eq.${projectId},customer_id.eq.${project.customer_id}`)
-            .order('created_at', { ascending: false }),
-          
-          // Fetch recent activities
-          supabase
-            .from('project_tasks')
-            .select(`
-              id,
-              block_title,
-              is_completed,
-              updated_at
-            `)
-            .eq('project_id', projectId)
-            .order('updated_at', { ascending: false })
-            .limit(5),
-          
-          // Fetch work orders (werkbonnen)
-          supabase
-            .from('project_work_orders')
-            .select('*')
-            .eq('project_id', projectId)
-            .order('created_at', { ascending: false }),
-          
-          // Fetch completion photos
-          supabase
-            .from('completion_photos')
-            .select(`
-              *,
-              completion:project_completions!inner(
-                installer_id,
-                project_id
-              )
-            `)
-            .eq('completion.project_id', projectId)
-            .order('uploaded_at', { ascending: false }),
-          
-          // Fetch project receipts (bonnetjes)
-          supabase
-            .from('project_receipts')
-            .select('*')
-            .eq('project_id', projectId)
-            .order('created_at', { ascending: false })
+        // 1. Fetch main project data and customer
+        const { data: projectData, error: projectError } = await supabase
+          .from('projects')
+          .select('*, customer:customers(*)')
+          .eq('id', projectId)
+          .single();
+
+        if (projectError) throw projectError;
+        setProject(projectData);
+        setCustomer(projectData.customer);
+
+        // 2. Fetch all related data in parallel
+        const [
+          tasksResult,
+          invoicesResult,
+          quotesResult,
+          workOrdersResult,
+          receiptsResult,
+          projectPhotosResult,
+        ] = await Promise.all([
+          supabase.from('project_tasks').select('*').eq('project_id', projectId),
+          supabase.from('invoices').select('*').eq('project_id', projectId),
+          supabase.from('quotes').select('*').eq('project_id', projectId),
+          supabase.from('project_work_orders').select('*').eq('project_id', projectId).order('created_at', { ascending: false }),
+          supabase.from('project_receipts').select('*').eq('project_id', projectId),
+          supabase.from('project_photos').select('*').eq('project_id', projectId),
         ]);
-        
-        console.log('📊 ProjectDetail: Data fetched:', {
-          tasks: taskResult.data?.length || 0,
-          invoices: invoiceResult.data?.length || 0,
-          quotes: quoteResult.data?.length || 0,
-          workOrders: workOrderResult.data?.length || 0,
-          completionPhotos: photosResult.data?.length || 0,
-          receipts: receiptsResult.data?.length || 0,
-          invoices_data: invoiceResult.data,
-          quotes_data: quoteResult.data
-        });
-        
-        console.log('📊 ProjectDetail: Werkbonnen/Foto\'s tab visibility:', {
-          werkbonnenWillShow: workOrderResult.data && workOrderResult.data.length > 0,
-          fotosWillShow: photosResult.data && photosResult.data.length > 0,
-          bonnetjesWillShow: receiptsResult.data && receiptsResult.data.length > 0,
-          userRole: profile?.role,
-          userId: user?.id
-        });
-        
-        setTasks(taskResult.data || []);
-        setInvoices(invoiceResult.data || []);
-        setQuotes(quoteResult.data || []);
-        setActivities(activityResult.data || []);
-        setWorkOrders(workOrderResult.data || []);
-        setCompletionPhotos(photosResult.data || []);
+
+        // Set state for parallel fetches
+        setTasks(tasksResult.data || []);
+        setInvoices(invoicesResult.data || []);
+        setQuotes(quotesResult.data || []);
+        setWorkOrders(workOrdersResult.data || []);
         setReceipts(receiptsResult.data || []);
+
+        // 3. Fetch completion photos based on work orders
+        const workOrders = workOrdersResult.data || [];
+        const completionIds = workOrders.map(wo => wo.completion_id).filter(Boolean);
+        const { data: completionPhotos } = completionIds.length > 0
+          ? await supabase.from('completion_photos').select('*').in('completion_id', completionIds)
+          : { data: [] };
+
+        // 4. Group all photos for the UI
+        const groups: PhotoGroup[] = [];
+        const projectPhotos = projectPhotosResult.data || [];
+        
+        // Group photos by work order
+        workOrders.forEach(wo => {
+          const photosForWorkOrder = (completionPhotos || []).filter(p => p.completion_id === wo.completion_id);
+          if (photosForWorkOrder.length > 0) {
+            groups.push({
+              id: wo.id,
+              title: `Werkbon ${wo.work_order_number}`,
+              photos: photosForWorkOrder,
+            });
+          }
+        });
+
+        // Create a group for general project photos (that aren't part of a completion)
+        const assignedCompletionPhotoIds = new Set((completionPhotos || []).map(p => p.id)); // Assuming photo IDs are unique across tables
+        const generalPhotos = projectPhotos.filter(p => !assignedCompletionPhotoIds.has(p.id));
+
+        if (generalPhotos.length > 0) {
+          groups.unshift({
+            id: 'general',
+            title: 'Algemene Projectfoto\'s',
+            photos: generalPhotos,
+          });
+        }
+        
+        setPhotoGroups(groups);
+
       } catch (error) {
-        console.error('❌ Error fetching project data:', error);
+        console.error("Error fetching project details:", error);
       } finally {
         setLoadingData(false);
       }
     };
 
-    fetchData();
-  }, [projectId, project?.customer_id]);
+    fetchProjectDetails();
+  }, [projectId]);
 
   // Handle task completion toggle
   const handleTaskToggle = async (taskId: string, currentCompleted: boolean) => {
@@ -645,108 +633,42 @@ const ProjectDetail = () => {
 
               {/* FOTO'S TAB */}
               <TabsContent value="fotos" className="p-4">
-                {/* Upload Button */}
-                <div className="mb-4 flex justify-end">
-                  <ProjectPhotoUpload 
-                    projectId={projectId!}
-                    onUploadComplete={async () => {
-                      // Refresh photos data
-                      const { data: photosData } = await supabase
-                        .from('completion_photos')
-                        .select(`
-                          *,
-                          completion:project_completions!inner(
-                            project_id,
-                            installer_id
-                          )
-                        `)
-                        .eq('completion.project_id', projectId)
-                        .order('uploaded_at', { ascending: false });
-                      setCompletionPhotos(photosData || []);
-                    }}
-                  />
-                </div>
-
-                {(() => {
-                  // Filter photos for Installateurs - only show their own
-                  const filteredPhotos = profile?.role === 'Installateur'
-                    ? completionPhotos.filter((p: any) => p.completion?.installer_id === user?.id)
-                    : completionPhotos;
-                  
-                  if (loadingData) {
-                    return <p className="text-center text-muted-foreground py-8">Laden...</p>;
-                  }
-                  
-                  if (filteredPhotos.length === 0) {
-                    return (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <Camera className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                        <p>
-                          {profile?.role === 'Installateur' 
-                            ? 'U heeft nog geen foto\'s gemaakt voor dit project.'
-                            : 'Geen foto\'s beschikbaar voor dit project.'}
-                        </p>
-                      </div>
-                    );
-                  }
-                  
-                  // Group photos by category
-                  const photosByCategory = filteredPhotos.reduce((acc: any, photo: any) => {
-                    const category = photo.category || 'other';
-                    if (!acc[category]) acc[category] = [];
-                    acc[category].push(photo);
-                    return acc;
-                  }, {});
-                  
-                  const categoryLabels: Record<string, string> = {
-                    before: '📷 Voor Foto\'s',
-                    during: '⚙️ Tijdens Werk',
-                    after: '✅ Na Foto\'s',
-                    detail: '🔍 Detail Foto\'s',
-                    overview: '🏠 Overzicht Foto\'s',
-                    other: '📸 Overige Foto\'s'
-                  };
-                  
-                  return (
-                    <div className="space-y-6">
-                      {Object.entries(photosByCategory).map(([category, photos]: [string, any]) => (
-                        <div key={category}>
-                          <h4 className="font-medium mb-3 flex items-center gap-2">
-                            {categoryLabels[category] || '📸 Foto\'s'}
-                            <Badge variant="secondary">{photos.length}</Badge>
-                          </h4>
-                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            {photos.map((photo: any) => (
-                              <div 
-                                key={photo.id} 
-                                className="relative group cursor-pointer"
-                                onClick={() => window.open(photo.photo_url, '_blank')}
-                              >
-                                <div className="aspect-square rounded-lg overflow-hidden border border-gray-200 hover:border-blue-500 transition-colors">
+                <ProjectPhotoUpload projectId={projectId} onUpload={() => { /* TODO: Refresh logic */ }} />
+                <div className="space-y-6 mt-6">
+                  {photoGroups.length > 0 ? (
+                    photoGroups.map(group => (
+                      <Card key={group.id}>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <CheckCircle className="h-5 w-5 text-emerald-600" />
+                            {group.title}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex overflow-x-auto space-x-4 pb-4">
+                            {group.photos.map(photo => (
+                              <div key={photo.id} className="flex-shrink-0 w-64">
+                                <a href={photo.photo_url} target="_blank" rel="noopener noreferrer">
                                   <img 
                                     src={photo.photo_url} 
-                                    alt={photo.description || category}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                    alt={photo.description || 'Projectfoto'}
+                                    className="w-full h-40 object-cover rounded-lg border hover:opacity-90 transition-opacity"
                                   />
-                                </div>
-                                {photo.description && (
-                                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                                    {photo.description}
-                                  </p>
-                                )}
-                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Badge variant="secondary" className="bg-white/90 backdrop-blur">
-                                    {format(new Date(photo.uploaded_at), 'dd MMM HH:mm', { locale: nl })}
-                                  </Badge>
-                                </div>
+                                </a>
+                                <p className="text-xs text-muted-foreground mt-2 truncate">{photo.description || 'Geen beschrijving'}</p>
+                                <Badge variant="outline" className="text-xs mt-1">{photo.category || 'Algemeen'}</Badge>
                               </div>
                             ))}
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : (
+                    <Card className="flex items-center justify-center h-40">
+                      <p className="text-muted-foreground">Geen foto's gevonden voor dit project.</p>
+                    </Card>
+                  )}
+                </div>
               </TabsContent>
 
               {/* BONNETJES TAB */}
