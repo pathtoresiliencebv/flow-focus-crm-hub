@@ -51,6 +51,22 @@ const handler = async (req: Request): Promise<Response> => {
     let project = existingProject;
     let customerId = null;
 
+    // 2a. If quote has project_id, use that project
+    if (!project && quote.project_id) {
+      console.log('📌 Quote has project_id:', quote.project_id);
+      const { data: quotesProject } = await supabase
+        .from('projects')
+        .select('id, customer_id')
+        .eq('id', quote.project_id)
+        .single();
+      
+      if (quotesProject) {
+        project = quotesProject;
+        customerId = quotesProject.customer_id;
+        console.log('✅ Using existing project from quote:', project.id, 'with customer:', customerId);
+      }
+    }
+
     if (!project) {
       // 3. Find or create customer
       const { data: existingCustomer } = await supabase
@@ -108,9 +124,24 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       project = newProject;
-      console.log('Created project:', project.id);
+      console.log('🚀 Created project:', project.id);
     } else {
-      console.log('Project already exists for this quote:', project.id);
+      console.log('✅ Project already exists:', project.id, 'customer_id:', customerId);
+    }
+
+    // Link quote to project if not already linked
+    if (project && !existingProject) {
+      console.log('🔗 Linking quote to project...');
+      const { error: linkError } = await supabase
+        .from('projects')
+        .update({ quote_id: quote_id })
+        .eq('id', project.id);
+
+      if (linkError) {
+        console.error('⚠️ Warning: Could not link quote to project:', linkError);
+      } else {
+        console.log('✅ Quote linked to project');
+      }
     }
 
     // 5. Convert quote blocks to project tasks
