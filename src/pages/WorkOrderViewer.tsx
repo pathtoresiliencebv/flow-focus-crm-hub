@@ -5,424 +5,275 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowLeft, Download, Eye, Mail, FileText } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client'
+import { format } from 'date-fns'
+import { nl } from 'date-fns/locale'
+import { ArrowLeft, Check, Download, Mail, Printer } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
 
-function generateBasicWorkOrderHTML(workOrder: any, tasks: any[]): string {
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Werkbon - ${workOrder.work_order_number}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; font-size: 12px; line-height: 1.4; color: #333; padding: 20px; max-width: 800px; margin: 0 auto; }
-    .header { text-align: center; border-bottom: 3px solid #d32f2f; padding-bottom: 20px; margin-bottom: 30px; }
-    .header h1 { color: #d32f2f; font-size: 28px; margin-bottom: 10px; }
-    .header .company { font-size: 16px; color: #666; }
-    .info-section { margin-bottom: 25px; }
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-    .info-box { background: #f5f5f5; padding: 15px; border-left: 4px solid #d32f2f; }
-    .info-box h3 { color: #d32f2f; margin-bottom: 10px; font-size: 14px; }
-    .section-title { background: #d32f2f; color: white; padding: 8px 15px; font-size: 14px; font-weight: bold; margin-bottom: 15px; }
-    .work-summary { background: #f9f9f9; padding: 15px; margin-bottom: 20px; border: 1px solid #ddd; }
-    .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px; }
-    .signature-box { border: 1px solid #ddd; padding: 15px; text-align: center; }
-    .signature-box h4 { margin-bottom: 10px; color: #d32f2f; }
-    .summary-box { background: #e8f5e8; padding: 15px; border: 1px solid #4caf50; margin-top: 20px; }
-    .summary-box h3 { color: #2e7d32; margin-bottom: 10px; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>SMANS ONDERHOUD</h1>
-    <div class="company">Onderhoud en Service J.J.P. Smans</div>
-    <div style="margin-top: 10px; font-size: 14px;">Werkbon</div>
-  </div>
-
-  <div class="info-grid">
-    <div class="info-box">
-      <h3>Project Informatie</h3>
-      <p><strong>Werkbon:</strong> ${workOrder.work_order_number}</p>
-      <p><strong>Datum:</strong> ${workOrder.signed_at ? new Date(workOrder.signed_at).toLocaleDateString('nl-NL') : 'N/A'}</p>
-      <p><strong>Status:</strong> Afgerond</p>
-    </div>
-    <div class="info-box">
-      <h3>Klant Informatie</h3>
-      <p><strong>Naam:</strong> ${workOrder.client_name || 'N/A'}</p>
-      <p><strong>Project:</strong> ${workOrder.project?.title || 'N/A'}</p>
-    </div>
-  </div>
-
-  <div class="section-title">Werk Samenvatting</div>
-  <div class="work-summary">
-    <p><strong>Werkzaamheden:</strong></p>
-    <p>${workOrder.summary_text || 'Werkbon automatisch gegenereerd'}</p>
-  </div>
-
-  ${tasks && tasks.length > 0 ? `
-  <div class="section-title">Uitgevoerde Taken</div>
-  <div style="background: #f9f9f9; padding: 15px; border: 1px solid #ddd; margin-bottom: 20px;">
-    ${tasks.map(task => `
-      <div style="display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee;">
-        <span style="color: #4caf50; font-weight: bold; margin-right: 10px;">✓</span>
-        <span>${task.block_title || task.task_description}</span>
-      </div>
-    `).join('')}
-  </div>
-  ` : ''}
-
-  <div class="signatures">
-    <div class="signature-box">
-      <h4>Handtekening Klant</h4>
-      <p><strong>Naam:</strong> ${workOrder.client_name || 'N/A'}</p>
-      <p><strong>Datum:</strong> ${workOrder.signed_at ? new Date(workOrder.signed_at).toLocaleDateString('nl-NL') : 'N/A'}</p>
-      ${workOrder.client_signature_data ? `
-      <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #f9f9f9;">
-        <img src="${workOrder.client_signature_data}" alt="Klant handtekening" style="max-width: 200px; max-height: 100px; display: block; margin: 0 auto;" />
-      </div>
-      ` : '<p style="color: #999; text-align: center; padding: 20px; border: 1px dashed #ccc;">Geen handtekening beschikbaar</p>'}
-    </div>
-    
-    <div class="signature-box">
-      <h4>Handtekening Monteur</h4>
-      <p><strong>Naam:</strong> ${workOrder.monteur_naam || 'N/A'}</p>
-      <p><strong>Datum:</strong> ${workOrder.signed_at ? new Date(workOrder.signed_at).toLocaleDateString('nl-NL') : 'N/A'}</p>
-      ${workOrder.monteur_signature_data ? `
-      <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #f9f9f9;">
-        <img src="${workOrder.monteur_signature_data}" alt="Monteur handtekening" style="max-width: 200px; max-height: 100px; display: block; margin: 0 auto;" />
-      </div>
-      ` : '<p style="color: #999; text-align: center; padding: 20px; border: 1px dashed #ccc;">Geen handtekening beschikbaar</p>'}
-    </div>
-  </div>
-
-  <div class="summary-box">
-    <h3>Samenvatting</h3>
-    <p><strong>Werkbon Nummer:</strong> ${workOrder.work_order_number}</p>
-    <p><strong>Ondertekend op:</strong> ${workOrder.signed_at ? new Date(workOrder.signed_at).toLocaleDateString('nl-NL') : 'N/A'}</p>
-  </div>
-
-  <div style="text-align: center; margin-top: 30px; color: #666; font-size: 10px;">
-    <p>Dit werkbon is gegenereerd door het SMANS CRM systeem</p>
-    <p>Datum: ${new Date().toLocaleDateString('nl-NL')} - Werkbon ID: ${workOrder.id.slice(0, 8).toUpperCase()}</p>
-  </div>
-</body>
-</html>
-  `.trim()
+// Define interfaces for the data structures
+interface Task {
+  id: string;
+  task_description: string;
+  block_title: string;
 }
+
+interface Photo {
+  id: string;
+  photo_url: string;
+  description?: string;
+}
+
+interface WorkOrderData {
+  id: string;
+  work_order_number: string;
+  signed_at: string;
+  project: {
+    name: string;
+    id: string;
+    customer: {
+      name: string;
+    }
+  };
+  completion: {
+    id: string;
+    client_name: string;
+    client_signature_timestamp: string;
+    client_signature: string;
+    installer_signature: string;
+    work_performed: string;
+    installer_id: string;
+    installer?: {
+      full_name: string;
+    }
+  };
+}
+
+const generateWorkOrderHTML = (workOrder: WorkOrderData, tasks: Task[], photos: Photo[]): string => {
+  if (!workOrder) return '<p>Werkbon data niet gevonden.</p>';
+
+  const groupedTasks = tasks.reduce((acc, task) => {
+    const block = task.block_title || 'Overige Taken';
+    if (!acc[block]) {
+      acc[block] = [];
+    }
+    acc[block].push(task);
+    return acc;
+  }, {} as Record<string, Task[]>);
+
+  const tasksHtml = Object.keys(groupedTasks).length > 0
+    ? Object.entries(groupedTasks).map(([blockTitle, tasks]) => `
+        <div style="margin-bottom: 15px; padding-left: 10px;">
+          <h4 style="font-weight: bold; color: #333; font-size: 14px; margin-bottom: 5px;">${blockTitle}</h4>
+          <ul style="list-style-type: none; padding-left: 15px; margin:0;">
+            ${tasks.map(task => `
+              <li style="display: flex; align-items: center; margin-bottom: 5px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                <span>${task.task_description}</span>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      `).join('')
+    : '<li>Geen specifieke taken geselecteerd.</li>';
+
+  const photosHtml = photos.length > 0 ? `
+    <div class="section">
+      <div class="section-title">Bijgevoegde Foto's</div>
+      <div class="photo-gallery">
+        ${photos.map(photo => `
+          <div class="photo-item">
+            <img src="${photo.photo_url}" alt="${photo.description || 'Werkbon foto'}" />
+            ${photo.description ? `<p>${photo.description}</p>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    </div>` : '';
+
+  return `
+    <html>
+      <head>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; color: #333; margin: 0; padding: 20px; background-color: #f9fafb; }
+          .container { max-width: 800px; margin: auto; background: white; border: 1px solid #e5e7eb; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+          .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #ef4444; padding-bottom: 20px; margin-bottom: 20px; }
+          .header img { max-width: 150px; }
+          .header h1 { color: #ef4444; font-size: 28px; margin: 0; }
+          .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+          .info-box { background: #f9fafb; border: 1px solid #e5e7eb; padding: 15px; border-radius: 6px; }
+          .info-box h3 { margin: 0 0 10px; font-size: 16px; color: #111827; border-bottom: 1px solid #d1d5db; padding-bottom: 5px; }
+          .info-box p { margin: 4px 0; font-size: 14px; }
+          .section-title { background-color: #ef4444; color: white; padding: 10px 15px; font-weight: bold; border-radius: 6px 6px 0 0; margin-top: 20px; font-size: 16px; }
+          .section-content { border: 1px solid #e5e7eb; border-top: none; padding: 15px; border-radius: 0 0 6px 6px; }
+          .signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px; }
+          .signature-box { border: 1px solid #e5e7eb; padding: 15px; border-radius: 6px; text-align: center; }
+          .signature-box h4 { margin: 0 0 10px; font-size: 15px; }
+          .signature-box img { max-width: 100%; height: auto; border: 1px dashed #d1d5db; border-radius: 4px; margin-bottom: 10px; min-height: 100px; }
+          .photo-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; padding: 15px; border: 1px solid #e5e7eb; border-top: none; }
+          .photo-item img { width: 100%; height: 100px; object-fit: cover; border-radius: 4px; }
+          .photo-item p { font-size: 12px; text-align: center; margin-top: 5px; }
+          ul { margin: 0; padding-left: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <img src="/logo.png" alt="Logo Smans" />
+            <h1>Werkbon</h1>
+          </div>
+          <div class="info-grid">
+            <div class="info-box">
+              <h3>Project Informatie</h3>
+              <p><strong>Werkbon:</strong> ${workOrder.work_order_number || 'N/A'}</p>
+              <p><strong>Datum:</strong> ${workOrder.signed_at ? format(new Date(workOrder.signed_at), 'dd-MM-yyyy HH:mm', { locale: nl }) : 'N/A'}</p>
+              <p><strong>Status:</strong> Afgerond</p>
+            </div>
+            <div class="info-box">
+              <h3>Klant Informatie</h3>
+              <p><strong>Naam:</strong> ${workOrder.project?.customer?.name || 'N/A'}</p>
+              <p><strong>Project:</strong> ${workOrder.project?.name || 'N/A'}</p>
+            </div>
+          </div>
+          
+          <div class="section-title">Werk Samenvatting</div>
+          <div class="section-content">
+            <p>${workOrder.completion?.work_performed || 'Geen samenvatting opgegeven.'}</p>
+          </div>
+          
+          <div class="section-title">Uitgevoerde Taken</div>
+          <div class="section-content">
+            ${tasksHtml}
+          </div>
+          
+          ${photosHtml}
+
+          <div class="signature-grid">
+            <div class="signature-box">
+              <h4>Handtekening Klant</h4>
+              ${workOrder.completion?.client_signature ? `<img src="${workOrder.completion.client_signature}" alt="Handtekening Klant"/>` : '<p>Geen handtekening beschikbaar</p>'}
+              <p><strong>Naam:</strong> ${workOrder.completion?.client_name || 'N/A'}</p>
+              <p><strong>Datum:</strong> ${workOrder.completion?.client_signature_timestamp ? format(new Date(workOrder.completion.client_signature_timestamp), 'dd-MM-yyyy', { locale: nl }) : 'N/A'}</p>
+            </div>
+            <div class="signature-box">
+              <h4>Handtekening Monteur</h4>
+              ${workOrder.completion?.installer_signature ? `<img src="${workOrder.completion.installer_signature}" alt="Handtekening Monteur"/>` : '<p>Geen handtekening beschikbaar</p>'}
+              <p><strong>Naam:</strong> ${workOrder.completion?.installer?.full_name || 'N/A'}</p>
+              <p><strong>Datum:</strong> ${workOrder.signed_at ? format(new Date(workOrder.signed_at), 'dd-MM-yyyy', { locale: nl }) : 'N/A'}</p>
+            </div>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+};
 
 export default function WorkOrderViewer() {
   const { projectId, workOrderId } = useParams<{ projectId: string; workOrderId: string }>()
   const navigate = useNavigate()
-  const [workOrder, setWorkOrder] = useState<any>(null)
-  const [htmlContent, setHtmlContent] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string>('')
   const { toast } = useToast()
 
-  const loadWorkOrder = useCallback(async () => {
+  const [workOrder, setWorkOrder] = useState<WorkOrderData | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [htmlContent, setHtmlContent] = useState('');
+
+  const loadWorkOrderData = useCallback(async () => {
+    if (!workOrderId) {
+      setError('Werkbon ID niet gevonden.');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      setIsLoading(true)
-      setError('')
-      
-      // Fetch work order data
+      setIsLoading(true);
+      setError('');
+
+      // 1. Fetch the main work order data, including the completion record
       const { data: workOrderData, error: workOrderError } = await supabase
         .from('project_work_orders')
-        .select(`
-          *,
-          project:projects(*, customer:customers(*)),
-          completion:project_completions(*)
-        `)
+        .select('*, project:projects(*, customer:customers(*)), completion:project_completions(*)')
         .eq('id', workOrderId)
         .single();
 
-      if (workOrderError) throw workOrderError;
+      if (workOrderError) throw new Error(`Fout bij laden werkbon: ${workOrderError.message}`);
+      if (!workOrderData) throw new Error('Werkbon niet gevonden.');
       
-      let finalWorkOrderData = { ...workOrderData };
+      let finalWorkOrderData: WorkOrderData = workOrderData as WorkOrderData;
 
-      // Manual join to get installer profile if completion exists
-      if (workOrderData.completion && workOrderData.completion.installer_id) {
+      // 2. If completion exists, fetch the installer's profile manually for robustness
+      if (finalWorkOrderData.completion?.installer_id) {
         const { data: installerProfile, error: profileError } = await supabase
           .from('profiles')
           .select('full_name')
-          .eq('id', workOrderData.completion.installer_id)
+          .eq('id', finalWorkOrderData.completion.installer_id)
           .single();
         
-        if (profileError) {
-          console.error("Error fetching installer profile manually:", profileError);
-        } else if (installerProfile) {
+        if (profileError) console.warn("Kon monteur profiel niet laden:", profileError.message);
+        else if (installerProfile) {
           finalWorkOrderData.completion.installer = installerProfile;
         }
       }
 
       setWorkOrder(finalWorkOrderData);
 
-      // Generate PDF content
-      if (finalWorkOrderData.completion_id) {
-        const { data: pdfData, error: pdfError } = await supabase.functions.invoke('generate-pdf-simple', {
-          body: { completionId: finalWorkOrderData.completion_id }
-        })
+      // 3. Fetch all tasks associated with this work order
+      const { data: taskData, error: taskError } = await supabase
+        .from('project_tasks')
+        .select('id, task_description, block_title')
+        .eq('work_order_id', workOrderId);
 
-        if (pdfError) {
-          console.error('PDF generation error:', pdfError)
-          // Continue without PDF content
-        } else {
-          setHtmlContent(pdfData.html)
-        }
-      } else {
-        console.warn('No completion_id found for work order, fetching related data manually.');
+      if (taskError) throw new Error(`Fout bij laden taken: ${taskError.message}`);
+      setTasks(taskData || []);
+
+      // 4. Fetch photos associated with the completion
+      if (finalWorkOrderData.completion?.id) {
+        const { data: photoData, error: photoError } = await supabase
+          .from('completion_photos')
+          .select('id, photo_url, description')
+          .eq('completion_id', finalWorkOrderData.completion.id);
         
-        // Manually fetch completion data to get signatures and installer info
-        const { data: completions } = await supabase
-          .from('project_completions')
-          .select('*, installer:profiles(full_name)')
-          .eq('project_id', finalWorkOrderData.project_id)
-          .order('created_at', { ascending: false })
-          .limit(1);
-
-        const completionData = completions && completions[0] ? completions[0] : null;
-
-        // Fetch tasks for the basic HTML view
-        const { data: tasksData } = await supabase
-          .from('project_tasks')
-          .select('*')
-          .eq('project_id', finalWorkOrderData.project_id);
-        
-        // Add installer info to workOrder object for the template
-        const enhancedWorkOrderData = {
-          ...finalWorkOrderData,
-          monteur_signature_data: completionData?.installer_signature,
-          monteur_naam: completionData?.installer?.full_name,
-        };
-
-        // Generate basic HTML with all available data
-        const basicHtml = generateBasicWorkOrderHTML(enhancedWorkOrderData, tasksData || []);
-        setHtmlContent(basicHtml);
+        if (photoError) console.warn("Kon foto's niet laden:", photoError.message);
+        setPhotos(photoData || []);
       }
+
     } catch (err: any) {
-      console.error('Error loading work order:', err)
-      const errorMessage = err?.message || 'Kon werkbon niet laden'
-      setError(errorMessage)
+      setError(err.message);
       toast({
-        title: "Fout",
-        description: errorMessage,
-        variant: "destructive"
-      })
+        title: "Fout bij laden",
+        description: err.message,
+        variant: "destructive",
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [workOrderId, projectId, navigate, toast]);
+  }, [workOrderId, toast]);
 
   useEffect(() => {
-    if (workOrderId) {
-      loadWorkOrder();
+    loadWorkOrderData();
+  }, [loadWorkOrderData]);
+
+  useEffect(() => {
+    if (workOrder && tasks) {
+      const newHtml = generateWorkOrderHTML(workOrder, tasks, photos);
+      setHtmlContent(newHtml);
     }
-  }, [workOrderId, loadWorkOrder]);
+  }, [workOrder, tasks, photos]);
 
-  const generateWorkOrderHTML = (workOrderData: any): string => {
-    const {
-      work_order_number,
-      signed_at,
-      client_name,
-      project,
-      client_signature_data,
-      summary_text,
-      tasks = [],
-      monteur_naam,
-      monteur_signature_data
-    } = workOrderData;
-    
-    const tasksHtml = tasks.length > 0
-      ? `<ul style="list-style-position: inside; padding-left: 5px; margin: 0;">${tasks.map((task: any) => `<li>${task.task_description}</li>`).join('')}</ul>`
-      : 'Geen specifieke taken geselecteerd voor deze werkbon.';
-
-    const summaryHtml = summary_text
-      ? `<div class="section-title">Samenvatting Oplevering</div><div class="work-summary"><p>${summary_text}</p></div>`
-      : '';
-
-    return `
-    <!DOCTYPE html>
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Werkbon - ${work_order_number}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; font-size: 12px; line-height: 1.4; color: #333; padding: 20px; max-width: 800px; margin: 0 auto; }
-    .header { text-align: center; border-bottom: 3px solid #d32f2f; padding-bottom: 20px; margin-bottom: 30px; }
-    .header h1 { color: #d32f2f; font-size: 28px; margin-bottom: 10px; }
-    .header .company { font-size: 16px; color: #666; }
-    .info-section { margin-bottom: 25px; }
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-    .info-box { background: #f5f5f5; padding: 15px; border-left: 4px solid #d32f2f; }
-    .info-box h3 { color: #d32f2f; margin-bottom: 10px; font-size: 14px; }
-    .section-title { background: #d32f2f; color: white; padding: 8px 15px; font-size: 14px; font-weight: bold; margin-bottom: 15px; }
-    .work-summary { background: #f9f9f9; padding: 15px; margin-bottom: 20px; border: 1px solid #ddd; }
-    .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px; }
-    .signature-box { border: 1px solid #ddd; padding: 15px; text-align: center; }
-    .signature-box h4 { margin-bottom: 10px; color: #d32f2f; }
-    .summary-box { background: #e8f5e8; padding: 15px; border: 1px solid #4caf50; margin-top: 20px; }
-    .summary-box h3 { color: #2e7d32; margin-bottom: 10px; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>SMANS ONDERHOUD</h1>
-    <div class="company">Onderhoud en Service J.J.P. Smans</div>
-    <div style="margin-top: 10px; font-size: 14px;">Werkbon</div>
-  </div>
-
-  <div class="info-grid">
-    <div class="info-box">
-      <h3>Project Informatie</h3>
-      <p><strong>Werkbon:</strong> ${work_order_number}</p>
-      <p><strong>Datum:</strong> ${signed_at ? new Date(signed_at).toLocaleDateString('nl-NL') : 'N/A'}</p>
-      <p><strong>Status:</strong> Afgerond</p>
-    </div>
-    <div class="info-box">
-      <h3>Klant Informatie</h3>
-      <p><strong>Naam:</strong> ${client_name || 'N/A'}</p>
-      <p><strong>Project:</strong> ${project?.title || 'N/A'}</p>
-    </div>
-  </div>
-
-  ${summaryHtml}
-
-  <div class="section-title">Uitgevoerde Werkzaamheden</div>
-  <div class="work-summary">
-    ${tasksHtml}
-  </div>
-  
-  <div class="signatures">
-    <div class="signature-box">
-      <h4>Handtekening Klant</h4>
-      <p><strong>Naam:</strong> ${client_name || 'N/A'}</p>
-      <p><strong>Datum:</strong> ${signed_at ? new Date(signed_at).toLocaleDateString('nl-NL') : 'N/A'}</p>
-      ${client_signature_data ? `
-      <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #f9f9f9;">
-        <img src="${client_signature_data}" alt="Klant handtekening" style="max-width: 200px; max-height: 100px; display: block; margin: 0 auto;" />
-      </div>
-      ` : '<p style="color: #999; text-align: center; padding: 20px; border: 1px dashed #ccc;">Geen handtekening beschikbaar</p>'}
-    </div>
-    
-    <div class="signature-box">
-      <h4>Handtekening Monteur</h4>
-      <p><strong>Naam:</strong> ${monteur_naam || 'N/A'}</p>
-      <p><strong>Datum:</strong> ${signed_at ? new Date(signed_at).toLocaleDateString('nl-NL') : 'N/A'}</p>
-      ${monteur_signature_data ? `
-      <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #f9f9f9;">
-        <img src="${monteur_signature_data}" alt="Monteur handtekening" style="max-width: 200px; max-height: 100px; display: block; margin: 0 auto;" />
-      </div>
-      ` : '<p style="color: #999; text-align: center; padding: 20px; border: 1px dashed #ccc;">Geen handtekening beschikbaar</p>'}
-    </div>
-  </div>
-
-  <div class="summary-box">
-    <h3>Samenvatting</h3>
-    <p><strong>Werkbon Nummer:</strong> ${work_order_number}</p>
-    <p><strong>Ondertekend op:</strong> ${signed_at ? new Date(signed_at).toLocaleDateString('nl-NL') : 'N/A'}</p>
-  </div>
-
-  <div style="text-align: center; margin-top: 30px; color: #666; font-size: 10px;">
-    <p>Dit werkbon is gegenereerd door het SMANS CRM systeem</p>
-    <p>Datum: ${new Date().toLocaleDateString('nl-NL')} - Werkbon ID: ${workOrderData.id.slice(0, 8).toUpperCase()}</p>
-  </div>
-</body>
-</html>
-  `.trim();
+  const handlePrint = () => {
+    const iframe = document.getElementById('work-order-iframe') as HTMLIFrameElement;
+    if (iframe && iframe.contentWindow) {
+      iframe.contentWindow.print();
+    }
   };
-
-
-  const downloadPDF = async () => {
-    try {
-      if (!htmlContent) return
-
-      // Try to get PDF URL from the response
-      const { data, error } = await supabase.functions.invoke('generate-pdf-simple', {
-        body: { completionId: workOrder?.completion_id }
-      })
-
-      if (error) throw error
-
-      if (data.pdfUrl && data.pdfUrl.startsWith('http')) {
-        // Download actual PDF from URL
-        const link = document.createElement('a')
-        link.href = data.pdfUrl
-        link.download = `werkbon-${workOrder?.work_order_number || 'onbekend'}-${new Date().toISOString().split('T')[0]}.pdf`
-        link.target = '_blank'
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-
-        toast({
-          title: "PDF Gedownload",
-          description: "Werkbon PDF is succesvol gedownload",
-        })
-      } else {
-        // Fallback to HTML download
-        const blob = new Blob([htmlContent], { type: 'text/html' })
-        const url = URL.createObjectURL(blob)
-        
-        const link = document.createElement('a')
-        link.href = url
-        link.download = `werkbon-${workOrder?.work_order_number || 'onbekend'}-${new Date().toISOString().split('T')[0]}.html`
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        URL.revokeObjectURL(url)
-
-        toast({
-          title: "HTML Gedownload",
-          description: "Werkbon wordt gedownload als HTML bestand (kan worden geprint naar PDF)",
-        })
-      }
-    } catch (err) {
-      console.error('Error downloading PDF:', err)
-      toast({
-        title: "Fout",
-        description: "Kon PDF niet downloaden",
-        variant: "destructive"
-      })
+  
+  const handleGoBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate(`/project/${projectId}`);
     }
-  }
-
-  const sendEmail = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('send-workorder-email', {
-        body: { 
-          completionId: workOrder?.completion_id,
-          customerEmail: workOrder?.project?.customer?.email
-        }
-      })
-
-      if (error) throw error
-
-      toast({
-        title: "Email Verzonden",
-        description: "Werkbon is per email verzonden naar de klant",
-      })
-    } catch (err) {
-      console.error('Error sending email:', err)
-      toast({
-        title: "Fout",
-        description: "Kon email niet verzenden",
-        variant: "destructive"
-      })
-    }
-  }
-
-  const printPDF = () => {
-    if (!htmlContent) return
-
-    // Create a new window with the HTML content
-    const printWindow = window.open('', '_blank')
-    if (printWindow) {
-      printWindow.document.write(htmlContent)
-      printWindow.document.close()
-      printWindow.focus()
-      printWindow.print()
-    }
-  }
+  };
 
   if (isLoading) {
     return (
@@ -467,7 +318,7 @@ export default function WorkOrderViewer() {
           <Card>
             <CardContent className="p-6">
               <p className="text-red-600">{error}</p>
-              <Button onClick={loadWorkOrder} className="mt-4">
+              <Button onClick={loadWorkOrderData} className="mt-4">
                 Opnieuw Proberen
               </Button>
             </CardContent>
@@ -500,7 +351,7 @@ export default function WorkOrderViewer() {
           <div>
             <h1 className="text-2xl font-bold">Werkbon - {workOrder.work_order_number}</h1>
             <p className="text-muted-foreground">
-              Project: {workOrder.project?.title} | 
+              Project: {workOrder.project?.name} | 
               Klant: {workOrder.project?.customer?.name}
             </p>
           </div>
@@ -514,15 +365,30 @@ export default function WorkOrderViewer() {
                 Werkbon - {workOrder.work_order_number}
               </CardTitle>
               <div className="flex gap-2">
-                <Button onClick={downloadPDF} variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-2" />
-                  Download PDF
+                <Button onClick={() => {
+                  const iframe = document.getElementById('work-order-iframe') as HTMLIFrameElement;
+                  if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.print();
+                  }
+                }} variant="outline" size="sm">
+                  <Printer className="h-4 w-4 mr-2" />
+                  Print
                 </Button>
-                <Button onClick={printPDF} variant="outline" size="sm">
+                <Button onClick={() => {
+                  const iframe = document.getElementById('work-order-iframe') as HTMLIFrameElement;
+                  if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.print();
+                  }
+                }} variant="outline" size="sm">
                   <Eye className="h-4 w-4 mr-2" />
                   Print
                 </Button>
-                <Button onClick={sendEmail} variant="outline" size="sm">
+                <Button onClick={() => {
+                  const iframe = document.getElementById('work-order-iframe') as HTMLIFrameElement;
+                  if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.print();
+                  }
+                }} variant="outline" size="sm">
                   <Mail className="h-4 w-4 mr-2" />
                   Email
                 </Button>
@@ -532,6 +398,7 @@ export default function WorkOrderViewer() {
           <CardContent>
             <div className="border rounded-lg overflow-hidden">
               <iframe
+                id="work-order-iframe"
                 srcDoc={htmlContent}
                 className="w-full h-[800px] border-0"
                 title="Werkbon PDF"

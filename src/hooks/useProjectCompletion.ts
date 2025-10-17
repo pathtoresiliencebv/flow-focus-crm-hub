@@ -54,6 +54,7 @@ export interface CompletionPhotoData {
 interface CompletionPayload {
   completionData: ProjectCompletionData;
   photos: { url: string; category: string; description: string }[];
+  selectedTasks: Set<string>; // Added selectedTasks to the interface
 }
 
 /**
@@ -66,7 +67,7 @@ export const useProjectCompletion = () => {
   const queryClient = useQueryClient();
 
   const { mutateAsync: completeProject, isLoading: isCompleting } = useMutation<any, Error, CompletionPayload>({
-    mutationFn: async ({ completionData, photos }) => {
+    mutationFn: async ({ completionData, photos, selectedTasks }) => {
       // Explicitly get the current session to ensure the auth token is fresh
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError || !session) {
@@ -88,7 +89,8 @@ export const useProjectCompletion = () => {
             category: p.category,
             description: p.description,
             uploader_id: profile.id
-          }))
+          })),
+          taskIds: Array.from(selectedTasks) // Pass the selected task IDs
         },
       });
 

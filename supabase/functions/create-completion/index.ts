@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { completionData, photos } = await req.json();
+    const { completionData, photos, taskIds } = await req.json();
 
     // Get the authorization header from the request
     const authHeader = req.headers.get('Authorization')!;
@@ -59,10 +59,11 @@ Deno.serve(async (req) => {
       if (photosError) console.warn('Failed to insert photos:', photosError.message);
     }
 
-    // 3. Update project status via RPC
+    // 3. Update project status and link tasks via RPC
     const { error: rpcError } = await supabaseAdmin.rpc('complete_project', {
       p_project_id: completion.project_id,
       p_completion_id: completion.id,
+      p_task_ids: taskIds,
     });
     if (rpcError) console.warn('Failed to update project status via RPC:', rpcError.message);
 
