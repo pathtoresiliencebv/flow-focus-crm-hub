@@ -123,6 +123,12 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
+    console.log('📋 Parsed items from quote:', {
+      itemsType: typeof quote.items,
+      itemsLength: Array.isArray(parsedItems) ? parsedItems.length : 0,
+      firstItemStructure: parsedItems.length > 0 ? JSON.stringify(parsedItems[0]).substring(0, 200) : 'N/A'
+    });
+
     // Get the highest order_index from existing tasks to append new tasks
     const { data: existingTasks } = await supabase
       .from('project_tasks')
@@ -138,35 +144,67 @@ const handler = async (req: Request): Promise<Response> => {
     // Check if items contain blocks structure
     if (parsedItems.length > 0 && parsedItems[0] && typeof parsedItems[0] === 'object' && parsedItems[0].items) {
       // New blocks structure
+      console.log('✅ Detected blocks structure with', parsedItems.length, 'blocks');
       for (const block of parsedItems) {
+        console.log('📦 Processing block:', block.title, 'with', (block.items || []).length, 'items');
         for (const item of block.items || []) {
+          if (item.type === 'product') {  // Only create tasks for product items, not textblocks
+            taskInserts.push({
+              project_id: project.id,
+              block_title: block.title || 'Untitled Block',
+              task_description: item.description,
+              is_info_block: false,
+              info_text: null,
+              is_completed: false,
+              order_index: orderIndex++,
+              source_quote_item_id: item.id
+            });
+          } else if (item.type === 'textblock') {
+            // For textblocks, create info blocks
+            taskInserts.push({
+              project_id: project.id,
+              block_title: block.title || 'Untitled Block',
+              task_description: item.description,
+              is_info_block: true,
+              info_text: item.description,
+              is_completed: false,
+              order_index: orderIndex++,
+              source_quote_item_id: item.id
+            });
+          }
+        }
+      }
+    } else {
+      // Old flat structure - create single block
+      console.log('ℹ️ Using old flat structure with', parsedItems.length, 'items');
+      for (const item of parsedItems) {
+        if (item.type === 'product') {
           taskInserts.push({
             project_id: project.id,
-            block_title: block.title || 'Untitled Block',
+            block_title: 'Items',
             task_description: item.description,
-            is_info_block: item.type === 'textblock',
-            info_text: item.type === 'textblock' ? item.description : null,
+            is_info_block: false,
+            info_text: null,
+            is_completed: false,
+            order_index: orderIndex++,
+            source_quote_item_id: item.id
+          });
+        } else if (item.type === 'textblock') {
+          taskInserts.push({
+            project_id: project.id,
+            block_title: 'Items',
+            task_description: item.description,
+            is_info_block: true,
+            info_text: item.description,
             is_completed: false,
             order_index: orderIndex++,
             source_quote_item_id: item.id
           });
         }
       }
-    } else {
-      // Old flat structure - create single block
-      for (const item of parsedItems) {
-        taskInserts.push({
-          project_id: project.id,
-          block_title: 'Items',
-          task_description: item.description,
-          is_info_block: item.type === 'textblock',
-          info_text: item.type === 'textblock' ? item.description : null,
-          is_completed: false,
-          order_index: orderIndex++,
-          source_quote_item_id: item.id
-        });
-      }
     }
+
+    console.log('🎯 Created', taskInserts.length, 'task inserts from quote items');
 
     if (taskInserts.length > 0) {
       const { error: tasksError } = await supabase
@@ -174,10 +212,12 @@ const handler = async (req: Request): Promise<Response> => {
         .insert(taskInserts);
 
       if (tasksError) {
-        console.error('Error creating project tasks:', tasksError);
+        console.error('❌ Error creating project tasks:', tasksError);
       } else {
-        console.log('Added', taskInserts.length, 'new project tasks from quote approval');
+        console.log('✅ Added', taskInserts.length, 'new project tasks from quote approval');
       }
+    } else {
+      console.log('⚠️ No tasks to insert - quote had no items or all items were textblocks');
     }
 
     // 6. Check if quote has payment terms for enhanced invoice creation
@@ -284,7 +324,9 @@ const handler = async (req: Request): Promise<Response> => {
         orderIndex = 0;
 
         if (parsedItems.length > 0 && parsedItems[0] && typeof parsedItems[0] === 'object' && parsedItems[0].items) {
+          console.log('📄 Converting blocks to invoice items...');
           for (const block of parsedItems) {
+            console.log('📦 Block:', block.title, '- items:', (block.items || []).length);
             for (const item of block.items || []) {
               if (item.type === 'product') {
                 invoiceItemInserts.push({
@@ -297,10 +339,23 @@ const handler = async (req: Request): Promise<Response> => {
                   type: item.type,
                   order_index: orderIndex++
                 });
+              } else if (item.type === 'textblock') {
+                // Also add textblocks to invoice
+                invoiceItemInserts.push({
+                  invoice_id: invoice.id,
+                  description: item.description,
+                  quantity: null,
+                  unit_price: null,
+                  vat_rate: 0,
+                  total: null,
+                  type: item.type,
+                  order_index: orderIndex++
+                });
               }
             }
           }
         } else {
+          console.log('📄 Converting flat items to invoice items...');
           for (const item of parsedItems) {
             if (item.type === 'product') {
               invoiceItemInserts.push({
@@ -313,9 +368,22 @@ const handler = async (req: Request): Promise<Response> => {
                 type: item.type,
                 order_index: orderIndex++
               });
+            } else if (item.type === 'textblock') {
+              invoiceItemInserts.push({
+                invoice_id: invoice.id,
+                description: item.description,
+                quantity: null,
+                unit_price: null,
+                vat_rate: 0,
+                total: null,
+                type: item.type,
+                order_index: orderIndex++
+              });
             }
           }
         }
+
+        console.log('💾 Invoice items to insert:', invoiceItemInserts.length);
 
         if (invoiceItemInserts.length > 0) {
           const { error: invoiceItemsError } = await supabase
@@ -323,9 +391,9 @@ const handler = async (req: Request): Promise<Response> => {
             .insert(invoiceItemInserts);
 
           if (invoiceItemsError) {
-            console.error('Error creating invoice items:', invoiceItemsError);
+            console.error('❌ Error creating invoice items:', invoiceItemsError);
           } else {
-            console.log('Created', invoiceItemInserts.length, 'invoice items');
+            console.log('✅ Created', invoiceItemInserts.length, 'invoice items');
           }
         }
       }
