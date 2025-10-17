@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -114,92 +114,92 @@ export default function WorkOrderViewer() {
   const { projectId, workOrderId } = useParams<{ projectId: string; workOrderId: string }>()
   const navigate = useNavigate()
   const [workOrder, setWorkOrder] = useState<any>(null)
-  const [htmlContent, setHtmlContent] = useState<string>('')
+  const [htmlContent, setHtmlContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string>('')
   const { toast } = useToast()
 
-  useEffect(() => {
-    const loadWorkOrder = async () => {
-      try {
-        setIsLoading(true)
-        setError('')
-        
-        // Fetch work order data
-        const { data: workOrderData, error: workOrderError } = await supabase
-          .from('project_work_orders')
-          .select(`
-            *,
-            project:projects(*, customer:customers(*)),
-            completion:project_completions(installer_signature, installer:profiles(full_name))
-          `)
-          .eq('id', workOrderId)
-          .single()
+  const loadWorkOrder = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      setError('')
+      
+      // Fetch work order data
+      const { data: workOrderData, error: workOrderError } = await supabase
+        .from('project_work_orders')
+        .select(`
+          *,
+          project:projects(*, customer:customers(*)),
+          completion:project_completions(installer_signature, installer:profiles(full_name))
+        `)
+        .eq('id', workOrderId)
+        .single()
 
-        if (workOrderError) throw workOrderError
+      if (workOrderError) throw workOrderError
 
-        setWorkOrder(workOrderData)
+      setWorkOrder(workOrderData)
 
-        // Generate PDF content
-        if (workOrderData.completion_id) {
-          const { data: pdfData, error: pdfError } = await supabase.functions.invoke('generate-pdf-simple', {
-            body: { completionId: workOrderData.completion_id }
-          })
-
-          if (pdfError) {
-            console.error('PDF generation error:', pdfError)
-            // Continue without PDF content
-          } else {
-            setHtmlContent(pdfData.html)
-          }
-        } else {
-          console.warn('No completion_id found for work order, fetching related data manually.');
-          
-          // Manually fetch completion data to get signatures and installer info
-          const { data: completions } = await supabase
-            .from('project_completions')
-            .select('*, installer:profiles(full_name)')
-            .eq('project_id', workOrderData.project_id)
-            .order('created_at', { ascending: false })
-            .limit(1);
-
-          const completionData = completions && completions[0] ? completions[0] : null;
-
-          // Fetch tasks for the basic HTML view
-          const { data: tasksData } = await supabase
-            .from('project_tasks')
-            .select('*')
-            .eq('project_id', workOrderData.project_id);
-          
-          // Add installer info to workOrder object for the template
-          const enhancedWorkOrderData = {
-            ...workOrderData,
-            monteur_signature_data: completionData?.installer_signature,
-            monteur_naam: completionData?.installer?.full_name,
-          };
-
-          // Generate basic HTML with all available data
-          const basicHtml = generateBasicWorkOrderHTML(enhancedWorkOrderData, tasksData || []);
-          setHtmlContent(basicHtml);
-        }
-      } catch (err: any) {
-        console.error('Error loading work order:', err)
-        const errorMessage = err?.message || 'Kon werkbon niet laden'
-        setError(errorMessage)
-        toast({
-          title: "Fout",
-          description: errorMessage,
-          variant: "destructive"
+      // Generate PDF content
+      if (workOrderData.completion_id) {
+        const { data: pdfData, error: pdfError } = await supabase.functions.invoke('generate-pdf-simple', {
+          body: { completionId: workOrderData.completion_id }
         })
-      } finally {
-        setIsLoading(false)
-      }
-    };
 
+        if (pdfError) {
+          console.error('PDF generation error:', pdfError)
+          // Continue without PDF content
+        } else {
+          setHtmlContent(pdfData.html)
+        }
+      } else {
+        console.warn('No completion_id found for work order, fetching related data manually.');
+        
+        // Manually fetch completion data to get signatures and installer info
+        const { data: completions } = await supabase
+          .from('project_completions')
+          .select('*, installer:profiles(full_name)')
+          .eq('project_id', workOrderData.project_id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        const completionData = completions && completions[0] ? completions[0] : null;
+
+        // Fetch tasks for the basic HTML view
+        const { data: tasksData } = await supabase
+          .from('project_tasks')
+          .select('*')
+          .eq('project_id', workOrderData.project_id);
+        
+        // Add installer info to workOrder object for the template
+        const enhancedWorkOrderData = {
+          ...workOrderData,
+          monteur_signature_data: completionData?.installer_signature,
+          monteur_naam: completionData?.installer?.full_name,
+        };
+
+        // Generate basic HTML with all available data
+        const basicHtml = generateBasicWorkOrderHTML(enhancedWorkOrderData, tasksData || []);
+        setHtmlContent(basicHtml);
+      }
+    } catch (err: any) {
+      console.error('Error loading work order:', err)
+      const errorMessage = err?.message || 'Kon werkbon niet laden'
+      setError(errorMessage)
+      toast({
+        title: "Fout",
+        description: errorMessage,
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }, [workOrderId, projectId, navigate, toast]);
+
+  useEffect(() => {
     if (workOrderId) {
       loadWorkOrder();
     }
-  }, [workOrderId, projectId]);
+  }, [workOrderId, loadWorkOrder]);
 
   const generateWorkOrderHTML = (workOrderData: any): string => {
     const {
