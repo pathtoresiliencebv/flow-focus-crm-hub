@@ -149,7 +149,19 @@ const generateWorkOrderHTML = (workOrder: WorkOrderData, tasks: Task[], photos: 
             ${tasksHtml}
           </div>
           
-          ${photosHtml}
+          ${photos.length > 0 ? `
+          <div class="section-title">Foto's</div>
+          <div class="section-content">
+            <div class="photo-gallery">
+              ${photos.map(photo => `
+                <div class="photo-item">
+                  <img src="${photo.photo_url}" alt="${photo.description || 'Foto'}" />
+                  ${photo.description ? `<p>${photo.description}</p>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          ` : ''}
 
           <div class="signature-grid">
             <div class="signature-box">
@@ -220,6 +232,19 @@ export default function WorkOrderViewer() {
           .eq('id', baseWO.completion_id)
           .single();
         if (!compErr) completionData = comp;
+      }
+
+      // Fallback: latest completion for this project if none linked
+      if (!completionData) {
+        const { data: latestComp } = await supabase
+          .from('project_completions')
+          .select('*')
+          .eq('project_id', baseWO.project_id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        if (latestComp && latestComp.length > 0) {
+          completionData = latestComp[0];
+        }
       }
 
       // 3b) Installer profile

@@ -573,7 +573,10 @@ const ProjectDetail = () => {
                               Ondertekend door: <span className="font-medium text-foreground">{workOrder.client_name}</span>
                             </p>
                             <p className="text-sm text-muted-foreground">
-                              Datum: {workOrder.signed_at ? format(new Date(workOrder.signed_at), 'dd MMM yyyy - HH:mm', { locale: nl }) : 'Onbekend'}
+                              Datum: {(() => {
+                                const ts = (workOrder as any).signed_at || (workOrder as any).created_at;
+                                return ts ? format(new Date(ts), 'dd MMM yyyy - HH:mm', { locale: nl }) : 'Onbekend'
+                              })()}
                             </p>
                           </div>
                           

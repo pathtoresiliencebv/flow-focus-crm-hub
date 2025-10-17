@@ -111,13 +111,15 @@ export const useProjectCompletion = () => {
 
       return data.completion;
     },
-    onSuccess: (completion) => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] });
-      queryClient.invalidateQueries({ queryKey: ['project-activities', completion.project_id] });
-      queryClient.invalidateQueries({ queryKey: ['project_tasks', completion.project_id] });
-      toast({ title: "✅ Project succesvol opgeleverd!" });
-      console.log('Project completion successful, handled by edge function.');
-    },
+      onSuccess: (completion) => {
+        queryClient.invalidateQueries({ queryKey: ['projects'] });
+        queryClient.invalidateQueries({ queryKey: ['project-activities', completion.project_id] });
+        queryClient.invalidateQueries({ queryKey: ['project_tasks', completion.project_id] });
+        queryClient.invalidateQueries({ queryKey: ['project_work_orders', completion.project_id] });
+        queryClient.invalidateQueries({ queryKey: ['project-detail', completion.project_id] });
+        toast({ title: "✅ Project succesvol opgeleverd!" });
+        console.log('Project completion successful, handled by edge function.');
+      },
     onError: (error: Error) => {
       toast({
         title: "Fout bij opleveren",
