@@ -191,17 +191,62 @@ export const ProjectCompletionPanel = ({ project, isOpen, onClose, onComplete }:
               </div>
             ))}
           </div>
-          <ImageUpload
-            value={null}
-            onChange={(url) => {
-              if (url) {
-                setFormData(prev => ({
-                  ...prev,
-                  deliveryPhotos: [...prev.deliveryPhotos, { url, category: 'after', description: 'Opleverfoto' }]
-                }));
-              }
-            }}
-          />
+          <div className="mt-2">
+            <input
+              type="file"
+              accept="image/*"
+              id="photo-upload-completion"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                
+                try {
+                  // Convert to base64
+                  const reader = new FileReader();
+                  reader.onload = async (event) => {
+                    const base64Data = (event.target?.result as string).split(',')[1];
+                    const byteCharacters = atob(base64Data);
+                    const byteArray = new Uint8Array(byteCharacters.length);
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                      byteArray[i] = byteCharacters.charCodeAt(i);
+                    }
+                    const blob = new Blob([byteArray], { type: file.type });
+                    
+                    // Upload to Supabase Storage
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) throw new Error('Niet ingelogd');
+                    
+                    const fileName = `${user.id}/${Date.now()}_${file.name}`;
+                    const { error: uploadError } = await supabase.storage
+                      .from('completion-photos')
+                      .upload(fileName, blob, { contentType: file.type });
+                    
+                    if (uploadError) throw uploadError;
+                    
+                    // Get public URL
+                    const { data: { publicUrl } } = supabase.storage
+                      .from('completion-photos')
+                      .getPublicUrl(fileName);
+                    
+                    // Add to form
+                    setFormData(prev => ({
+                      ...prev,
+                      deliveryPhotos: [...prev.deliveryPhotos, { url: publicUrl, category: 'after', description: 'Opleverfoto' }]
+                    }));
+                    
+                    toast({ title: "✅ Foto toegevoegd", description: "De foto is klaar om op te slaan bij oplevering" });
+                  };
+                  reader.readAsDataURL(file);
+                } catch (error: any) {
+                  toast({ title: "Fout bij uploaden", description: error.message, variant: "destructive" });
+                }
+              }}
+            />
+            <label htmlFor="photo-upload-completion" className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 cursor-pointer">
+              + Foto Toevoegen
+            </label>
+          </div>
         </div>
 
         {/* Signatures */}
