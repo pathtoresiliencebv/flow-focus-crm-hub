@@ -305,8 +305,7 @@ const handler = async (req: Request): Promise<Response> => {
             original_quote_total: quote.total_amount,
             status: 'concept',
             due_date: new Date(Date.now() + (30 + (term.daysAfter || 0)) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            invoice_date: new Date().toISOString().split('T')[0],
-            user_id: quote.user_id || null
+            invoice_date: new Date().toISOString().split('T')[0]
           })
           .select('id')
           .single();
@@ -339,8 +338,7 @@ const handler = async (req: Request): Promise<Response> => {
           total_amount: quote.total_amount,
           status: 'concept',
           due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          invoice_date: new Date().toISOString().split('T')[0],
-          user_id: quote.user_id || null
+          invoice_date: new Date().toISOString().split('T')[0]
         })
         .select('id')
         .single();
