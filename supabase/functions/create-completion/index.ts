@@ -37,12 +37,20 @@ Deno.serve(async (req) => {
     );
 
     // 1. Create the project_completion entry, ensuring the installer_id is the authenticated user
+    const insertPayload: any = {
+      project_id: completionData.project_id,
+      installer_id: user.id,
+      completion_date: (completionData.completion_date ?? new Date().toISOString().slice(0,10)),
+      work_performed: completionData.work_performed ?? null,
+      customer_name: completionData.client_name ?? completionData.customer_name ?? null,
+      customer_signature: completionData.client_signature ?? completionData.customer_signature ?? null,
+      installer_signature: completionData.installer_signature ?? null,
+      status: 'completed'
+    };
+
     const { data: completion, error: completionError } = await supabaseAdmin
       .from('project_completions')
-      .insert({
-        ...completionData,
-        installer_id: user.id, // Overwrite installer_id with authenticated user
-      })
+      .insert(insertPayload)
       .select('id, project_id')
       .single();
 
