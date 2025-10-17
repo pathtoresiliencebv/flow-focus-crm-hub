@@ -91,6 +91,7 @@ export const ProjectCompletionPanel = ({ project, isOpen, onClose, onComplete }:
 
     try {
       await completeProject(completionPayload);
+      onComplete(); // Trigger parent refresh
       onClose(); // Close the panel on success
     } catch (error) {
       // Error is already handled by react-query's onError, but you could add specific logic here if needed

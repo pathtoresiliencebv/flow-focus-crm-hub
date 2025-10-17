@@ -682,9 +682,66 @@ const ProjectDetail = () => {
           project={project}
           isOpen={showDeliveryDialog}
           onClose={() => setShowDeliveryDialog(false)}
-          onComplete={() => {
+          onComplete={async () => {
             setShowDeliveryDialog(false);
-          // TODO: Add refresh logic
+            // Refetch all project data to update werkbonnen and foto's count
+            if (projectId) {
+              setLoadingData(true);
+              try {
+                const [workOrdersResult, projectPhotosResult] = await Promise.all([
+                  supabase.from('project_work_orders').select('*').eq('project_id', projectId).order('created_at', { ascending: false }),
+                  supabase.from('project_photos').select('*, work_order:project_work_orders(id, work_order_number)').eq('project_id', projectId),
+                ]);
+                setWorkOrders(workOrdersResult.data || []);
+                
+                // Reload completion photos + group for Foto's tab
+                const workOrders = workOrdersResult.data || [];
+                const completionIds = workOrders.map((w: any) => w.completion_id).filter((id: string | null) => !!id);
+                let completionPhotos: any[] = [];
+                if (completionIds.length > 0) {
+                  const { data: cPhotos } = await supabase
+                    .from('completion_photos')
+                    .select('id, completion_id, photo_url, description, category, uploaded_at')
+                    .in('completion_id', completionIds as string[]);
+                  completionPhotos = cPhotos || [];
+                }
+                
+                const completionIdToWorkOrder: Record<string, { id: string; number: string | null }> = Object.fromEntries(
+                  workOrders.filter((w: any) => !!w.completion_id).map((w: any) => [w.completion_id as string, { id: w.id as string, number: w.work_order_number as string | null }])
+                );
+                
+                const byGroup: Record<string, any> = {};
+                const ensureGroup = (groupId: string, title: string) => {
+                  if (!byGroup[groupId]) byGroup[groupId] = { id: groupId, title, photos: [] };
+                  return byGroup[groupId];
+                };
+                
+                for (const cp of completionPhotos) {
+                  const wo = completionIdToWorkOrder[cp.completion_id];
+                  const groupId = wo ? wo.id : 'general';
+                  const title = wo && wo.number ? `Werkbon ${wo.number}` : 'Algemene Projectfoto\'s';
+                  ensureGroup(groupId, title).photos.push({ id: cp.id, photo_url: cp.photo_url, description: cp.description });
+                }
+                
+                const allProjectPhotos = projectPhotosResult.data || [];
+                for (const p of allProjectPhotos) {
+                  const groupId = p.work_order?.id || 'general';
+                  const title = p.work_order ? `Werkbon ${p.work_order.work_order_number}` : 'Algemene Projectfoto\'s';
+                  ensureGroup(groupId, title).photos.push(p);
+                }
+                
+                const sortedGroups = Object.values(byGroup).sort((a: any, b: any) => {
+                  if (a.id === 'general') return -1;
+                  if (b.id === 'general') return 1;
+                  return a.title.localeCompare(b.title);
+                });
+                setPhotoGroups(sortedGroups);
+              } catch (error) {
+                console.error("Error refreshing after completion:", error);
+              } finally {
+                setLoadingData(false);
+              }
+            }
           }}
         />
 
