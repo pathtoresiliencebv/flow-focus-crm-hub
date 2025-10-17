@@ -508,6 +508,100 @@ const ProjectDetail = () => {
                   Project Opleveren
                 </Button>
               </div>
+              
+              <TabsContent value="taken" className="p-4">
+                <ProjectTasks projectId={projectId || ''} />
+              </TabsContent>
+
+              <TabsContent value="werkbonnen" className="p-4">
+                {(() => {
+                  if (loadingData) return <p className="text-center text-muted-foreground py-8">Laden...</p>;
+                  if (workOrders.length === 0) return (
+                    <div className="text-center text-muted-foreground py-8">
+                      <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>Geen werkbonnen beschikbaar voor dit project.</p>
+                      <p className="text-xs mt-2">Werkbonnen worden aangemaakt na project oplevering</p>
+                    </div>
+                  );
+                  return (
+                    <div className="space-y-3">
+                      {workOrders.map((workOrder) => (
+                      <div key={workOrder.id} className="border rounded-lg p-4 hover:bg-emerald-50/50 transition-colors cursor-pointer" onClick={() => { setSelectedWorkOrder(workOrder); setWorkOrderPreviewOpen(true); }}>
+                        {/* ... work order item details ... */}
+                      </div>
+                    ))}
+                  </div>
+                  );
+                })()}
+              </TabsContent>
+
+              <TabsContent value="fotos" className="p-4">
+                <ProjectPhotoUpload projectId={projectId} onUpload={() => { /* TODO: Refresh logic */ }} />
+                <div className="space-y-6 mt-6">
+                  {photoGroups.length > 0 ? (
+                    photoGroups.map(group => (
+                      <Card key={group.id}>
+                        <CardHeader><CardTitle>{group.title}</CardTitle></CardHeader>
+                        <CardContent>
+                          <div className="flex overflow-x-auto space-x-4 pb-4">
+                            {group.photos.map(photo => (
+                              <div key={photo.id} className="flex-shrink-0 w-64">
+                                <a href={photo.photo_url} target="_blank" rel="noopener noreferrer">
+                                  <img src={photo.photo_url} alt={photo.description || 'Projectfoto'} className="w-full h-40 object-cover rounded-lg border"/>
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : (
+                    <Card className="flex items-center justify-center h-40"><p>Geen foto's gevonden.</p></Card>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="bonnetjes" className="p-4">
+                <div className="mb-4 flex justify-end">
+                  <ProjectReceiptUpload projectId={projectId!} onUploadComplete={async () => { /* ... refresh logic ... */ }} />
+                </div>
+                {loadingData ? <p>Laden...</p> : receipts.length === 0 ? (
+                  <div className="text-center py-8"><p>Geen bonnetjes gevonden.</p></div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {receipts.map((receipt) => (
+                      <Card key={receipt.id}>{/* ... receipt item details ... */}</Card>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              {profile?.role !== 'Installateur' && (
+                <>
+                  <TabsContent value="facturen" className="p-4">
+                    {loadingData ? <p>Laden...</p> : invoices.length === 0 ? (
+                      <div className="text-center py-8"><p>Geen facturen gevonden.</p></div>
+                    ) : (
+                      <div className="space-y-2">
+                        {invoices.map((invoice) => (
+                          <div key={invoice.id}>{/* ... invoice item details ... */}</div>
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+                  <TabsContent value="offertes" className="p-4">
+                    {loadingData ? <p>Laden...</p> : quotes.length === 0 ? (
+                      <div className="text-center py-8"><p>Geen offertes gevonden.</p></div>
+                    ) : (
+                      <div className="space-y-2">
+                        {quotes.map((quote) => (
+                          <div key={quote.id}>{/* ... quote item details ... */}</div>
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+                </>
+              )}
             </Tabs>
           </CardContent>
         </Card>
