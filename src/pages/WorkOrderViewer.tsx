@@ -4,12 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowLeft, Download, Eye, Mail, FileText } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-)
+import { supabase } from '@/integrations/supabase/client'
 
 export default function WorkOrderViewer() {
   const { projectId, workOrderId } = useParams<{ projectId: string; workOrderId: string }>()
