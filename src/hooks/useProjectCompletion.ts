@@ -236,20 +236,26 @@ export const useProjectCompletion = () => {
 
       // Generate work order PDF in background (non-blocking)
       // Using Promise without await to prevent blocking
+      console.log('🔄 [useProjectCompletion] Invoking generate-work-order edge function...')
+      console.log('   Completion ID:', completion.id)
+      
       supabase.functions.invoke('generate-work-order', {
         body: { completionId: completion.id }
       }).then(({ data, error }) => {
         if (error) {
-          console.error('Work order generation error:', error);
+          console.error('❌ [useProjectCompletion] Work order generation ERROR:', error)
+          console.error('   Error details:', JSON.stringify(error, null, 2))
         } else {
-          console.log('✅ Work order generated:', data);
+          console.log('✅ [useProjectCompletion] Work order generated:', data)
           // Refresh work orders after generation
-          queryClient.invalidateQueries({ queryKey: ['project_work_orders'] });
-          queryClient.invalidateQueries({ queryKey: ['project_completions'] });
+          queryClient.invalidateQueries({ queryKey: ['project_work_orders'] })
+          queryClient.invalidateQueries({ queryKey: ['project_completions'] })
         }
       }).catch((error) => {
-        console.error('Unexpected error during work order generation:', error);
-      });
+        console.error('❌ [useProjectCompletion] Unexpected error during work order generation:', error)
+        console.error('   Error type:', error?.constructor?.name)
+        console.error('   Full error:', JSON.stringify(error, null, 2))
+      })
     },
     onError: (error: Error) => {
       toast({
