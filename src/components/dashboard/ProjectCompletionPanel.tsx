@@ -52,7 +52,21 @@ export const ProjectCompletionPanel = ({ project, isOpen, onClose, onComplete }:
   }, [isOpen, tasksByBlock]);
 
   const handleSubmit = async () => {
-    // ... validation logic ...
+    console.log("Form data on submit:", formData);
+
+    // --- Validation ---
+    if (!formData.clientName.trim()) {
+      toast({ title: "Validatie Fout", description: "Naam van de klant is verplicht.", variant: "destructive" });
+      return;
+    }
+    if (!formData.deliverySummary.trim()) {
+      toast({ title: "Validatie Fout", description: "Samenvatting is verplicht.", variant: "destructive" });
+      return;
+    }
+    if (!formData.monteurSignature) {
+      toast({ title: "Validatie Fout", description: "Handtekening van de monteur is verplicht.", variant: "destructive" });
+      return;
+    }
 
     try {
       const completionData: ProjectCompletionData = {
