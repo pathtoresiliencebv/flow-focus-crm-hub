@@ -46,11 +46,19 @@ serve(async (req) => {
 
     if (completionError) throw completionError
 
-    // Fetch photos
-    const { data: photos } = await supabaseClient
+    // Fetch photos from multiple sources
+    const { data: completionPhotos } = await supabaseClient
       .from('completion_photos')
       .select('*')
       .eq('completion_id', completionId)
+
+    const { data: projectPhotos } = await supabaseClient
+      .from('project_photos')
+      .select('*')
+      .eq('project_id', completion.project_id)
+
+    // Combine all photos
+    const photos = [...(completionPhotos || []), ...(projectPhotos || [])]
 
     // Fetch materials
     const { data: materials } = await supabaseClient
@@ -329,9 +337,10 @@ function generateSimpleWorkOrderHTML(data: any): string {
     </div>
     <div class="info-box">
       <h3>Klant Informatie</h3>
-      <p><strong>Naam:</strong> ${customer?.name || completion.customer_name}</p>
+      <p><strong>Naam:</strong> ${customer?.name || completion.customer_name || 'N/A'}</p>
       <p><strong>Email:</strong> ${customer?.email || 'N/A'}</p>
       <p><strong>Telefoon:</strong> ${customer?.phone || 'N/A'}</p>
+      <p><strong>Adres:</strong> ${customer?.address || 'N/A'}</p>
     </div>
   </div>
 
@@ -391,14 +400,14 @@ function generateSimpleWorkOrderHTML(data: any): string {
   <div class="section-title">Foto's van het Werk</div>
   <div class="photo-grid">
     ${photos.slice(0, 12).map((photo: any) => `
-    <div class="photo-item">
-      <img src="${photo.photo_url}" alt="Werk foto - ${getCategoryLabel(photo.category)}" style="width: 100%; height: 120px; object-fit: cover; border: 1px solid #ddd; border-radius: 4px;" />
-      <div class="photo-category">${getCategoryLabel(photo.category)}</div>
+    <div class="photo-item" style="text-align: center; margin-bottom: 15px;">
+      <img src="${photo.photo_url}" alt="Werk foto - ${getCategoryLabel(photo.category)}" style="width: 100%; height: 120px; object-fit: cover; border: 1px solid #ddd; border-radius: 4px; display: block;" />
+      <div class="photo-category" style="font-size: 11px; color: #666; margin-top: 5px; font-weight: bold;">${getCategoryLabel(photo.category)}</div>
       ${photo.description ? `<div style="font-size: 10px; color: #666; margin-top: 2px;">${photo.description}</div>` : ''}
     </div>
     `).join('')}
   </div>
-  ` : ''}
+  ` : '<div class="section-title">Foto\'s van het Werk</div><p style="color: #999; text-align: center; padding: 20px;">Geen foto\'s beschikbaar</p>'}
 
   <div class="signatures">
     <div class="signature-box">
@@ -406,8 +415,10 @@ function generateSimpleWorkOrderHTML(data: any): string {
       <p><strong>Naam:</strong> ${completion.customer_name || customer?.name || 'N/A'}</p>
       <p><strong>Datum:</strong> ${new Date(completion.completion_date).toLocaleDateString('nl-NL')}</p>
       ${completion.customer_signature ? `
-      <img src="${completion.customer_signature}" alt="Klant handtekening" class="signature-image" />
-      ` : '<p style="color: #999;">Geen handtekening beschikbaar</p>'}
+      <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #f9f9f9;">
+        <img src="${completion.customer_signature}" alt="Klant handtekening" class="signature-image" style="max-width: 200px; max-height: 100px; display: block; margin: 0 auto;" />
+      </div>
+      ` : '<p style="color: #999; text-align: center; padding: 20px; border: 1px dashed #ccc;">Geen handtekening beschikbaar</p>'}
     </div>
     
     <div class="signature-box">
@@ -415,8 +426,10 @@ function generateSimpleWorkOrderHTML(data: any): string {
       <p><strong>Naam:</strong> ${monteur?.full_name || 'N/A'}</p>
       <p><strong>Datum:</strong> ${new Date(completion.completion_date).toLocaleDateString('nl-NL')}</p>
       ${completion.installer_signature ? `
-      <img src="${completion.installer_signature}" alt="Monteur handtekening" class="signature-image" />
-      ` : '<p style="color: #999;">Geen handtekening beschikbaar</p>'}
+      <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #f9f9f9;">
+        <img src="${completion.installer_signature}" alt="Monteur handtekening" class="signature-image" style="max-width: 200px; max-height: 100px; display: block; margin: 0 auto;" />
+      </div>
+      ` : '<p style="color: #999; text-align: center; padding: 20px; border: 1px dashed #ccc;">Geen handtekening beschikbaar</p>'}
     </div>
   </div>
 
