@@ -6,7 +6,7 @@ import { ArrowLeft, Download, Eye, Mail, FileText } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client'
 
-function generateBasicWorkOrderHTML(workOrder: any): string {
+function generateBasicWorkOrderHTML(workOrder: any, tasks: any[]): string {
   return `
 <!DOCTYPE html>
 <html>
@@ -56,8 +56,20 @@ function generateBasicWorkOrderHTML(workOrder: any): string {
   <div class="section-title">Werk Samenvatting</div>
   <div class="work-summary">
     <p><strong>Werkzaamheden:</strong></p>
-    <p>${workOrder.summary_text || 'Geen details beschikbaar'}</p>
+    <p>${workOrder.summary_text || 'Werkbon automatisch gegenereerd'}</p>
   </div>
+
+  ${tasks && tasks.length > 0 ? `
+  <div class="section-title">Uitgevoerde Taken</div>
+  <div style="background: #f9f9f9; padding: 15px; border: 1px solid #ddd; margin-bottom: 20px;">
+    ${tasks.map(task => `
+      <div style="display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee;">
+        <span style="color: #4caf50; font-weight: bold; margin-right: 10px;">✓</span>
+        <span>${task.block_title || task.task_description}</span>
+      </div>
+    `).join('')}
+  </div>
+  ` : ''}
 
   <div class="signatures">
     <div class="signature-box">
@@ -73,7 +85,7 @@ function generateBasicWorkOrderHTML(workOrder: any): string {
     
     <div class="signature-box">
       <h4>Handtekening Monteur</h4>
-      <p><strong>Naam:</strong> N/A</p>
+      <p><strong>Naam:</strong> ${workOrder.monteur_naam || 'N/A'}</p>
       <p><strong>Datum:</strong> ${workOrder.signed_at ? new Date(workOrder.signed_at).toLocaleDateString('nl-NL') : 'N/A'}</p>
       ${workOrder.monteur_signature_data ? `
       <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #f9f9f9;">
@@ -143,10 +155,34 @@ export default function WorkOrderViewer() {
           setHtmlContent(pdfData.html)
         }
       } else {
-        console.warn('No completion_id found for work order')
-        // Generate basic HTML without completion data
-        const basicHtml = generateBasicWorkOrderHTML(workOrderData)
-        setHtmlContent(basicHtml)
+        console.warn('No completion_id found for work order, fetching related data manually.');
+        
+        // Manually fetch completion data to get signatures and installer info
+        const { data: completions } = await supabase
+          .from('project_completions')
+          .select('*, installer:profiles(full_name)')
+          .eq('project_id', workOrderData.project_id)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        const completionData = completions && completions[0] ? completions[0] : null;
+
+        // Fetch tasks for the basic HTML view
+        const { data: tasksData } = await supabase
+          .from('project_tasks')
+          .select('*')
+          .eq('project_id', workOrderData.project_id);
+        
+        // Add installer info to workOrder object for the template
+        const enhancedWorkOrderData = {
+          ...workOrderData,
+          monteur_signature_data: completionData?.installer_signature,
+          monteur_naam: completionData?.installer?.full_name,
+        };
+
+        // Generate basic HTML with all available data
+        const basicHtml = generateBasicWorkOrderHTML(enhancedWorkOrderData, tasksData || []);
+        setHtmlContent(basicHtml);
       }
     } catch (err: any) {
       console.error('Error loading work order:', err)
