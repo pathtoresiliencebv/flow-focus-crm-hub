@@ -484,13 +484,10 @@ const ProjectDetail = () => {
                   Werkbonnen
                   {workOrders.length > 0 && (
                     <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
-                      {profile?.role === 'Installateur' 
-                        ? workOrders.filter((wo: any) => wo.created_by === user?.id).length 
-                        : workOrders.length}
+                      {workOrders.length}
                     </Badge>
                   )}
-                </TabsTrigger>
-                
+                </TabsTrigger>                
                 {/* 📸 Foto's tab - Always visible, Monteurs see ONLY their own photos */}
                 <TabsTrigger value="fotos" className="relative">
                   Foto's
