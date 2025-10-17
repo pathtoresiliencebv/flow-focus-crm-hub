@@ -116,12 +116,14 @@ serve(async (req) => {
 
     // Filter tasks by selected_task_ids if available
     let tasksForWorkOrder = tasks || []
-    if (completion.selected_task_ids && completion.selected_task_ids.length > 0) {
+    if (completion.selected_task_ids && Array.isArray(completion.selected_task_ids) && completion.selected_task_ids.length > 0) {
       console.log('📋 Filtering tasks by selected_task_ids:', completion.selected_task_ids)
       tasksForWorkOrder = tasksForWorkOrder.filter((t: any) => 
         completion.selected_task_ids.includes(t.id)
       )
       console.log(`✅ Filtered ${tasksForWorkOrder.length} tasks for work order out of ${tasks?.length || 0} total`)
+    } else {
+      console.log('ℹ️ No selected_task_ids found - using all tasks')
     }
 
     // Fetch monteur data

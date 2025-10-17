@@ -145,7 +145,11 @@ export const useProjectCompletion = () => {
       const dataWithInstaller = {
         ...completionData,
         installer_id: user.id,
-        status: 'draft' // Initial status, will be updated to 'completed' after PDF generation
+        status: 'draft', // Initial status, will be updated to 'completed' after PDF generation
+        // Ensure selectedTaskIds is always an array (convert empty Set to empty array)
+        selected_task_ids: completionData.selectedTaskIds && completionData.selectedTaskIds.length > 0 
+          ? completionData.selectedTaskIds 
+          : null
       };
 
       // Insert completion record
