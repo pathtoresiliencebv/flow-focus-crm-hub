@@ -61,7 +61,7 @@ serve(async (req) => {
     if (workOrder) {
       const { data: taskData, error: tasksError } = await supabaseAdmin
         .from('project_tasks')
-        .select('task_description')
+        .select('task_description, block_title') // Fetching block_title as well
         .eq('work_order_id', workOrder.id);
       
       if(tasksError) {
@@ -88,7 +88,7 @@ serve(async (req) => {
 
     // Prepare HTML content
     const tasksHtml = tasks.length > 0
-      ? `<ul style="list-style-position: inside; padding-left: 5px; margin: 0;">${tasks.map(task => `<li>${task.task_description}</li>`).join('')}</ul>`
+      ? `<ul style="list-style-position: inside; padding-left: 5px; margin: 0;">${tasks.map(task => `<li><b>${task.block_title}:</b> ${task.task_description}</li>`).join('')}</ul>`
       : 'Geen specifieke taken geselecteerd voor deze werkbon.';
 
     const summaryHtml = completion.work_performed
