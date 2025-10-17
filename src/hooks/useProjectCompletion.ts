@@ -141,24 +141,30 @@ export const useProjectCompletion = () => {
         console.log('✅ All tasks completed');
       }
       
-      // Ensure installer_id is set
+      // Build data object with ONLY the fields that exist in the database
+      // Do NOT use spread operator to avoid accidentally sending extra fields
       const dataWithInstaller = {
-        ...completionData,
+        project_id: completionData.project_id,
         installer_id: user.id,
-        status: 'draft', // Initial status, will be updated to 'completed' after PDF generation
+        completion_date: completionData.completion_date,
+        work_performed: completionData.work_performed,
+        materials_used: completionData.materials_used || null,
+        recommendations: completionData.recommendations || null,
+        notes: completionData.notes || null,
+        customer_satisfaction: completionData.customer_satisfaction,
+        customer_signature: completionData.customer_signature,
+        installer_signature: completionData.installer_signature,
+        customer_name: completionData.customer_name,
+        status: 'draft', // Initial status
+        follow_up_required: completionData.follow_up_required || false,
+        follow_up_notes: completionData.follow_up_notes || null,
         // Store selected_task_ids as JSON string to avoid serialization issues
         selected_task_ids: (completionData.selectedTaskIds && completionData.selectedTaskIds.length > 0)
           ? JSON.stringify(completionData.selectedTaskIds)
           : null
       };
       
-      console.log('🔍 [useProjectCompletion] Data to insert:', {
-        project_id: dataWithInstaller.project_id,
-        installer_id: dataWithInstaller.installer_id,
-        selected_task_ids: dataWithInstaller.selected_task_ids,
-        selected_task_ids_type: typeof dataWithInstaller.selected_task_ids,
-        completionData_selectedTaskIds: completionData.selectedTaskIds
-      });
+      console.log('🔍 [useProjectCompletion] Data to insert:', dataWithInstaller);
 
       // Insert completion record
       const { data: completion, error: completionError } = await supabase
