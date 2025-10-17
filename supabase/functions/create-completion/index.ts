@@ -9,26 +9,48 @@ Deno.serve(async (req) => {
   try {
     const { completionData, photos } = await req.json();
 
-    // The Supabase client needs to be created with the service_role key
-    // to have the necessary permissions to bypass RLS.
+    // Get the authorization header from the request
+    const authHeader = req.headers.get('Authorization')!;
+
+    // Create a Supabase client with the user's auth token
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    // Get the user from the token
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error("User not authenticated.");
+    }
+
+    // Create a Supabase client with the service_role key for admin operations
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
       { auth: { persistSession: false } }
     );
 
-    // 1. Create the project_completion entry
+    // 1. Create the project_completion entry, ensuring the installer_id is the authenticated user
     const { data: completion, error: completionError } = await supabaseAdmin
       .from('project_completions')
-      .insert(completionData)
+      .insert({
+        ...completionData,
+        installer_id: user.id, // Overwrite installer_id with authenticated user
+      })
       .select('id, project_id')
       .single();
 
     if (completionError) throw completionError;
 
-    // 2. Insert photos if any
+    // 2. Insert photos if any, ensuring the uploader_id is the authenticated user
     if (photos && photos.length > 0) {
-      const photoUploads = photos.map((p: any) => ({ ...p, completion_id: completion.id }));
+      const photoUploads = photos.map((p: any) => ({ 
+        ...p, 
+        completion_id: completion.id,
+        uploader_id: user.id, // Overwrite uploader_id
+      }));
       const { error: photosError } = await supabaseAdmin.from('completion_photos').insert(photoUploads);
       if (photosError) console.warn('Failed to insert photos:', photosError.message);
     }
