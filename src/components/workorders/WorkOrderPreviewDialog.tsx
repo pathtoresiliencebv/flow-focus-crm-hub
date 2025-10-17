@@ -4,8 +4,17 @@ import { format } from 'date-fns';
 import { nl } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { FileText, Calendar, User, Image as ImageIcon, CheckCircle, Receipt as ReceiptIcon } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import {
+  FileText,
+  Calendar,
+  User,
+  Image as ImageIcon,
+  CheckCircle,
+  Receipt as ReceiptIcon,
+  Mail,
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface WorkOrderPreviewDialogProps {
   open: boolean;
@@ -40,6 +49,8 @@ export const WorkOrderPreviewDialog: React.FC<WorkOrderPreviewDialogProps> = ({
   const [receipts, setReceipts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const { toast } = useToast();
 
   // Fetch all related data when dialog opens
   useEffect(() => {
@@ -316,40 +327,87 @@ export const WorkOrderPreviewDialog: React.FC<WorkOrderPreviewDialogProps> = ({
         <Card className="p-6 bg-blue-50 border-blue-200">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-semibold text-lg text-blue-800">PDF Werkbon</h3>
-              <p className="text-sm text-blue-600">Download de volledige werkbon als PDF</p>
+              <h3 className="font-semibold text-lg text-blue-800">Acties</h3>
+              <p className="text-sm text-blue-600">Download de werkbon of verstuur per e-mail.</p>
             </div>
-            <button
-              disabled={isGeneratingPdf}
-              onClick={async (e) => {
-                e.preventDefault();
-                if (workOrder.pdf_url) {
-                  window.open(workOrder.pdf_url, '_blank');
-                  return;
-                }
-                
-                // Generate PDF if no URL exists
-                setIsGeneratingPdf(true);
-                try {
-                  const { data, error } = await supabase.functions.invoke('generate-pdf-simple', {
-                    body: { completionId: completionData.id }
-                  });
-                  if (error) throw error;
-                  if (data.pdfUrl) {
-                    window.open(data.pdfUrl, '_blank');
-                    // Optionally refresh workOrder data here
+            <div className="flex items-center gap-2">
+              <button
+                disabled={isGeneratingPdf || isSendingEmail}
+                onClick={async (e) => {
+                  e.preventDefault();
+                  setIsGeneratingPdf(true);
+                  try {
+                    const { data, error } = await supabase.functions.invoke('generate-pdf-simple', {
+                      body: { completionId: completionData.id }
+                    });
+                    if (error) throw new Error("PDF generatie mislukt.");
+
+                    if (data.pdfUrl) {
+                      // Fetch the PDF as a blob
+                      const response = await fetch(data.pdfUrl);
+                      if (!response.ok) throw new Error("PDF ophalen mislukt.");
+                      const blob = await response.blob();
+
+                      // Create a link and trigger download
+                      const link = document.createElement('a');
+                      link.href = URL.createObjectURL(blob);
+                      link.download = `Werkbon-${workOrder.work_order_number}.pdf`;
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      URL.revokeObjectURL(link.href);
+                    }
+                  } catch (err: any) {
+                    console.error("Failed to download PDF:", err);
+                    toast({
+                      title: "Fout bij downloaden",
+                      description: err.message || "De PDF kon niet worden gedownload.",
+                      variant: "destructive",
+                    });
+                  } finally {
+                    setIsGeneratingPdf(false);
                   }
-                } catch (err) {
-                  console.error("Failed to generate PDF:", err);
-                } finally {
-                  setIsGeneratingPdf(false);
-                }
-              }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-wait"
-            >
-              <FileText className="h-4 w-4" />
-              {isGeneratingPdf ? 'Genereren...' : 'Download PDF'}
-            </button>
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-wait"
+              >
+                <FileText className="h-4 w-4" />
+                {isGeneratingPdf ? 'Genereren...' : 'Download PDF'}
+              </button>
+
+              <button
+                disabled={isSendingEmail || isGeneratingPdf}
+                onClick={async (e) => {
+                  e.preventDefault();
+                  setIsSendingEmail(true);
+                  try {
+                    const { error } = await supabase.functions.invoke('send-workorder-email', {
+                      body: { 
+                        completionId: completionData.id,
+                        customerEmail: workOrder.project?.customer?.email 
+                      }
+                    });
+                    if (error) throw new Error("E-mail versturen is mislukt.");
+                    toast({
+                      title: "E-mail verzonden",
+                      description: `De werkbon is succesvol naar ${workOrder.project?.customer?.email || 'de klant'} gestuurd.`,
+                    });
+                  } catch (err: any) {
+                    console.error("Failed to send email:", err);
+                    toast({
+                      title: "Fout bij verzenden",
+                      description: err.message || "De e-mail kon niet worden verstuurd.",
+                      variant: "destructive",
+                    });
+                  } finally {
+                    setIsSendingEmail(false);
+                  }
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-wait"
+              >
+                <Mail className="h-4 w-4" />
+                {isSendingEmail ? 'Versturen...' : 'Verstuur E-mail'}
+              </button>
+            </div>
           </div>
         </Card>
 
