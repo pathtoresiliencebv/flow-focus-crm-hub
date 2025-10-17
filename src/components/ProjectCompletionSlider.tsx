@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { 
   ChevronDown, 
   ChevronUp, 
@@ -187,14 +187,14 @@ export const ProjectCompletionSlider: React.FC<ProjectCompletionSliderProps> = (
         </Card>
       </Collapsible>
 
-      {/* Completion Dialog */}
-      <Dialog open={showCompletionDialog} onOpenChange={setShowCompletionDialog}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Project Oplevering - {projectName}</DialogTitle>
-          </DialogHeader>
+      {/* Completion Sheet - Slide-out Sidebar */}
+      <Sheet open={showCompletionDialog} onOpenChange={setShowCompletionDialog}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Project Oplevering - {projectName}</SheetTitle>
+          </SheetHeader>
           
-          <div className="space-y-6">
+          <div className="space-y-6 mt-6">
             {/* Work Performed */}
             <div>
               <Label htmlFor="workPerformed">Uitgevoerde Werkzaamheden *</Label>
@@ -323,8 +323,8 @@ export const ProjectCompletionSlider: React.FC<ProjectCompletionSliderProps> = (
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
     </>
   );
 };
