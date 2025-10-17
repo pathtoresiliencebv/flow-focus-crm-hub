@@ -57,18 +57,32 @@ export const WorkOrderPreviewDialog: React.FC<WorkOrderPreviewDialogProps> = ({
     if (!open || !workOrder) return;
 
     const fetchWorkOrderData = async () => {
+      if (!open || !workOrder) return;
       setLoading(true);
       try {
-        // Find the completion that created this work order
-        const { data: completions } = await supabase
-          .from('project_completions')
-          .select('*')
-          .eq('project_id', workOrder.project_id)
-          .order('created_at', { ascending: false })
-          .limit(1);
+        // Prefer the completion linked directly to this work order
+        let currentCompletion: any | null = null;
+        if ((workOrder as any).completion_id) {
+          const { data: completionById, error: cErr } = await supabase
+            .from('project_completions')
+            .select('*')
+            .eq('id', (workOrder as any).completion_id)
+            .single();
+          if (!cErr && completionById) currentCompletion = completionById;
+        }
 
-        if (completions && completions.length > 0) {
-          const currentCompletion = completions[0];
+        // Fallback: most recent completion for this project
+        if (!currentCompletion) {
+          const { data: completions } = await supabase
+            .from('project_completions')
+            .select('*')
+            .eq('project_id', workOrder.project_id)
+            .order('created_at', { ascending: false })
+            .limit(1);
+          if (completions && completions.length > 0) currentCompletion = completions[0];
+        }
+
+        if (currentCompletion) {
           setCompletionData(currentCompletion);
 
           // Fetch installer profile
@@ -77,32 +91,33 @@ export const WorkOrderPreviewDialog: React.FC<WorkOrderPreviewDialogProps> = ({
             setInstallerProfile(profile);
           }
 
-          // Fetch photos for this completion AND the whole project
-          const { data: completionPhotos } = await supabase
-            .from('completion_photos')
-            .select('*')
-            .eq('completion_id', currentCompletion.id);
-            
-          const { data: projectPhotos } = await supabase
-            .from('project_photos')
-            .select('*')
-            .eq('project_id', workOrder.project_id);
+          // Photos tied to this exact work order
+          const [{ data: completionPhotos }, { data: workOrderPhotos }] = await Promise.all([
+            supabase
+              .from('completion_photos')
+              .select('*')
+              .eq('completion_id', currentCompletion.id),
+            supabase
+              .from('project_photos')
+              .select('*')
+              .eq('work_order_id', workOrder.id),
+          ]);
 
-          // Combine and remove duplicates
-          const allPhotos = [...(completionPhotos || []), ...(projectPhotos || [])];
+          // Combine and remove duplicates by id
+          const allPhotos = [...(completionPhotos || []), ...(workOrderPhotos || [])];
           const uniquePhotos = Array.from(new Set(allPhotos.map(p => p.id))).map(id => allPhotos.find(p => p.id === id));
           setPhotos(uniquePhotos || []);
         }
 
-        // Fetch tasks for this project
+        // Fetch tasks only for this work order to mirror executed tasks
         const { data: tasksData } = await supabase
           .from('project_tasks')
           .select('*')
-          .eq('project_id', workOrder.project_id)
+          .eq('work_order_id', workOrder.id)
           .order('created_at', { ascending: false });
         setTasks(tasksData || []);
 
-        // Fetch receipts for this project
+        // Receipts can remain at project-level
         const { data: receiptsData } = await supabase
           .from('project_receipts')
           .select('*')
