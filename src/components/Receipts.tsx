@@ -896,12 +896,12 @@ export const Receipts = () => {
           </div>
           <div>
             <Label htmlFor="project">Project (optioneel)</Label>
-            <Select value={newReceipt.projectId || ''} onValueChange={(value) => setNewReceipt(prev => ({ ...prev, projectId: value }))} placeholder="Selecteer een project...">
+            <Select value={newReceipt.projectId || 'no-project'} onValueChange={(value) => setNewReceipt(prev => ({ ...prev, projectId: value === 'no-project' ? null : value }))} placeholder="Selecteer een project...">
               <SelectTrigger>
                 <SelectValue placeholder="Selecteer een project..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Geen project</SelectItem>
+                <SelectItem value="no-project">Geen project</SelectItem>
                 {projects.map((project) => (
                   <SelectItem key={project.id} value={project.id}>
                     {project.name || project.title}
