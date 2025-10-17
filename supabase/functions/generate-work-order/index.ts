@@ -20,9 +20,29 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🚀 [generate-work-order] Starting...')
+    console.log('📋 Checking environment variables...')
+    
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')
+    const htmlpdfKey = Deno.env.get('HTMLPDF_API_KEY')
+    const pdfshiftKey = Deno.env.get('PDFSHIFT_API_KEY')
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('❌ CRITICAL: Missing Supabase environment variables')
+      console.error('  SUPABASE_URL:', supabaseUrl ? '✅ SET' : '❌ MISSING')
+      console.error('  SUPABASE_ANON_KEY:', supabaseKey ? '✅ SET' : '❌ MISSING')
+      throw new Error('Missing Supabase credentials')
+    }
+    
+    console.log('✅ Supabase credentials OK')
+    console.log('📋 PDF Services available:')
+    console.log('  HTMLPDF_API_KEY:', htmlpdfKey ? '✅ SET' : '❌ MISSING')
+    console.log('  PDFSHIFT_API_KEY:', pdfshiftKey ? '✅ SET' : '❌ MISSING')
+
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      supabaseUrl,
+      supabaseKey,
       {
         global: {
           headers: { Authorization: req.headers.get('Authorization')! },
@@ -31,13 +51,23 @@ serve(async (req) => {
     )
 
     // Get completion ID from request
-    const { completionId }: WorkOrderData = await req.json()
+    console.log('📋 Parsing request body...')
+    let body
+    try {
+      body = await req.json()
+    } catch (e) {
+      console.error('❌ Failed to parse request JSON:', e)
+      throw new Error('Invalid JSON in request body')
+    }
+    
+    const { completionId }: WorkOrderData = body
 
     if (!completionId) {
+      console.error('❌ Missing completionId in request')
       throw new Error('Completion ID is required')
     }
 
-    console.log('Generating work order for completion:', completionId)
+    console.log('📋 [STEP 1] Fetching completion record:', completionId)
 
     // Fetch completion data with all related information
     const { data: completion, error: completionError } = await supabaseClient
