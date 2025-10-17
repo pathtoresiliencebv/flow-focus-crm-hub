@@ -117,6 +117,14 @@ serve(async (req) => {
       })
       .eq('id', completionId)
 
+    // Also update the work order record with PDF URL
+    await supabaseClient
+      .from('project_work_orders')
+      .update({ 
+        pdf_url: publicUrl
+      })
+      .eq('completion_id', completionId)
+
     return new Response(
       JSON.stringify({ 
         success: true, 
