@@ -1,6 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
 import { format } from "https://deno.land/std@0.208.0/datetime/format.ts";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
 
 // Function to generate the HTML for the work order
 const generateWorkOrderHTML = (
@@ -42,10 +46,10 @@ const generateWorkOrderHTML = (
     </div>
   ` : '';
   
-  const nlLocale = { code: 'nl-NL' }; // Dummy locale for date-fns in Deno
+  const nlLocale = { code: 'nl-NL' } as any;
   const formatDate = (date: string | Date, fmt: string) => {
     try {
-      return format(new Date(date), fmt, { locale: nlLocale as any });
+      return format(new Date(date), fmt, { locale: nlLocale });
     } catch {
       return 'Ongeldige datum';
     }
@@ -187,7 +191,7 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     })
