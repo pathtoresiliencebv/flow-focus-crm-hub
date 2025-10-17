@@ -68,9 +68,18 @@ export const useProjectCompletion = () => {
   const { mutateAsync: completeProject, isLoading: isCompleting } = useMutation<any, Error, CompletionPayload>({
     mutationFn: async ({ completionData, photos }) => {
       if (!profile?.id) throw new Error("Gebruiker is niet ingelogd.");
+    
+      // Explicitly get the current session to ensure the auth token is fresh
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        throw new Error("Kon geen actieve sessie vinden. Log opnieuw in.");
+      }
 
       // Delegate the entire completion process to the secure edge function
       const { data, error } = await supabase.functions.invoke('create-completion', {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
         body: {
           completionData: {
             ...completionData,
