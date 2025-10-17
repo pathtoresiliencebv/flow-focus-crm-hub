@@ -17,6 +17,7 @@ import { ProjectPersonnel } from "./ProjectPersonnel";
 import { ProjectActivities } from "./ProjectActivities";
 import { ProjectTasks } from "./ProjectTasks";
 import { ProjectDeliveryDialog } from "./dashboard/ProjectDeliveryDialog";
+import { WorkOrderPreviewDialog } from "./workorders/WorkOrderPreviewDialog";
 
 const ProjectDetail = () => {
   const { projectId } = useParams();
@@ -35,6 +36,8 @@ const ProjectDetail = () => {
   const [completionPhotos, setCompletionPhotos] = useState<any[]>([]);
   const [receipts, setReceipts] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(false);
+  const [selectedWorkOrder, setSelectedWorkOrder] = useState<any | null>(null);
+  const [workOrderPreviewOpen, setWorkOrderPreviewOpen] = useState(false);
 
   // Find the project
   const project = projects.find(p => p.id === projectId);
@@ -554,7 +557,11 @@ const ProjectDetail = () => {
                       {filteredWorkOrders.map((workOrder) => (
                       <div 
                         key={workOrder.id} 
-                        className="border rounded-lg p-4 hover:bg-emerald-50/50 transition-colors"
+                        className="border rounded-lg p-4 hover:bg-emerald-50/50 transition-colors cursor-pointer"
+                        onClick={() => {
+                          setSelectedWorkOrder(workOrder);
+                          setWorkOrderPreviewOpen(true);
+                        }}
                       >
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex-1">
@@ -874,6 +881,13 @@ const ProjectDetail = () => {
           }}
         />
       )}
+
+      {/* Work Order Preview Dialog */}
+      <WorkOrderPreviewDialog
+        open={workOrderPreviewOpen}
+        onOpenChange={setWorkOrderPreviewOpen}
+        workOrder={selectedWorkOrder}
+      />
     </div>
   );
 };
