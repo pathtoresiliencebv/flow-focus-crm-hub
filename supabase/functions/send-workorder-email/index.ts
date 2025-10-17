@@ -16,11 +16,13 @@ serve(async (req) => {
     const { completionId, customerEmail } = await req.json()
 
     if (!completionId) {
+      console.error('[send-workorder-email] Aborting: completionId is required.');
       return new Response(
-        JSON.stringify({ error: 'completionId is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+        JSON.stringify({ error: "completionId is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+    console.log(`[send-workorder-email] Received request for completionId: ${completionId}`);
 
     // Initialize Supabase client
     const supabaseClient = createClient(
@@ -44,20 +46,43 @@ serve(async (req) => {
       .eq('id', completionId)
       .single()
 
-    if (completionError) throw completionError
+    if (completionError) {
+      console.error('[send-workorder-email] Error fetching completion data:', completionError);
+      throw new Error('Failed to fetch completion data.');
+    }
+    console.log('[send-workorder-email] Successfully fetched completion data.');
 
     const customer = completion.project.customer
     const project = completion.project
     const monteur = completion.installer
 
-    // Generate PDF HTML
-    const { data: pdfData, error: pdfError } = await supabaseClient.functions.invoke('generate-pdf-simple', {
-      body: { completionId }
-    })
+    // Generate PDF HTML (best effort)
+    let pdfAttachment = null;
+    try {
+      console.log(`[send-workorder-email] Attempting to generate PDF for attachment...`);
+      const { data: pdfData, error: pdfError } = await supabaseClient.functions.invoke('generate-pdf-simple', {
+        body: { completionId }
+      });
 
-    if (pdfError) {
-      console.error('PDF generation error:', pdfError)
-      // Continue without PDF attachment
+      if (pdfError) {
+        throw pdfError;
+      }
+
+      // We now expect a PDF buffer directly from the function
+      const pdfBuffer = new Uint8Array(pdfData);
+
+      if (pdfBuffer.length > 0) {
+        pdfAttachment = {
+          filename: `Werkbon-${project.title.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`,
+          content: Array.from(pdfBuffer), // Convert Uint8Array to number array for Resend
+          contentType: 'application/pdf'
+        };
+        console.log(`[send-workorder-email] PDF for attachment generated successfully. Size: ${pdfBuffer.length} bytes.`);
+      } else {
+        console.warn('[send-workorder-email] PDF generation returned empty buffer.');
+      }
+    } catch (pdfError) {
+      console.error('[send-workorder-email] Failed to generate PDF for attachment. Email will be sent without it.', pdfError);
     }
 
     // Get system notification settings
@@ -191,26 +216,22 @@ Voor vragen: ${settings?.smtp_from_email || 'info@smansonderhoud.nl'}
       to: customerEmail || customer?.email,
       subject: emailSubject,
       html: emailHtml,
-      text: emailText
-    }
+      text: emailText,
+      attachments: pdfAttachment ? [pdfAttachment] : [],
+    };
 
-    // Add PDF attachment if available
-    if (pdfData?.html) {
-      emailData.attachments = [
-        {
-          filename: `werkbon-${project.title.replace(/[^a-zA-Z0-9]/g, '-')}-${new Date(completion.completion_date).toISOString().split('T')[0]}.html`,
-          content: pdfData.html,
-          contentType: 'text/html'
-        }
-      ]
-    }
-
-    // Use the existing email system
+    // Use the existing email system (assuming it's 'send-email')
+    console.log(`[send-workorder-email] Invoking 'send-email' function for recipient: ${emailData.to}`);
     const { data: emailResult, error: emailError } = await supabaseClient.functions.invoke('send-email', {
       body: emailData
-    })
+    });
 
-    if (emailError) throw emailError
+    if (emailError) {
+      console.error('[send-workorder-email] Error invoking send-email function:', emailError);
+      throw emailError;
+    }
+
+    console.log('[send-workorder-email] Email function invoked successfully.');
 
     // Update completion record to mark email as sent
     await supabaseClient
@@ -234,10 +255,10 @@ Voor vragen: ${settings?.smtp_from_email || 'info@smansonderhoud.nl'}
     )
 
   } catch (error) {
-    console.error('Error sending work order email:', error)
+    console.error('[send-workorder-email] Unhandled error in main try block:', error.message);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: `Server error: ${error.message}` }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    );
   }
 })

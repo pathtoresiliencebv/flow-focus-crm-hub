@@ -330,84 +330,84 @@ export const WorkOrderPreviewDialog: React.FC<WorkOrderPreviewDialogProps> = ({
               <h3 className="font-semibold text-lg text-blue-800">Acties</h3>
               <p className="text-sm text-blue-600">Download de werkbon of verstuur per e-mail.</p>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                disabled={isGeneratingPdf || isSendingEmail}
-                onClick={async (e) => {
-                  e.preventDefault();
-                  setIsGeneratingPdf(true);
-                  try {
-                    const { data, error } = await supabase.functions.invoke('generate-pdf-simple', {
-                      body: { completionId: completionData.id }
-                    });
-                    if (error) throw new Error("PDF generatie mislukt.");
+          </div>
+          <div className="flex items-center gap-2 mt-4">
+            <button
+              disabled={isGeneratingPdf || isSendingEmail}
+              onClick={async (e) => {
+                e.preventDefault();
+                setIsGeneratingPdf(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke('generate-pdf-simple', {
+                    body: { completionId: completionData.id }
+                  });
+                  if (error) throw new Error("PDF generatie mislukt.");
 
-                    if (data.pdfUrl) {
-                      // Fetch the PDF as a blob
-                      const response = await fetch(data.pdfUrl);
-                      if (!response.ok) throw new Error("PDF ophalen mislukt.");
-                      const blob = await response.blob();
+                  if (data.pdfUrl) {
+                    // Fetch the PDF as a blob
+                    const response = await fetch(data.pdfUrl);
+                    if (!response.ok) throw new Error("PDF ophalen mislukt.");
+                    const blob = await response.blob();
 
-                      // Create a link and trigger download
-                      const link = document.createElement('a');
-                      link.href = URL.createObjectURL(blob);
-                      link.download = `Werkbon-${workOrder.work_order_number}.pdf`;
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                      URL.revokeObjectURL(link.href);
+                    // Create a link and trigger download
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `Werkbon-${workOrder.work_order_number}.pdf`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(link.href);
+                  }
+                } catch (err: any) {
+                  console.error("Failed to download PDF:", err);
+                  toast({
+                    title: "Fout bij downloaden",
+                    description: err.message || "De PDF kon niet worden gedownload.",
+                    variant: "destructive",
+                  });
+                } finally {
+                  setIsGeneratingPdf(false);
+                }
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-wait"
+            >
+              <FileText className="h-4 w-4" />
+              {isGeneratingPdf ? 'Genereren...' : 'Download PDF'}
+            </button>
+
+            <button
+              disabled={isSendingEmail || isGeneratingPdf}
+              onClick={async (e) => {
+                e.preventDefault();
+                setIsSendingEmail(true);
+                try {
+                  const { error } = await supabase.functions.invoke('send-workorder-email', {
+                    body: { 
+                      completionId: completionData.id,
+                      customerEmail: workOrder.project?.customer?.email 
                     }
-                  } catch (err: any) {
-                    console.error("Failed to download PDF:", err);
-                    toast({
-                      title: "Fout bij downloaden",
-                      description: err.message || "De PDF kon niet worden gedownload.",
-                      variant: "destructive",
-                    });
-                  } finally {
-                    setIsGeneratingPdf(false);
-                  }
-                }}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-wait"
-              >
-                <FileText className="h-4 w-4" />
-                {isGeneratingPdf ? 'Genereren...' : 'Download PDF'}
-              </button>
-
-              <button
-                disabled={isSendingEmail || isGeneratingPdf}
-                onClick={async (e) => {
-                  e.preventDefault();
-                  setIsSendingEmail(true);
-                  try {
-                    const { error } = await supabase.functions.invoke('send-workorder-email', {
-                      body: { 
-                        completionId: completionData.id,
-                        customerEmail: workOrder.project?.customer?.email 
-                      }
-                    });
-                    if (error) throw new Error("E-mail versturen is mislukt.");
-                    toast({
-                      title: "E-mail verzonden",
-                      description: `De werkbon is succesvol naar ${workOrder.project?.customer?.email || 'de klant'} gestuurd.`,
-                    });
-                  } catch (err: any) {
-                    console.error("Failed to send email:", err);
-                    toast({
-                      title: "Fout bij verzenden",
-                      description: err.message || "De e-mail kon niet worden verstuurd.",
-                      variant: "destructive",
-                    });
-                  } finally {
-                    setIsSendingEmail(false);
-                  }
-                }}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-wait"
-              >
-                <Mail className="h-4 w-4" />
-                {isSendingEmail ? 'Versturen...' : 'Verstuur E-mail'}
-              </button>
-            </div>
+                  });
+                  if (error) throw new Error("E-mail versturen is mislukt.");
+                  toast({
+                    title: "E-mail verzonden",
+                    description: `De werkbon is succesvol naar ${workOrder.project?.customer?.email || 'de klant'} gestuurd.`,
+                  });
+                } catch (err: any) {
+                  console.error("Failed to send email:", err);
+                  toast({
+                    title: "Fout bij verzenden",
+                    description: err.message || "De e-mail kon niet worden verstuurd.",
+                    variant: "destructive",
+                  });
+                } finally {
+                  setIsSendingEmail(false);
+                }
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-wait"
+            >
+              <Mail className="h-4 w-4" />
+              {isSendingEmail ? 'Versturen...' : 'Verstuur E-mail'}
+            </button>
           </div>
         </Card>
 

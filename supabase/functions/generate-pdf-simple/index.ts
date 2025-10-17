@@ -22,6 +22,8 @@ serve(async (req) => {
       )
     }
 
+    console.log(`[generate-pdf-simple] Received request for completionId: ${completionId}`);
+
     // Initialize Supabase client
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -44,7 +46,11 @@ serve(async (req) => {
       .eq('id', completionId)
       .single()
 
-    if (completionError) throw completionError
+    if (completionError) {
+      console.error('[generate-pdf-simple] Error fetching completion data:', completionError);
+      throw new Error(`Completion data not found for ID: ${completionId}`);
+    }
+    console.log('[generate-pdf-simple] Successfully fetched completion data.');
 
     // Fetch photos from multiple sources
     const { data: completionPhotos } = await supabaseClient
@@ -72,6 +78,8 @@ serve(async (req) => {
       .select('*')
       .eq('project_id', completion.project_id)
 
+    console.log(`[generate-pdf-simple] Found ${photos.length} photos, ${materials?.length || 0} materials, ${tasks?.length || 0} tasks.`);
+
     // Generate simple HTML for PDF
     const html = generateSimpleWorkOrderHTML({
       completion,
@@ -83,8 +91,9 @@ serve(async (req) => {
       tasks: tasks || []
     })
 
-    // Generate actual PDF using html2pdf service
-    const pdfBuffer = await generatePDFFromHTML(html)
+    console.log('[generate-pdf-simple] HTML generated successfully. Attempting to generate PDF buffer...');
+    const pdfBuffer = await generatePDFFromHTML(html);
+    console.log(`[generate-pdf-simple] PDF buffer generated. Size: ${pdfBuffer.byteLength} bytes.`);
 
     // Upload PDF to Supabase Storage
     const fileName = `werkbon-${completionId}-${Date.now()}.pdf`
@@ -147,9 +156,9 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Error generating PDF:', error)
+    console.error('[generate-pdf-simple] Unhandled error:', error.message);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: `Server error: ${error.message}` }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
