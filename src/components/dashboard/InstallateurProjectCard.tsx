@@ -8,7 +8,7 @@ import { User, MapPin, Phone, Calendar, Play, CheckCircle } from "lucide-react";
 import { useProjectTasks } from "@/hooks/useProjectTasks";
 import { useProjectDelivery } from "@/hooks/useProjectDelivery";
 import { useCrmStore } from "@/hooks/useCrmStore";
-import { ProjectDeliveryDialog } from "./ProjectDeliveryDialog";
+import { ProjectCompletionPanel } from './ProjectCompletionPanel';
 
 interface InstallateurProjectCardProps {
   project: any;
@@ -20,7 +20,7 @@ export const InstallateurProjectCard = ({ project, onProjectClick }: Installateu
   const { customers } = useCrmStore();
   const { completionPercentage } = useProjectTasks(project.id);
   const { startProject, isStarting } = useProjectDelivery();
-  const [showDelivery, setShowDelivery] = useState(false);
+  const [showDeliveryDialog, setShowDeliveryDialog] = useState(false);
 
   const customer = customers.find(c => c.id === project.customer_id);
 
@@ -53,7 +53,7 @@ export const InstallateurProjectCard = ({ project, onProjectClick }: Installateu
 
   const handleCompleteProject = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setShowDelivery(true);
+    setShowDeliveryDialog(true);
   };
 
   return (
@@ -145,16 +145,14 @@ export const InstallateurProjectCard = ({ project, onProjectClick }: Installateu
         </CardContent>
       </Card>
 
-      {showDelivery && (
-        <ProjectDeliveryDialog
+      {project && (
+        <ProjectCompletionPanel
           project={project}
-          isOpen={showDelivery}
-          onClose={() => setShowDelivery(false)}
-          onComplete={async () => {
-            setShowDelivery(false);
-            // ✅ FIX: Use React Query invalidation instead of reload
-            await queryClient.invalidateQueries({ queryKey: ['projects'] });
-            await queryClient.invalidateQueries({ queryKey: ['project-tasks', project.id] });
+          isOpen={showDeliveryDialog}
+          onClose={() => setShowDeliveryDialog(false)}
+          onComplete={() => {
+            setShowDeliveryDialog(false);
+            // Optioneel: refresh de data
           }}
         />
       )}
