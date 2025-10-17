@@ -8,6 +8,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { i18n, Language } from '@/lib/i18n';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface I18nContextType {
   t: (key: string, fallback?: string, variables?: Record<string, string>) => string;
@@ -20,6 +21,7 @@ interface I18nContextType {
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [language, setLanguageState] = useState<Language>('nl');
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -36,19 +38,15 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     return unsubscribe;
   }, []);
 
-  // Initialize i18n when user logs in
+  // Initialize i18n when user logs in - listen to AuthContext instead of Supabase directly
   useEffect(() => {
-    const initializeI18n = async () => {
+    const initializeI18n = async (userId: string | null) => {
       try {
         setIsLoading(true);
-        
-        // Get current session
-        const { data: { session } } = await supabase.auth.getSession();
-        const currentUserId = session?.user?.id || null;
-        setUserId(currentUserId);
+        setUserId(userId);
 
-        if (currentUserId) {
-          await i18n.initialize(currentUserId);
+        if (userId) {
+          await i18n.initialize(userId);
           setLanguageState(i18n.getLanguage());
         }
       } catch (error) {
@@ -58,30 +56,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    initializeI18n();
-
-    // Listen to auth state changes - only for SIGNED_IN and SIGNED_OUT
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // ✅ Stricter: Skip initial session to prevent duplicate initialization
-      if (event === 'INITIAL_SESSION') return;
-      
-      const newUserId = session?.user?.id || null;
-      
-      // ✅ Skip if same user - prevents re-initialization on refresh/tab switch
-      if (newUserId === userId) return;
-      
-      setUserId(newUserId);
-      
-      if (newUserId) {
-        await i18n.initialize(newUserId);
-        setLanguageState(i18n.getLanguage());
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+    // Initialize with current user from AuthContext
+    initializeI18n(user?.id || null);
+  }, [user?.id]); // Listen to user changes from AuthContext
 
   // Subscribe to language preference changes
   useEffect(() => {
