@@ -691,14 +691,14 @@ function generateWorkOrderHTML(data: any): string {
 
 async function generatePDFFromHTML(html: string): Promise<Uint8Array> {
   /**
-   * PDF Generation Options:
+   * PDF Generation Strategy:
    * 
-   * 1. HTMLPdfService (Primary) - Free tier available
-   * 2. Fallback to base HTML if service unavailable
+   * 1. Try HTMLPDF_API_KEY (html2pdf.app) - Most reliable
+   * 2. Try PDFSHIFT_API_KEY - Alternative service
+   * 3. Fall back to plain HTML (user prints manually)
    * 
-   * To use HTMLPdfService:
-   * - Set HTMLPDF_API_KEY in Supabase secrets
-   * - Service: https://api.html2pdf.app or similar
+   * Note: Full PDF rendering requires external service or headless browser
+   * For production, use a dedicated PDF service
    */
   
   const apiKey = Deno.env.get('HTMLPDF_API_KEY')
@@ -707,7 +707,6 @@ async function generatePDFFromHTML(html: string): Promise<Uint8Array> {
     try {
       console.log('🔄 Generating PDF via HTML2PDF service...')
       
-      // Use HTML to PDF conversion service
       const response = await fetch('https://api.html2pdf.app/v1/generate', {
         method: 'POST',
         headers: {
@@ -732,24 +731,24 @@ async function generatePDFFromHTML(html: string): Promise<Uint8Array> {
       
       if (response.ok) {
         const pdfBuffer = await response.arrayBuffer()
-        console.log('✅ PDF generated successfully via service')
+        console.log('✅ PDF generated successfully via HTML2PDF service')
         return new Uint8Array(pdfBuffer)
       } else {
-        console.warn('⚠️ PDF service error:', response.status, await response.text())
-        throw new Error('PDF service unavailable')
+        const errorText = await response.text()
+        console.warn('⚠️ HTML2PDF error:', response.status, errorText)
+        throw new Error(`HTML2PDF error: ${response.status}`)
       }
     } catch (error) {
-      console.warn('⚠️ PDF service failed, using fallback:', error.message)
-      // Fall through to fallback
+      console.warn('⚠️ HTML2PDF failed, trying PDFShift fallback:', error.message)
     }
   }
   
-  // FALLBACK: Use PDFShift (alternative service) if available
+  // FALLBACK: Try PDFShift
   const pdfshiftKey = Deno.env.get('PDFSHIFT_API_KEY')
   
   if (pdfshiftKey) {
     try {
-      console.log('🔄 Generating PDF via PDFShift fallback...')
+      console.log('🔄 Generating PDF via PDFShift...')
       
       const response = await fetch('https://api.pdfshift.io/v3/convert/pdf', {
         method: 'POST',
@@ -771,24 +770,24 @@ async function generatePDFFromHTML(html: string): Promise<Uint8Array> {
         console.log('✅ PDF generated via PDFShift')
         return new Uint8Array(pdfBuffer)
       } else {
-        console.warn('⚠️ PDFShift error:', response.status)
-        throw new Error('PDFShift service unavailable')
+        const errorText = await response.text()
+        console.warn('⚠️ PDFShift error:', response.status, errorText)
+        throw new Error(`PDFShift error: ${response.status}`)
       }
     } catch (error) {
-      console.warn('⚠️ PDFShift failed:', error.message)
-      // Fall through to final fallback
+      console.warn('⚠️ PDFShift failed, using fallback:', error.message)
     }
   }
   
-  // FINAL FALLBACK: Use in-browser PDF generation via data URL
-  // This returns the HTML wrapped for browser-side PDF printing
-  console.log('⚠️ No PDF service configured, using HTML fallback')
-  console.log('💡 To enable PDF generation:')
-  console.log('   Set HTMLPDF_API_KEY or PDFSHIFT_API_KEY in Supabase secrets')
-  console.log('   Or use browser print: window.print() on HTML document')
+  // FINAL FALLBACK: Return HTML as plain text that can be converted
+  console.log('⚠️ No PDF service configured - generating basic HTML output')
+  console.log('💡 To enable proper PDF generation, set one of these environment variables:')
+  console.log('   - HTMLPDF_API_KEY: From html2pdf.app')
+  console.log('   - PDFSHIFT_API_KEY: From pdfshift.io')
   
-  // Wrap HTML in a complete document with print styling
-  const printableHtml = `
+  // Convert HTML to UTF-8 encoded bytes (PDF viewers might handle this)
+  const encoder = new TextEncoder()
+  const htmlWithPrintStyles = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -796,24 +795,17 @@ async function generatePDFFromHTML(html: string): Promise<Uint8Array> {
   <title>Werkbon</title>
   <style>
     @media print {
-      body { margin: 0; padding: 20mm; }
-      .no-print { display: none; }
+      body { margin: 0; }
     }
   </style>
 </head>
 <body>
-  ${html}
-  <script>
-    // Auto-print when opened
-    if (typeof window !== 'undefined') {
-      window.onload = function() { window.print(); }
-    }
-  </script>
+${html}
 </body>
-</html>`
+</html>
+  `
   
-  const encoder = new TextEncoder()
-  return encoder.encode(printableHtml)
+  return encoder.encode(htmlWithPrintStyles)
 }
 
 function generateEmailHTML(customer: any, pdfUrl: string, completion: any, tasks: any[]): string {
