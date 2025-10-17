@@ -1,3 +1,4 @@
+// Force cache invalidation
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Package, Users, Calendar, Euro, Mail, Phone, User, MapPin, Clock, CheckCircle2, CheckCircle, Circle, Edit, FileText, Camera, Receipt, Eye } from "lucide-react";
@@ -85,7 +86,7 @@ const ProjectDetail = () => {
           supabase.from('quotes').select('*').eq('project_id', projectId),
           supabase.from('project_work_orders').select('*').eq('project_id', projectId).order('created_at', { ascending: false }),
           supabase.from('project_receipts').select('*').eq('project_id', projectId),
-          supabase.from('project_photos').select('*').eq('project_id', projectId),
+          supabase.from('project_photos').select('*, work_order:project_work_orders(id, work_order_number)').eq('project_id', projectId),
         ]);
 
         // Set state for parallel fetches
@@ -95,42 +96,36 @@ const ProjectDetail = () => {
         setWorkOrders(workOrdersResult.data || []);
         setReceipts(receiptsResult.data || []);
 
-        // 3. Fetch completion photos based on work orders
-        const workOrders = workOrdersResult.data || [];
-        const completionIds = workOrders.map(wo => wo.completion_id).filter(Boolean);
-        const { data: completionPhotos } = completionIds.length > 0
-          ? await supabase.from('completion_photos').select('*').in('completion_id', completionIds)
-          : { data: [] };
+        // 3. Fetch all photos related to the project
+        const { data: allPhotos } = await supabase
+          .from('project_photos')
+          .select('*, work_order:project_work_orders(id, work_order_number)')
+          .eq('project_id', projectId);
 
-        // 4. Group all photos for the UI
+        // 4. Group photos for the UI
         const groups: PhotoGroup[] = [];
-        const projectPhotos = projectPhotosResult.data || [];
+        const photos = allPhotos || [];
         
-        // Group photos by work order
-        workOrders.forEach(wo => {
-          const photosForWorkOrder = (completionPhotos || []).filter(p => p.completion_id === wo.completion_id);
-          if (photosForWorkOrder.length > 0) {
-            groups.push({
-              id: wo.id,
-              title: `Werkbon ${wo.work_order_number}`,
-              photos: photosForWorkOrder,
-            });
+        const photosByWorkOrder = photos.reduce((acc, photo) => {
+          const workOrderId = photo.work_order?.id || 'general';
+          if (!acc[workOrderId]) {
+            acc[workOrderId] = {
+              id: workOrderId,
+              title: photo.work_order ? `Werkbon ${photo.work_order.work_order_number}` : 'Algemene Projectfoto\'s',
+              photos: []
+            };
           }
+          acc[workOrderId].photos.push(photo);
+          return acc;
+        }, {} as Record<string, PhotoGroup>);
+
+        const sortedGroups = Object.values(photosByWorkOrder).sort((a, b) => {
+          if (a.id === 'general') return -1;
+          if (b.id === 'general') return 1;
+          return a.title.localeCompare(b.title);
         });
-
-        // Create a group for general project photos (that aren't part of a completion)
-        const assignedCompletionPhotoIds = new Set((completionPhotos || []).map(p => p.id)); // Assuming photo IDs are unique across tables
-        const generalPhotos = projectPhotos.filter(p => !assignedCompletionPhotoIds.has(p.id));
-
-        if (generalPhotos.length > 0) {
-          groups.unshift({
-            id: 'general',
-            title: 'Algemene Projectfoto\'s',
-            photos: generalPhotos,
-          });
-        }
         
-        setPhotoGroups(groups);
+        setPhotoGroups(sortedGroups);
 
       } catch (error) {
         console.error("Error fetching project details:", error);
@@ -485,11 +480,11 @@ const ProjectDetail = () => {
                 {/* 📸 Foto's tab - Always visible, Monteurs see ONLY their own photos */}
                 <TabsTrigger value="fotos" className="relative">
                   Foto's
-                  {completionPhotos.length > 0 && (
+                  {photoGroups.length > 0 && (
                     <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
                       {profile?.role === 'Installateur' 
-                        ? completionPhotos.filter((p: any) => p.completion?.installer_id === user?.id).length 
-                        : completionPhotos.length}
+                        ? photoGroups.filter((p: PhotoGroup) => p.id === 'general').length 
+                        : photoGroups.length}
                     </Badge>
                   )}
                 </TabsTrigger>
