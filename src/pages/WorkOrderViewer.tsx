@@ -89,6 +89,10 @@ const generateWorkOrderHTML = (workOrder: WorkOrderData, tasks: Task[], photos: 
       </div>
     </div>` : '';
 
+  const projectName = (workOrder.project as any)?.name || (workOrder.project as any)?.title || 'N/A';
+  const customerName = (workOrder.project as any)?.customer?.name || (workOrder.completion as any)?.customer_name || 'N/A';
+  const signedAt = workOrder.signed_at || (workOrder.completion as any)?.created_at || '';
+
   return `
     <html>
       <head>
@@ -117,26 +121,26 @@ const generateWorkOrderHTML = (workOrder: WorkOrderData, tasks: Task[], photos: 
       <body>
         <div class="container">
           <div class="header">
-            <img src="/logo.png" alt="Logo Smans" />
+            <img src="https://www.smanscrm.nl/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="Logo Smans" />
             <h1>Werkbon</h1>
           </div>
           <div class="info-grid">
             <div class="info-box">
               <h3>Project Informatie</h3>
               <p><strong>Werkbon:</strong> ${workOrder.work_order_number || 'N/A'}</p>
-              <p><strong>Datum:</strong> ${workOrder.signed_at ? format(new Date(workOrder.signed_at), 'dd-MM-yyyy HH:mm', { locale: nl }) : 'N/A'}</p>
+              <p><strong>Datum:</strong> ${signedAt ? format(new Date(signedAt), 'dd-MM-yyyy HH:mm', { locale: nl }) : 'N/A'}</p>
               <p><strong>Status:</strong> Afgerond</p>
             </div>
             <div class="info-box">
               <h3>Klant Informatie</h3>
-              <p><strong>Naam:</strong> ${workOrder.project?.customer?.name || 'N/A'}</p>
-              <p><strong>Project:</strong> ${workOrder.project?.name || 'N/A'}</p>
+              <p><strong>Naam:</strong> ${customerName}</p>
+              <p><strong>Project:</strong> ${projectName}</p>
             </div>
           </div>
           
           <div class="section-title">Werk Samenvatting</div>
           <div class="section-content">
-            <p>${workOrder.completion?.work_performed || 'Geen samenvatting opgegeven.'}</p>
+            <p>${workOrder.completion?.work_performed || (workOrder as any)?.summary_text || 'Geen samenvatting opgegeven.'}</p>
           </div>
           
           <div class="section-title">Uitgevoerde Taken</div>
@@ -149,15 +153,15 @@ const generateWorkOrderHTML = (workOrder: WorkOrderData, tasks: Task[], photos: 
           <div class="signature-grid">
             <div class="signature-box">
               <h4>Handtekening Klant</h4>
-              ${workOrder.completion?.client_signature ? `<img src="${workOrder.completion.client_signature}" alt="Handtekening Klant"/>` : '<p>Geen handtekening beschikbaar</p>'}
-              <p><strong>Naam:</strong> ${workOrder.completion?.client_name || 'N/A'}</p>
-              <p><strong>Datum:</strong> ${workOrder.completion?.client_signature_timestamp ? format(new Date(workOrder.completion.client_signature_timestamp), 'dd-MM-yyyy', { locale: nl }) : 'N/A'}</p>
+              ${(workOrder.completion as any)?.customer_signature ? `<img src="${(workOrder.completion as any).customer_signature}" alt="Handtekening Klant"/>` : '<p>Geen handtekening beschikbaar</p>'}
+              <p><strong>Naam:</strong> ${customerName}</p>
+              <p><strong>Datum:</strong> ${signedAt ? format(new Date(signedAt), 'dd-MM-yyyy', { locale: nl }) : 'N/A'}</p>
             </div>
             <div class="signature-box">
               <h4>Handtekening Monteur</h4>
               ${workOrder.completion?.installer_signature ? `<img src="${workOrder.completion.installer_signature}" alt="Handtekening Monteur"/>` : '<p>Geen handtekening beschikbaar</p>'}
               <p><strong>Naam:</strong> ${workOrder.completion?.installer?.full_name || 'N/A'}</p>
-              <p><strong>Datum:</strong> ${workOrder.signed_at ? format(new Date(workOrder.signed_at), 'dd-MM-yyyy', { locale: nl }) : 'N/A'}</p>
+              <p><strong>Datum:</strong> ${signedAt ? format(new Date(signedAt), 'dd-MM-yyyy', { locale: nl }) : 'N/A'}</p>
             </div>
           </div>
         </div>
@@ -226,16 +230,23 @@ export default function WorkOrderViewer() {
       if (taskError) throw new Error(`Fout bij laden taken: ${taskError.message}`);
       setTasks(taskData || []);
 
-      // 4. Fetch photos associated with the completion
+      // 4. Fetch photos associated with the completion AND legacy project_photos linked to this work order
+      let combinedPhotos: Photo[] = [];
       if (finalWorkOrderData.completion?.id) {
-        const { data: photoData, error: photoError } = await supabase
+        const { data: cPhotos, error: cErr } = await supabase
           .from('completion_photos')
           .select('id, photo_url, description')
           .eq('completion_id', finalWorkOrderData.completion.id);
-        
-        if (photoError) console.warn("Kon foto's niet laden:", photoError.message);
-        setPhotos(photoData || []);
+        if (cErr) console.warn("Kon completion foto's niet laden:", cErr.message);
+        combinedPhotos = combinedPhotos.concat((cPhotos as any) || []);
       }
+      const { data: pPhotos, error: pErr } = await supabase
+        .from('project_photos')
+        .select('id, photo_url:photo_url, description')
+        .eq('work_order_id', workOrderId);
+      if (pErr) console.warn('Kon project foto's niet laden:', pErr.message);
+      combinedPhotos = combinedPhotos.concat((pPhotos as any) || []);
+      setPhotos(combinedPhotos);
 
     } catch (err: any) {
       setError(err.message);

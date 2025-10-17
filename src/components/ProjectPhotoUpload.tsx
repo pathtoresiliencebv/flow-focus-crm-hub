@@ -148,7 +148,9 @@ export const ProjectPhotoUpload: React.FC<ProjectPhotoUploadProps> = ({
       });
       
       setOpen(false);
-      onUploadComplete();
+      if (typeof onUploadComplete === 'function') {
+        onUploadComplete();
+      }
 
     } catch (error: any) {
       console.error('Upload error:', error);

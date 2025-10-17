@@ -92,30 +92,62 @@ const ProjectDetail = () => {
         setWorkOrders(workOrdersResult.data || []);
         setReceipts(receiptsResult.data || []);
 
-        // 3. Fetch all photos related to the project
-        const { data: allPhotos } = await supabase
-          .from('project_photos')
-          .select('*, work_order:project_work_orders(id, work_order_number)')
-          .eq('project_id', projectId);
+        // 3. Fetch all photos related to the project (both legacy project_photos and completion_photos linked to work orders)
+        const workOrders = workOrdersResult.data || [];
+        const completionIds = workOrders.map((w: any) => w.completion_id).filter((id: string | null) => !!id);
+        const completionIdToWorkOrder: Record<string, { id: string; number: string | null }> = Object.fromEntries(
+          workOrders
+            .filter((w: any) => !!w.completion_id)
+            .map((w: any) => [w.completion_id as string, { id: w.id as string, number: w.work_order_number as string | null }])
+        );
 
-        // 4. Group photos for the UI
+        let completionPhotos: any[] = [];
+        if (completionIds.length > 0) {
+          const { data: cPhotos, error: cPhotosErr } = await supabase
+            .from('completion_photos')
+            .select('id, completion_id, photo_url, description, category, uploaded_at')
+            .in('completion_id', completionIds as string[]);
+          if (cPhotosErr) console.warn('Could not load completion photos:', cPhotosErr.message);
+          completionPhotos = cPhotos || [];
+        }
+
+        // Legacy project photos already fetched
+        const allProjectPhotos = projectPhotosResult.data || [];
+
+        // 4. Group photos for the UI (by work order; include both sources)
         const groups: PhotoGroup[] = [];
-        const photos = allPhotos || [];
-        
-        const photosByWorkOrder = photos.reduce((acc, photo) => {
-          const workOrderId = photo.work_order?.id || 'general';
-          if (!acc[workOrderId]) {
-            acc[workOrderId] = {
-              id: workOrderId,
-              title: photo.work_order ? `Werkbon ${photo.work_order.work_order_number}` : 'Algemene Projectfoto\'s',
-              photos: []
-            };
-          }
-          acc[workOrderId].photos.push(photo);
-          return acc;
-        }, {} as Record<string, PhotoGroup>);
+        const byGroup: Record<string, PhotoGroup> = {};
 
-        const sortedGroups = Object.values(photosByWorkOrder).sort((a, b) => {
+        // Helper to get/create group
+        const ensureGroup = (groupId: string, title: string) => {
+          if (!byGroup[groupId]) {
+            byGroup[groupId] = { id: groupId, title, photos: [] } as PhotoGroup;
+          }
+          return byGroup[groupId];
+        };
+
+        // a) completion_photos grouped by their work order via completion_id
+        for (const cp of completionPhotos) {
+          const wo = completionIdToWorkOrder[cp.completion_id];
+          const groupId = wo ? wo.id : 'general';
+          const title = wo && wo.number ? `Werkbon ${wo.number}` : 'Algemene Projectfoto\'s';
+          const group = ensureGroup(groupId, title);
+          group.photos.push({
+            id: cp.id,
+            photo_url: cp.photo_url,
+            description: cp.description,
+          });
+        }
+
+        // b) existing project_photos grouped by optional work_order
+        for (const p of allProjectPhotos) {
+          const groupId = p.work_order?.id || 'general';
+          const title = p.work_order ? `Werkbon ${p.work_order.work_order_number}` : 'Algemene Projectfoto\'s';
+          const group = ensureGroup(groupId, title);
+          group.photos.push(p);
+        }
+
+        const sortedGroups = Object.values(byGroup).sort((a, b) => {
           if (a.id === 'general') return -1;
           if (b.id === 'general') return 1;
           return a.title.localeCompare(b.title);
@@ -503,7 +535,7 @@ const ProjectDetail = () => {
                   </>
                 )}
               </TabsList>
-              
+
               {profile?.role === 'Installateur' && project?.status !== 'afgerond' && (
                 <div className="absolute top-0 right-0 p-2">
                   <Button onClick={() => setShowDeliveryDialog(true)} size="sm">
@@ -521,12 +553,12 @@ const ProjectDetail = () => {
                 {(() => {
                   if (loadingData) return <p className="text-center text-muted-foreground py-8">Laden...</p>;
                   if (workOrders.length === 0) return (
-                    <div className="text-center text-muted-foreground py-8">
-                      <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <div className="text-center text-muted-foreground py-8">
+                        <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
                       <p>Geen werkbonnen beschikbaar voor dit project.</p>
-                      <p className="text-xs mt-2">Werkbonnen worden aangemaakt na project oplevering</p>
-                    </div>
-                  );
+                        <p className="text-xs mt-2">Werkbonnen worden aangemaakt na project oplevering</p>
+                      </div>
+                    );
                   return (
                     <div className="space-y-3">
                       {workOrders.map((workOrder) => (
@@ -546,12 +578,12 @@ const ProjectDetail = () => {
                           </div>
                           
                           <div className="flex gap-2">
-                            {workOrder.pdf_url && (
+                          {workOrder.pdf_url && (
                               <Button size="sm" onClick={(e) => { e.stopPropagation(); window.open(workOrder.pdf_url, '_blank'); }} className="bg-emerald-600 hover:bg-emerald-700">
-                                <FileText className="h-4 w-4 mr-2" />
-                                Download PDF
-                              </Button>
-                            )}
+                              <FileText className="h-4 w-4 mr-2" />
+                              Download PDF
+                            </Button>
+                          )}
                             <Button size="sm" onClick={(e) => { e.stopPropagation(); navigate(`/project/${projectId}/werkbon/${workOrder.id}`); }} variant="outline">
                               <Eye className="h-4 w-4 mr-2" />
                               Bekijk Werkbon
@@ -594,7 +626,7 @@ const ProjectDetail = () => {
                   ) : (
                     <Card className="flex items-center justify-center h-40"><p>Geen foto's gevonden.</p></Card>
                   )}
-                </div>
+                    </div>
               </TabsContent>
 
               <TabsContent value="bonnetjes" className="p-4">
@@ -614,28 +646,28 @@ const ProjectDetail = () => {
 
               {profile?.role !== 'Installateur' && (
                 <>
-                  <TabsContent value="facturen" className="p-4">
+              <TabsContent value="facturen" className="p-4">
                     {loadingData ? <p>Laden...</p> : invoices.length === 0 ? (
                       <div className="text-center py-8"><p>Geen facturen gevonden.</p></div>
-                    ) : (
-                      <div className="space-y-2">
+                ) : (
+                  <div className="space-y-2">
                         {invoices.map((invoice) => (
                           <div key={invoice.id}>{/* ... invoice item details ... */}</div>
                         ))}
-                      </div>
-                    )}
-                  </TabsContent>
-                  <TabsContent value="offertes" className="p-4">
+                  </div>
+                )}
+              </TabsContent>
+              <TabsContent value="offertes" className="p-4">
                     {loadingData ? <p>Laden...</p> : quotes.length === 0 ? (
                       <div className="text-center py-8"><p>Geen offertes gevonden.</p></div>
-                    ) : (
-                      <div className="space-y-2">
+                ) : (
+                  <div className="space-y-2">
                         {quotes.map((quote) => (
                           <div key={quote.id}>{/* ... quote item details ... */}</div>
                         ))}
-                      </div>
-                    )}
-                  </TabsContent>
+                  </div>
+                )}
+              </TabsContent>
                 </>
               )}
             </Tabs>
@@ -644,15 +676,15 @@ const ProjectDetail = () => {
 
       {/* Project Delivery Dialog */}
       <ProjectCompletionPanel
-        project={project}
-        isOpen={showDeliveryDialog}
-        onClose={() => setShowDeliveryDialog(false)}
-        onComplete={() => {
-          setShowDeliveryDialog(false);
+          project={project}
+          isOpen={showDeliveryDialog}
+          onClose={() => setShowDeliveryDialog(false)}
+          onComplete={() => {
+            setShowDeliveryDialog(false);
           // TODO: Add refresh logic
-        }}
-      />
-      
+          }}
+        />
+
       {/* Work Order Preview Dialog */}
       <WorkOrderPreviewDialog
         open={workOrderPreviewOpen}
@@ -660,7 +692,7 @@ const ProjectDetail = () => {
         workOrder={selectedWorkOrder}
       />
     </div>
-  </div>
+    </div>
   );
 };
 
