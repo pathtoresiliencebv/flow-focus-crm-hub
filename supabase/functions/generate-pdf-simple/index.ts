@@ -22,7 +22,7 @@ serve(async (req) => {
       )
     }
 
-    console.log(`[generate-pdf-simple] Received request for completionId: ${completionId}`);
+    console.log(`--- Generating Work Order for Completion ID: ${completionId} ---`);
 
     // Initialize a separate, privileged Supabase client for server-side operations
     const supabaseAdmin = createClient(
@@ -30,7 +30,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Fetch completion data with related information using the admin client
+    // 1. Fetch completion data with all necessary joins
     const { data: completion, error: completionError } = await supabaseAdmin
       .from('project_completions')
       .select(`
@@ -42,49 +42,305 @@ serve(async (req) => {
       .single()
 
     if (completionError) {
-      console.error('[generate-pdf-simple] Error fetching completion data:', completionError);
-      throw new Error(`Completion data not found for ID: ${completionId}`);
+      console.error('Error fetching completion data:', completionError);
+      throw new Error('Could not fetch project completion details.');
     }
-    console.log('[generate-pdf-simple] Successfully fetched completion data.');
+    console.log('Successfully fetched completion data.');
+    // Add detailed log to inspect the fetched data
+    console.log('Completion Object:', JSON.stringify(completion, null, 2));
 
-    // Fetch photos from multiple sources using the admin client
-    const { data: completionPhotos } = await supabaseAdmin
+
+    // 2. Fetch associated tasks using the work_order_id
+    const { data: workOrder } = await supabaseAdmin
+      .from('project_work_orders')
+      .select('id')
+      .eq('completion_id', completionId)
+      .single();
+    
+    let tasks: any[] = [];
+    if (workOrder) {
+      const { data: taskData, error: tasksError } = await supabaseAdmin
+        .from('project_tasks')
+        .select('task_description')
+        .eq('work_order_id', workOrder.id);
+      
+      if(tasksError) {
+        console.error('Error fetching tasks for work order:', tasksError);
+      } else {
+        tasks = taskData || [];
+        console.log(`Found ${tasks.length} associated tasks.`);
+      }
+    } else {
+      console.warn('Could not find a matching work order for this completion.');
+    }
+
+    // 3. Fetch completion photos
+    const { data: photos, error: photosError } = await supabaseAdmin
       .from('completion_photos')
-      .select('*')
-      .eq('completion_id', completionId)
+      .select('photo_url, description')
+      .eq('completion_id', completionId);
 
-    const { data: projectPhotos } = await supabaseAdmin
-      .from('project_photos')
-      .select('*')
-      .eq('project_id', completion.project_id)
+    if (photosError) {
+      console.error('Error fetching completion photos:', photosError);
+    } else {
+      console.log(`Found ${photos?.length || 0} associated photos.`);
+    }
 
-    // Combine all photos
-    const photos = [...(completionPhotos || []), ...(projectPhotos || [])]
+    // Prepare HTML content
+    const tasksHtml = tasks.length > 0
+      ? `<ul style="list-style-position: inside; padding-left: 5px; margin: 0;">${tasks.map(task => `<li>${task.task_description}</li>`).join('')}</ul>`
+      : 'Geen specifieke taken geselecteerd voor deze werkbon.';
 
-    // Fetch materials using the admin client
-    const { data: materials } = await supabaseAdmin
-      .from('material_usage')
-      .select('*')
-      .eq('completion_id', completionId)
+    const summaryHtml = completion.work_performed
+      ? `<div class="section-title">Samenvatting Oplevering</div><div class="work-summary"><p>${completion.work_performed}</p></div>`
+      : '';
 
-    // Fetch tasks using the admin client
-    const { data: tasks } = await supabaseAdmin
-      .from('project_tasks')
-      .select('*')
-      .eq('project_id', completion.project_id)
+    const photosHtml = photos && photos.length > 0 
+      ? `
+      <div class="section-title">Opleverfoto's</div>
+      <div class="photos-grid">
+        ${photos.map(photo => `
+          <div class="photo-box">
+            <img src="${photo.photo_url}" alt="${photo.description || 'Opleverfoto'}">
+          </div>
+        `).join('')}
+      </div>` 
+      : '';
 
-    console.log(`[generate-pdf-simple] Found ${photos.length} photos, ${materials?.length || 0} materials, ${tasks?.length || 0} tasks.`);
+    const html = `
+      <!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Werkbon - ${completion.project?.title || 'N/A'}</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      line-height: 1.4;
+      color: #333;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .header {
+      text-align: center;
+      border-bottom: 3px solid #d32f2f;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      color: #d32f2f;
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+    .header .company {
+      font-size: 16px;
+      color: #666;
+    }
+    .info-section {
+      margin-bottom: 25px;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .info-box {
+      background: #f5f5f5;
+      padding: 15px;
+      border-left: 4px solid #d32f2f;
+    }
+    .info-box h3 {
+      color: #d32f2f;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    .section-title {
+      background: #d32f2f;
+      color: white;
+      padding: 8px 15px;
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+    .work-summary {
+      background: #f9f9f9;
+      padding: 15px;
+      margin-bottom: 20px;
+      border: 1px solid #ddd;
+    }
+    .tasks-list {
+      margin-bottom: 20px;
+    }
+    .task-item {
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      align-items: center;
+    }
+    .task-item:last-child {
+      border-bottom: none;
+    }
+    .task-checkbox {
+      margin-right: 10px;
+      color: #4caf50;
+      font-weight: bold;
+    }
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .photo-item {
+      text-align: center;
+    }
+    .photo-item img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .photo-category {
+      font-size: 10px;
+      color: #666;
+      margin-top: 5px;
+    }
+    .signatures {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-top: 30px;
+    }
+    .signature-box {
+      border: 1px solid #ddd;
+      padding: 15px;
+      text-align: center;
+    }
+    .signature-box h4 {
+      margin-bottom: 10px;
+      color: #d32f2f;
+    }
+    .signature-image {
+      max-width: 200px;
+      max-height: 100px;
+      border: 1px solid #ccc;
+      margin: 10px 0;
+    }
+    .summary-box {
+      background: #e8f5e8;
+      padding: 15px;
+      border: 1px solid #4caf50;
+      margin-top: 20px;
+    }
+    .summary-box h3 {
+      color: #2e7d32;
+      margin-bottom: 10px;
+    }
+    .materials-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    .materials-table th,
+    .materials-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    .materials-table th {
+      background: #f5f5f5;
+      font-weight: bold;
+    }
+    @media print {
+      body { margin: 0; padding: 15px; }
+      .photo-grid { page-break-inside: avoid; }
+    }
+    .photos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-bottom: 20px; }
+    .photo-box img { width: 100%; height: auto; object-fit: cover; border-radius: 4px; border: 1px solid #eee; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>SMANS ONDERHOUD</h1>
+    <div class="company">Onderhoud en Service J.J.P. Smans</div>
+    <div style="margin-top: 10px; font-size: 14px;">Werkbon</div>
+  </div>
 
-    // Generate simple HTML for PDF
-    const html = generateSimpleWorkOrderHTML({
-      completion,
-      customer: completion.project.customer,
-      project: completion.project,
-      monteur: completion.installer,
-      photos: photos || [],
-      materials: materials || [],
-      tasks: tasks || []
-    })
+  <div class="info-grid">
+    <div class="info-box">
+      <h3>Project Informatie</h3>
+      <p><strong>Project:</strong> ${completion.project?.title || 'N/A'}</p>
+      <p><strong>Datum:</strong> ${completion.completion_date ? new Date(completion.completion_date).toLocaleDateString('nl-NL') : 'N/A'}</p>
+      <p><strong>Status:</strong> Afgerond</p>
+    </div>
+    <div class="info-box">
+      <h3>Klant Informatie</h3>
+      <p><strong>Naam:</strong> ${completion.project?.customer?.name || completion.customer_name || 'N/A'}</p>
+      <p><strong>Email:</strong> ${completion.project?.customer?.email || 'N/A'}</p>
+      <p><strong>Telefoon:</strong> ${completion.project?.customer?.phone || 'N/A'}</p>
+      <p><strong>Adres:</strong> ${completion.project?.customer?.address || 'N/A'}</p>
+    </div>
+  </div>
+
+  ${summaryHtml}
+
+  <div class="section-title">Uitgevoerde Werkzaamheden</div>
+  <div class="work-summary">
+    ${tasksHtml}
+  </div>
+
+  ${photosHtml}
+
+  <div class="signatures">
+    <div class="signature-box">
+      <h4>Handtekening Klant</h4>
+      <p><strong>Naam:</strong> ${completion.customer_name || completion.project?.customer?.name || 'N/A'}</p>
+      <p><strong>Datum:</strong> ${completion.completion_date ? new Date(completion.completion_date).toLocaleDateString('nl-NL') : 'N/A'}</p>
+      ${completion.customer_signature ? `
+      <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #f9f9f9;">
+        <img src="${completion.customer_signature}" alt="Klant handtekening" class="signature-image" style="max-width: 200px; max-height: 100px; display: block; margin: 0 auto;" />
+      </div>
+      ` : '<p style="color: #999; text-align: center; padding: 20px; border: 1px dashed #ccc;">Geen handtekening beschikbaar</p>'}
+    </div>
+    
+    <div class="signature-box">
+      <h4>Handtekening Monteur</h4>
+      <p><strong>Naam:</strong> ${completion.installer?.full_name || 'N/A'}</p>
+      <p><strong>Datum:</strong> ${completion.completion_date ? new Date(completion.completion_date).toLocaleDateString('nl-NL') : 'N/A'}</p>
+      ${completion.installer_signature ? `
+      <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #f9f9f9;">
+        <img src="${completion.installer_signature}" alt="Monteur handtekening" class="signature-image" style="max-width: 200px; max-height: 100px; display: block; margin: 0 auto;" />
+      </div>
+      ` : '<p style="color: #999; text-align: center; padding: 20px; border: 1px dashed #ccc;">Geen handtekening beschikbaar</p>'}
+    </div>
+  </div>
+
+  <div class="summary-box">
+    <h3>Samenvatting</h3>
+    <p><strong>Werktijd:</strong> ${completion.total_work_hours || 0} uur</p>
+    <p><strong>Klanttevredenheid:</strong> ${completion.customer_satisfaction || 5}/5 ⭐</p>
+    <p><strong>Kwaliteitsbeoordeling:</strong> ${completion.quality_rating || 5}/5 ⭐</p>
+    ${completion.customer_feedback ? `
+    <p><strong>Klant feedback:</strong> ${completion.customer_feedback}</p>
+    ` : ''}
+  </div>
+
+  <div style="text-align: center; margin-top: 30px; color: #666; font-size: 10px;">
+    <p>Dit werkbon is automatisch gegenereerd door het SMANS CRM systeem</p>
+    <p>Datum: ${new Date().toLocaleDateString('nl-NL')} - Werkbon ID: ${completion.id.slice(0, 8).toUpperCase()}</p>
+  </div>
+</body>
+</html>
+  `.trim()
 
     console.log('[generate-pdf-simple] HTML generated successfully. Attempting to generate PDF buffer...');
     const pdfBuffer = await generatePDFFromHTML(html);
