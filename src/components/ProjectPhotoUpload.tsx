@@ -127,7 +127,8 @@ export const ProjectPhotoUpload: React.FC<ProjectPhotoUploadProps> = ({
           photo_url: publicUrl,
           description: photoData.description || null,
           category: photoData.category,
-          uploaded_by: user.id
+          file_name: photoData.fileName || null,
+          file_size: blob.size || null
         });
 
       if (insertError) throw insertError;

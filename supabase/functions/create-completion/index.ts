@@ -58,10 +58,14 @@ Deno.serve(async (req) => {
 
     // 2. Insert photos if any, ensuring the uploader_id is the authenticated user
     if (photos && photos.length > 0) {
-      const photoUploads = photos.map((p: any) => ({ 
-        ...p, 
+      const photoUploads = photos.map((p: any) => ({
         completion_id: completion.id,
-        uploader_id: user.id, // Overwrite uploader_id
+        photo_url: p.photo_url,
+        description: p.description ?? null,
+        category: p.category ?? null,
+        file_name: p.file_name ?? null,
+        file_size: p.file_size ?? null,
+        uploaded_at: new Date().toISOString()
       }));
       const { error: photosError } = await supabaseAdmin.from('completion_photos').insert(photoUploads);
       if (photosError) console.warn('Failed to insert photos:', photosError.message);
