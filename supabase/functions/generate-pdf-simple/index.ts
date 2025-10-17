@@ -11,6 +11,7 @@ const generateWorkOrderHTML = (
   completion: any,
   project: any,
   installer: any,
+  workOrder: any,
   tasks: any[],
   photos: any[]
 ): string => {
@@ -35,8 +36,9 @@ const generateWorkOrderHTML = (
       `).join('')
     : 'Geen specifieke taken geselecteerd voor deze werkbon.';
 
-  const summaryHtml = completion.work_performed
-    ? `<div class="section-title">Samenvatting Oplevering</div><div class="work-summary"><p>${completion.work_performed}</p></div>`
+  const workSummary = completion.work_performed || workOrder?.summary_text || '';
+  const summaryHtml = workSummary
+    ? `<div class="section-title">Samenvatting Oplevering</div><div class="work-summary"><p>${workSummary}</p></div>`
     : '';
 
   const photosHtml = photos && photos.length > 0 ? `
@@ -54,6 +56,10 @@ const generateWorkOrderHTML = (
       return 'Ongeldige datum';
     }
   }
+
+  const projectName = project?.name || project?.title || 'N/A';
+  const customerName = project?.customer?.name || completion?.customer_name || 'N/A';
+  const signedAt = workOrder?.signed_at || completion?.created_at;
 
   return `
   <!DOCTYPE html>
@@ -82,19 +88,19 @@ const generateWorkOrderHTML = (
   <body>
     <div class="container">
       <div class="header">
-        <img src="https://pvesgvkyiaqmsudmmtkc.supabase.co/storage/v1/object/public/images/logo_smans.png" alt="Logo" />
+        <img src="https://www.smanscrm.nl/lovable-uploads/ad3fa40e-af0e-42d9-910f-59eab7f8e4ed.png" alt="Logo Smans" />
         <h1>Werkbon</h1>
       </div>
 
       <div class="info-grid">
         <div class="info-box">
           <h3>Project Informatie</h3>
-          <p><strong>Project:</strong> ${project.name}</p>
-          <p><strong>Datum:</strong> ${formatDate(completion.created_at, 'dd MMMM yyyy')}</p>
+          <p><strong>Project:</strong> ${projectName}</p>
+          <p><strong>Datum:</strong> ${formatDate(signedAt, 'dd-MM-yyyy HH:mm')}</p>
         </div>
         <div class="info-box">
           <h3>Klant Informatie</h3>
-          <p><strong>Klant:</strong> ${project.customer.name}</p>
+          <p><strong>Klant:</strong> ${customerName}</p>
         </div>
       </div>
 
@@ -108,15 +114,15 @@ const generateWorkOrderHTML = (
       <div class="signature-grid">
         <div class="signature-box">
           <h4>Handtekening Klant</h4>
-          <img src="${completion.client_signature}" alt="Handtekening Klant"/>
-          <p>${completion.client_name}</p>
-          <p>${formatDate(completion.client_signature_timestamp, 'dd-MM-yyyy HH:mm')}</p>
+          <img src="${completion.customer_signature || ''}" alt="Handtekening Klant"/>
+          <p>${customerName}</p>
+          <p>${formatDate(signedAt, 'dd-MM-yyyy HH:mm')}</p>
         </div>
         <div class="signature-box">
           <h4>Handtekening Monteur</h4>
-          <img src="${completion.installer_signature}" alt="Handtekening Monteur"/>
+          <img src="${completion.installer_signature || ''}" alt="Handtekening Monteur"/>
           <p>${installer.full_name}</p>
-          <p>${formatDate(completion.created_at, 'dd-MM-yyyy HH:mm')}</p>
+          <p>${formatDate(signedAt, 'dd-MM-yyyy HH:mm')}</p>
         </div>
       </div>
     </div>
@@ -164,7 +170,7 @@ Deno.serve(async (req) => {
 
     const { data: workOrder, error: workOrderError } = await supabaseAdmin
       .from('project_work_orders')
-      .select('id')
+      .select('id, signed_at, summary_text')
       .eq('completion_id', completionId)
       .single();
     if (workOrderError) throw new Error(`Kon werkbon niet vinden: ${workOrderError.message}`);
@@ -182,7 +188,7 @@ Deno.serve(async (req) => {
     if (photosError) console.warn("Let op: kon geen foto's vinden.", photosError.message);
 
     // --- 2. Generate HTML ---
-    const html = generateWorkOrderHTML(completion, project, installer, tasks || [], photos || []);
+    const html = generateWorkOrderHTML(completion, project, installer, workOrder, tasks || [], photos || []);
     
     // --- 3. Return HTML for preview ---
     return new Response(JSON.stringify({ html }), {
