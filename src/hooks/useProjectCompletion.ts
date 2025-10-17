@@ -74,6 +74,17 @@ export const useProjectCompletion = () => {
         throw new Error("Kon geen actieve sessie vinden. Log opnieuw in.");
       }
 
+      // Normalize potentially undefined/non-iterable inputs
+      const normalizedTaskIds: string[] = (() => {
+        if (!selectedTasks) return [];
+        // Accept Set<string> or string[]
+        if (selectedTasks instanceof Set) return Array.from(selectedTasks);
+        if (Array.isArray(selectedTasks)) return selectedTasks as string[];
+        return [];
+      })();
+
+      const normalizedPhotos = Array.isArray(photos) ? photos : [];
+
       // Delegate the entire completion process to the secure edge function
       const { data, error } = await supabase.functions.invoke('create-completion', {
         headers: {
@@ -82,15 +93,15 @@ export const useProjectCompletion = () => {
         body: {
           completionData: {
             ...completionData,
-            installer_id: profile.id,
+            // installer_id is enforced server-side; no need here
           },
-          photos: photos.map(p => ({
+          photos: normalizedPhotos.map(p => ({
             photo_url: p.url,
             category: p.category,
             description: p.description,
-            uploader_id: profile.id
+            // uploader_id enforced server-side as authenticated user
           })),
-          taskIds: Array.from(selectedTasks) // Pass the selected task IDs
+          taskIds: normalizedTaskIds,
         },
       });
 

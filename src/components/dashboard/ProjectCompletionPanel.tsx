@@ -79,8 +79,8 @@ export const ProjectCompletionPanel = ({ project, isOpen, onClose, onComplete }:
         installer_signature: formData.monteurSignature,
         client_signature_timestamp: new Date().toISOString(),
       },
-      photos: formData.deliveryPhotos,
-      selectedTasks: formData.selectedTasks,
+      photos: Array.isArray(formData.deliveryPhotos) ? formData.deliveryPhotos : [],
+      selectedTasks: formData.selectedTasks instanceof Set ? formData.selectedTasks : new Set<string>(),
     };
 
     try {
