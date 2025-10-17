@@ -19,6 +19,7 @@ import { ProjectTasks } from "./ProjectTasks";
 import { ProjectDeliveryDialog } from "./dashboard/ProjectDeliveryDialog";
 import { WorkOrderPreviewDialog } from "./workorders/WorkOrderPreviewDialog";
 import { ProjectReceiptUpload } from "./ProjectReceiptUpload";
+import { ProjectPhotoUpload } from "./ProjectPhotoUpload";
 
 const ProjectDetail = () => {
   const { projectId } = useParams();
@@ -630,6 +631,28 @@ const ProjectDetail = () => {
 
               {/* FOTO'S TAB */}
               <TabsContent value="fotos" className="p-4">
+                {/* Upload Button */}
+                <div className="mb-4 flex justify-end">
+                  <ProjectPhotoUpload 
+                    projectId={projectId!}
+                    onUploadComplete={async () => {
+                      // Refresh photos data
+                      const { data: photosData } = await supabase
+                        .from('completion_photos')
+                        .select(`
+                          *,
+                          completion:project_completions!inner(
+                            project_id,
+                            installer_id
+                          )
+                        `)
+                        .eq('completion.project_id', projectId)
+                        .order('uploaded_at', { ascending: false });
+                      setCompletionPhotos(photosData || []);
+                    }}
+                  />
+                </div>
+
                 {(() => {
                   // Filter photos for Installateurs - only show their own
                   const filteredPhotos = profile?.role === 'Installateur'
