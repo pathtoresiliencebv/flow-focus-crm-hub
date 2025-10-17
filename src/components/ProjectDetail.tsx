@@ -530,10 +530,9 @@ const ProjectDetail = () => {
               {/* WERKBONNEN TAB */}
               <TabsContent value="werkbonnen" className="p-4">
                 {(() => {
-                  // Filter work orders for Installateurs - only show their own
-                  const filteredWorkOrders = profile?.role === 'Installateur'
-                    ? workOrders.filter((wo: any) => wo.created_by === user?.id)
-                    : workOrders;
+                  // Work orders are always for the current project, no additional filtering needed
+                  // Installateurs see work orders for projects they're assigned to (already filtered by project)
+                  const filteredWorkOrders = workOrders;
                   
                   if (loadingData) {
                     return <p className="text-center text-muted-foreground py-8">Laden...</p>;
