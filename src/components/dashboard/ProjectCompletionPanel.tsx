@@ -12,6 +12,7 @@ import { useProjectTasks } from "@/hooks/useProjectTasks";
 import { useProjectCompletion, ProjectCompletionData } from "@/hooks/useProjectCompletion";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { X } from "lucide-react";
 
 interface ProjectCompletionPanelProps {
   project: any;
@@ -148,6 +149,26 @@ export const ProjectCompletionPanel = ({ project, isOpen, onClose, onComplete }:
         {/* Photo Upload */}
         <div>
           <Label>Opleverfoto's</Label>
+          <div className="grid grid-cols-3 gap-4 mt-2">
+            {formData.deliveryPhotos.map((photo, index) => (
+              <div key={index} className="relative">
+                <img src={photo.url} alt={`Opleverfoto ${index + 1}`} className="w-full h-24 object-cover rounded-md border" />
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="absolute top-1 right-1 h-6 w-6"
+                  onClick={() => {
+                    setFormData(prev => ({
+                      ...prev,
+                      deliveryPhotos: prev.deliveryPhotos.filter((_, i) => i !== index)
+                    }));
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
           <ImageUpload
             value={null}
             onChange={(url) => {
@@ -159,7 +180,6 @@ export const ProjectCompletionPanel = ({ project, isOpen, onClose, onComplete }:
               }
             }}
           />
-          {/* Display uploaded photos */}
         </div>
 
         {/* Signatures */}
