@@ -40,14 +40,12 @@ serve(async (req) => {
     console.log('  HTMLPDF_API_KEY:', htmlpdfKey ? '✅ SET' : '❌ MISSING')
     console.log('  PDFSHIFT_API_KEY:', pdfshiftKey ? '✅ SET' : '❌ MISSING')
 
+    // Use service role key for full database access
+    // Edge functions need elevated permissions to update completion records
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || supabaseKey
     const supabaseClient = createClient(
       supabaseUrl,
-      supabaseKey,
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
+      serviceRoleKey
     )
 
     // Get completion ID from request
