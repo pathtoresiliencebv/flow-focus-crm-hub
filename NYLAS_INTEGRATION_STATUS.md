@@ -125,3 +125,4 @@
 The Nylas email integration is fully implemented and ready for testing. Only database table creation and OAuth app configuration remain.
 
 
+

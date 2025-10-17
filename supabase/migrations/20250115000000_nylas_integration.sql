@@ -302,3 +302,4 @@ GRANT EXECUTE ON FUNCTION public.get_primary_nylas_account(uuid) TO anon, authen
 GRANT EXECUTE ON FUNCTION public.get_nylas_folder_counts(uuid) TO anon, authenticated;
 
 
+

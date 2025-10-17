@@ -43,3 +43,4 @@ $$;
 -- Ensure the function is executable by authenticated users
 GRANT EXECUTE ON FUNCTION public.generate_invoice_number() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.generate_invoice_number() TO anon;
+
