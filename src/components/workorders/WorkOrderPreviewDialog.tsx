@@ -13,16 +13,33 @@ interface WorkOrderPreviewDialogProps {
   workOrder: any | null;
 }
 
+// Helper to fetch installer profile
+const fetchInstallerProfile = async (installerId: string) => {
+  if (!installerId) return null;
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('full_name, avatar_url')
+    .eq('id', installerId)
+    .single();
+  if (error) {
+    console.error('Error fetching installer profile:', error);
+    return null;
+  }
+  return data;
+};
+
 export const WorkOrderPreviewDialog: React.FC<WorkOrderPreviewDialogProps> = ({
   open,
   onOpenChange,
   workOrder
 }) => {
   const [completionData, setCompletionData] = useState<any>(null);
+  const [installerProfile, setInstallerProfile] = useState<any>(null);
   const [tasks, setTasks] = useState<any[]>([]);
   const [photos, setPhotos] = useState<any[]>([]);
   const [receipts, setReceipts] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   // Fetch all related data when dialog opens
   useEffect(() => {
@@ -40,15 +57,30 @@ export const WorkOrderPreviewDialog: React.FC<WorkOrderPreviewDialogProps> = ({
           .limit(1);
 
         if (completions && completions.length > 0) {
-          setCompletionData(completions[0]);
+          const currentCompletion = completions[0];
+          setCompletionData(currentCompletion);
 
-          // Fetch photos for this completion
-          const { data: photosData } = await supabase
+          // Fetch installer profile
+          if (currentCompletion.installer_id) {
+            const profile = await fetchInstallerProfile(currentCompletion.installer_id);
+            setInstallerProfile(profile);
+          }
+
+          // Fetch photos for this completion AND the whole project
+          const { data: completionPhotos } = await supabase
             .from('completion_photos')
             .select('*')
-            .eq('completion_id', completions[0].id)
-            .order('uploaded_at', { ascending: false });
-          setPhotos(photosData || []);
+            .eq('completion_id', currentCompletion.id);
+            
+          const { data: projectPhotos } = await supabase
+            .from('project_photos')
+            .select('*')
+            .eq('project_id', workOrder.project_id);
+
+          // Combine and remove duplicates
+          const allPhotos = [...(completionPhotos || []), ...(projectPhotos || [])];
+          const uniquePhotos = Array.from(new Set(allPhotos.map(p => p.id))).map(id => allPhotos.find(p => p.id === id));
+          setPhotos(uniquePhotos || []);
         }
 
         // Fetch tasks for this project
@@ -261,28 +293,66 @@ export const WorkOrderPreviewDialog: React.FC<WorkOrderPreviewDialogProps> = ({
               </p>
             </Card>
           )}
+
+          {/* Installer Signature */}
+          {completionData?.installer_signature && (
+            <Card className="p-4">
+              <h4 className="font-medium text-sm mb-3 text-muted-foreground">Handtekening Monteur</h4>
+              <div className="border-2 border-dashed rounded-lg p-4 bg-gray-50">
+                <img
+                  src={completionData.installer_signature}
+                  alt="Monteur handtekening"
+                  className="max-h-32 mx-auto"
+                />
+              </div>
+              <p className="text-sm text-center mt-2 text-muted-foreground">
+                {installerProfile?.full_name || 'Monteur'}
+              </p>
+            </Card>
+          )}
         </div>
 
         {/* PDF Download */}
-        {workOrder.pdf_url && (
-          <Card className="p-6 bg-blue-50 border-blue-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold text-lg text-blue-800">PDF Werkbon</h3>
-                <p className="text-sm text-blue-600">Download de volledige werkbon als PDF</p>
-              </div>
-              <a
-                href={workOrder.pdf_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <FileText className="h-4 w-4" />
-                Download PDF
-              </a>
+        <Card className="p-6 bg-blue-50 border-blue-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-lg text-blue-800">PDF Werkbon</h3>
+              <p className="text-sm text-blue-600">Download de volledige werkbon als PDF</p>
             </div>
-          </Card>
-        )}
+            <button
+              disabled={isGeneratingPdf}
+              onClick={async (e) => {
+                e.preventDefault();
+                if (workOrder.pdf_url) {
+                  window.open(workOrder.pdf_url, '_blank');
+                  return;
+                }
+                
+                // Generate PDF if no URL exists
+                setIsGeneratingPdf(true);
+                try {
+                  const { data, error } = await supabase.functions.invoke('generate-pdf-simple', {
+                    body: { completionId: completionData.id }
+                  });
+                  if (error) throw error;
+                  if (data.pdfUrl) {
+                    window.open(data.pdfUrl, '_blank');
+                    // Optionally refresh workOrder data here
+                  }
+                } catch (err) {
+                  console.error("Failed to generate PDF:", err);
+                } finally {
+                  setIsGeneratingPdf(false);
+                }
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-wait"
+            >
+              <FileText className="h-4 w-4" />
+              {isGeneratingPdf ? 'Genereren...' : 'Download PDF'}
+            </button>
+          </div>
+        </Card>
+
       </div>
     </SlidePanel>
   );
