@@ -52,10 +52,6 @@ const ProjectDetail = () => {
   const [workOrderPreviewOpen, setWorkOrderPreviewOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Find the project
-  const project = projects.find(p => p.id === projectId);
-  const customer = customers.find(c => c.id === project?.customer_id);
-
   useEffect(() => {
     const fetchProjectDetails = async () => {
       if (!projectId) return;
