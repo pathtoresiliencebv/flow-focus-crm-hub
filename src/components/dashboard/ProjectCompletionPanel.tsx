@@ -68,29 +68,31 @@ export const ProjectCompletionPanel = ({ project, isOpen, onClose, onComplete }:
       return;
     }
 
-    try {
-      const completionData: ProjectCompletionData = {
+    if (!project) return;
+
+    const completionPayload = {
+      completionData: {
         project_id: project.id,
-        completion_date: new Date().toISOString().split('T')[0],
-        customer_name: formData.clientName,
+        client_name: formData.clientName,
         work_performed: formData.deliverySummary,
-        customer_satisfaction: 5,
-        customer_signature: formData.clientSignature,
+        client_signature: formData.clientSignature,
         installer_signature: formData.monteurSignature,
-        selected_task_ids: JSON.stringify(Array.from(formData.selectedTasks)), // Pass selected tasks
-      };
+        client_signature_timestamp: new Date().toISOString(),
+      },
+      photos: formData.deliveryPhotos,
+      selectedTasks: formData.selectedTasks,
+    };
 
-      const result = await completeProject({
-        completionData,
-        photos: formData.deliveryPhotos,
-      });
-
-      toast({ title: "Project succesvol opgeleverd!" });
-      onComplete();
-    } catch (error: any) {
-      toast({ title: "Fout bij opleveren", description: error.message, variant: "destructive" });
+    try {
+      await completeProject(completionPayload);
+      onClose(); // Close the panel on success
+    } catch (error) {
+      // Error is already handled by react-query's onError, but you could add specific logic here if needed
+      console.error("Completion failed:", error);
     }
   };
+
+  if (!project) return null;
 
   return (
     <SlidePanel
