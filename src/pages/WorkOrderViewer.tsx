@@ -91,7 +91,13 @@ const generateWorkOrderHTML = (workOrder: WorkOrderData, tasks: Task[], photos: 
     </div>` : '';
 
   const projectName = (workOrder.project as any)?.name || (workOrder.project as any)?.title || 'N/A';
-  const customerName = (workOrder.project as any)?.customer?.name || (workOrder.completion as any)?.customer_name || 'N/A';
+  const customer = (workOrder.project as any)?.customer || {};
+  const customerName = customer?.name || (workOrder.completion as any)?.customer_name || 'N/A';
+  const customerAddress = customer?.address || 'N/A';
+  const customerCity = customer?.city || '';
+  const customerPostcode = customer?.postcode || '';
+  const customerPhone = customer?.phone || 'N/A';
+  const customerEmail = customer?.email || 'N/A';
   const signedAt = workOrder.signed_at || (workOrder.completion as any)?.created_at || '';
 
   return `
@@ -113,7 +119,7 @@ const generateWorkOrderHTML = (workOrder: WorkOrderData, tasks: Task[], photos: 
           .info-box p { margin: 4px 0; font-size: 14px; }
           .section-title { background-color: #ef4444; color: white; padding: 10px 15px; font-weight: bold; border-radius: 6px 6px 0 0; margin-top: 20px; font-size: 16px; }
           .section-content { border: 1px solid #e5e7eb; border-top: none; padding: 15px; border-radius: 0 0 6px 6px; }
-          .signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px; }
+          .signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px; margin-bottom: 30px; }
           .signature-box { border: 1px solid #e5e7eb; padding: 15px; border-radius: 6px; text-align: center; }
           .signature-box h4 { margin: 0 0 10px; font-size: 15px; }
           .signature-box img { max-width: 100%; height: auto; border: 1px dashed #d1d5db; border-radius: 4px; margin-bottom: 10px; min-height: 100px; }
@@ -140,32 +146,17 @@ const generateWorkOrderHTML = (workOrder: WorkOrderData, tasks: Task[], photos: 
               <h3>Klant Informatie</h3>
               <p><strong>Naam:</strong> ${customerName}</p>
               <p><strong>Project:</strong> ${projectName}</p>
+              <p><strong>Adres:</strong> ${customerAddress}</p>
+              ${customerPostcode || customerCity ? `<p><strong>Postcode/Plaats:</strong> ${customerPostcode} ${customerCity}</p>` : ''}
+              <p><strong>Telefoon:</strong> ${customerPhone}</p>
+              <p><strong>Email:</strong> ${customerEmail}</p>
             </div>
-          </div>
-          
-          <div class="section-title">Werk Samenvatting</div>
-          <div class="section-content">
-            <p>${workOrder.completion?.work_performed || (workOrder as any)?.summary_text || 'Geen samenvatting opgegeven.'}</p>
           </div>
           
           <div class="section-title">Uitgevoerde Taken</div>
           <div class="section-content">
             ${tasksHtml}
           </div>
-          
-          ${photos.length > 0 ? `
-          <div class="section-title">Foto's</div>
-          <div class="section-content">
-            <div class="photo-gallery">
-              ${photos.map(photo => `
-                <div class="photo-item">
-                  <img src="${photo.photo_url}" alt="${photo.description || 'Foto'}" />
-                  ${photo.description ? `<p>${photo.description}</p>` : ''}
-                </div>
-              `).join('')}
-            </div>
-          </div>
-          ` : ''}
 
           <div class="signature-grid">
             <div class="signature-box">
@@ -181,6 +172,25 @@ const generateWorkOrderHTML = (workOrder: WorkOrderData, tasks: Task[], photos: 
               <p><strong>Datum:</strong> ${signedAt ? format(new Date(signedAt), 'dd-MM-yyyy', { locale: nl }) : 'N/A'}</p>
             </div>
           </div>
+          
+          <div class="section-title">Werk Samenvatting</div>
+          <div class="section-content">
+            <p>${workOrder.completion?.work_performed || (workOrder as any)?.summary_text || 'Geen samenvatting opgegeven.'}</p>
+          </div>
+          
+          ${photos.length > 0 ? `
+          <div class="section-title">Foto's</div>
+          <div class="section-content">
+            <div class="photo-gallery">
+              ${photos.map(photo => `
+                <div class="photo-item">
+                  <img src="${photo.photo_url}" alt="${photo.description || 'Foto'}" />
+                  ${photo.description ? `<p>${photo.description}</p>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          ` : ''}
         </div>
       </body>
     </html>
