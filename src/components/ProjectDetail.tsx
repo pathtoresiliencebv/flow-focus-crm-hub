@@ -530,6 +530,7 @@ const ProjectDetail = () => {
         workOrder={selectedWorkOrder}
       />
     </div>
+  </div>
   );
 };
 
