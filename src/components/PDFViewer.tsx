@@ -45,26 +45,57 @@ export function PDFViewer({ completionId, projectTitle, onClose }: PDFViewerProp
     }
   }
 
-  const downloadPDF = () => {
-    if (!htmlContent) return
+  const downloadPDF = async () => {
+    try {
+      if (!htmlContent) return
 
-    // Create a blob with the HTML content
-    const blob = new Blob([htmlContent], { type: 'text/html' })
-    const url = URL.createObjectURL(blob)
-    
-    // Create download link
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `werkbon-${projectTitle.replace(/[^a-zA-Z0-9]/g, '-')}-${new Date().toISOString().split('T')[0]}.html`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+      // Try to get PDF URL from the response
+      const { data, error } = await supabase.functions.invoke('generate-pdf-simple', {
+        body: { completionId }
+      })
 
-    toast({
-      title: "Download Gestart",
-      description: "Werkbon wordt gedownload als HTML bestand",
-    })
+      if (error) throw error
+
+      if (data.pdfUrl && data.pdfUrl.startsWith('http')) {
+        // Download actual PDF from URL
+        const link = document.createElement('a')
+        link.href = data.pdfUrl
+        link.download = `werkbon-${projectTitle.replace(/[^a-zA-Z0-9]/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`
+        link.target = '_blank'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+
+        toast({
+          title: "PDF Gedownload",
+          description: "Werkbon PDF is succesvol gedownload",
+        })
+      } else {
+        // Fallback to HTML download
+        const blob = new Blob([htmlContent], { type: 'text/html' })
+        const url = URL.createObjectURL(blob)
+        
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `werkbon-${projectTitle.replace(/[^a-zA-Z0-9]/g, '-')}-${new Date().toISOString().split('T')[0]}.html`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+
+        toast({
+          title: "HTML Gedownload",
+          description: "Werkbon wordt gedownload als HTML bestand (kan worden geprint naar PDF)",
+        })
+      }
+    } catch (err) {
+      console.error('Error downloading PDF:', err)
+      toast({
+        title: "Fout",
+        description: "Kon PDF niet downloaden",
+        variant: "destructive"
+      })
+    }
   }
 
   const sendEmail = async () => {

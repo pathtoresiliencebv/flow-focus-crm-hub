@@ -579,16 +579,30 @@ const ProjectDetail = () => {
                             </p>
                           </div>
                           
-                          {workOrder.pdf_url && (
+                          <div className="flex gap-2">
+                            {workOrder.pdf_url && (
+                              <Button
+                                size="sm"
+                                onClick={() => window.open(workOrder.pdf_url, '_blank')}
+                                className="bg-emerald-600 hover:bg-emerald-700"
+                              >
+                                <FileText className="h-4 w-4 mr-2" />
+                                Download PDF
+                              </Button>
+                            )}
                             <Button
                               size="sm"
-                              onClick={() => window.open(workOrder.pdf_url, '_blank')}
-                              className="bg-emerald-600 hover:bg-emerald-700"
+                              onClick={() => {
+                                // Open work order in new tab with PDF viewer
+                                const url = `/project/${projectId}/werkbon/${workOrder.id}`
+                                window.open(url, '_blank')
+                              }}
+                              variant="outline"
                             >
-                              <FileText className="h-4 w-4 mr-2" />
-                              Download PDF
+                              <Eye className="h-4 w-4 mr-2" />
+                              Bekijk Werkbon
                             </Button>
-                          )}
+                          </div>
                         </div>
 
                         {/* Summary Text */}

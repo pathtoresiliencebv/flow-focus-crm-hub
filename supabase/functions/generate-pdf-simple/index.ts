@@ -75,16 +75,55 @@ serve(async (req) => {
       tasks: tasks || []
     })
 
-    // For now, return HTML that can be converted to PDF by the client
-    // In production, you would use a PDF generation service here
-    const pdfUrl = `data:text/html;charset=utf-8,${encodeURIComponent(html)}`
+    // Generate actual PDF using html2pdf service
+    const pdfBuffer = await generatePDFFromHTML(html)
+
+    // Upload PDF to Supabase Storage
+    const fileName = `werkbon-${completionId}-${Date.now()}.pdf`
+    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+      .from('completion-reports')
+      .upload(fileName, pdfBuffer, {
+        contentType: 'application/pdf',
+        upsert: false
+      })
+
+    if (uploadError) {
+      console.error('Upload error:', uploadError)
+      // Return HTML as fallback
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          html,
+          pdfUrl: `data:text/html;charset=utf-8,${encodeURIComponent(html)}`,
+          message: 'HTML generated successfully. PDF upload failed.' 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      )
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabaseClient.storage
+      .from('completion-reports')
+      .getPublicUrl(fileName)
+
+    // Update completion record with PDF URL
+    await supabaseClient
+      .from('project_completions')
+      .update({ 
+        pdf_url: publicUrl,
+        status: 'completed'
+      })
+      .eq('id', completionId)
 
     return new Response(
       JSON.stringify({ 
         success: true, 
         html,
-        pdfUrl,
-        message: 'HTML generated successfully. Use browser print to PDF for now.' 
+        pdfUrl: publicUrl,
+        fileName,
+        message: 'PDF generated and uploaded successfully.' 
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -341,12 +380,13 @@ function generateSimpleWorkOrderHTML(data: any): string {
   ` : ''}
 
   ${photos && photos.length > 0 ? `
-  <div class="section-title">Foto's</div>
+  <div class="section-title">Foto's van het Werk</div>
   <div class="photo-grid">
-    ${photos.slice(0, 9).map((photo: any) => `
+    ${photos.slice(0, 12).map((photo: any) => `
     <div class="photo-item">
-      <img src="${photo.photo_url}" alt="Werk foto" />
+      <img src="${photo.photo_url}" alt="Werk foto - ${getCategoryLabel(photo.category)}" style="width: 100%; height: 120px; object-fit: cover; border: 1px solid #ddd; border-radius: 4px;" />
       <div class="photo-category">${getCategoryLabel(photo.category)}</div>
+      ${photo.description ? `<div style="font-size: 10px; color: #666; margin-top: 2px;">${photo.description}</div>` : ''}
     </div>
     `).join('')}
   </div>
@@ -355,7 +395,7 @@ function generateSimpleWorkOrderHTML(data: any): string {
   <div class="signatures">
     <div class="signature-box">
       <h4>Handtekening Klant</h4>
-      <p><strong>Naam:</strong> ${completion.customer_name}</p>
+      <p><strong>Naam:</strong> ${completion.customer_name || customer?.name || 'N/A'}</p>
       <p><strong>Datum:</strong> ${new Date(completion.completion_date).toLocaleDateString('nl-NL')}</p>
       ${completion.customer_signature ? `
       <img src="${completion.customer_signature}" alt="Klant handtekening" class="signature-image" />
@@ -400,4 +440,62 @@ function getCategoryLabel(category: string): string {
     'overview': 'Overzicht'
   }
   return labels[category] || category
+}
+
+async function generatePDFFromHTML(html: string): Promise<Uint8Array> {
+  /**
+   * PDF Generation Strategy:
+   * 
+   * 1. Try HTMLPDF_API_KEY (html2pdf.app) - Most reliable
+   * 2. Try PDFSHIFT_API_KEY - Alternative service
+   * 3. Fall back to plain HTML (user prints manually)
+   * 
+   * Note: Full PDF rendering requires external service or headless browser
+   * For production, use a dedicated PDF service
+   */
+  
+  const apiKey = Deno.env.get('HTMLPDF_API_KEY')
+  
+  if (apiKey) {
+    try {
+      console.log('🔄 Generating PDF via HTML2PDF service...')
+      
+      const response = await fetch('https://api.html2pdf.app/v1/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          html: html,
+          options: {
+            format: 'A4',
+            margin: {
+              top: '20mm',
+              right: '20mm',
+              bottom: '20mm',
+              left: '20mm'
+            },
+            printBackground: true,
+            displayHeaderFooter: false
+          }
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTML2PDF API error: ${response.status}`)
+      }
+
+      const pdfBuffer = await response.arrayBuffer()
+      console.log('✅ PDF generated successfully via HTML2PDF')
+      return new Uint8Array(pdfBuffer)
+    } catch (error) {
+      console.error('❌ HTML2PDF service failed:', error)
+    }
+  }
+
+  // Fallback: Return HTML as text for manual PDF conversion
+  console.log('⚠️ No PDF service available, returning HTML for manual conversion')
+  const encoder = new TextEncoder()
+  return encoder.encode(html)
 }

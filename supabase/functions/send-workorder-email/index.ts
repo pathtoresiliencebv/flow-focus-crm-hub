@@ -55,7 +55,10 @@ serve(async (req) => {
       body: { completionId }
     })
 
-    if (pdfError) throw pdfError
+    if (pdfError) {
+      console.error('PDF generation error:', pdfError)
+      // Continue without PDF attachment
+    }
 
     // Get system notification settings
     const { data: settings } = await supabaseClient
@@ -183,13 +186,17 @@ Dit is een automatisch gegenereerde email van het SMANS CRM systeem
 Voor vragen: ${settings?.smtp_from_email || 'info@smansonderhoud.nl'}
     `
 
-    // Send email using the system's SMTP settings
-    const emailData = {
+    // Prepare email data
+    const emailData: any = {
       to: customerEmail || customer?.email,
       subject: emailSubject,
       html: emailHtml,
-      text: emailText,
-      attachments: [
+      text: emailText
+    }
+
+    // Add PDF attachment if available
+    if (pdfData?.html) {
+      emailData.attachments = [
         {
           filename: `werkbon-${project.title.replace(/[^a-zA-Z0-9]/g, '-')}-${new Date(completion.completion_date).toISOString().split('T')[0]}.html`,
           content: pdfData.html,

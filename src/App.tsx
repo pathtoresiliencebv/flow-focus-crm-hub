@@ -36,6 +36,7 @@ const QuoteSend = lazy(() => import("@/pages/QuoteSend").catch(() => ({ default:
 const InvoiceDetailsPage = lazy(() => import("@/pages/InvoiceDetails").catch(() => ({ default: () => <div>Error loading Invoice Details</div> })));
 const InvoiceSend = lazy(() => import("@/pages/InvoiceSend").catch(() => ({ default: () => <div>Error loading Invoice Send</div> })));
 const ProjectDelivery = lazy(() => import("@/pages/ProjectDelivery").catch(() => ({ default: () => <div>Error loading Project Delivery</div> })));
+const WorkOrderViewer = lazy(() => import("@/pages/WorkOrderViewer").catch(() => ({ default: () => <div>Error loading Work Order Viewer</div> })));
 const MobileDashboard = lazy(() => import("@/components/mobile/MobileDashboard").catch(() => ({ default: () => <div>Error loading Mobile Dashboard</div> })));
 const MobileApp = lazy(() => import("@/components/mobile/MobileApp").then(m => ({ default: m.MobileApp })).catch(() => ({ default: () => <div>Error loading Mobile App</div> })));
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -155,6 +156,7 @@ function App() {
                         </ErrorBoundary>
                       } />
                       <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
+                      <Route path="/project/:projectId/werkbon/:workOrderId" element={<WorkOrderViewer />} />
                       <Route path="/planning" element={
                         <AdminSectionWrapper section="planning" title="Planning">
                           <PlanningPage />
