@@ -30,65 +30,55 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // 1. Fetch completion data with all necessary joins
+    // --- 1. Fetch all essential data ---
+    // Fetch completion data (the core record)
     const { data: completion, error: completionError } = await supabaseAdmin
       .from('project_completions')
-      .select(`
-        *,
-        project:projects(*, customer:customers(*)),
-        installer:profiles!project_completions_installer_id_fkey(*)
-      `)
+      .select('*')
       .eq('id', completionId)
-      .single()
-
-    if (completionError) {
-      console.error('Error fetching completion data:', completionError);
-      throw new Error('Could not fetch project completion details.');
-    }
-    console.log('Successfully fetched completion data.');
-    // Add detailed log to inspect the fetched data
-    console.log('Completion Object:', JSON.stringify(completion, null, 2));
-
-
-    // 2. Fetch associated tasks using the work_order_id
-    const { data: workOrder } = await supabaseAdmin
-      .from('project_work_orders')
-      .select('id')
-      .eq('completion_id', completionId)
       .single();
+
+    if (completionError) throw new Error('Could not fetch project completion details.');
+
+    // Fetch related project and customer
+    const { data: project } = await supabaseAdmin.from('projects').select('*, customer:customers(*)').eq('id', completion.project_id).single();
     
+    // Fetch related installer (monteur)
+    const { data: installer } = await supabaseAdmin.from('profiles').select('*').eq('id', completion.installer_id).single();
+
+    // Fetch the work order to get its ID
+    const { data: workOrder } = await supabaseAdmin.from('project_work_orders').select('id').eq('completion_id', completionId).single();
+
+    // Fetch tasks associated with this work order
     let tasks: any[] = [];
     if (workOrder) {
-      const { data: taskData, error: tasksError } = await supabaseAdmin
-        .from('project_tasks')
-        .select('task_description, block_title') // Fetching block_title as well
-        .eq('work_order_id', workOrder.id);
-      
-      if(tasksError) {
-        console.error('Error fetching tasks for work order:', tasksError);
-      } else {
-        tasks = taskData || [];
-        console.log(`Found ${tasks.length} associated tasks.`);
+      const { data: taskData } = await supabaseAdmin.from('project_tasks').select('task_description, block_title').eq('work_order_id', workOrder.id);
+      tasks = taskData || [];
+    }
+
+    // Fetch associated photos
+    const { data: photos } = await supabaseAdmin.from('completion_photos').select('photo_url, description').eq('completion_id', completionId);
+
+    // --- 2. Process and group data for HTML ---
+    // Group tasks by block_title
+    const groupedTasks = tasks.reduce((acc, task) => {
+      const block = task.block_title || 'Overige Taken';
+      if (!acc[block]) {
+        acc[block] = [];
       }
-    } else {
-      console.warn('Could not find a matching work order for this completion.');
-    }
+      acc[block].push(task.task_description);
+      return acc;
+    }, {} as Record<string, string[]>);
 
-    // 3. Fetch completion photos
-    const { data: photos, error: photosError } = await supabaseAdmin
-      .from('completion_photos')
-      .select('photo_url, description')
-      .eq('completion_id', completionId);
-
-    if (photosError) {
-      console.error('Error fetching completion photos:', photosError);
-    } else {
-      console.log(`Found ${photos?.length || 0} associated photos.`);
-    }
-
-    // Prepare HTML content
-    const tasksHtml = tasks.length > 0
-      ? `<ul style="list-style-position: inside; padding-left: 5px; margin: 0;">${tasks.map(task => `<li><b>${task.block_title}:</b> ${task.task_description}</li>`).join('')}</ul>`
+    const tasksHtml = Object.keys(groupedTasks).length > 0
+      ? Object.entries(groupedTasks).map(([blockTitle, taskDescriptions]) => `
+          <div style="margin-bottom: 10px;">
+            <h4 style="font-weight: bold; color: #333; font-size: 13px;">${blockTitle}</h4>
+            <ul style="list-style-type: disc; list-style-position: inside; padding-left: 15px; margin-top: 5px;">
+              ${taskDescriptions.map(desc => `<li>${desc}</li>`).join('')}
+            </ul>
+          </div>
+        `).join('')
       : 'Geen specifieke taken geselecteerd voor deze werkbon.';
 
     const summaryHtml = completion.work_performed
@@ -303,7 +293,7 @@ serve(async (req) => {
   <div class="signatures">
     <div class="signature-box">
       <h4>Handtekening Klant</h4>
-      <p><strong>Naam:</strong> ${completion.customer_name || completion.project?.customer?.name || 'N/A'}</p>
+      <p><strong>Naam:</strong> ${completion.customer_name || project?.customer?.name || 'N/A'}</p>
       <p><strong>Datum:</strong> ${completion.completion_date ? new Date(completion.completion_date).toLocaleDateString('nl-NL') : 'N/A'}</p>
       ${completion.customer_signature ? `
       <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #f9f9f9;">
@@ -314,7 +304,7 @@ serve(async (req) => {
     
     <div class="signature-box">
       <h4>Handtekening Monteur</h4>
-      <p><strong>Naam:</strong> ${completion.installer?.full_name || 'N/A'}</p>
+      <p><strong>Naam:</strong> ${installer?.full_name || 'N/A'}</p>
       <p><strong>Datum:</strong> ${completion.completion_date ? new Date(completion.completion_date).toLocaleDateString('nl-NL') : 'N/A'}</p>
       ${completion.installer_signature ? `
       <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0; background: #f9f9f9;">
